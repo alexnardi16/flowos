@@ -2,14 +2,32 @@
   "expo": {
     "name": "FlowOS",
     "slug": "flowos",
-    "version": "0.1.0",
+    "owner": "alexnardi16",
+    "version": "0.2.0",
     "orientation": "portrait",
     "scheme": "flowos",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "plugins": ["expo-router"],
+    "runtimeVersion": { "policy": "appVersion" },
+    "updates": { "checkAutomatically": "ON_LOAD", "fallbackToCacheTimeout": 0 },
+    "plugins": [
+      "expo-router",
+      ["expo-notifications", { "defaultChannel": "flowos-reminders" }],
+      ["expo-calendar", { "calendarPermission": "FlowOS usa il calendario per pianificare i tuoi impegni." }]
+    ],
     "experiments": { "typedRoutes": true },
-    "android": { "package": "com.alexnardi.flowos" },
-    "ios": { "bundleIdentifier": "com.alexnardi.flowos" }
+    "android": {
+      "package": "com.alexnardi.flowos",
+      "versionCode": 2,
+      "permissions": ["POST_NOTIFICATIONS", "READ_CALENDAR", "WRITE_CALENDAR"]
+    },
+    "ios": {
+      "bundleIdentifier": "com.alexnardi.flowos",
+      "buildNumber": "2",
+      "infoPlist": {
+        "NSCalendarsFullAccessUsageDescription": "FlowOS usa il calendario per pianificare i tuoi impegni.",
+        "NSRemindersFullAccessUsageDescription": "FlowOS usa i promemoria per aiutarti a non dimenticare gli impegni."
+      }
+    }
   }
 }
