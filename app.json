@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "FlowOS",
+    "slug": "flowos",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "flowos",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true },
+    "android": { "package": "com.alexnardi.flowos" },
+    "ios": { "bundleIdentifier": "com.alexnardi.flowos" }
+  }
+}
