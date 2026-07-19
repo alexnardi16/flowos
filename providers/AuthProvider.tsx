@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
+import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -11,7 +12,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,15 +21,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    supabase.auth.getSession().then(({ data }) => {
+
+    void supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
     });
+
     const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
     return () => data.subscription.unsubscribe();
   }, []);
 
-  const value = useMemo(() => ({
+  const value = useMemo<AuthContextValue>(() => ({
     session,
     loading,
     configured: isSupabaseConfigured,
