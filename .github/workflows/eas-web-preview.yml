@@ -60,4 +60,21 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           EXPO_PUBLIC_AI_MODE: local-first
-        run: eas deploy --alias flowos-private --non-interactive
+        run: |
+          set -o pipefail
+          for attempt in 1 2 3 4; do
+            echo "EAS Hosting deployment attempt ${attempt}/4"
+            if eas deploy --alias flowos-private --environment preview --non-interactive; then
+              exit 0
+            fi
+
+            if [ "$attempt" -lt 4 ]; then
+              delay=$((attempt * 30))
+              echo "Deployment failed, likely while EAS Hosting storage is being provisioned. Retrying in ${delay}s..."
+              sleep "$delay"
+            fi
+          done
+
+          echo "EAS Hosting deployment still failed after 4 attempts."
+          echo "Open the FlowOS project in expo.dev, enter Hosting, and activate Hosting or choose the initial preview subdomain if prompted; then rerun this workflow."
+          exit 1
