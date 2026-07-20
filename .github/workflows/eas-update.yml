@@ -1,0 +1,44 @@
+name: EAS Preview Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: Update message
+        required: false
+        default: FlowOS preview update
+
+jobs:
+  update:
+    name: Publish preview OTA update
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check EXPO_TOKEN
+        run: test -n "${{ secrets.EXPO_TOKEN }}" || (echo "Missing EXPO_TOKEN" && exit 1)
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate project
+        run: npm run typecheck
+
+      - name: Publish update
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          EXPO_PUBLIC_AI_MODE: remote
+        run: eas update --channel preview --environment preview --message "${{ inputs.message }}" --non-interactive
