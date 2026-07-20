@@ -2,14 +2,23 @@
   "expo": {
     "name": "FlowOS",
     "slug": "flowos",
-    "owner": "alexnardi16",
+    "owner": "alex16nardi",
     "version": "0.2.0",
     "orientation": "portrait",
     "scheme": "flowos",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "runtimeVersion": { "policy": "appVersion" },
-    "updates": { "checkAutomatically": "ON_LOAD", "fallbackToCacheTimeout": 0 },
+    "updates": {
+      "url": "https://u.expo.dev/95803fab-e55e-48a0-8e48-f8b504f6aeac",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "extra": {
+      "eas": {
+        "projectId": "95803fab-e55e-48a0-8e48-f8b504f6aeac"
+      }
+    },
     "plugins": [
       "expo-router",
       ["expo-notifications", { "defaultChannel": "flowos-reminders" }],
