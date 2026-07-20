@@ -78,3 +78,5 @@ jobs:
           echo "EAS Hosting deployment still failed after 4 attempts."
           echo "Open the FlowOS project in expo.dev, enter Hosting, and activate Hosting or choose the initial preview subdomain if prompted; then rerun this workflow."
           exit 1
+
+# Deployment trigger: 8-digit OTP support
