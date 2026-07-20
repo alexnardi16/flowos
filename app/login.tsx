@@ -1,7 +1,15 @@
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
+
+function getEmailRedirectUrl() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
+  return 'flowos://login';
+}
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -12,7 +20,7 @@ export default function LoginScreen() {
     setSending(true);
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: 'flowos://login' },
+      options: { emailRedirectTo: getEmailRedirectUrl() },
     });
     setSending(false);
     if (error) Alert.alert('Accesso non riuscito', error.message);
