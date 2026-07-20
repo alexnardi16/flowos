@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "scheme": "flowos",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "runtimeVersion": { "policy": "appVersion" },
     "updates": {
       "url": "https://u.expo.dev/95803fab-e55e-48a0-8e48-f8b504f6aeac",
@@ -34,7 +33,7 @@
       "bundleIdentifier": "com.alexnardi.flowos",
       "buildNumber": "2",
       "infoPlist": {
-        "NSCalendarsFullAccessUsageDescription": "FlowOS usa il calendario per pianificare i tuoi impegni.",
+        "NSCalendarsFullAccessUsageDescription": "FlowOS usa il calendario per pianificare gli impegni.",
         "NSRemindersFullAccessUsageDescription": "FlowOS usa i promemoria per aiutarti a non dimenticare gli impegni."
       }
     }
