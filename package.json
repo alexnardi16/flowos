@@ -9,6 +9,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "test:auth": "rm -rf .test-dist && tsc lib/authFlow.ts --module commonjs --target es2020 --outDir .test-dist --skipLibCheck && node --test tests/authFlow.test.cjs",
+    "test": "npm run test:auth",
+    "validate:web": "npm run typecheck && npm test && npx expo export --platform web",
     "eas:preview": "eas update --channel preview --message \"FlowOS preview\" --environment preview",
     "eas:build:preview": "npx eas-cli build --profile preview --platform android"
   },
