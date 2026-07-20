@@ -55,22 +55,29 @@ export default function LoginScreen() {
     setMessage(null);
     setIsError(false);
 
-    const { error } = await supabase.auth.verifyOtp({
-      email: normalizedEmail,
-      token: normalizedOtp,
-      type: 'email',
-    });
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token: normalizedOtp,
+        type: 'email',
+      });
 
-    setVerifying(false);
+      if (error) throw error;
+      if (!data.session) throw new Error('Sessione non creata. Richiedi un nuovo codice e riprova.');
 
-    if (error) {
+      if (Platform.OS === 'web') {
+        window.location.replace('/');
+        return;
+      }
+
+      router.replace('/');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Accesso non riuscito.';
+      setVerifying(false);
       setIsError(true);
-      setMessage(error.message);
-      if (Platform.OS !== 'web') Alert.alert('Accesso non riuscito', error.message);
-      return;
+      setMessage(errorMessage);
+      if (Platform.OS !== 'web') Alert.alert('Accesso non riuscito', errorMessage);
     }
-
-    router.replace('/');
   }
 
   const sendDisabled = sending || cooldown > 0;
