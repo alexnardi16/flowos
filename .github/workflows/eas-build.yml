@@ -2,6 +2,10 @@ name: EAS Android Preview Build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".eas/trigger-build"
 
 jobs:
   build:
