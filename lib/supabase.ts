@@ -10,11 +10,10 @@ export const isSupabaseConfigured = Boolean(url && key);
 
 export const supabase = createClient(url ?? 'https://placeholder.supabase.co', key ?? 'placeholder', {
   auth: {
-    ...(Platform.OS !== 'web' ? { storage: AsyncStorage } : {}),
+    ...(Platform.OS !== 'web' ? { storage: AsyncStorage, lock: processLock } : {}),
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
-    lock: processLock,
   },
 });
 
