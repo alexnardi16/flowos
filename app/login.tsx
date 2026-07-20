@@ -43,13 +43,13 @@ export default function LoginScreen() {
 
     setCodeSent(true);
     setCooldown(60);
-    setMessage('Codice inviato. Inserisci qui il codice di 6 cifre ricevuto via email.');
+    setMessage('Codice inviato. Inserisci qui il codice di 8 cifre ricevuto via email.');
   }
 
   async function verifyCode() {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedOtp = otp.replace(/\D/g, '');
-    if (!normalizedEmail || normalizedOtp.length !== 6 || verifying) return;
+    if (!normalizedEmail || normalizedOtp.length !== 8 || verifying) return;
 
     setVerifying(true);
     setMessage(null);
@@ -82,13 +82,13 @@ export default function LoginScreen() {
         ? 'Invia un nuovo codice'
         : 'Invia codice di accesso';
 
-  const verifyDisabled = verifying || otp.replace(/\D/g, '').length !== 6;
+  const verifyDisabled = verifying || otp.replace(/\D/g, '').length !== 8;
 
   return (
     <View style={styles.container}>
       <Text style={styles.eyebrow}>FLOWOS</Text>
       <Text style={styles.title}>Il tuo sistema operativo personale.</Text>
-      <Text style={styles.subtitle}>Inserisci l’email: riceverai un codice monouso di 6 cifre.</Text>
+      <Text style={styles.subtitle}>Inserisci l’email: riceverai un codice monouso di 8 cifre.</Text>
 
       <TextInput
         value={email}
@@ -109,11 +109,11 @@ export default function LoginScreen() {
         <>
           <TextInput
             value={otp}
-            onChangeText={(value) => setOtp(value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="Codice a 6 cifre"
+            onChangeText={(value) => setOtp(value.replace(/\D/g, '').slice(0, 8))}
+            placeholder="Codice a 8 cifre"
             keyboardType="number-pad"
             autoComplete="one-time-code"
-            maxLength={6}
+            maxLength={8}
             style={[styles.input, styles.otpInput]}
           />
           <Pressable disabled={verifyDisabled} onPress={verifyCode} style={[styles.button, verifyDisabled && styles.buttonDisabled]}>
