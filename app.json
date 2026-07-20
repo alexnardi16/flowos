@@ -24,6 +24,10 @@
       ["expo-calendar", { "calendarPermission": "FlowOS usa il calendario per pianificare i tuoi impegni." }]
     ],
     "experiments": { "typedRoutes": true },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
     "android": {
       "package": "com.alexnardi.flowos",
       "versionCode": 2,
