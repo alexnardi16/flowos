@@ -3,17 +3,12 @@ import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 
-function getEmailRedirectUrl() {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    return `${window.location.origin}/auth/callback`;
-  }
-
-  return 'flowos://login';
-}
-
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -24,18 +19,49 @@ export default function LoginScreen() {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-  async function sendMagicLink() {
-    if (!email.trim() || sending || cooldown > 0) return;
+  async function sendCode() {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || sending || cooldown > 0) return;
+
     setSending(true);
     setMessage(null);
     setIsError(false);
 
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: getEmailRedirectUrl() },
+      email: normalizedEmail,
+      options: { shouldCreateUser: true },
     });
 
     setSending(false);
+
+    if (error) {
+      setIsError(true);
+      setMessage(error.message);
+      if (Platform.OS !== 'web') Alert.alert('Invio non riuscito', error.message);
+      return;
+    }
+
+    setCodeSent(true);
+    setCooldown(60);
+    setMessage('Codice inviato. Inserisci qui il codice di 6 cifre ricevuto via email.');
+  }
+
+  async function verifyCode() {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedOtp = otp.replace(/\D/g, '');
+    if (!normalizedEmail || normalizedOtp.length !== 6 || verifying) return;
+
+    setVerifying(true);
+    setMessage(null);
+    setIsError(false);
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: normalizedOtp,
+      type: 'email',
+    });
+
+    setVerifying(false);
 
     if (error) {
       setIsError(true);
@@ -44,39 +70,58 @@ export default function LoginScreen() {
       return;
     }
 
-    setCooldown(60);
-    setMessage('Magic link inviato. Apri il nuovo messaggio ricevuto per accedere a FlowOS.');
-    if (Platform.OS !== 'web') {
-      Alert.alert('Controlla la tua email', 'Apri il link ricevuto per accedere a FlowOS.', [
-        { text: 'OK', onPress: () => router.replace('/') },
-      ]);
-    }
+    router.replace('/');
   }
 
-  const disabled = sending || cooldown > 0;
-  const buttonLabel = sending
+  const sendDisabled = sending || cooldown > 0;
+  const sendButtonLabel = sending
     ? 'Invio…'
     : cooldown > 0
       ? `Puoi reinviare tra ${cooldown}s`
-      : 'Invia link di accesso';
+      : codeSent
+        ? 'Invia un nuovo codice'
+        : 'Invia codice di accesso';
+
+  const verifyDisabled = verifying || otp.replace(/\D/g, '').length !== 6;
 
   return (
     <View style={styles.container}>
       <Text style={styles.eyebrow}>FLOWOS</Text>
       <Text style={styles.title}>Il tuo sistema operativo personale.</Text>
-      <Text style={styles.subtitle}>Inserisci l’email: riceverai un link di accesso senza password.</Text>
+      <Text style={styles.subtitle}>Inserisci l’email: riceverai un codice monouso di 6 cifre.</Text>
+
       <TextInput
         value={email}
         onChangeText={setEmail}
+        editable={!verifying}
         placeholder="nome@email.com"
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
         style={styles.input}
       />
-      <Pressable disabled={disabled} onPress={sendMagicLink} style={[styles.button, disabled && styles.buttonDisabled]}>
-        <Text style={styles.buttonText}>{buttonLabel}</Text>
+
+      <Pressable disabled={sendDisabled} onPress={sendCode} style={[styles.button, sendDisabled && styles.buttonDisabled]}>
+        <Text style={styles.buttonText}>{sendButtonLabel}</Text>
       </Pressable>
+
+      {codeSent ? (
+        <>
+          <TextInput
+            value={otp}
+            onChangeText={(value) => setOtp(value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="Codice a 6 cifre"
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            maxLength={6}
+            style={[styles.input, styles.otpInput]}
+          />
+          <Pressable disabled={verifyDisabled} onPress={verifyCode} style={[styles.button, verifyDisabled && styles.buttonDisabled]}>
+            <Text style={styles.buttonText}>{verifying ? 'Verifica…' : 'Accedi'}</Text>
+          </Pressable>
+        </>
+      ) : null}
+
       {message ? <Text style={[styles.message, isError && styles.error]}>{message}</Text> : null}
     </View>
   );
@@ -88,6 +133,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 36, lineHeight: 40, fontWeight: '800', color: '#111' },
   subtitle: { fontSize: 16, lineHeight: 23, color: '#5E5E5E', marginTop: 14, marginBottom: 28 },
   input: { backgroundColor: '#FFF', borderRadius: 16, padding: 17, fontSize: 16, borderWidth: 1, borderColor: '#E5E2D8' },
+  otpInput: { marginTop: 22, textAlign: 'center', letterSpacing: 8, fontSize: 24, fontWeight: '700' },
   button: { marginTop: 14, borderRadius: 16, padding: 17, backgroundColor: '#111', alignItems: 'center' },
   buttonDisabled: { opacity: 0.55 },
   buttonText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
