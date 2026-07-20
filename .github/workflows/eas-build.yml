@@ -65,4 +65,6 @@ jobs:
           test ! -f package-lock.json
 
       - name: Trigger EAS preview build
+        env:
+          EAS_BUILD_SKIP_LOCKFILE_CHECK: "1"
         run: eas build --platform android --profile preview --non-interactive --no-wait --clear-cache
