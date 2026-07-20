@@ -59,5 +59,10 @@ jobs:
           eas env:create preview --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" --visibility sensitive --force --non-interactive
           eas env:create preview --name EXPO_PUBLIC_AI_MODE --value "local-first" --visibility plaintext --force --non-interactive
 
+      - name: Remove transient lockfile before EAS upload
+        run: |
+          rm -f package-lock.json
+          test ! -f package-lock.json
+
       - name: Trigger EAS preview build
         run: eas build --platform android --profile preview --non-interactive --no-wait --clear-cache
