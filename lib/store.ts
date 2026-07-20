@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Commitment } from '@/types';
 import { flushOfflineQueue, loadCommitments, saveCommitment } from './commitmentsRepository';
+import { createAutomaticPlan } from './scheduler';
 
 const seed: Commitment[] = [
   { id: '1', title: 'Preparare il budget del programma', kind: 'task', status: 'active', durationMinutes: 40, energy: 'high', context: 'Lavoro', dueAt: new Date(Date.now() + 86400000).toISOString(), outcome: 'Versione revisionabile pronta', confidence: 0.82 },
@@ -18,6 +19,7 @@ type State = {
   hydrateFromCloud: () => Promise<void>;
   complete: (id: string) => Promise<void>;
   postpone: (id: string) => Promise<void>;
+  autoPlan: () => Promise<void>;
   startFocus: (id: string) => void;
   stopFocus: () => void;
 };
@@ -58,10 +60,16 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     await saveCommitment(updated);
   },
 
+  autoPlan: async () => {
+    const planned = createAutomaticPlan(get().commitments);
+    set({ commitments: planned });
+    await Promise.all(planned.map((commitment) => saveCommitment(commitment)));
+  },
+
   startFocus: (id) => set({ focusId: id }),
   stopFocus: () => set({ focusId: undefined }),
 }), {
-  name: 'flowos-store-v1',
+  name: 'flowos-store-v2',
   storage: createJSONStorage(() => AsyncStorage),
   partialize: (state) => ({ commitments: state.commitments, focusId: state.focusId }),
 }));
