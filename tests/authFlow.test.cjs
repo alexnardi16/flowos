@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { completeOtpLogin } = require('../.test-dist/authFlow.js');
+const { AUTHENTICATED_HOME, completeOtpLogin } = require('../.test-dist/authFlow.js');
 
 const session = {
   access_token: 'access',
@@ -9,6 +9,10 @@ const session = {
   token_type: 'bearer',
   user: { id: 'user-1' },
 };
+
+test('uses a concrete authenticated page rather than a route group', () => {
+  assert.equal(AUTHENTICATED_HOME, '/(tabs)/index');
+});
 
 test('commits the verified session before navigating to authenticated tabs', async () => {
   const calls = [];
@@ -20,7 +24,7 @@ test('commits the verified session before navigating to authenticated tabs', asy
 
   assert.deepEqual(calls, [
     ['session', session],
-    ['navigate', '/(tabs)'],
+    ['navigate', '/(tabs)/index'],
   ]);
 });
 
