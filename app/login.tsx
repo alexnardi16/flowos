@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
 
 export default function LoginScreen() {
-  const { setAuthenticatedSession } = useAuth();
+  const { session, loading, setAuthenticatedSession } = useAuth();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [codeSent, setCodeSent] = useState(false);
@@ -19,8 +19,21 @@ export default function LoginScreen() {
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
-  useEffect(() => { recordDiagnostic('login-screen-mounted', { path: Platform.OS === 'web' ? window.location.pathname : 'native' }); }, []);
-  useEffect(() => { if (cooldown <= 0) return; const timer = setTimeout(() => setCooldown((value) => Math.max(0, value - 1)), 1000); return () => clearTimeout(timer); }, [cooldown]);
+  useEffect(() => {
+    recordDiagnostic('login-screen-mounted', { path: Platform.OS === 'web' ? window.location.pathname : 'native' });
+  }, []);
+
+  useEffect(() => {
+    if (loading || !session) return;
+    recordDiagnostic('login-session-detected', { userId: session.user.id, provider: session.user.app_metadata?.provider ?? null });
+    router.replace('/today');
+  }, [loading, session]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   async function loginWithGoogle() {
     if (googleLoading) return;
@@ -46,7 +59,7 @@ export default function LoginScreen() {
     try {
       await completeOtpLogin({
         verify: async () => { const result = await supabase.auth.verifyOtp({ email: normalizedEmail, token: normalizedOtp, type: 'email' }); recordDiagnostic('otp-verify-returned', { hasSession: Boolean(result.data.session), hasUser: Boolean(result.data.user), error: result.error?.message ?? null }); return result; },
-        commitSession: (session) => { recordDiagnostic('otp-session-commit-started', { userId: session.user.id }); setAuthenticatedSession(session); recordDiagnostic('otp-session-committed'); },
+        commitSession: (nextSession) => { recordDiagnostic('otp-session-commit-started', { userId: nextSession.user.id }); setAuthenticatedSession(nextSession); recordDiagnostic('otp-session-committed'); },
         navigate: (href) => { recordDiagnostic('otp-navigation-started', { href }); router.replace(href); recordDiagnostic('otp-navigation-dispatched', { href }); },
       });
     } catch (error) { const errorMessage = error instanceof Error ? error.message : 'Accesso non riuscito.'; recordDiagnostic('otp-login-failed', error, 'error'); setVerifying(false); setIsError(true); setMessage(errorMessage); if (Platform.OS !== 'web') Alert.alert('Accesso non riuscito', errorMessage); }
