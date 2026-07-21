@@ -1,12 +1,16 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Chip, palette } from '@/components/ui';
 import { recordDiagnostic } from '@/lib/diagnostics';
 import { useFlowStore } from '@/lib/store';
 
 export default function Today() {
-  const items = useFlowStore((state) => state.commitments.filter((commitment) => commitment.status !== 'done'));
+  const commitments = useFlowStore((state) => state.commitments);
+  const items = useMemo(
+    () => commitments.filter((commitment) => commitment.status !== 'done'),
+    [commitments],
+  );
   const current = items.find((commitment) => commitment.kind === 'task');
   const event = items.find((commitment) => commitment.kind === 'event');
   const complete = useFlowStore((state) => state.complete);
