@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { completeOtpLogin } from '../lib/authFlow';
+import { recordDiagnostic } from '../lib/diagnostics';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
 
@@ -17,6 +18,10 @@ export default function LoginScreen() {
   const [isError, setIsError] = useState(false);
 
   useEffect(() => {
+    recordDiagnostic('login-screen-mounted', { path: Platform.OS === 'web' ? window.location.pathname : 'native' });
+  }, []);
+
+  useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setTimeout(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
     return () => clearTimeout(timer);
@@ -26,13 +31,16 @@ export default function LoginScreen() {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || sending || cooldown > 0) return;
     setSending(true); setMessage(null); setIsError(false);
+    recordDiagnostic('otp-send-started');
     const { error } = await supabase.auth.signInWithOtp({ email: normalizedEmail, options: { shouldCreateUser: true } });
     setSending(false);
     if (error) {
+      recordDiagnostic('otp-send-failed', error, 'error');
       setIsError(true); setMessage(error.message);
       if (Platform.OS !== 'web') Alert.alert('Invio non riuscito', error.message);
       return;
     }
+    recordDiagnostic('otp-send-succeeded');
     setCodeSent(true); setCooldown(60);
     setMessage('Codice inviato. Inserisci qui il codice di 8 cifre ricevuto via email.');
   }
@@ -42,14 +50,32 @@ export default function LoginScreen() {
     const normalizedOtp = otp.replace(/\D/g, '');
     if (!normalizedEmail || normalizedOtp.length !== 8 || verifying) return;
     setVerifying(true); setMessage(null); setIsError(false);
+    recordDiagnostic('otp-verify-started');
     try {
       await completeOtpLogin({
-        verify: () => supabase.auth.verifyOtp({ email: normalizedEmail, token: normalizedOtp, type: 'email' }),
-        commitSession: setAuthenticatedSession,
-        navigate: (href) => router.replace(href),
+        verify: async () => {
+          const result = await supabase.auth.verifyOtp({ email: normalizedEmail, token: normalizedOtp, type: 'email' });
+          recordDiagnostic('otp-verify-returned', {
+            hasSession: Boolean(result.data.session),
+            hasUser: Boolean(result.data.user),
+            error: result.error?.message ?? null,
+          });
+          return result;
+        },
+        commitSession: (session) => {
+          recordDiagnostic('otp-session-commit-started', { userId: session.user.id });
+          setAuthenticatedSession(session);
+          recordDiagnostic('otp-session-committed');
+        },
+        navigate: (href) => {
+          recordDiagnostic('otp-navigation-started', { href });
+          router.replace(href);
+          recordDiagnostic('otp-navigation-dispatched', { href });
+        },
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Accesso non riuscito.';
+      recordDiagnostic('otp-login-failed', error, 'error');
       setVerifying(false); setIsError(true); setMessage(errorMessage);
       if (Platform.OS !== 'web') Alert.alert('Accesso non riuscito', errorMessage);
     }
