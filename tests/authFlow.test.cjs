@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { AUTHENTICATED_HOME, completeOtpLogin } = require('../.test-dist/authFlow.js');
 
 const session = {
@@ -53,4 +55,11 @@ test('does not navigate when verification succeeds without a session', async () 
     /sessione valida/,
   );
   assert.equal(navigated, false);
+});
+
+test('authenticated home does not create a fresh array inside a Zustand selector', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../app/(tabs)/today.tsx'), 'utf8');
+  assert.doesNotMatch(source, /useFlowStore\s*\(\s*\([^)]*\)\s*=>[^\n;]*\.(filter|map|sort|slice)\s*\(/);
+  assert.match(source, /const commitments = useFlowStore\(\(state\) => state\.commitments\)/);
+  assert.match(source, /useMemo\(/);
 });
