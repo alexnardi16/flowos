@@ -27,18 +27,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     let active = true;
+    let settled = false;
+    const finishInitialization = () => {
+      if (!active || settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      setLoading(false);
+    };
+
     const timeout = setTimeout(() => {
-      if (active) {
-        recordDiagnostic('auth-session-init-timeout', undefined, 'error');
-        setLoading(false);
-      }
+      if (!active || settled) return;
+      recordDiagnostic('auth-session-init-timeout', undefined, 'error');
+      finishInitialization();
     }, SESSION_INIT_TIMEOUT_MS);
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
       if (!active) return;
       recordDiagnostic('auth-state-change', { event, hasSession: Boolean(next), userId: next?.user.id ?? null });
       setSession(next);
-      setLoading(false);
+      finishInitialization();
     });
 
     recordDiagnostic('auth-get-session-started');
@@ -52,9 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch((error: unknown) => {
         recordDiagnostic('auth-get-session-rejected', error, 'error');
       })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      .finally(finishInitialization);
 
     return () => {
       active = false;
