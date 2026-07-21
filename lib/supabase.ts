@@ -13,7 +13,9 @@ export const supabase = createClient(url ?? 'https://placeholder.supabase.co', k
     ...(Platform.OS !== 'web' ? { storage: AsyncStorage, lock: processLock } : {}),
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // Google OAuth returns the authenticated session in the browser URL.
+    // It must be detected on web or the user is sent back to the login screen.
+    detectSessionInUrl: Platform.OS === 'web',
   },
 });
 
