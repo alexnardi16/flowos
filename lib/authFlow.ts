@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 
-export const AUTHENTICATED_HOME = '/(tabs)/index' as const;
+export const AUTHENTICATED_HOME = '/today' as const;
 
 export type OtpVerificationResult = {
   data: { session: Session | null };
