@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Chip, palette } from '@/components/ui';
+import { recordDiagnostic } from '@/lib/diagnostics';
 import { useFlowStore } from '@/lib/store';
 
 export default function Today() {
@@ -10,6 +12,10 @@ export default function Today() {
   const complete = useFlowStore((state) => state.complete);
   const postpone = useFlowStore((state) => state.postpone);
   const start = useFlowStore((state) => state.startFocus);
+
+  useEffect(() => {
+    recordDiagnostic('authenticated-home-mounted', { itemCount: items.length });
+  }, [items.length]);
 
   return (
     <SafeAreaView style={s.safe}>
@@ -29,13 +35,7 @@ export default function Today() {
             </Text>
             {current.outcome ? <Text style={s.outcome}>Risultato: {current.outcome}</Text> : null}
             <View style={s.actions}>
-              <Button
-                label="Inizia"
-                onPress={() => {
-                  start(current.id);
-                  router.push('/focus');
-                }}
-              />
+              <Button label="Inizia" onPress={() => { start(current.id); router.push('/focus'); }} />
               <Button secondary label="Rimanda" onPress={() => void postpone(current.id)} />
               <Button secondary label="Fatto" onPress={() => void complete(current.id)} />
             </View>
@@ -51,18 +51,12 @@ export default function Today() {
         <Text style={s.section}>Prossimo evento</Text>
         {event ? (
           <Card>
-            <Text style={s.eventTime}>
-              {event.scheduledAt
-                ? new Date(event.scheduledAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-                : 'Da pianificare'}
-            </Text>
+            <Text style={s.eventTime}>{event.scheduledAt ? new Date(event.scheduledAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'Da pianificare'}</Text>
             <Text style={s.event}>{event.title}</Text>
             <Text style={s.meta}>{event.durationMinutes} min · impegno fisso</Text>
           </Card>
         ) : (
-          <Card>
-            <Text style={s.meta}>Nessun evento programmato.</Text>
-          </Card>
+          <Card><Text style={s.meta}>Nessun evento programmato.</Text></Card>
         )}
 
         <Text style={s.section}>Capacità di oggi</Text>
