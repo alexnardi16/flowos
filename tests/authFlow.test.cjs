@@ -10,11 +10,12 @@ const session = {
   user: { id: 'user-1' },
 };
 
-test('uses a concrete authenticated page rather than a route group', () => {
-  assert.equal(AUTHENTICATED_HOME, '/(tabs)/index');
+test('uses a public authenticated URL rather than an Expo Router group', () => {
+  assert.equal(AUTHENTICATED_HOME, '/today');
+  assert.equal(AUTHENTICATED_HOME.includes('('), false);
 });
 
-test('commits the verified session before navigating to authenticated tabs', async () => {
+test('commits the verified session before navigating to authenticated home', async () => {
   const calls = [];
   await completeOtpLogin({
     verify: async () => ({ data: { session }, error: null }),
@@ -24,7 +25,7 @@ test('commits the verified session before navigating to authenticated tabs', asy
 
   assert.deepEqual(calls, [
     ['session', session],
-    ['navigate', '/(tabs)/index'],
+    ['navigate', '/today'],
   ]);
 });
 
