@@ -8,5 +8,5 @@ export default function Index() {
     return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator /></View>;
   }
   if (configured && !session) return <Redirect href="/login" />;
-  return <Redirect href="/(tabs)" />;
+  return <Redirect href="/today" />;
 }
