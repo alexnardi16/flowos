@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test:auth": "rm -rf .test-dist && tsc -p tests/tsconfig.auth.json && node --test tests/authFlow.test.cjs",
-    "test": "npm run test:auth",
+    "test:selectors": "node --test tests/zustandSelectors.test.cjs",
+    "test": "npm run test:auth && npm run test:selectors",
     "validate:web": "npm run typecheck && npm test && npx expo export --platform web",
     "eas:preview": "eas update --channel preview --message \"FlowOS preview\" --environment preview",
     "eas:build:preview": "npx eas-cli build --profile preview --platform android"
