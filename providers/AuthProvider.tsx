@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { recordDiagnostic } from '../lib/diagnostics';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 type AuthContextValue = {
@@ -19,6 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    recordDiagnostic('auth-provider-mounted', { configured: isSupabaseConfigured });
     if (!isSupabaseConfigured) {
       setLoading(false);
       return;
@@ -26,23 +28,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let active = true;
     const timeout = setTimeout(() => {
-      if (active) setLoading(false);
+      if (active) {
+        recordDiagnostic('auth-session-init-timeout', undefined, 'error');
+        setLoading(false);
+      }
     }, SESSION_INIT_TIMEOUT_MS);
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
       if (!active) return;
+      recordDiagnostic('auth-state-change', { event, hasSession: Boolean(next), userId: next?.user.id ?? null });
       setSession(next);
       setLoading(false);
     });
 
+    recordDiagnostic('auth-get-session-started');
     void supabase.auth.getSession()
       .then(({ data, error }) => {
         if (!active) return;
-        if (error) console.error('Supabase session initialization failed:', error.message);
+        if (error) recordDiagnostic('auth-get-session-failed', error, 'error');
+        else recordDiagnostic('auth-get-session-succeeded', { hasSession: Boolean(data.session), userId: data.session?.user.id ?? null });
         setSession(data.session ?? null);
       })
       .catch((error: unknown) => {
-        console.error('Supabase session initialization failed:', error);
+        recordDiagnostic('auth-get-session-rejected', error, 'error');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -52,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false;
       clearTimeout(timeout);
       listener.subscription.unsubscribe();
+      recordDiagnostic('auth-provider-unmounted');
     };
   }, []);
 
@@ -60,10 +69,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     configured: isSupabaseConfigured,
     setAuthenticatedSession: (next) => {
+      recordDiagnostic('auth-session-set-directly', { userId: next.user.id });
       setSession(next);
       setLoading(false);
     },
-    signOut: async () => { await supabase.auth.signOut(); },
+    signOut: async () => {
+      recordDiagnostic('auth-sign-out-started');
+      await supabase.auth.signOut();
+      recordDiagnostic('auth-sign-out-finished');
+    },
   }), [session, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
