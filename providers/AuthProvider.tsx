@@ -2,7 +2,8 @@ import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { beginDiagnosticSession, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
-import { connectGoogleFromSession, getGoogleWorkspaceStatus } from '../lib/googleWorkspace';
+import { connectGoogleFromSession, getGoogleWorkspaceStatus, syncGoogleWorkspace } from '../lib/googleWorkspace';
+import { useFlowStore } from '../lib/store';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 type AuthContextValue = {
@@ -19,6 +20,7 @@ const SESSION_INIT_TIMEOUT_MS = 5000;
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const hydrateFromCloud = useFlowStore((state) => state.hydrateFromCloud);
 
   useEffect(() => {
     recordDiagnostic('auth-provider-mounted', { configured: isSupabaseConfigured });
@@ -57,23 +59,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!session?.provider_token) return;
+    const marker = `flowos-auto-sync-${session.user.id}-${session.access_token.slice(-12)}`;
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(marker)) {
+      recordDiagnostic('google-auto-sync-skipped', { reason: 'already-started-for-session' });
+      return;
+    }
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(marker, '1');
     let active = true;
     void (async () => {
       try {
+        recordDiagnostic('google-auto-sync-started', { userId: session.user.id });
         const status = await getGoogleWorkspaceStatus();
         const alreadyConnected = Boolean(status.connection && status.connection.last_sync_status !== 'disconnected');
-        if (alreadyConnected) {
+        if (!alreadyConnected) {
+          await connectGoogleFromSession(session, true);
+          recordDiagnostic('google-workspace-connected', { userId: session.user.id });
+        } else {
           recordDiagnostic('google-workspace-connect-skipped', { userId: session.user.id, reason: 'already-connected' });
-          return;
         }
-        await connectGoogleFromSession(session);
-        if (active) recordDiagnostic('google-workspace-connected', { userId: session.user.id });
+        await syncGoogleWorkspace((progress) => recordDiagnostic('google-auto-sync-progress', progress));
+        if (active) await hydrateFromCloud();
+        recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
       } catch (error) {
-        if (active) recordDiagnostic('google-workspace-connect-failed', error, 'error');
+        if (active) recordDiagnostic('google-auto-sync-failed', error, 'error');
       }
     })();
     return () => { active = false; };
-  }, [session?.provider_token, session?.user.id]);
+  }, [session?.provider_token, session?.user.id, session?.access_token, hydrateFromCloud]);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,
