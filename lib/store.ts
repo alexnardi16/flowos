@@ -5,12 +5,6 @@ import type { Commitment } from '@/types';
 import { flushOfflineQueue, loadCommitments, saveCommitment } from './commitmentsRepository';
 import { createAutomaticPlan } from './scheduler';
 
-const seed: Commitment[] = [
-  { id: '1', title: 'Preparare il budget del programma', kind: 'task', status: 'active', durationMinutes: 40, energy: 'high', context: 'Lavoro', dueAt: new Date(Date.now() + 86400000).toISOString(), outcome: 'Versione revisionabile pronta', confidence: 0.82 },
-  { id: '2', title: 'Riunione programma', kind: 'event', status: 'scheduled', durationMinutes: 60, energy: 'medium', context: 'Lavoro', scheduledAt: new Date(Date.now() + 2 * 3600000).toISOString(), fixed: true, confidence: 1 },
-  { id: '3', title: 'Chiamare il pediatra', kind: 'task', status: 'scheduled', durationMinutes: 10, energy: 'low', context: 'Telefono', dueAt: new Date(Date.now() + 2 * 86400000).toISOString(), confidence: 0.94 },
-];
-
 type State = {
   commitments: Commitment[];
   focusId?: string;
@@ -25,7 +19,7 @@ type State = {
 };
 
 export const useFlowStore = create<State>()(persist((set, get) => ({
-  commitments: seed,
+  commitments: [],
   syncing: false,
 
   addCommitment: async (commitment) => {
@@ -38,7 +32,7 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     try {
       await flushOfflineQueue();
       const remote = await loadCommitments();
-      if (remote.length) set({ commitments: remote });
+      set({ commitments: remote });
     } finally {
       set({ syncing: false });
     }
@@ -69,7 +63,7 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
   startFocus: (id) => set({ focusId: id }),
   stopFocus: () => set({ focusId: undefined }),
 }), {
-  name: 'flowos-store-v2',
+  name: 'flowos-store-v3',
   storage: createJSONStorage(() => AsyncStorage),
   partialize: (state) => ({ commitments: state.commitments, focusId: state.focusId }),
 }));
