@@ -1,14 +1,14 @@
-type DiagnosticLevel = 'info' | 'error';
+export type DiagnosticLevel = 'debug' | 'info' | 'warn' | 'error';
 
-type DiagnosticEntry = {
+export type DiagnosticEntry = {
   at: string;
   level: DiagnosticLevel;
   event: string;
   details?: string;
 };
 
-const STORAGE_KEY = 'flowos-diagnostics-v1';
-const MAX_ENTRIES = 50;
+const STORAGE_KEY = 'flowos-diagnostics-v2';
+const MAX_ENTRIES = 200;
 
 function serializeDetails(details: unknown): string | undefined {
   if (details === undefined) return undefined;
@@ -30,6 +30,8 @@ export function recordDiagnostic(event: string, details?: unknown, level: Diagno
   };
 
   if (level === 'error') console.error(`[FlowOS] ${event}`, details ?? '');
+  else if (level === 'warn') console.warn(`[FlowOS] ${event}`, details ?? '');
+  else if (level === 'debug') console.debug(`[FlowOS] ${event}`, details ?? '');
   else console.info(`[FlowOS] ${event}`, details ?? '');
 
   if (typeof window === 'undefined') return;
@@ -48,6 +50,12 @@ export function readDiagnostics(): DiagnosticEntry[] {
   } catch {
     return [];
   }
+}
+
+export function clearDiagnostics() {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.removeItem(STORAGE_KEY); }
+  catch (error) { console.error('[FlowOS] diagnostics-clear-failed', error); }
 }
 
 export function formatDiagnostics(): string {
