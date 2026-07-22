@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { recordDiagnostic } from '../lib/diagnostics';
+import { beginDiagnosticSession, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
 import { connectGoogleFromSession, getGoogleWorkspaceStatus } from '../lib/googleWorkspace';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, SESSION_INIT_TIMEOUT_MS);
     const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
       if (!active) return;
+      if (next?.user.id) beginDiagnosticSession(next.user.id);
       recordDiagnostic('auth-state-change', { event, hasSession: Boolean(next), userId: next?.user.id ?? null });
       setSession(next);
       finishInitialization();
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     recordDiagnostic('auth-get-session-started');
     void supabase.auth.getSession().then(({ data, error }) => {
       if (!active) return;
+      if (data.session?.user.id) beginDiagnosticSession(data.session.user.id);
       if (error) recordDiagnostic('auth-get-session-failed', error, 'error');
       else recordDiagnostic('auth-get-session-succeeded', { hasSession: Boolean(data.session), userId: data.session?.user.id ?? null });
       setSession(data.session ?? null);
@@ -77,8 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     loading,
     configured: isSupabaseConfigured,
-    setAuthenticatedSession: (next) => { recordDiagnostic('auth-session-set-directly', { userId: next.user.id }); setSession(next); setLoading(false); },
-    signOut: async () => { recordDiagnostic('auth-sign-out-started'); await supabase.auth.signOut(); recordDiagnostic('auth-sign-out-finished'); },
+    setAuthenticatedSession: (next) => {
+      beginDiagnosticSession(next.user.id);
+      recordDiagnostic('auth-session-set-directly', { userId: next.user.id });
+      setSession(next);
+      setLoading(false);
+    },
+    signOut: async () => {
+      recordDiagnostic('auth-sign-out-started');
+      await supabase.auth.signOut();
+      endDiagnosticSession();
+    },
   }), [session, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
