@@ -12,6 +12,14 @@ export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/tasks',
 ].join(' ');
 
+export type GoogleSyncRange = {
+  startYear: number;
+  endYear: number;
+  labelStart: string;
+  labelEnd: string;
+  years: number[];
+};
+
 export type GoogleCalendar = {
   id: string;
   google_calendar_id: string;
@@ -42,12 +50,15 @@ export type GoogleWorkspaceStatus = {
   };
   calendars: GoogleCalendar[];
   taskLists: GoogleTaskList[];
+  range: GoogleSyncRange;
 };
+
+export type SyncProgress = { percent: number; stage: string };
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/google-workspace`;
-const REQUEST_TIMEOUT_MS = 90_000;
+const REQUEST_TIMEOUT_MS = 60_000;
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -89,7 +100,7 @@ async function invoke(body: Record<string, unknown>, retries = 1) {
           Authorization: `Bearer ${accessToken}`,
           apikey: SUPABASE_KEY,
           'Content-Type': 'application/json',
-          'x-client-info': 'flowos-google-sync/1.0',
+          'x-client-info': 'flowos-google-sync/2.0',
         },
         body: JSON.stringify(body),
       });
@@ -97,13 +108,7 @@ async function invoke(body: Record<string, unknown>, retries = 1) {
       let payload: any = null;
       try { payload = raw ? JSON.parse(raw) : null; }
       catch { payload = raw ? { error: raw } : null; }
-
-      recordDiagnostic('google-function-response', {
-        action: body.action,
-        status: response.status,
-        ok: response.ok,
-      });
-
+      recordDiagnostic('google-function-response', { action: body.action, status: response.status, ok: response.ok });
       if (!response.ok || payload?.error) {
         throw new Error(String(payload?.error || `Google Workspace ha risposto con stato ${response.status}.`));
       }
@@ -112,16 +117,15 @@ async function invoke(body: Record<string, unknown>, retries = 1) {
       lastError = error;
       const namedError = error as { name?: string };
       const message = namedError?.name === 'AbortError'
-        ? 'La sincronizzazione ha superato il tempo massimo consentito.'
+        ? 'La richiesta di sincronizzazione ha superato il tempo massimo consentito.'
         : errorMessage(error);
       recordDiagnostic('google-function-request-failed', { action: body.action, attempt: attempt + 1, message }, 'error');
       if (attempt >= retries || !/failed to fetch|network|send a request|timeout|tempo massimo|abort/i.test(message)) break;
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, 900));
     } finally {
       clearTimeout(timeout);
     }
   }
-
   throw lastError instanceof Error ? lastError : new Error(errorMessage(lastError));
 }
 
@@ -160,57 +164,76 @@ export async function getGoogleWorkspaceStatus(): Promise<GoogleWorkspaceStatus>
   return invoke({ action: 'status' }, 0);
 }
 
-export async function syncGoogleWorkspace() {
+export async function syncGoogleWorkspace(onProgress?: (progress: SyncProgress) => void) {
   recordDiagnostic('google-sync-started');
+  const totals = { pushed: 0, events: 0, tasks: 0 };
   try {
-    try {
-      const result = await invoke({ action: 'sync' });
-      recordDiagnostic('google-sync-succeeded', result);
-      return result;
-    } catch (error) {
-      const message = errorMessage(error);
-      if (!/not connected|authorization expired|reconnect/i.test(message)) throw error;
-      const { data, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      if (!data.session?.provider_token) {
-        throw new Error('La sessione Google non contiene più il token necessario. Esci e accedi nuovamente con Google.');
+    const plan = await invoke({ action: 'sync-start' });
+    const calendars = plan.calendars ?? [];
+    const taskLists = plan.taskLists ?? [];
+    const years: number[] = plan.range?.years ?? [];
+    const baseUnits = 2 + calendars.length * years.length + taskLists.length;
+    let completed = 0;
+    const report = (stage: string, forced?: number) => {
+      const percent = forced ?? Math.min(98, Math.max(1, Math.round((completed / Math.max(1, baseUnits)) * 94) + 3));
+      onProgress?.({ percent, stage });
+      recordDiagnostic('google-sync-progress', { percent, stage });
+    };
+
+    report('Preparazione della sincronizzazione', 3);
+    const pushed = await invoke({ action: 'sync-push' });
+    totals.pushed = pushed.pushed ?? 0;
+    completed += 1;
+    report('Modifiche FlowOS inviate a Google');
+
+    for (const calendar of calendars) {
+      for (const year of years) {
+        let pageToken: string | null = null;
+        do {
+          const page = await invoke({
+            action: 'sync-calendar-page',
+            calendarId: calendar.google_calendar_id,
+            year,
+            pageToken,
+          });
+          totals.events += page.imported ?? 0;
+          pageToken = page.nextPageToken ?? null;
+          report(`Calendario ${calendar.summary}: anno ${year}`);
+        } while (pageToken);
+        completed += 1;
+        report(`Calendario ${calendar.summary}: anno ${year} completato`);
       }
-      recordDiagnostic('google-sync-reconnecting');
-      await connectGoogleFromSession(data.session, true);
-      return await invoke({ action: 'sync' });
     }
+
+    for (const list of taskLists) {
+      let pageToken: string | null = null;
+      do {
+        const page = await invoke({ action: 'sync-task-page', listId: list.google_task_list_id, pageToken });
+        totals.tasks += page.imported ?? 0;
+        pageToken = page.nextPageToken ?? null;
+        report(`Google Tasks: ${list.title}`);
+      } while (pageToken);
+      completed += 1;
+      report(`Google Tasks: ${list.title} completata`);
+    }
+
+    onProgress?.({ percent: 97, stage: 'Finalizzazione della sincronizzazione' });
+    await invoke({ action: 'sync-finish' });
+    onProgress?.({ percent: 100, stage: 'Sincronizzazione completata' });
+    recordDiagnostic('google-sync-succeeded', totals);
+    return { ...totals, range: plan.range };
   } catch (error) {
-    const namedError = error as { name?: string };
-    const message = namedError?.name === 'AbortError'
-      ? 'La sincronizzazione ha superato il tempo massimo consentito.'
-      : errorMessage(error);
-    recordDiagnostic('google-sync-mark-error', { message }, 'error');
+    const message = errorMessage(error);
+    try { await invoke({ action: 'sync-fail', message }, 0); }
+    catch (markError) { recordDiagnostic('google-sync-server-mark-error-failed', markError, 'error'); }
     await updateSyncFailure(message);
     recordDiagnostic('google-sync-failed', { message }, 'error');
     throw new Error(message);
   }
 }
 
-export async function disconnectGoogleWorkspace() {
-  return invoke({ action: 'disconnect' });
-}
-
-export async function setDefaultCalendar(id: string) {
-  const { error } = await supabase.rpc('set_default_google_calendar', { p_calendar_id: id });
-  if (error) throw error;
-}
-
-export async function setDefaultTaskList(id: string) {
-  const { error } = await supabase.rpc('set_default_google_task_list', { p_task_list_id: id });
-  if (error) throw error;
-}
-
-export async function setCalendarSelected(id: string, selected: boolean) {
-  const { error } = await supabase.from('google_calendars').update({ selected }).eq('id', id);
-  if (error) throw error;
-}
-
-export async function setTaskListSelected(id: string, selected: boolean) {
-  const { error } = await supabase.from('google_task_lists').update({ selected }).eq('id', id);
-  if (error) throw error;
-}
+export async function disconnectGoogleWorkspace() { return invoke({ action: 'disconnect' }); }
+export async function setDefaultCalendar(id: string) { const { error } = await supabase.rpc('set_default_google_calendar', { p_calendar_id: id }); if (error) throw error; }
+export async function setDefaultTaskList(id: string) { const { error } = await supabase.rpc('set_default_google_task_list', { p_task_list_id: id }); if (error) throw error; }
+export async function setCalendarSelected(id: string, selected: boolean) { const { error } = await supabase.from('google_calendars').update({ selected }).eq('id', id); if (error) throw error; }
+export async function setTaskListSelected(id: string, selected: boolean) { const { error } = await supabase.from('google_task_lists').update({ selected }).eq('id', id); if (error) throw error; }
