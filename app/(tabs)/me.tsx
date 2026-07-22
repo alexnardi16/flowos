@@ -35,6 +35,11 @@ function progressStage(progress: number) {
   return 'Sincronizzazione completata';
 }
 
+function logLine(entry: DiagnosticEntry) {
+  const time = new Date(entry.at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return `${time} [${entry.level}] ${entry.event}${entry.details ? ` — ${entry.details}` : ''}`;
+}
+
 export default function Me() {
   const [assisted, setAssisted] = useState(true);
   const [google, setGoogle] = useState<GoogleWorkspaceStatus | null>(null);
@@ -62,16 +67,36 @@ export default function Me() {
     setLogs(readDiagnostics().slice(-20).reverse());
   }
 
+  async function copyLogs() {
+    const text = readDiagnostics().map(logLine).join('\n');
+    if (!text) {
+      Alert.alert('Logger', 'Non ci sono log da copiare.');
+      return;
+    }
+    try {
+      if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) throw new Error('Clipboard non disponibile');
+      await navigator.clipboard.writeText(text);
+      recordDiagnostic('logs-copied', { entries: readDiagnostics().length });
+      refreshLogs();
+      Alert.alert('Logger', 'Log copiato negli appunti.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Copia del log non riuscita.';
+      recordDiagnostic('logs-copy-failed', { message }, 'error');
+      Alert.alert('Logger', 'Non è stato possibile copiare automaticamente il log.');
+    }
+  }
+
   async function loadGoogle(repairStale = true) {
     try {
-      setGoogleError(null);
       const status = await getGoogleWorkspaceStatus();
       if (repairStale && !googleBusy && status.connection?.last_sync_status === 'syncing') {
         await recoverStaleGoogleSyncState();
         const repaired = await getGoogleWorkspaceStatus();
         setGoogle(repaired);
+        setGoogleError(repaired.connection?.last_sync_status === 'error' ? repaired.connection.last_sync_error ?? 'La sincronizzazione Google non è riuscita.' : null);
       } else {
         setGoogle(status);
+        setGoogleError(status.connection?.last_sync_status === 'error' ? status.connection.last_sync_error ?? 'La sincronizzazione Google non è riuscita.' : null);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Impossibile leggere lo stato Google.';
@@ -168,6 +193,7 @@ export default function Me() {
           <Text style={styles.item}>{google.connection.google_email ?? 'Account Google collegato'}</Text>
           <Text style={styles.meta}>Stato: {google.connection.last_sync_status} · Ultima sincronizzazione: {formatSyncDate(google.connection.last_sync_at)}</Text>
           {google.connection.last_sync_error ? <Text style={styles.error}>{google.connection.last_sync_error}</Text> : null}
+          {googleError && googleError !== google.connection.last_sync_error ? <Text style={styles.error}>{googleError}</Text> : null}
           {syncProgress > 0 ? <View style={styles.progressBlock}>
             <View style={styles.progressHeader}><Text style={styles.progressStage}>{progressStage(syncProgress)}</Text><Text style={styles.progressPercent}>{syncProgress}%</Text></View>
             <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${syncProgress}%` }]} /></View>
@@ -175,9 +201,9 @@ export default function Me() {
           <View style={styles.actions}><Button label={googleBusy ? 'Sincronizzazione…' : 'Sincronizza ora'} onPress={() => { void runSync(); }}/><Button secondary label="Scollega Google" onPress={() => { void run(disconnectGoogleWorkspace); }}/></View>
         </> : <>
           <Text style={styles.meta}>Collega Google per sincronizzare Calendar e Tasks in entrambe le direzioni.</Text>
+          {googleError ? <Text style={styles.error}>{googleError}</Text> : null}
           <View style={styles.actions}><Button label="Collega Google" onPress={() => { void run(signInWithGoogle); }}/></View>
         </>}
-        {googleError ? <Text style={styles.error}>{googleError}</Text> : null}
       </Card>
 
       {google?.connection && google.connection.last_sync_status !== 'disconnected' ? <>
@@ -210,22 +236,6 @@ export default function Me() {
       </> : null}
 
       <Card>
-        <Text style={styles.label}>Logger</Text>
-        <Text style={styles.meta}>Registra login, richieste di sincronizzazione, risposte server, retry ed errori tecnici sul dispositivo.</Text>
-        <View style={styles.actions}>
-          <Button secondary label={showLogs ? 'Nascondi log' : 'Mostra log'} onPress={() => { refreshLogs(); setShowLogs((value) => !value); }}/>
-          <Button secondary label="Cancella log" onPress={() => { clearDiagnostics(); refreshLogs(); }}/>
-        </View>
-        {showLogs ? <View style={styles.logBox}>{logs.length ? logs.map((entry, index) => <Text key={`${entry.at}-${index}`} selectable style={[styles.logLine, entry.level === 'error' && styles.logError]}>{new Date(entry.at).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit', second:'2-digit' })} [{entry.level}] {entry.event}{entry.details ? ` — ${entry.details}` : ''}</Text>) : <Text style={styles.meta}>Nessun evento registrato.</Text>}</View> : null}
-      </Card>
-
-      <Card>
-        <Text style={styles.label}>Account FlowOS</Text>
-        <Text style={styles.meta}>Il logout termina la sessione FlowOS. Non è la stessa cosa di “Scollega Google”.</Text>
-        <View style={styles.actions}><Pressable onPress={() => { void logout(); }} style={styles.logoutButton}><Text style={styles.logoutText}>Esci da FlowOS</Text></Pressable></View>
-      </Card>
-
-      <Card>
         <Text style={styles.label}>Modalità di controllo</Text>
         <View style={styles.row}><View style={{ flex: 1 }}><Text style={styles.item}>Controllo assistito</Text><Text style={styles.meta}>L’IA propone. Tu approvi le modifiche importanti.</Text></View><Switch value={assisted} onValueChange={setAssisted} /></View>
       </Card>
@@ -234,10 +244,27 @@ export default function Me() {
       <View style={styles.metrics}><Card style={styles.metricCard}><Text style={styles.metric}>{insights.done}</Text><Text style={styles.metricLabel}>Completati</Text></Card><Card style={styles.metricCard}><Text style={styles.metric}>{insights.totalMinutes}</Text><Text style={styles.metricLabel}>Minuti conclusi</Text></Card></View>
       <Card><Text style={styles.label}>Il sistema sta imparando</Text><Text style={styles.score}>{insights.averageConfidence}%</Text><Text style={styles.meta}>Affidabilità media delle stime di durata, energia e classificazione.</Text></Card>
       <Card><Text style={styles.label}>Carico attuale</Text><Text style={styles.item}>{insights.active} Commitment aperti</Text><Text style={styles.meta}>FlowOS usa questo dato per evitare giornate sovraccariche e distribuire il lavoro nei prossimi giorni.</Text></Card>
+
+      <Card>
+        <Text style={styles.label}>Logger</Text>
+        <Text style={styles.meta}>Registra login, richieste di sincronizzazione, risposte server, retry ed errori tecnici sul dispositivo.</Text>
+        <View style={styles.actions}>
+          <Button secondary label={showLogs ? 'Nascondi log' : 'Mostra log'} onPress={() => { refreshLogs(); setShowLogs((value) => !value); }}/>
+          <Button secondary label="Copia log" onPress={() => { void copyLogs(); }}/>
+          <Button secondary label="Cancella log" onPress={() => { clearDiagnostics(); refreshLogs(); }}/>
+        </View>
+        {showLogs ? <View style={styles.logBox}>{logs.length ? logs.map((entry, index) => <Text key={`${entry.at}-${index}`} selectable style={[styles.logLine, entry.level === 'error' && styles.logError]}>{logLine(entry)}</Text>) : <Text style={styles.meta}>Nessun evento registrato.</Text>}</View> : null}
+      </Card>
+
+      <Card>
+        <Text style={styles.label}>Account FlowOS</Text>
+        <Text style={styles.meta}>Il logout termina la sessione FlowOS. Non è la stessa cosa di “Scollega Google”.</Text>
+        <View style={styles.actions}><Pressable onPress={() => { void logout(); }} style={styles.logoutButton}><Text style={styles.logoutText}>Esci da FlowOS</Text></Pressable></View>
+      </Card>
     </ScrollView>
   </SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
-  safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:16},title:{fontSize:31,fontWeight:'900',color:palette.ink,marginTop:14},label:{fontSize:13,fontWeight:'800',color:palette.primary,textTransform:'uppercase'},row:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:8},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:4},error:{fontSize:13,lineHeight:18,color:'#A12626',marginTop:8},score:{fontSize:42,fontWeight:'900',color:palette.ink,marginTop:10},metrics:{flexDirection:'row',gap:12},metricCard:{flex:1},metric:{fontSize:30,fontWeight:'900',color:palette.ink},metricLabel:{fontSize:12,color:palette.muted,marginTop:4},actions:{flexDirection:'row',gap:10,marginTop:16,flexWrap:'wrap'},resourceRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:12,borderBottomWidth:1,borderBottomColor:'#ECEEF4'},resourceText:{flex:1},resourceTitle:{fontSize:15,fontWeight:'800',color:palette.ink},defaultButton:{maxWidth:124,backgroundColor:palette.soft,borderRadius:12,paddingHorizontal:10,paddingVertical:8},defaultText:{fontSize:11,fontWeight:'800',textAlign:'center',color:palette.primary},disabled:{opacity:.45},progressBlock:{marginTop:16},progressHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},progressStage:{fontSize:13,fontWeight:'700',color:palette.ink,flex:1},progressPercent:{fontSize:14,fontWeight:'900',color:palette.primary},progressTrack:{height:10,borderRadius:99,backgroundColor:'#E4E2EC',overflow:'hidden',marginTop:8},progressFill:{height:'100%',borderRadius:99,backgroundColor:palette.primary},logoutButton:{borderRadius:16,paddingVertical:13,paddingHorizontal:16,backgroundColor:'#FDECEC'},logoutText:{color:'#A12626',fontWeight:'800',fontSize:15},logBox:{marginTop:14,padding:12,borderRadius:14,backgroundColor:'#111827',gap:6},logLine:{fontSize:10,lineHeight:14,color:'#D1D5DB',fontFamily:'monospace'},logError:{color:'#FCA5A5'}
+  safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:16},title:{fontSize:31,fontWeight:'900',color:palette.ink,marginTop:14},label:{fontSize:13,fontWeight:'800',color:palette.primary,textTransform:'uppercase'},row:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:8},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:4},error:{fontSize:13,lineHeight:18,color:'#A12626',marginTop:8,fontWeight:'700'},score:{fontSize:42,fontWeight:'900',color:palette.ink,marginTop:10},metrics:{flexDirection:'row',gap:12},metricCard:{flex:1},metric:{fontSize:30,fontWeight:'900',color:palette.ink},metricLabel:{fontSize:12,color:palette.muted,marginTop:4},actions:{flexDirection:'row',gap:10,marginTop:16,flexWrap:'wrap'},resourceRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:12,borderBottomWidth:1,borderBottomColor:'#ECEEF4'},resourceText:{flex:1},resourceTitle:{fontSize:15,fontWeight:'800',color:palette.ink},defaultButton:{maxWidth:124,backgroundColor:palette.soft,borderRadius:12,paddingHorizontal:10,paddingVertical:8},defaultText:{fontSize:11,fontWeight:'800',textAlign:'center',color:palette.primary},disabled:{opacity:.45},progressBlock:{marginTop:16},progressHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},progressStage:{fontSize:13,fontWeight:'700',color:palette.ink,flex:1},progressPercent:{fontSize:14,fontWeight:'900',color:palette.primary},progressTrack:{height:10,borderRadius:99,backgroundColor:'#E4E2EC',overflow:'hidden',marginTop:8},progressFill:{height:'100%',borderRadius:99,backgroundColor:palette.primary},logoutButton:{borderRadius:16,paddingVertical:13,paddingHorizontal:16,backgroundColor:'#FDECEC'},logoutText:{color:'#A12626',fontWeight:'800',fontSize:15},logBox:{marginTop:14,padding:12,borderRadius:14,backgroundColor:'#111827',gap:6},logLine:{fontSize:10,lineHeight:14,color:'#D1D5DB',fontFamily:'monospace'},logError:{color:'#FCA5A5'}
 });
