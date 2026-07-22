@@ -45,8 +45,19 @@ export type GoogleWorkspaceStatus = {
 
 async function invoke(body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke('google-workspace', { body });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
+  if (data?.error) throw new Error(String(data.error));
+  if (error) {
+    const context = (error as { context?: Response }).context;
+    if (context) {
+      try {
+        const payload = await context.clone().json();
+        if (payload?.error) throw new Error(String(payload.error));
+      } catch (inner) {
+        if (inner instanceof Error && inner.message !== 'Unexpected end of JSON input') throw inner;
+      }
+    }
+    throw new Error(error.message || 'Google Workspace non è raggiungibile.');
+  }
   return data;
 }
 
@@ -66,10 +77,10 @@ export async function signInWithGoogle() {
   return data;
 }
 
-export async function connectGoogleFromSession(session: Session) {
+export async function connectGoogleFromSession(session: Session, force = false) {
   if (!session.provider_token) return null;
   const marker = `flowos-google-connected-${session.user.id}-${session.provider_token.slice(-12)}`;
-  if (Platform.OS === 'web' && typeof sessionStorage !== 'undefined' && sessionStorage.getItem(marker)) return null;
+  if (!force && Platform.OS === 'web' && typeof sessionStorage !== 'undefined' && sessionStorage.getItem(marker)) return null;
   const result = await invoke({
     action: 'connect',
     providerToken: session.provider_token,
@@ -86,7 +97,19 @@ export async function getGoogleWorkspaceStatus(): Promise<GoogleWorkspaceStatus>
 }
 
 export async function syncGoogleWorkspace() {
-  return invoke({ action: 'sync' });
+  try {
+    return await invoke({ action: 'sync' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/not connected|authorization expired|reconnect/i.test(message)) throw error;
+    const { data, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (!data.session?.provider_token) {
+      throw new Error('La sessione Google non contiene più il token necessario. Esci e accedi nuovamente con Google.');
+    }
+    await connectGoogleFromSession(data.session, true);
+    return invoke({ action: 'sync' });
+  }
 }
 
 export async function disconnectGoogleWorkspace() {
