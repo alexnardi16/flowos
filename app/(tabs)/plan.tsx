@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button, Card, Chip, palette } from '@/components/ui';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
@@ -13,9 +13,7 @@ const DEFAULT_FILTERS: Filters = { events: true, tasks: true, past: false, overd
 function formatDuration(minutes: number) {
   const total = Math.max(0, Math.round(minutes));
   if (total === 0) return '0 minuti';
-  const days = Math.floor(total / 1440);
-  const hours = Math.floor((total % 1440) / 60);
-  const mins = total % 60;
+  const days = Math.floor(total / 1440), hours = Math.floor((total % 1440) / 60), mins = total % 60;
   const parts: string[] = [];
   if (days) parts.push(`${days} ${days === 1 ? 'giorno' : 'giorni'}`);
   if (hours) parts.push(`${hours} ${hours === 1 ? 'ora' : 'ore'}`);
@@ -23,13 +21,8 @@ function formatDuration(minutes: number) {
   return parts.join(' e ');
 }
 function itemDate(item: Commitment) { return item.scheduledAt ?? item.dueAt; }
-function formatDateTime(value?: string) {
-  if (!value) return 'Data e ora non definite';
-  return new Date(value).toLocaleString('it-IT', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-}
-function searchable(item: Commitment) {
-  return [item.title,item.description,item.context,item.outcome,item.kind].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-}
+function formatDateTime(value?: string) { return value ? new Date(value).toLocaleString('it-IT', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Data e ora non definite'; }
+function searchable(item: Commitment) { return [item.title,item.description,item.context,item.outcome,item.kind].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
 
 export default function Plan() {
   const commitments = useFlowStore((state) => state.commitments);
@@ -39,6 +32,7 @@ export default function Plan() {
   const [planning,setPlanning] = useState(false);
   const [query,setQuery] = useState('');
   const [filters,setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [deletingId,setDeletingId] = useState<string|null>(null);
 
   useEffect(() => { void AsyncStorage.getItem(FILTERS_KEY).then((raw) => { if (raw) setFilters({ ...DEFAULT_FILTERS, ...JSON.parse(raw) }); }).catch(() => undefined); }, []);
   useEffect(() => { void AsyncStorage.setItem(FILTERS_KEY, JSON.stringify(filters)); }, [filters]);
@@ -49,16 +43,13 @@ export default function Plan() {
     return commitments.filter((item) => {
       const isEvent = item.kind === 'event';
       const isTask = ['task','reminder','routine'].includes(item.kind);
-      const date = itemDate(item);
-      const isPast = Boolean(date && new Date(date).getTime() < now);
-      const isOpen = item.status !== 'done';
+      const date = itemDate(item), isPast = Boolean(date && new Date(date).getTime() < now), isOpen = item.status !== 'done';
       if (isEvent && !filters.events) return false;
       if (isTask && !filters.tasks) return false;
       if (!isEvent && !isTask) return false;
       if (isPast && !filters.past && !(isTask && isOpen && filters.overdue)) return false;
       if (item.status === 'done' && !filters.past) return false;
-      if (normalizedQuery && !searchable(item).includes(normalizedQuery)) return false;
-      return true;
+      return !normalizedQuery || searchable(item).includes(normalizedQuery);
     }).sort((a,b) => {
       const ad=itemDate(a), bd=itemDate(b);
       if (!ad) return 1; if (!bd) return -1;
@@ -68,14 +59,8 @@ export default function Plan() {
 
   function toggle(key: FilterKey) { setFilters((current) => ({ ...current, [key]: !current[key] })); }
   async function handleAutoPlan() { setPlanning(true); try { await autoPlan(); } finally { setPlanning(false); } }
-  function askDelete(item: Commitment) {
-    const canDeleteGoogle = Boolean(item.externalId);
-    Alert.alert('Elimina elemento', 'Scegli dove eliminare questo elemento.', [
-      { text:'Annulla', style:'cancel' },
-      { text:'Rimuovi solo da FlowOS', onPress:() => { void removeOnlyFromFlowOS(item.id); } },
-      ...(canDeleteGoogle ? [{ text:'Elimina anche da Google', style:'destructive' as const, onPress:() => { void removeAlsoFromGoogle(item.id); } }] : []),
-    ]);
-  }
+  async function removeLocal(id:string) { setDeletingId(id); try { await removeOnlyFromFlowOS(id); } finally { setDeletingId(null); } }
+  async function removeGoogle(id:string) { setDeletingId(id); try { await removeAlsoFromGoogle(id); } finally { setDeletingId(null); } }
 
   return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.wrap}>
     <Text style={styles.title}>Piano</Text><Text style={styles.sub}>Eventi e attività ordinati nel tempo.</Text>
@@ -87,9 +72,12 @@ export default function Plan() {
       <View style={styles.row}><Chip>{item.kind==='event'?'EVENTO':item.status==='done'?'COMPLETATA':'TASK'}</Chip>{item.fixed?<Chip>ORARIO FISSO</Chip>:null}</View>
       <Text style={styles.item}>{item.title}</Text><Text style={styles.date}>{formatDateTime(itemDate(item))}</Text>
       <Text style={styles.meta}>Durata: {formatDuration(item.durationMinutes)}</Text><Text style={styles.meta}>{item.context||'Nessun contesto'} · energia {item.energy}</Text>
-      <Pressable onPress={() => askDelete(item)} style={styles.deleteButton}><Text style={styles.deleteText}>Elimina…</Text></Pressable>
+      <View style={styles.deleteActions}>
+        <Pressable disabled={deletingId===item.id} onPress={() => { void removeLocal(item.id); }} style={styles.localDelete}><Text style={styles.localDeleteText}>Rimuovi solo da FlowOS</Text></Pressable>
+        {item.externalId ? <Pressable disabled={deletingId===item.id} onPress={() => { void removeGoogle(item.id); }} style={styles.googleDelete}><Text style={styles.googleDeleteText}>Elimina anche da Google</Text></Pressable> : null}
+      </View>
     </Card>) : <Card><Text style={styles.empty}>Nessun elemento corrisponde ai filtri o alla ricerca.</Text></Card>}
   </ScrollView></SafeAreaView>;
 }
 function Filter({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}) { return <Pressable onPress={onPress} style={[styles.filter,active&&styles.filterActive]}><Text style={[styles.filterText,active&&styles.filterTextActive]}>{label}</Text></Pressable>; }
-const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:14},title:{fontSize:31,fontWeight:'900',color:palette.ink,marginTop:14},sub:{fontSize:16,color:palette.muted},search:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E2E4EA',borderRadius:16,paddingHorizontal:16,paddingVertical:13,fontSize:15,color:palette.ink},filters:{flexDirection:'row',flexWrap:'wrap',gap:8},filter:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#ECEEF4'},filterActive:{backgroundColor:palette.primary},filterText:{fontSize:12,fontWeight:'800',color:palette.muted},filterTextActive:{color:'#FFF'},helper:{fontSize:13,lineHeight:18,color:palette.muted},row:{flexDirection:'row',alignItems:'center',gap:8,flexWrap:'wrap'},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:12},date:{fontSize:14,fontWeight:'800',color:palette.primary,marginTop:8},meta:{fontSize:13,color:palette.muted,marginTop:5},deleteButton:{alignSelf:'flex-start',marginTop:14,paddingVertical:8,paddingHorizontal:12,borderRadius:12,backgroundColor:'#FDECEC'},deleteText:{color:'#A12626',fontWeight:'800'},empty:{fontWeight:'700',color:palette.muted}});
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:14},title:{fontSize:31,fontWeight:'900',color:palette.ink,marginTop:14},sub:{fontSize:16,color:palette.muted},search:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E2E4EA',borderRadius:16,paddingHorizontal:16,paddingVertical:13,fontSize:15,color:palette.ink},filters:{flexDirection:'row',flexWrap:'wrap',gap:8},filter:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#ECEEF4'},filterActive:{backgroundColor:palette.primary},filterText:{fontSize:12,fontWeight:'800',color:palette.muted},filterTextActive:{color:'#FFF'},helper:{fontSize:13,lineHeight:18,color:palette.muted},row:{flexDirection:'row',alignItems:'center',gap:8,flexWrap:'wrap'},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:12},date:{fontSize:14,fontWeight:'800',color:palette.primary,marginTop:8},meta:{fontSize:13,color:palette.muted,marginTop:5},deleteActions:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:14},localDelete:{paddingVertical:9,paddingHorizontal:12,borderRadius:12,backgroundColor:'#ECEEF4'},localDeleteText:{color:palette.ink,fontWeight:'800'},googleDelete:{paddingVertical:9,paddingHorizontal:12,borderRadius:12,backgroundColor:'#FDECEC'},googleDeleteText:{color:'#A12626',fontWeight:'800'},empty:{fontWeight:'700',color:palette.muted}});
