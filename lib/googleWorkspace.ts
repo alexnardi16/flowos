@@ -54,8 +54,7 @@ function errorMessage(error: unknown): string {
   return String(error || 'Errore sconosciuto');
 }
 
-async function markSyncFailed(message: string) {
-  recordDiagnostic('google-sync-mark-error', { message }, 'error');
+async function updateSyncFailure(message: string) {
   const { data } = await supabase.auth.getUser();
   if (!data.user) return;
   const { error } = await supabase
@@ -63,6 +62,12 @@ async function markSyncFailed(message: string) {
     .update({ last_sync_status: 'error', last_sync_error: message })
     .eq('user_id', data.user.id);
   if (error) recordDiagnostic('google-sync-mark-error-failed', error, 'error');
+}
+
+export async function recoverStaleGoogleSyncState() {
+  const message = 'La precedente sincronizzazione è stata interrotta prima del completamento.';
+  recordDiagnostic('google-sync-stale-state-recovered', { message }, 'warn');
+  await updateSyncFailure(message);
 }
 
 async function invoke(body: Record<string, unknown>, retries = 1) {
@@ -105,7 +110,8 @@ async function invoke(body: Record<string, unknown>, retries = 1) {
       return payload;
     } catch (error) {
       lastError = error;
-      const message = error instanceof DOMException && error.name === 'AbortError'
+      const namedError = error as { name?: string };
+      const message = namedError?.name === 'AbortError'
         ? 'La sincronizzazione ha superato il tempo massimo consentito.'
         : errorMessage(error);
       recordDiagnostic('google-function-request-failed', { action: body.action, attempt: attempt + 1, message }, 'error');
@@ -174,10 +180,12 @@ export async function syncGoogleWorkspace() {
       return await invoke({ action: 'sync' });
     }
   } catch (error) {
-    const message = error instanceof DOMException && error.name === 'AbortError'
+    const namedError = error as { name?: string };
+    const message = namedError?.name === 'AbortError'
       ? 'La sincronizzazione ha superato il tempo massimo consentito.'
       : errorMessage(error);
-    await markSyncFailed(message);
+    recordDiagnostic('google-sync-mark-error', { message }, 'error');
+    await updateSyncFailure(message);
     recordDiagnostic('google-sync-failed', { message }, 'error');
     throw new Error(message);
   }
