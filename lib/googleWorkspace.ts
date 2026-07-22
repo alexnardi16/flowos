@@ -43,20 +43,34 @@ export type GoogleWorkspaceStatus = {
   taskLists: GoogleTaskList[];
 };
 
+async function extractFunctionError(error: unknown): Promise<string | null> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (!context) return null;
+
+  try {
+    if (context instanceof Response) {
+      const payload = await context.json().catch(() => null);
+      return payload && typeof payload === 'object' && 'error' in payload
+        ? String((payload as { error: unknown }).error)
+        : null;
+    }
+
+    if (typeof context === 'object' && context !== null && 'error' in context) {
+      return String((context as { error: unknown }).error);
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 async function invoke(body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke('google-workspace', { body });
   if (data?.error) throw new Error(String(data.error));
   if (error) {
-    const context = (error as { context?: Response }).context;
-    if (context) {
-      try {
-        const payload = await context.clone().json();
-        if (payload?.error) throw new Error(String(payload.error));
-      } catch (inner) {
-        if (inner instanceof Error && inner.message !== 'Unexpected end of JSON input') throw inner;
-      }
-    }
-    throw new Error(error.message || 'Google Workspace non è raggiungibile.');
+    const detailedMessage = await extractFunctionError(error);
+    throw new Error(detailedMessage ?? error.message ?? 'Google Workspace non è raggiungibile.');
   }
   return data;
 }
