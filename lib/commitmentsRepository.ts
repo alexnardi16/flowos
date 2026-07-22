@@ -2,6 +2,16 @@ import type { Commitment } from '../types';
 import { enqueueMutation, readQueue, replaceQueue } from './offlineQueue';
 import { isSupabaseConfigured, supabase } from './supabase';
 
+function googleDescription(item: Commitment) {
+  const parts = [
+    item.description,
+    item.notes ? `Note: ${item.notes}` : undefined,
+    item.location ? `Luogo: ${item.location}` : undefined,
+    item.link ? `Link: ${item.link}` : undefined,
+  ].filter(Boolean);
+  return parts.join('\n\n') || undefined;
+}
+
 function toRow(item: Commitment, userId: string) {
   const kindMap: Record<Commitment['kind'], string> = { task: 'task', event: 'event', reminder: 'reminder', routine: 'habit', idea: 'note' };
   const statusMap: Record<Commitment['status'], string> = { active: 'active', waiting: 'waiting', scheduled: 'scheduled', blocked: 'blocked', someday: 'someday', done: 'completed' };
@@ -10,7 +20,7 @@ function toRow(item: Commitment, userId: string) {
     id: item.id,
     user_id: userId,
     title: item.title,
-    description: item.description ?? null,
+    description: googleDescription(item) ?? null,
     kind: kindMap[item.kind],
     status: statusMap[item.status],
     starts_at: item.scheduledAt ?? null,
@@ -19,7 +29,7 @@ function toRow(item: Commitment, userId: string) {
     energy: item.energy,
     context: item.context,
     confidence_score: item.confidence,
-    ai_metadata: { fixed: item.fixed, outcome: item.outcome },
+    ai_metadata: { fixed: item.fixed, outcome: item.outcome, originalDescription: item.description, notes: item.notes, location: item.location, link: item.link },
     external_provider: resourceType ? 'google' : null,
     external_resource_type: resourceType,
     google_calendar_id: item.googleCalendarId ?? null,
@@ -40,7 +50,10 @@ function fromRow(row: any): Commitment {
   return {
     id: row.id,
     title: row.title,
-    description: row.description ?? undefined,
+    description: row.ai_metadata?.originalDescription ?? row.description ?? undefined,
+    notes: row.ai_metadata?.notes ?? undefined,
+    location: row.ai_metadata?.location ?? undefined,
+    link: row.ai_metadata?.link ?? undefined,
     kind: kindMap[row.kind] ?? 'task',
     status: row.status === 'completed' ? 'done' : row.status,
     durationMinutes: row.duration_minutes ?? 30,
