@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Button, Card, palette } from '@/components/ui';
 import { readDiagnostics, recordDiagnostic, subscribeDiagnostics, type DiagnosticEntry } from '@/lib/diagnostics';
 import {
+  connectGoogleFromSession,
   disconnectGoogleWorkspace,
   getGoogleWorkspaceStatus,
   recoverStaleGoogleSyncState,
@@ -31,6 +32,11 @@ function logLine(entry: DiagnosticEntry) {
   return `${time} [${entry.level}] ${entry.event}${entry.details ? ` — ${entry.details}` : ''}`;
 }
 
+function isMissingGoogleAuthorization(status: GoogleWorkspaceStatus | null, error: string | null) {
+  const message = `${status?.connection?.last_sync_error ?? ''} ${error ?? ''}`;
+  return /google account is not connected|account google non.*collegato/i.test(message);
+}
+
 export default function Me() {
   const [assisted, setAssisted] = useState(true);
   const [google, setGoogle] = useState<GoogleWorkspaceStatus | null>(null);
@@ -42,7 +48,7 @@ export default function Me() {
   const [logs, setLogs] = useState<DiagnosticEntry[]>([]);
   const commitments = useFlowStore((state) => state.commitments);
   const hydrateFromCloud = useFlowStore((state) => state.hydrateFromCloud);
-  const { signOut } = useAuth();
+  const { session, signOut } = useAuth();
 
   const insights = useMemo(() => {
     const done = commitments.filter((item) => item.status === 'done');
@@ -121,6 +127,10 @@ export default function Me() {
     setSyncStage('Avvio della sincronizzazione');
     recordDiagnostic('sync-ui-started');
     try {
+      if (session?.provider_token) {
+        await connectGoogleFromSession(session, true);
+        recordDiagnostic('google-workspace-connection-refreshed-manually', { userId: session.user.id });
+      }
       await syncGoogleWorkspace(({ percent, stage }) => {
         setSyncProgress(percent);
         setSyncStage(stage);
@@ -154,8 +164,10 @@ export default function Me() {
   }
 
   const rangeLabel = google?.range
-    ? `Elementi importati visibili dal ${google.range.labelStart} al ${google.range.labelEnd}, estremi compresi.`
+    ? `Elementi importati visibili dal ${google.range.labelStart} al ${google.range.labelEnd}.`
     : 'Intervallo di importazione in caricamento…';
+  const authorizationMissing = isMissingGoogleAuthorization(google, googleError);
+  const googleConnected = Boolean(google?.connection && google.connection.last_sync_status !== 'disconnected' && !authorizationMissing);
 
   return <SafeAreaView style={styles.safe}>
     <ScrollView contentContainerStyle={styles.wrap}>
@@ -164,29 +176,29 @@ export default function Me() {
       <Card>
         <Text style={styles.label}>Google Workspace</Text>
         <Text style={styles.rangeLabel}>{rangeLabel}</Text>
-        {google?.connection && google.connection.last_sync_status !== 'disconnected' ? <>
-          <Text style={styles.item}>{google.connection.google_email ?? 'Account Google collegato'}</Text>
-          <Text style={styles.meta}>Stato: {google.connection.last_sync_status} · Ultima sincronizzazione: {formatSyncDate(google.connection.last_sync_at)}</Text>
-          {google.connection.last_sync_error ? <Text style={styles.error}>{google.connection.last_sync_error}</Text> : null}
-          {googleError && googleError !== google.connection.last_sync_error ? <Text style={styles.error}>{googleError}</Text> : null}
+        {googleConnected ? <>
+          <Text style={styles.item}>{google?.connection?.google_email ?? 'Account Google collegato'}</Text>
+          <Text style={styles.meta}>Stato: {google?.connection?.last_sync_status} · Ultima sincronizzazione: {formatSyncDate(google?.connection?.last_sync_at)}</Text>
+          {google?.connection?.last_sync_error ? <Text style={styles.error}>{google.connection.last_sync_error}</Text> : null}
+          {googleError && googleError !== google?.connection?.last_sync_error ? <Text style={styles.error}>{googleError}</Text> : null}
           {syncProgress > 0 ? <View style={styles.progressBlock}>
             <View style={styles.progressHeader}><Text style={styles.progressStage}>{syncStage}</Text><Text style={styles.progressPercent}>{syncProgress}%</Text></View>
             <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${syncProgress}%` }]} /></View>
           </View> : null}
           <View style={styles.actions}><Button label={googleBusy ? 'Sincronizzazione…' : 'Sincronizza ora'} onPress={() => { void runSync(); }}/><Button secondary label="Scollega Google" onPress={() => { void run(disconnectGoogleWorkspace); }}/></View>
         </> : <>
-          <Text style={styles.meta}>Collega Google per sincronizzare Calendar e Tasks in entrambe le direzioni.</Text>
+          <Text style={styles.meta}>{authorizationMissing ? 'La sessione FlowOS è attiva, ma l’autorizzazione Google deve essere ripristinata.' : 'Collega Google per sincronizzare Calendar e Tasks in entrambe le direzioni.'}</Text>
           {googleError ? <Text style={styles.error}>{googleError}</Text> : null}
-          <View style={styles.actions}><Button label="Collega Google" onPress={() => { void run(signInWithGoogle); }}/></View>
+          <View style={styles.actions}><Button label={authorizationMissing ? 'Ricollega Google' : 'Collega Google'} onPress={() => { void run(signInWithGoogle); }}/></View>
         </>}
       </Card>
 
-      {google?.connection && google.connection.last_sync_status !== 'disconnected' ? <>
+      {googleConnected ? <>
         <Card>
           <Text style={styles.label}>Calendari sincronizzati</Text>
           <Text style={styles.meta}>{rangeLabel}</Text>
           <Text style={styles.meta}>Puoi includere più calendari, anche condivisi. Solo quelli con permesso di scrittura possono essere usati per creare o modificare eventi.</Text>
-          {google.calendars.map((calendar) => {
+          {google?.calendars.map((calendar) => {
             const writable = ['owner', 'writer'].includes(calendar.access_role);
             const holidayCalendar = /^Jours fériés en (France|Italie)$/i.test(calendar.summary.trim());
             return <View key={calendar.id} style={styles.resourceRow}>
@@ -201,7 +213,7 @@ export default function Me() {
           <Text style={styles.label}>Liste Google Tasks</Text>
           <Text style={styles.meta}>{rangeLabel}</Text>
           <Text style={styles.meta}>La lista predefinita viene proposta automaticamente, ma puoi cambiarla per ogni nuova attività.</Text>
-          {google.taskLists.map((list) => <View key={list.id} style={styles.resourceRow}>
+          {google?.taskLists.map((list) => <View key={list.id} style={styles.resourceRow}>
             <View style={styles.resourceText}><Text style={styles.resourceTitle}>{list.title}</Text><Text style={styles.meta}>{list.is_default ? 'Predefinita' : 'Lista attività'}</Text></View>
             <Switch value={list.selected} onValueChange={(selected) => { void run(() => setTaskListSelected(list.id, selected)); }}/>
             <Pressable disabled={!list.selected || list.is_default} onPress={() => { void run(() => setDefaultTaskList(list.id)); }} style={[styles.defaultButton, (!list.selected || list.is_default) && styles.disabled]}><Text style={styles.defaultText}>{list.is_default ? 'Default' : 'Imposta come default'}</Text></Pressable>
