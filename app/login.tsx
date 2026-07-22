@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { recordDiagnostic } from '../lib/diagnostics';
-import { signInWithGoogle } from '../lib/googleWorkspace';
+import { signInWithGoogleWithoutForcedConsent } from '../lib/googleLogin';
 import { useAuth } from '../providers/AuthProvider';
 
 export default function LoginScreen() {
@@ -20,7 +20,7 @@ export default function LoginScreen() {
   async function loginWithGoogle() {
     if (googleLoading) return;
     setGoogleLoading(true); setMessage(null);
-    try { await signInWithGoogle(); }
+    try { await signInWithGoogleWithoutForcedConsent(); }
     catch (error) { setGoogleLoading(false); setMessage(error instanceof Error ? error.message : 'Accesso Google non riuscito.'); }
   }
 
