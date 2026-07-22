@@ -29,6 +29,16 @@ export default function Inbox() {
     catch (error) { Alert.alert('Inbox', error instanceof Error ? error.message : 'Eliminazione non riuscita.'); }
     finally { setBusyId(null); }
   }
+  function confirmGoogleDelete(item: Commitment) {
+    Alert.alert(
+      'Eliminare definitivamente da Google?',
+      `“${item.title}” verrà eliminato da Google ${item.kind === 'event' ? 'Calendar' : 'Tasks'} e da FlowOS. Questa operazione non può essere annullata.`,
+      [
+        { text: 'Annulla', style: 'cancel' },
+        { text: 'Elimina definitivamente', style: 'destructive', onPress: () => { void remove(item, true); } },
+      ],
+    );
+  }
 
   return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.wrap}>
     <Text style={styles.title}>Inbox</Text>
@@ -51,7 +61,7 @@ export default function Inbox() {
           <Text style={styles.meta}>Data: {item.scheduledAt||item.dueAt?new Date(item.scheduledAt??item.dueAt!).toLocaleString('it-IT'):'non definita'}</Text>
           <Text style={styles.meta}>Durata proposta: {item.durationMinutes} minuti</Text>
           <View style={styles.actions}><Pressable onPress={() => startEdit(item)} style={styles.secondaryButton}><Text style={styles.secondaryText}>Modifica</Text></Pressable><Pressable disabled={busyId===item.id} onPress={() => { void save(item,true); }} style={styles.confirmButton}><Text style={styles.confirmText}>{busyId===item.id?'Conferma…':'Conferma'}</Text></Pressable><Pressable onPress={() => setDeleteId(deleting?null:item.id)} style={styles.deleteButton}><Text style={styles.deleteText}>Elimina</Text></Pressable></View>
-          {deleting ? <View style={styles.deleteBox}><Text style={styles.deleteTitle}>Dove vuoi eliminarlo?</Text><Pressable disabled={busyId===item.id} onPress={() => { void remove(item,false); }} style={styles.localDelete}><Text style={styles.deleteText}>Rimuovi solo da FlowOS</Text></Pressable>{item.externalId ? <Pressable disabled={busyId===item.id} onPress={() => { void remove(item,true); }} style={styles.googleDelete}><Text style={styles.googleDeleteText}>Elimina anche da Google</Text></Pressable> : <Text style={styles.meta}>Questo elemento non risulta ancora sincronizzato con Google.</Text>}</View> : null}
+          {deleting ? <View style={styles.deleteBox}><Text style={styles.deleteTitle}>Dove vuoi eliminarlo?</Text><Pressable disabled={busyId===item.id} onPress={() => { void remove(item,false); }} style={styles.localDelete}><Text style={styles.deleteText}>Rimuovi solo da FlowOS</Text></Pressable>{item.externalId ? <Pressable disabled={busyId===item.id} onPress={() => confirmGoogleDelete(item)} style={styles.googleDelete}><Text style={styles.googleDeleteText}>Elimina anche da Google</Text></Pressable> : <Text style={styles.meta}>Questo elemento non risulta ancora sincronizzato con Google.</Text>}</View> : null}
         </>}
       </Card>;
     }) : <Card><Text style={styles.empty}>Tutto chiaro. Nessun elemento richiede la tua verifica.</Text></Card>}
