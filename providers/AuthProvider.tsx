@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { recordDiagnostic } from '../lib/diagnostics';
-import { connectGoogleFromSession } from '../lib/googleWorkspace';
+import { connectGoogleFromSession, getGoogleWorkspaceStatus } from '../lib/googleWorkspace';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 type AuthContextValue = {
@@ -55,9 +55,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!session?.provider_token) return;
-    void connectGoogleFromSession(session)
-      .then(() => recordDiagnostic('google-workspace-connected', { userId: session.user.id }))
-      .catch((error) => recordDiagnostic('google-workspace-connect-failed', error, 'error'));
+    let active = true;
+    void (async () => {
+      try {
+        const status = await getGoogleWorkspaceStatus();
+        const alreadyConnected = Boolean(status.connection && status.connection.last_sync_status !== 'disconnected');
+        if (alreadyConnected) {
+          recordDiagnostic('google-workspace-connect-skipped', { userId: session.user.id, reason: 'already-connected' });
+          return;
+        }
+        await connectGoogleFromSession(session);
+        if (active) recordDiagnostic('google-workspace-connected', { userId: session.user.id });
+      } catch (error) {
+        if (active) recordDiagnostic('google-workspace-connect-failed', error, 'error');
+      }
+    })();
+    return () => { active = false; };
   }, [session?.provider_token, session?.user.id]);
 
   const value = useMemo<AuthContextValue>(() => ({
