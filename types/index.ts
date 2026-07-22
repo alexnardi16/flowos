@@ -6,6 +6,9 @@ export interface Commitment {
   id: string;
   title: string;
   description?: string;
+  notes?: string;
+  location?: string;
+  link?: string;
   kind: CommitmentKind;
   status: CommitmentStatus;
   durationMinutes: number;
