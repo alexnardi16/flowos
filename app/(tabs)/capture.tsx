@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { Button, Card, palette } from '@/components/ui';
 import { getGoogleWorkspaceStatus, syncGoogleWorkspace, type GoogleCalendar, type GoogleTaskList } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
@@ -76,7 +76,7 @@ export default function Capture() {
       <Text style={styles.label}>Tipo</Text><View style={styles.choices}>{(['event','task','reminder'] as const).map((value) => <Choice key={value} label={value==='event'?'Evento':value==='task'?'Task':'Reminder'} active={kind===value} onPress={() => setKind(value)}/>)}</View>
       <Field label="Titolo" value={title} onChangeText={setTitle} placeholder="Titolo"/>
       <View style={styles.inline}><View style={styles.flex}><Field label="Data" value={date} onChangeText={setDate} placeholder="2026-07-22"/></View><View style={styles.flex}><Field label="Orario" value={time} onChangeText={setTime} placeholder="09:00"/></View></View>
-      <Field label="Durata in minuti" value={duration} onChangeText={(value) => setDuration(value.replace(/\D/g,''))} placeholder="30" keyboardType="number-pad"/>
+      <Field label="Durata in minuti" value={duration} onChangeText={(value: string) => setDuration(value.replace(/\D/g,''))} placeholder="30" keyboardType="number-pad"/>
       <Field label="Descrizione" value={description} onChangeText={setDescription} placeholder="Descrizione" multiline/>
       <Field label="Note" value={notes} onChangeText={setNotes} placeholder="Note aggiuntive" multiline/>
       <Field label="Luogo" value={location} onChangeText={setLocation} placeholder="Indirizzo o luogo"/>
@@ -91,5 +91,8 @@ export default function Capture() {
 }
 
 function Choice({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}) { return <Pressable onPress={onPress} style={[styles.choice,active&&styles.choiceActive]}><Text style={[styles.choiceText,active&&styles.choiceTextActive]}>{label}</Text></Pressable>; }
-function Field(props:any) { return <View style={styles.field}><Text style={styles.fieldLabel}>{props.label}</Text><TextInput {...props} label={undefined} style={[styles.input,props.multiline&&styles.multiline]}/></View>; }
+type FieldProps = TextInputProps & { label: string };
+function Field({ label, multiline, style, ...inputProps }: FieldProps) {
+  return <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput {...inputProps} multiline={multiline} style={[styles.input, multiline && styles.multiline, style]}/></View>;
+}
 const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:16},title:{fontSize:31,fontWeight:'900',color:palette.ink,marginTop:14},sub:{fontSize:16,color:palette.muted},label:{fontSize:13,fontWeight:'800',color:palette.primary,textTransform:'uppercase'},meta:{fontSize:13,color:palette.muted,marginTop:6},choices:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:10},choice:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:'#E1E3EB'},choiceActive:{backgroundColor:palette.primary,borderColor:palette.primary},choiceText:{fontSize:13,fontWeight:'700',color:palette.ink},choiceTextActive:{color:'#fff'},field:{marginTop:14},fieldLabel:{fontSize:12,fontWeight:'800',color:palette.muted,marginBottom:6},input:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E2E4EA',borderRadius:12,padding:12,color:palette.ink},multiline:{minHeight:90,textAlignVertical:'top'},inline:{flexDirection:'row',gap:10},flex:{flex:1},saved:{fontWeight:'800',color:palette.success}});
