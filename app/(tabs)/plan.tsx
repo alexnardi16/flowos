@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button, Card, Chip, palette } from '@/components/ui';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
@@ -61,6 +61,16 @@ export default function Plan() {
   async function handleAutoPlan() { setPlanning(true); try { await autoPlan(); } finally { setPlanning(false); } }
   async function removeLocal(id:string) { setDeletingId(id); try { await removeOnlyFromFlowOS(id); } finally { setDeletingId(null); } }
   async function removeGoogle(id:string) { setDeletingId(id); try { await removeAlsoFromGoogle(id); } finally { setDeletingId(null); } }
+  function confirmGoogleDelete(item: Commitment) {
+    Alert.alert(
+      'Eliminare definitivamente da Google?',
+      `“${item.title}” verrà eliminato da Google ${item.kind === 'event' ? 'Calendar' : 'Tasks'} e da FlowOS. Questa operazione non può essere annullata.`,
+      [
+        { text: 'Annulla', style: 'cancel' },
+        { text: 'Elimina definitivamente', style: 'destructive', onPress: () => { void removeGoogle(item.id); } },
+      ],
+    );
+  }
 
   return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.wrap}>
     <Text style={styles.title}>Piano</Text><Text style={styles.sub}>Eventi e attività ordinati nel tempo.</Text>
@@ -74,7 +84,7 @@ export default function Plan() {
       <Text style={styles.meta}>Durata: {formatDuration(item.durationMinutes)}</Text><Text style={styles.meta}>{item.context||'Nessun contesto'} · energia {item.energy}</Text>
       <View style={styles.deleteActions}>
         <Pressable disabled={deletingId===item.id} onPress={() => { void removeLocal(item.id); }} style={styles.localDelete}><Text style={styles.localDeleteText}>Rimuovi solo da FlowOS</Text></Pressable>
-        {item.externalId ? <Pressable disabled={deletingId===item.id} onPress={() => { void removeGoogle(item.id); }} style={styles.googleDelete}><Text style={styles.googleDeleteText}>Elimina anche da Google</Text></Pressable> : null}
+        {item.externalId ? <Pressable disabled={deletingId===item.id} onPress={() => confirmGoogleDelete(item)} style={styles.googleDelete}><Text style={styles.googleDeleteText}>Elimina anche da Google</Text></Pressable> : null}
       </View>
     </Card>) : <Card><Text style={styles.empty}>Nessun elemento corrisponde ai filtri o alla ricerca.</Text></Card>}
   </ScrollView></SafeAreaView>;
