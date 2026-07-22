@@ -88,13 +88,9 @@ export async function deleteCommitmentAlsoFromGoogle(item: Commitment) {
     await removeCommitmentOnlyFromFlowOS(item.id);
     return;
   }
-  const deleted: Commitment = {
-    ...item,
-    deletedAt: new Date().toISOString(),
-    syncStatus: 'pending',
-    syncError: undefined,
-  };
-  await saveCommitment(deleted);
+  const { data, error } = await supabase.functions.invoke('google-delete-item', { body: { commitmentId: item.id } });
+  if (error) throw error;
+  if (data?.error) throw new Error(String(data.error));
 }
 
 export async function flushOfflineQueue() {
