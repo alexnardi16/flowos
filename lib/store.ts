@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Commitment } from '@/types';
-import { flushOfflineQueue, loadCommitments, saveCommitment } from './commitmentsRepository';
+import { deleteCommitmentAlsoFromGoogle, flushOfflineQueue, loadCommitments, removeCommitmentOnlyFromFlowOS, saveCommitment } from './commitmentsRepository';
 import { createAutomaticPlan } from './scheduler';
 
 type State = {
@@ -13,6 +13,9 @@ type State = {
   hydrateFromCloud: () => Promise<void>;
   complete: (id: string) => Promise<void>;
   postpone: (id: string) => Promise<void>;
+  updateCommitment: (commitment: Commitment) => Promise<void>;
+  removeOnlyFromFlowOS: (id: string) => Promise<void>;
+  removeAlsoFromGoogle: (id: string) => Promise<void>;
   autoPlan: () => Promise<void>;
   startFocus: (id: string) => void;
   stopFocus: () => void;
@@ -54,6 +57,23 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     await saveCommitment(updated);
   },
 
+  updateCommitment: async (updated) => {
+    set((state) => ({ commitments: state.commitments.map((item) => item.id === updated.id ? updated : item) }));
+    await saveCommitment(updated);
+  },
+
+  removeOnlyFromFlowOS: async (id) => {
+    await removeCommitmentOnlyFromFlowOS(id);
+    set((state) => ({ commitments: state.commitments.filter((item) => item.id !== id) }));
+  },
+
+  removeAlsoFromGoogle: async (id) => {
+    const item = get().commitments.find((commitment) => commitment.id === id);
+    if (!item) return;
+    await deleteCommitmentAlsoFromGoogle(item);
+    set((state) => ({ commitments: state.commitments.filter((commitment) => commitment.id !== id) }));
+  },
+
   autoPlan: async () => {
     const planned = createAutomaticPlan(get().commitments);
     set({ commitments: planned });
@@ -63,7 +83,7 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
   startFocus: (id) => set({ focusId: id }),
   stopFocus: () => set({ focusId: undefined }),
 }), {
-  name: 'flowos-store-v3',
+  name: 'flowos-store-v2',
   storage: createJSONStorage(() => AsyncStorage),
   partialize: (state) => ({ commitments: state.commitments, focusId: state.focusId }),
 }));
