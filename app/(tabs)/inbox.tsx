@@ -1,59 +1,53 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card, palette } from '@/components/ui';
-import { saveCommitment } from '@/lib/commitmentsRepository';
 import { useFlowStore } from '@/lib/store';
+import type { Commitment } from '@/types';
 
 export default function Inbox() {
   const commitments = useFlowStore((state) => state.commitments);
-  const hydrateFromCloud = useFlowStore((state) => state.hydrateFromCloud);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const items = useMemo(
-    () => commitments.filter((commitment) => commitment.status !== 'done' && commitment.confidence < 0.85),
-    [commitments],
-  );
+  const updateCommitment = useFlowStore((state) => state.updateCommitment);
+  const [busyId,setBusyId] = useState<string|null>(null);
+  const [editingId,setEditingId] = useState<string|null>(null);
+  const [draft,setDraft] = useState<Commitment|null>(null);
+  const items = useMemo(() => commitments.filter((item) => item.status !== 'done' && item.confidence < 0.85), [commitments]);
 
-  async function confirm(id: string) {
-    const item = commitments.find((commitment) => commitment.id === id);
-    if (!item) return;
-    setBusyId(id);
+  function startEdit(item: Commitment) { setEditingId(item.id); setDraft({ ...item }); }
+  function cancelEdit() { setEditingId(null); setDraft(null); }
+  async function save(item: Commitment, confirm: boolean) {
+    setBusyId(item.id);
     try {
-      await saveCommitment({ ...item, confidence: 1 });
-      await hydrateFromCloud();
+      await updateCommitment({ ...item, confidence: confirm ? 1 : item.confidence });
+      cancelEdit();
     } catch (error) {
-      Alert.alert('Inbox', error instanceof Error ? error.message : 'Conferma non riuscita.');
-    } finally {
-      setBusyId(null);
-    }
+      Alert.alert('Inbox', error instanceof Error ? error.message : 'Salvataggio non riuscito.');
+    } finally { setBusyId(null); }
   }
 
-  return <SafeAreaView style={styles.safe}>
-    <ScrollView contentContainerStyle={styles.wrap}>
-      <Text style={styles.title}>Inbox</Text>
-      <Text style={styles.sub}>Qui trovi soltanto gli elementi che FlowOS non è riuscito a interpretare con sufficiente sicurezza.</Text>
-      <Card>
-        <Text style={styles.guideTitle}>Cosa devi fare</Text>
-        <Text style={styles.guide}>Controlla che titolo, tipo, data e durata siano corretti. Se lo sono, premi “Conferma”. Dopo la conferma l’elemento sparisce dall’Inbox e resta nel Piano.</Text>
-      </Card>
-      {items.length ? items.map((commitment) => (
-        <Card key={commitment.id}>
-          <Text style={styles.item}>{commitment.title}</Text>
-          <Text style={styles.meta}>Tipo proposto: {commitment.kind} · affidabilità {Math.round(commitment.confidence * 100)}%</Text>
-          <Text style={styles.meta}>Data: {commitment.scheduledAt || commitment.dueAt ? new Date(commitment.scheduledAt ?? commitment.dueAt!).toLocaleString('it-IT') : 'non definita'}</Text>
-          <Text style={styles.meta}>Durata proposta: {commitment.durationMinutes} minuti</Text>
-          <View style={styles.actions}>
-            <Pressable disabled={busyId === commitment.id} onPress={() => { void confirm(commitment.id); }} style={styles.confirmButton}>
-              <Text style={styles.confirmText}>{busyId === commitment.id ? 'Conferma…' : 'Conferma'}</Text>
-            </Pressable>
-          </View>
-        </Card>
-      )) : (
-        <Card><Text style={styles.empty}>Tutto chiaro. Nessun elemento richiede la tua verifica.</Text></Card>
-      )}
-    </ScrollView>
-  </SafeAreaView>;
+  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.wrap}>
+    <Text style={styles.title}>Inbox</Text>
+    <Text style={styles.sub}>Qui trovi gli elementi che FlowOS non è riuscito a interpretare con sufficiente sicurezza.</Text>
+    <Card><Text style={styles.guideTitle}>Cosa devi fare</Text><Text style={styles.guide}>Controlla titolo, tipo, data e durata. Puoi modificarli oppure confermare direttamente. Dopo la conferma l’elemento sparisce dall’Inbox e resta nel Piano.</Text></Card>
+    {items.length ? items.map((item) => {
+      const editing = editingId === item.id && draft;
+      const current = editing ? draft : item;
+      return <Card key={item.id}>
+        {editing ? <>
+          <Text style={styles.fieldLabel}>Titolo</Text><TextInput value={current.title} onChangeText={(title) => setDraft({ ...current, title })} style={styles.input}/>
+          <Text style={styles.fieldLabel}>Tipo</Text><View style={styles.kindRow}>{(['event','task','reminder'] as const).map((kind) => <Pressable key={kind} onPress={() => setDraft({ ...current, kind })} style={[styles.kindButton,current.kind===kind&&styles.kindActive]}><Text style={[styles.kindText,current.kind===kind&&styles.kindTextActive]}>{kind}</Text></Pressable>)}</View>
+          <Text style={styles.fieldLabel}>Data e ora ISO</Text><TextInput value={current.scheduledAt ?? current.dueAt ?? ''} onChangeText={(value) => setDraft(current.kind==='event'?{...current,scheduledAt:value}:{...current,dueAt:value})} placeholder="2026-07-22T14:30:00+02:00" style={styles.input}/>
+          <Text style={styles.fieldLabel}>Durata in minuti</Text><TextInput value={String(current.durationMinutes)} onChangeText={(value) => setDraft({ ...current, durationMinutes: Math.max(1, Number(value.replace(/\D/g,'')) || 1) })} keyboardType="number-pad" style={styles.input}/>
+          <View style={styles.actions}><Pressable onPress={cancelEdit} style={styles.secondaryButton}><Text style={styles.secondaryText}>Annulla</Text></Pressable><Pressable disabled={busyId===item.id} onPress={() => { void save(current,false); }} style={styles.saveButton}><Text style={styles.confirmText}>Salva modifiche</Text></Pressable><Pressable disabled={busyId===item.id} onPress={() => { void save(current,true); }} style={styles.confirmButton}><Text style={styles.confirmText}>Salva e conferma</Text></Pressable></View>
+        </> : <>
+          <Text style={styles.item}>{item.title}</Text>
+          <Text style={styles.meta}>Tipo proposto: {item.kind} · affidabilità {Math.round(item.confidence*100)}%</Text>
+          <Text style={styles.meta}>Data: {item.scheduledAt||item.dueAt?new Date(item.scheduledAt??item.dueAt!).toLocaleString('it-IT'):'non definita'}</Text>
+          <Text style={styles.meta}>Durata proposta: {item.durationMinutes} minuti</Text>
+          <View style={styles.actions}><Pressable onPress={() => startEdit(item)} style={styles.secondaryButton}><Text style={styles.secondaryText}>Modifica</Text></Pressable><Pressable disabled={busyId===item.id} onPress={() => { void save(item,true); }} style={styles.confirmButton}><Text style={styles.confirmText}>{busyId===item.id?'Conferma…':'Conferma'}</Text></Pressable></View>
+        </>}
+      </Card>;
+    }) : <Card><Text style={styles.empty}>Tutto chiaro. Nessun elemento richiede la tua verifica.</Text></Card>}
+  </ScrollView></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:14},title:{fontSize:31,fontWeight:'900',color:palette.ink,marginTop:14},sub:{fontSize:16,lineHeight:22,color:palette.muted,marginBottom:2},guideTitle:{fontSize:16,fontWeight:'900',color:palette.ink},guide:{fontSize:14,lineHeight:20,color:palette.muted,marginTop:8},item:{fontSize:18,fontWeight:'800',color:palette.ink},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:6},actions:{flexDirection:'row',marginTop:14},confirmButton:{backgroundColor:palette.primary,borderRadius:14,paddingHorizontal:16,paddingVertical:11},confirmText:{color:'#FFFFFF',fontWeight:'900'},empty:{fontWeight:'800',color:palette.success}
-});
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:14},title:{fontSize:31,fontWeight:'900',color:palette.ink,marginTop:14},sub:{fontSize:16,lineHeight:22,color:palette.muted,marginBottom:2},guideTitle:{fontSize:16,fontWeight:'900',color:palette.ink},guide:{fontSize:14,lineHeight:20,color:palette.muted,marginTop:8},item:{fontSize:18,fontWeight:'800',color:palette.ink},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:6},fieldLabel:{fontSize:12,fontWeight:'800',color:palette.muted,marginTop:10},input:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E2E4EA',borderRadius:12,padding:12,marginTop:5,color:palette.ink},kindRow:{flexDirection:'row',gap:8,marginTop:6},kindButton:{paddingHorizontal:11,paddingVertical:8,borderRadius:99,backgroundColor:'#ECEEF4'},kindActive:{backgroundColor:palette.primary},kindText:{fontWeight:'800',color:palette.muted},kindTextActive:{color:'#FFF'},actions:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:14},confirmButton:{backgroundColor:palette.primary,borderRadius:14,paddingHorizontal:16,paddingVertical:11},saveButton:{backgroundColor:palette.success,borderRadius:14,paddingHorizontal:16,paddingVertical:11},secondaryButton:{backgroundColor:'#ECEEF4',borderRadius:14,paddingHorizontal:16,paddingVertical:11},secondaryText:{color:palette.ink,fontWeight:'900'},confirmText:{color:'#FFF',fontWeight:'900'},empty:{fontWeight:'800',color:palette.success}});
