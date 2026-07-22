@@ -112,7 +112,7 @@ async function invoke(body: Record<string, unknown>, retries = 1) {
           Authorization: `Bearer ${accessToken}`,
           apikey: SUPABASE_KEY,
           'Content-Type': 'application/json',
-          'x-client-info': 'flowos-google-sync/3.1',
+          'x-client-info': 'flowos-google-sync/3.2',
         },
         body: JSON.stringify(body),
       });
@@ -177,12 +177,6 @@ export async function getGoogleWorkspaceStatus(): Promise<GoogleWorkspaceStatus>
   return { ...result, range: currentGoogleSyncRange() };
 }
 
-async function purgeOutOfRangeGoogleItems() {
-  const { data, error } = await supabase.rpc('purge_google_items_outside_flowos_range');
-  if (error) throw error;
-  recordDiagnostic('google-out-of-range-items-purged', { removed: data });
-}
-
 export async function syncGoogleWorkspace(onProgress?: (progress: SyncProgress) => void) {
   recordDiagnostic('google-sync-started');
   const totals = { pushed: 0, events: 0, tasks: 0 };
@@ -192,7 +186,7 @@ export async function syncGoogleWorkspace(onProgress?: (progress: SyncProgress) 
     const calendars = plan.calendars ?? [];
     const taskLists = plan.taskLists ?? [];
     const years = range.years;
-    const baseUnits = 3 + calendars.length * years.length + taskLists.length;
+    const baseUnits = 2 + calendars.length * years.length + taskLists.length;
     let completed = 0;
     const report = (stage: string, forced?: number) => {
       const percent = forced ?? Math.min(98, Math.max(1, Math.round((completed / Math.max(1, baseUnits)) * 94) + 3));
@@ -237,9 +231,6 @@ export async function syncGoogleWorkspace(onProgress?: (progress: SyncProgress) 
       report(`Google Tasks: ${list.title} completata`);
     }
 
-    onProgress?.({ percent: 96, stage: 'Pulizia degli elementi fuori intervallo' });
-    await purgeOutOfRangeGoogleItems();
-    completed += 1;
     onProgress?.({ percent: 98, stage: 'Finalizzazione della sincronizzazione' });
     await invoke({ action: 'sync-finish' });
     onProgress?.({ percent: 100, stage: 'Sincronizzazione completata' });
