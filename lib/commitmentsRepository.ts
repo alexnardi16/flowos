@@ -62,11 +62,22 @@ function fromRow(row: any): Commitment {
   };
 }
 
+function isVisibleInFlowOSRange(row: any) {
+  if (row.external_provider !== 'google') return true;
+  const year = new Date().getFullYear();
+  const start = new Date(Date.UTC(year, 0, 1)).getTime();
+  const end = new Date(Date.UTC(year + 2, 0, 1)).getTime();
+  const value = row.external_resource_type === 'calendar_event' ? row.starts_at : row.deadline_at;
+  if (!value) return false;
+  const time = new Date(value).getTime();
+  return time >= start && time < end;
+}
+
 export async function loadCommitments(): Promise<Commitment[]> {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase.from('commitments').select('*').is('deleted_at', null).order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map(fromRow);
+  return (data ?? []).filter(isVisibleInFlowOSRange).map(fromRow);
 }
 
 export async function saveCommitment(item: Commitment) {
