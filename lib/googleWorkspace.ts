@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
+import { recordDiagnostic } from './diagnostics';
 import { supabase } from './supabase';
 
 export const GOOGLE_SCOPES = [
@@ -43,36 +44,79 @@ export type GoogleWorkspaceStatus = {
   taskLists: GoogleTaskList[];
 };
 
-async function extractFunctionError(error: unknown): Promise<string | null> {
-  const context = (error as { context?: unknown } | null)?.context;
-  if (!context) return null;
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
+const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/google-workspace`;
+const REQUEST_TIMEOUT_MS = 90_000;
 
-  try {
-    if (context instanceof Response) {
-      const payload = await context.json().catch(() => null);
-      return payload && typeof payload === 'object' && 'error' in payload
-        ? String((payload as { error: unknown }).error)
-        : null;
-    }
-
-    if (typeof context === 'object' && context !== null && 'error' in context) {
-      return String((context as { error: unknown }).error);
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error || 'Errore sconosciuto');
 }
 
-async function invoke(body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('google-workspace', { body });
-  if (data?.error) throw new Error(String(data.error));
-  if (error) {
-    const detailedMessage = await extractFunctionError(error);
-    throw new Error(detailedMessage ?? error.message ?? 'Google Workspace non è raggiungibile.');
+async function markSyncFailed(message: string) {
+  recordDiagnostic('google-sync-mark-error', { message }, 'error');
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return;
+  const { error } = await supabase
+    .from('google_connections')
+    .update({ last_sync_status: 'error', last_sync_error: message })
+    .eq('user_id', data.user.id);
+  if (error) recordDiagnostic('google-sync-mark-error-failed', error, 'error');
+}
+
+async function invoke(body: Record<string, unknown>, retries = 1) {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) throw new Error('Sessione FlowOS scaduta. Esci e accedi nuovamente.');
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    recordDiagnostic('google-function-request-start', { action: body.action, attempt: attempt + 1 });
+    try {
+      const response = await fetch(FUNCTION_URL, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'x-client-info': 'flowos-google-sync/1.0',
+        },
+        body: JSON.stringify(body),
+      });
+      const raw = await response.text();
+      let payload: any = null;
+      try { payload = raw ? JSON.parse(raw) : null; }
+      catch { payload = raw ? { error: raw } : null; }
+
+      recordDiagnostic('google-function-response', {
+        action: body.action,
+        status: response.status,
+        ok: response.ok,
+      });
+
+      if (!response.ok || payload?.error) {
+        throw new Error(String(payload?.error || `Google Workspace ha risposto con stato ${response.status}.`));
+      }
+      return payload;
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof DOMException && error.name === 'AbortError'
+        ? 'La sincronizzazione ha superato il tempo massimo consentito.'
+        : errorMessage(error);
+      recordDiagnostic('google-function-request-failed', { action: body.action, attempt: attempt + 1, message }, 'error');
+      if (attempt >= retries || !/failed to fetch|network|send a request|timeout|tempo massimo|abort/i.test(message)) break;
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+    } finally {
+      clearTimeout(timeout);
+    }
   }
-  return data;
+
+  throw lastError instanceof Error ? lastError : new Error(errorMessage(lastError));
 }
 
 export async function signInWithGoogle() {
@@ -107,22 +151,35 @@ export async function connectGoogleFromSession(session: Session, force = false) 
 }
 
 export async function getGoogleWorkspaceStatus(): Promise<GoogleWorkspaceStatus> {
-  return invoke({ action: 'status' });
+  return invoke({ action: 'status' }, 0);
 }
 
 export async function syncGoogleWorkspace() {
+  recordDiagnostic('google-sync-started');
   try {
-    return await invoke({ action: 'sync' });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!/not connected|authorization expired|reconnect/i.test(message)) throw error;
-    const { data, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) throw sessionError;
-    if (!data.session?.provider_token) {
-      throw new Error('La sessione Google non contiene più il token necessario. Esci e accedi nuovamente con Google.');
+    try {
+      const result = await invoke({ action: 'sync' });
+      recordDiagnostic('google-sync-succeeded', result);
+      return result;
+    } catch (error) {
+      const message = errorMessage(error);
+      if (!/not connected|authorization expired|reconnect/i.test(message)) throw error;
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!data.session?.provider_token) {
+        throw new Error('La sessione Google non contiene più il token necessario. Esci e accedi nuovamente con Google.');
+      }
+      recordDiagnostic('google-sync-reconnecting');
+      await connectGoogleFromSession(data.session, true);
+      return await invoke({ action: 'sync' });
     }
-    await connectGoogleFromSession(data.session, true);
-    return invoke({ action: 'sync' });
+  } catch (error) {
+    const message = error instanceof DOMException && error.name === 'AbortError'
+      ? 'La sincronizzazione ha superato il tempo massimo consentito.'
+      : errorMessage(error);
+    await markSyncFailed(message);
+    recordDiagnostic('google-sync-failed', { message }, 'error');
+    throw new Error(message);
   }
 }
 
