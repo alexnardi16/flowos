@@ -60,18 +60,6 @@ const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/google-workspace`;
 const REQUEST_TIMEOUT_MS = 60_000;
 
-export function currentGoogleSyncRange(): GoogleSyncRange {
-  const startYear = new Date().getFullYear();
-  const endYear = startYear + 1;
-  return {
-    startYear,
-    endYear,
-    labelStart: `01/01/${startYear}`,
-    labelEnd: `31/12/${endYear}`,
-    years: [startYear, endYear],
-  };
-}
-
 function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return String(error || 'Errore sconosciuto');
@@ -112,7 +100,7 @@ async function invoke(body: Record<string, unknown>, retries = 1) {
           Authorization: `Bearer ${accessToken}`,
           apikey: SUPABASE_KEY,
           'Content-Type': 'application/json',
-          'x-client-info': 'flowos-google-sync/3.2',
+          'x-client-info': 'flowos-google-sync/2.0',
         },
         body: JSON.stringify(body),
       });
@@ -173,19 +161,17 @@ export async function connectGoogleFromSession(session: Session, force = false) 
 }
 
 export async function getGoogleWorkspaceStatus(): Promise<GoogleWorkspaceStatus> {
-  const result = await invoke({ action: 'status' }, 0);
-  return { ...result, range: currentGoogleSyncRange() };
+  return invoke({ action: 'status' }, 0);
 }
 
 export async function syncGoogleWorkspace(onProgress?: (progress: SyncProgress) => void) {
   recordDiagnostic('google-sync-started');
   const totals = { pushed: 0, events: 0, tasks: 0 };
-  const range = currentGoogleSyncRange();
   try {
     const plan = await invoke({ action: 'sync-start' });
     const calendars = plan.calendars ?? [];
     const taskLists = plan.taskLists ?? [];
-    const years = range.years;
+    const years: number[] = plan.range?.years ?? [];
     const baseUnits = 2 + calendars.length * years.length + taskLists.length;
     let completed = 0;
     const report = (stage: string, forced?: number) => {
@@ -231,11 +217,11 @@ export async function syncGoogleWorkspace(onProgress?: (progress: SyncProgress) 
       report(`Google Tasks: ${list.title} completata`);
     }
 
-    onProgress?.({ percent: 98, stage: 'Finalizzazione della sincronizzazione' });
+    onProgress?.({ percent: 97, stage: 'Finalizzazione della sincronizzazione' });
     await invoke({ action: 'sync-finish' });
     onProgress?.({ percent: 100, stage: 'Sincronizzazione completata' });
     recordDiagnostic('google-sync-succeeded', totals);
-    return { ...totals, range };
+    return { ...totals, range: plan.range };
   } catch (error) {
     const message = errorMessage(error);
     try { await invoke({ action: 'sync-fail', message }, 0); }
