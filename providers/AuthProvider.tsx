@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { beginDiagnosticSession, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
-import { connectGoogleFromSession, getGoogleWorkspaceStatus, syncGoogleWorkspace } from '../lib/googleWorkspace';
+import { connectGoogleFromSession, syncGoogleWorkspace } from '../lib/googleWorkspace';
 import { useFlowStore } from '../lib/store';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -69,14 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         recordDiagnostic('google-auto-sync-started', { userId: session.user.id });
-        const status = await getGoogleWorkspaceStatus();
-        const alreadyConnected = Boolean(status.connection && status.connection.last_sync_status !== 'disconnected');
-        if (!alreadyConnected) {
-          await connectGoogleFromSession(session, true);
-          recordDiagnostic('google-workspace-connected', { userId: session.user.id });
-        } else {
-          recordDiagnostic('google-workspace-connect-skipped', { userId: session.user.id, reason: 'already-connected' });
-        }
+        // The public connection row can survive after the private Google token was
+        // removed or expired. Refresh the private token on every new Google login
+        // before attempting any synchronization.
+        await connectGoogleFromSession(session, true);
+        recordDiagnostic('google-workspace-connection-refreshed', { userId: session.user.id });
         await syncGoogleWorkspace((progress) => recordDiagnostic('google-auto-sync-progress', progress));
         if (active) await hydrateFromCloud();
         recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
