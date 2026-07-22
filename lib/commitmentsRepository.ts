@@ -78,6 +78,25 @@ export async function saveCommitment(item: Commitment) {
   if (error) await enqueueMutation({ id: `${Date.now()}-${item.id}`, table: 'commitments', action: 'upsert', payload: row, createdAt: new Date().toISOString() });
 }
 
+export async function removeCommitmentOnlyFromFlowOS(id: string) {
+  const { error } = await supabase.from('commitments').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteCommitmentAlsoFromGoogle(item: Commitment) {
+  if (!item.externalId) {
+    await removeCommitmentOnlyFromFlowOS(item.id);
+    return;
+  }
+  const deleted: Commitment = {
+    ...item,
+    deletedAt: new Date().toISOString(),
+    syncStatus: 'pending',
+    syncError: undefined,
+  };
+  await saveCommitment(deleted);
+}
+
 export async function flushOfflineQueue() {
   if (!isSupabaseConfigured) return;
   const queue = await readQueue();
