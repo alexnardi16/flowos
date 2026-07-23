@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "rootDir": "..",
+    "outDir": "../.test-dist-notifications",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
+    "types": []
+  },
+  "include": ["../lib/dailySummary.ts", "../lib/notificationDedup.ts", "../types/index.ts"]
+}

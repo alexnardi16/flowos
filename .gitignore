@@ -7,3 +7,6 @@ web-build/
 *.log
 .DS_Store
 coverage/
+.test-dist/
+.test-dist-notifications/
+package-lock.json

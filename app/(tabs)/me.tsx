@@ -221,6 +221,7 @@ export default function Me() {
         </Card>
       </> : null}
 
+      <Card><Text style={styles.label}>Notifiche</Text><Text style={styles.meta}>Riepilogo giornaliero, recupero automatico e log dedicato.</Text><View style={styles.actions}><Button secondary label="Apri impostazioni notifiche" onPress={() => router.push('/notifications-settings')} /></View></Card>
       <Card><Text style={styles.label}>Modalità di controllo</Text><View style={styles.row}><View style={{ flex: 1 }}><Text style={styles.item}>Controllo assistito</Text><Text style={styles.meta}>L’IA propone. Tu approvi le modifiche importanti.</Text></View><Switch value={assisted} onValueChange={setAssisted} /></View></Card>
       <View style={styles.metrics}><Card style={styles.metricCard}><Text style={styles.metric}>{insights.completionRate}%</Text><Text style={styles.metricLabel}>Completamento</Text></Card><Card style={styles.metricCard}><Text style={styles.metric}>{insights.planned}</Text><Text style={styles.metricLabel}>Pianificati</Text></Card></View>
       <View style={styles.metrics}><Card style={styles.metricCard}><Text style={styles.metric}>{insights.done}</Text><Text style={styles.metricLabel}>Completati</Text></Card><Card style={styles.metricCard}><Text style={styles.metric}>{insights.totalMinutes}</Text><Text style={styles.metricLabel}>Minuti conclusi</Text></Card></View>
