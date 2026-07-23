@@ -19,6 +19,7 @@ Scansiona il QR code con Expo Go oppure avvia un emulatore Android/iOS.
 - Piano giornaliero con elementi fissi e blocchi IA
 - Inbox delle sole ambiguità
 - Focus mode
+- Riepilogo giornaliero automatico alle 07:30, con sincronizzazione Google e recupero se il dispositivo era spento/offline
 - Completamento e rinvio
 - Confidence score
 - Modalità “controllo assistito”

@@ -1,8 +1,10 @@
 import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { AppState } from 'react-native';
 import { beginDiagnosticSession, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
 import { connectGoogleFromSession, syncGoogleWorkspace } from '../lib/googleWorkspace';
+import { checkAndRecoverMissedDailySummary, registerBackgroundSync } from '../lib/backgroundSyncService';
 import { useFlowStore } from '../lib/store';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -83,6 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
     return () => { active = false; };
   }, [session?.provider_token, session?.user.id, session?.access_token, hydrateFromCloud]);
+
+  useEffect(() => {
+    if (!session?.user.id) return;
+    void registerBackgroundSync();
+    void checkAndRecoverMissedDailySummary();
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void checkAndRecoverMissedDailySummary();
+    });
+    return () => subscription.remove();
+  }, [session?.user.id]);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,

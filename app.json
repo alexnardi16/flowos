@@ -21,7 +21,9 @@
     "plugins": [
       "expo-router",
       ["expo-notifications", { "defaultChannel": "flowos-reminders" }],
-      ["expo-calendar", { "calendarPermission": "FlowOS usa il calendario per pianificare i tuoi impegni." }]
+      ["expo-calendar", { "calendarPermission": "FlowOS usa il calendario per pianificare i tuoi impegni." }],
+      "expo-task-manager",
+      "expo-background-task"
     ],
     "experiments": { "typedRoutes": true },
     "web": {
@@ -38,7 +40,9 @@
       "buildNumber": "2",
       "infoPlist": {
         "NSCalendarsFullAccessUsageDescription": "FlowOS usa il calendario per pianificare gli impegni.",
-        "NSRemindersFullAccessUsageDescription": "FlowOS usa i promemoria per aiutarti a non dimenticare gli impegni."
+        "NSRemindersFullAccessUsageDescription": "FlowOS usa i promemoria per aiutarti a non dimenticare gli impegni.",
+        "UIBackgroundModes": ["processing"],
+        "BGTaskSchedulerPermittedIdentifiers": ["com.expo.modules.backgroundtask.processing"]
       }
     }
   }
