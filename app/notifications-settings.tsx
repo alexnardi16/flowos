@@ -3,6 +3,7 @@ import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 
 import { router } from 'expo-router';
 import { Button, Card, palette } from '@/components/ui';
 import { buildDailySummary, DailySummary } from '@/lib/dailySummary';
+import { buildReminderPlan } from '@/lib/reminderPlan';
 import { checkAndRecoverMissedDailySummary, registerBackgroundSync, runDailySummaryRefresh, unregisterBackgroundSync } from '@/lib/backgroundSyncService';
 import {
   DAILY_SUMMARY_HOUR,
@@ -30,6 +31,7 @@ export default function NotificationsSettings() {
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
   const commitments = useFlowStore((state) => state.commitments);
+  const reminderPlan = buildReminderPlan(commitments, new Date());
 
   useEffect(() => {
     void isDailySummaryEnabledStored().then(setEnabled);
@@ -95,6 +97,17 @@ export default function NotificationsSettings() {
           Nota tecnica: iOS e Android decidono loro quando eseguire la sincronizzazione in background, per risparmiare batteria.
           L'orario della notifica è garantito dal sistema operativo; il contenuto riflette l'ultima sincronizzazione riuscita prima di quell'orario.
         </Text>
+      </Card>
+
+      <Card>
+        <Text style={styles.label}>Promemoria</Text>
+        <Text style={styles.meta}>Un avviso 10 minuti prima di ogni evento, più una notifica raggruppata per i task in scadenza e per quelli scaduti. Il badge sull'icona conta {reminderPlan.badgeCount} task da guardare.</Text>
+        <View style={styles.row}>
+          <Text style={styles.item}>{reminderPlan.eventReminders.length} promemoria evento in coda</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.item}>{reminderPlan.dueSoon.length} task in scadenza · {reminderPlan.overdue.length} scadute</Text>
+        </View>
       </Card>
 
       <Card>

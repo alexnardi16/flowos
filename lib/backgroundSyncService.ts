@@ -3,6 +3,7 @@ import * as BackgroundTask from 'expo-background-task';
 import { buildDailySummary, toDateKey } from './dailySummary';
 import { loadCommitments } from './commitmentsRepository';
 import { syncGoogleWorkspace } from './googleWorkspace';
+import { runReminderEngine } from './reminderEngine';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
 import {
@@ -28,23 +29,19 @@ async function hasAuthenticatedSession(): Promise<boolean> {
   return Boolean(data.session);
 }
 
-async function buildSummaryFromLatestData(now: Date) {
+async function loadFreshData(now: Date) {
   const commitments = await loadCommitments();
-  return buildDailySummary(commitments, now);
+  return { commitments, summary: buildDailySummary(commitments, now) };
 }
 
 /**
  * GoogleSyncService (lib/googleWorkspace.ts) + PlanningEngine's data source
- * (lib/commitmentsRepository.ts) + DailySummaryGenerator (lib/dailySummary.ts),
- * chained together and handed to NotificationService. Shared by the OS
- * background task and by the in-app recovery check below, so both paths stay
- * in sync.
+ * (lib/commitmentsRepository.ts) + DailySummaryGenerator (lib/dailySummary.ts)
+ * + ReminderEngine (lib/reminderEngine.ts), chained together and handed to
+ * NotificationService. Shared by the OS background task and by the in-app
+ * recovery check below, so both paths stay in sync.
  */
 export async function runDailySummaryRefresh(now: Date = new Date()) {
-  if (!(await isDailySummaryEnabledStored())) {
-    await logNotificationEvent('daily-summary-refresh-skipped-disabled');
-    return null;
-  }
   if (!(await hasAuthenticatedSession())) {
     await logNotificationEvent('daily-summary-refresh-skipped-no-session');
     return null;
@@ -60,10 +57,28 @@ export async function runDailySummaryRefresh(now: Date = new Date()) {
     await logNotificationEvent('daily-summary-google-sync-failed', error, 'warn');
   }
 
-  const summary = await buildSummaryFromLatestData(now);
+  const { commitments, summary } = await loadFreshData(now);
+  await runReminderEngine(commitments, now);
+
+  if (!(await isDailySummaryEnabledStored())) {
+    await logNotificationEvent('daily-summary-refresh-skipped-disabled');
+    return summary;
+  }
   await scheduleDailySummaryNotification(summary);
   await logNotificationEvent('daily-summary-refresh-completed', { dateKey: summary.dateKey });
   return summary;
+}
+
+/**
+ * Cheap, local-only refresh of event/due-task reminders (no Google sync),
+ * meant to be called often — every foreground, not just once a day. Kept
+ * independent of the daily-summary enabled flag: turning off the 07:30
+ * riepilogo should not silently turn off event and due-task reminders too.
+ */
+export async function refreshReminders(now: Date = new Date()) {
+  if (!(await hasAuthenticatedSession())) return null;
+  const commitments = await loadCommitments();
+  return runReminderEngine(commitments, now);
 }
 
 /**
@@ -90,7 +105,7 @@ export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) 
     await logNotificationEvent('daily-summary-recovery-google-sync-failed', error, 'warn');
   }
 
-  const summary = await buildSummaryFromLatestData(now);
+  const { summary } = await loadFreshData(now);
   await sendImmediateSummaryNotification(summary);
   await markRecovered(dateKey);
   // Keep tomorrow's recurring notification fresh too, otherwise it would

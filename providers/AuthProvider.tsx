@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
 import { beginDiagnosticSession, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
 import { connectGoogleFromSession, syncGoogleWorkspace } from '../lib/googleWorkspace';
-import { checkAndRecoverMissedDailySummary, registerBackgroundSync } from '../lib/backgroundSyncService';
+import { checkAndRecoverMissedDailySummary, refreshReminders, registerBackgroundSync } from '../lib/backgroundSyncService';
 import { useFlowStore } from '../lib/store';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -90,9 +90,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session?.user.id) return;
     void registerBackgroundSync();
     void checkAndRecoverMissedDailySummary();
+    void refreshReminders();
 
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void checkAndRecoverMissedDailySummary();
+      if (state === 'active') {
+        void checkAndRecoverMissedDailySummary();
+        void refreshReminders();
+      }
     });
     return () => subscription.remove();
   }, [session?.user.id]);
