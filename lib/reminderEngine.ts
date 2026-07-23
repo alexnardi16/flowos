@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildReminderPlan, summarizeTaskList, type ReminderPlan } from './reminderPlan';
 import { ensureDailySummaryChannel, requestNotificationPermission } from './notificationService';
+import { syncTodayWidget } from './widgetSync';
 import { logNotificationEvent } from './notificationLog';
 import type { Commitment } from '../types';
 
@@ -176,6 +177,7 @@ export async function runReminderEngine(commitments: Commitment[], now: Date = n
     'overdue',
   );
   await syncBadge(plan.badgeCount);
+  await syncTodayWidget(commitments, now);
 
   await logNotificationEvent('reminder-engine-completed', {
     events: plan.eventReminders.length,

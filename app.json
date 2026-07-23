@@ -23,7 +23,20 @@
       ["expo-notifications", { "defaultChannel": "flowos-reminders" }],
       ["expo-calendar", { "calendarPermission": "FlowOS usa il calendario per pianificare i tuoi impegni." }],
       "expo-task-manager",
-      "expo-background-task"
+      "expo-background-task",
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "TodayWidget",
+              "displayName": "FlowOS Oggi",
+              "description": "Prossimo evento e task in scadenza/scadute.",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            }
+          ]
+        }
+      ]
     ],
     "experiments": { "typedRoutes": true },
     "web": {

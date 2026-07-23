@@ -14,13 +14,14 @@
     "typecheck": "tsc --noEmit",
     "test:auth": "rm -rf .test-dist && tsc -p tests/tsconfig.auth.json && node --test tests/authFlow.test.cjs",
     "test:selectors": "node --test tests/zustandSelectors.test.cjs",
-    "test:notifications": "rm -rf .test-dist-notifications && tsc -p tests/tsconfig.notifications.json && node --test tests/dailySummary.test.cjs tests/notificationDedup.test.cjs tests/reminderPlan.test.cjs",
+    "test:notifications": "rm -rf .test-dist-notifications && tsc -p tests/tsconfig.notifications.json && node --test tests/dailySummary.test.cjs tests/notificationDedup.test.cjs tests/reminderPlan.test.cjs tests/widgetData.test.cjs",
     "test": "npm run test:auth && npm run test:selectors && npm run test:notifications",
     "validate:web": "npm run typecheck && npm test && npx expo export --platform web",
     "eas:preview": "eas update --channel preview --message \"FlowOS preview\" --environment preview",
     "eas:build:preview": "npx eas-cli build --profile preview --platform android"
   },
   "dependencies": {
+    "@expo/ui": "~57.0.7",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.57.4",
@@ -37,6 +38,7 @@
     "expo-status-bar": "~57.0.1",
     "expo-task-manager": "~57.0.6",
     "expo-updates": "~57.0.6",
+    "expo-widgets": "~57.0.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.0",
