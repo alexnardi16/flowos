@@ -24,6 +24,7 @@
       ["expo-calendar", { "calendarPermission": "FlowOS usa il calendario per pianificare i tuoi impegni." }],
       "expo-task-manager",
       "expo-background-task",
+      ["expo-location", { "locationWhenInUsePermission": "FlowOS usa la posizione per mostrare il meteo di oggi nel riepilogo giornaliero." }],
       [
         "expo-widgets",
         {

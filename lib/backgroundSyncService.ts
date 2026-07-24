@@ -5,6 +5,7 @@ import { loadCommitments } from './commitmentsRepository';
 import { syncGoogleWorkspace } from './googleWorkspace';
 import { runReminderEngine } from './reminderEngine';
 import { runIntelligentReplan } from './replanEngine';
+import { fetchTodayWeather } from './weather';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
 import {
@@ -63,13 +64,16 @@ export async function runDailySummaryRefresh(now: Date = new Date()) {
   const { commitments, summary } = await loadFreshData(now);
   await runReminderEngine(commitments, now);
 
+  const weather = await fetchTodayWeather();
+  const enrichedSummary = weather ? { ...summary, body: `${weather.text}. ${summary.body}`.trim() } : summary;
+
   if (!(await isDailySummaryEnabledStored())) {
     await logNotificationEvent('daily-summary-refresh-skipped-disabled');
-    return summary;
+    return enrichedSummary;
   }
-  await scheduleDailySummaryNotification(summary);
+  await scheduleDailySummaryNotification(enrichedSummary);
   await logNotificationEvent('daily-summary-refresh-completed', { dateKey: summary.dateKey });
-  return summary;
+  return enrichedSummary;
 }
 
 /**
@@ -109,11 +113,13 @@ export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) 
   }
 
   const { summary } = await loadFreshData(now);
-  await sendImmediateSummaryNotification(summary);
+  const weather = await fetchTodayWeather();
+  const enrichedSummary = weather ? { ...summary, body: `${weather.text}. ${summary.body}`.trim() } : summary;
+  await sendImmediateSummaryNotification(enrichedSummary);
   await markRecovered(dateKey);
   // Keep tomorrow's recurring notification fresh too, otherwise it would
   // still be carrying whatever content was scheduled before the recovery.
-  await scheduleDailySummaryNotification(summary);
+  await scheduleDailySummaryNotification(enrichedSummary);
   await logNotificationEvent('daily-summary-recovery-completed', { dateKey });
 }
 
