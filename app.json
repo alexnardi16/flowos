@@ -20,6 +20,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withNativeAccessJvmArgs.js",
       ["expo-notifications", { "defaultChannel": "flowos-reminders" }],
       ["expo-calendar", { "calendarPermission": "FlowOS usa il calendario per pianificare i tuoi impegni." }],
       "expo-task-manager",

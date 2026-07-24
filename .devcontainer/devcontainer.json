@@ -3,13 +3,14 @@
   "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
-      "version": "21",
+      "version": "17",
       "jdkDistro": "ms"
     }
   },
   "containerEnv": {
     "ANDROID_HOME": "/home/node/android-sdk",
-    "ANDROID_SDK_ROOT": "/home/node/android-sdk"
+    "ANDROID_SDK_ROOT": "/home/node/android-sdk",
+    "JAVA_TOOL_OPTIONS": "--enable-native-access=ALL-UNNAMED"
   },
   "remoteEnv": {
     "PATH": "${containerEnv:PATH}:${containerEnv:ANDROID_HOME}/cmdline-tools/latest/bin:${containerEnv:ANDROID_HOME}/platform-tools"
