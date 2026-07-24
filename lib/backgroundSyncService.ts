@@ -4,6 +4,7 @@ import { buildDailySummary, toDateKey } from './dailySummary';
 import { loadCommitments } from './commitmentsRepository';
 import { syncGoogleWorkspace } from './googleWorkspace';
 import { runReminderEngine } from './reminderEngine';
+import { runIntelligentReplan } from './replanEngine';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
 import {
@@ -30,7 +31,9 @@ async function hasAuthenticatedSession(): Promise<boolean> {
 }
 
 async function loadFreshData(now: Date) {
-  const commitments = await loadCommitments();
+  const loaded = await loadCommitments();
+  const replanned = await runIntelligentReplan(loaded, undefined, now);
+  const commitments = replanned ?? loaded;
   return { commitments, summary: buildDailySummary(commitments, now) };
 }
 
@@ -77,7 +80,7 @@ export async function runDailySummaryRefresh(now: Date = new Date()) {
  */
 export async function refreshReminders(now: Date = new Date()) {
   if (!(await hasAuthenticatedSession())) return null;
-  const commitments = await loadCommitments();
+  const { commitments } = await loadFreshData(now);
   return runReminderEngine(commitments, now);
 }
 

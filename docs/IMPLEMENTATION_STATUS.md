@@ -14,6 +14,7 @@
 - Local notifications
 - Daily summary notification at 07:30 local time, with automatic Google Calendar/Tasks sync beforehand, missed-summary recovery on app foreground, duplicate prevention, a dedicated notification log, and a Notifiche settings screen
 - Per-event reminders 10 minutes before start, grouped due-soon/overdue task notifications, and app badge count (ReminderEngine)
+- Automatic replanning (missed slots, conflicts with fixed events), energy-aware scheduling within real weekly availability windows, and rule-based planning suggestions (ReplanEngine + extended PlanningEngine)
 - Device calendar event creation
 - EAS Build and EAS Update profiles
 - GitHub Actions TypeScript validation
@@ -39,6 +40,7 @@
   - Wear OS companion: not implemented. This is a separate native Kotlin module using the Wear OS Data Layer API to talk to the phone app — real native engineering, not a config-plugin shortcut.
   - Apple Watch companion: not implemented. Same situation on the other platform — a separate watchOS target in Swift/SwiftUI, using WatchConnectivity to talk to the phone app.
   - Recommend doing the remaining three with a local Claude Code session (or a mobile engineer) on a machine that actually has Xcode/Android Studio, where the native build can be compiled and tested as it's written — the same rigor Sprint 1/2 had here, just with the right tools for native code.
+- **Sprint 4's "suggerimenti automatici dell'IA" are rule-based heuristics, not an LLM call.** Wiring real AI suggestions in would need a new Supabase Edge Function (like `interpret-commitment`) calling a model — writeable here, but not deployable or testable end-to-end without Supabase project access. The current gap list already flags that even the *existing* Google-sync edge functions aren't committed to this repo; adding a new undeployed one would only make that worse until that's sorted out first.
 
 ## Later native product work
 
