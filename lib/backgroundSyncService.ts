@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
 import { buildDailySummary, toDateKey } from './dailySummary';
@@ -33,9 +34,23 @@ async function hasAuthenticatedSession(): Promise<boolean> {
 
 async function loadFreshData(now: Date) {
   const loaded = await loadCommitments();
-  const replanned = await runIntelligentReplan(loaded, undefined, now);
-  const commitments = replanned ?? loaded;
+  let commitments = loaded;
+  try {
+    const replanned = await runIntelligentReplan(loaded, undefined, now);
+    if (replanned) commitments = replanned;
+  } catch (error) {
+    await logNotificationEvent('intelligent-replan-failed', error, 'warn');
+  }
   return { commitments, summary: buildDailySummary(commitments, now) };
+}
+
+async function safeRunReminderEngine(commitments: Parameters<typeof runReminderEngine>[0], now: Date) {
+  try {
+    return await runReminderEngine(commitments, now);
+  } catch (error) {
+    await logNotificationEvent('reminder-engine-failed', error, 'warn');
+    return null;
+  }
 }
 
 /**
@@ -62,7 +77,7 @@ export async function runDailySummaryRefresh(now: Date = new Date()) {
   }
 
   const { commitments, summary } = await loadFreshData(now);
-  await runReminderEngine(commitments, now);
+  await safeRunReminderEngine(commitments, now);
 
   const weather = await fetchTodayWeather();
   const enrichedSummary = weather ? { ...summary, body: `${weather.text}. ${summary.body}`.trim() } : summary;
@@ -85,7 +100,7 @@ export async function runDailySummaryRefresh(now: Date = new Date()) {
 export async function refreshReminders(now: Date = new Date()) {
   if (!(await hasAuthenticatedSession())) return null;
   const { commitments } = await loadFreshData(now);
-  return runReminderEngine(commitments, now);
+  return safeRunReminderEngine(commitments, now);
 }
 
 /**
@@ -144,6 +159,10 @@ TaskManager.defineTask(DAILY_SUMMARY_TASK, async () => {
 });
 
 export async function registerBackgroundSync() {
+  if (Platform.OS === 'web') {
+    await logNotificationEvent('background-task-skipped-web-unsupported');
+    return;
+  }
   try {
     const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK);
     if (already) return;
@@ -159,6 +178,7 @@ export async function registerBackgroundSync() {
 }
 
 export async function unregisterBackgroundSync() {
+  if (Platform.OS === 'web') return;
   try {
     const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK);
     if (!already) return;

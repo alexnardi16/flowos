@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Card, palette } from '@/components/ui';
+import { Button, Card, palette, showAlert } from '@/components/ui';
 import { buildDailySummary, DailySummary } from '@/lib/dailySummary';
 import { buildReminderPlan } from '@/lib/reminderPlan';
 import { checkAndRecoverMissedDailySummary, registerBackgroundSync, runDailySummaryRefresh, unregisterBackgroundSync } from '@/lib/backgroundSyncService';
@@ -11,10 +11,11 @@ import {
   disableDailySummaryNotification,
   getLastRecoveryDateKey,
   isDailySummaryEnabledStored,
+  NOTIFICATIONS_SUPPORTED_HERE,
   sendImmediateSummaryNotification,
   setDailySummaryEnabledStored,
 } from '@/lib/notificationService';
-import { getNotificationLog, subscribeNotificationLog, type NotificationLogEntry } from '@/lib/notificationLog';
+import { clearNotificationLog, getNotificationLog, subscribeNotificationLog, type NotificationLogEntry } from '@/lib/notificationLog';
 import { useFlowStore } from '@/lib/store';
 
 const TIME_LABEL = `${String(DAILY_SUMMARY_HOUR).padStart(2, '0')}:${String(DAILY_SUMMARY_MINUTE).padStart(2, '0')}`;
@@ -56,23 +57,45 @@ export default function NotificationsSettings() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Operazione non riuscita.';
-      Alert.alert('Notifiche', message);
+      showAlert('Notifiche', message);
     } finally {
       setBusy(false);
     }
   }
 
   async function sendTest() {
+    if (!NOTIFICATIONS_SUPPORTED_HERE) {
+      showAlert('Notifiche', "Le notifiche non sono supportate nel browser web. Prova dall'app installata su telefono.");
+      return;
+    }
     setBusy(true);
     try {
       const summary: DailySummary = buildDailySummary(commitments, new Date());
-      await sendImmediateSummaryNotification(summary, true);
-      Alert.alert('Notifiche', 'Notifica di prova inviata.');
+      const identifier = await sendImmediateSummaryNotification(summary, true);
+      if (identifier) showAlert('Notifiche', 'Notifica di prova inviata.');
+      else showAlert('Notifiche', 'Invio non riuscito: permesso notifiche non concesso. Controlla le impostazioni del telefono.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Invio non riuscito.';
-      Alert.alert('Notifiche', message);
+      showAlert('Notifiche', message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  function clearLogs() {
+    void clearNotificationLog();
+    showAlert('Notifiche', 'Log ripulito.');
+  }
+
+  async function copyLogs() {
+    const text = logs.map(logLine).join('\n');
+    if (!text) return showAlert('Notifiche', 'Non ci sono log da copiare.');
+    try {
+      if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) throw new Error('Clipboard non disponibile');
+      await navigator.clipboard.writeText(text);
+      showAlert('Notifiche', 'Log copiato negli appunti.');
+    } catch {
+      showAlert('Notifiche', 'Non è stato possibile copiare automaticamente il log.');
     }
   }
 
@@ -91,7 +114,7 @@ export default function NotificationsSettings() {
         </View>
         {lastRecovery ? <Text style={styles.meta}>Ultimo recupero automatico: {lastRecovery}</Text> : null}
         <View style={styles.actions}>
-          <Button secondary label="Invia ora di prova" onPress={() => { void sendTest(); }} disabled={busy || !enabled} />
+          <Button secondary label="Invia adesso notifiche di prova" onPress={() => { void sendTest(); }} disabled={busy || !enabled} />
         </View>
         <Text style={styles.note}>
           Nota tecnica: iOS e Android decidono loro quando eseguire la sincronizzazione in background, per risparmiare batteria.
@@ -115,6 +138,8 @@ export default function NotificationsSettings() {
         <Text style={styles.meta}>Registra ogni pianificazione, invio e sincronizzazione legata alle notifiche, su tutte le piattaforme.</Text>
         <View style={styles.actions}>
           <Button secondary label={showLogs ? 'Nascondi log' : 'Mostra log'} onPress={() => setShowLogs((value) => !value)} />
+          <Button secondary label="Copia log" onPress={() => { void copyLogs(); }} />
+          <Button secondary label="Pulisci log" onPress={clearLogs} />
         </View>
         {showLogs ? <View style={styles.logBox}>
           {logs.length ? logs.map((entry, index) => (

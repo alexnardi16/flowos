@@ -7,6 +7,14 @@ import { hasRecoveredToday } from './notificationDedup';
 
 export { hasRecoveredToday };
 
+// expo-notifications' scheduling APIs (scheduleNotificationAsync, permission
+// requests, channels) are not implemented on web — calling them throws
+// "is not available on web". Real web push notifications need a completely
+// different implementation (Service Worker + Web Push API), which does not
+// exist yet — see docs/IMPLEMENTATION_STATUS.md. Every function below
+// checks this first and no-ops instead of crashing.
+export const NOTIFICATIONS_SUPPORTED_HERE = Platform.OS !== 'web';
+
 export const DAILY_SUMMARY_CHANNEL = 'flowos-daily-summary';
 export const DAILY_SUMMARY_HOUR = 7;
 export const DAILY_SUMMARY_MINUTE = 30;
@@ -24,6 +32,7 @@ export async function ensureDailySummaryChannel() {
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
+  if (!NOTIFICATIONS_SUPPORTED_HERE) return false;
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
   const requested = await Notifications.requestPermissionsAsync();
@@ -49,6 +58,7 @@ export async function markRecovered(dateKey: string) {
 }
 
 async function cancelPreviousScheduledSummary() {
+  if (!NOTIFICATIONS_SUPPORTED_HERE) return;
   const previousId = await AsyncStorage.getItem(SCHEDULED_ID_KEY);
   if (!previousId) return;
   try { await Notifications.cancelScheduledNotificationAsync(previousId); }
@@ -71,7 +81,11 @@ async function cancelPreviousScheduledSummary() {
 export async function scheduleDailySummaryNotification(summary: DailySummary): Promise<string | null> {
   const allowed = await requestNotificationPermission();
   if (!allowed) {
-    await logNotificationEvent('schedule-summary-permission-denied', undefined, 'warn');
+    await logNotificationEvent(
+      NOTIFICATIONS_SUPPORTED_HERE ? 'schedule-summary-permission-denied' : 'schedule-summary-skipped-web-unsupported',
+      undefined,
+      NOTIFICATIONS_SUPPORTED_HERE ? 'warn' : 'info',
+    );
     return null;
   }
   await ensureDailySummaryChannel();
@@ -110,7 +124,11 @@ export async function disableDailySummaryNotification() {
 export async function sendImmediateSummaryNotification(summary: DailySummary, test = false): Promise<string | null> {
   const allowed = await requestNotificationPermission();
   if (!allowed) {
-    await logNotificationEvent('send-immediate-summary-permission-denied', undefined, 'warn');
+    await logNotificationEvent(
+      NOTIFICATIONS_SUPPORTED_HERE ? 'send-immediate-summary-permission-denied' : 'send-immediate-summary-skipped-web-unsupported',
+      undefined,
+      NOTIFICATIONS_SUPPORTED_HERE ? 'warn' : 'info',
+    );
     return null;
   }
   await ensureDailySummaryChannel();

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Card, palette } from '@/components/ui';
-import { readDiagnostics, recordDiagnostic, subscribeDiagnostics, type DiagnosticEntry } from '@/lib/diagnostics';
+import { Button, Card, palette, showAlert } from '@/components/ui';
+import { clearDiagnostics, readDiagnostics, recordDiagnostic, subscribeDiagnostics, type DiagnosticEntry } from '@/lib/diagnostics';
 import {
   connectGoogleFromSession,
   disconnectGoogleWorkspace,
@@ -62,17 +62,22 @@ export default function Me() {
 
   async function copyLogs() {
     const text = readDiagnostics().map(logLine).join('\n');
-    if (!text) return Alert.alert('Logger', 'Non ci sono log da copiare.');
+    if (!text) return showAlert('Logger', 'Non ci sono log da copiare.');
     try {
       if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) throw new Error('Clipboard non disponibile');
       await navigator.clipboard.writeText(text);
       recordDiagnostic('logs-copied', { entries: readDiagnostics().length });
-      Alert.alert('Logger', 'Log copiato negli appunti.');
+      showAlert('Logger', 'Log copiato negli appunti.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Copia del log non riuscita.';
       recordDiagnostic('logs-copy-failed', { message }, 'error');
-      Alert.alert('Logger', 'Non è stato possibile copiare automaticamente il log.');
+      showAlert('Logger', 'Non è stato possibile copiare automaticamente il log.');
     }
+  }
+
+  function clearLogs() {
+    clearDiagnostics();
+    showAlert('Logger', 'Log ripulito.');
   }
 
   async function loadGoogle(repairStale = true) {
@@ -112,7 +117,7 @@ export default function Me() {
       const message = error instanceof Error ? error.message : 'Operazione Google non riuscita.';
       setGoogleError(message);
       recordDiagnostic('google-operation-failed', { message }, 'error');
-      Alert.alert('Google Workspace', message);
+      showAlert('Google Workspace', message);
       await loadGoogle(false);
     } finally {
       setGoogleBusy(false);
@@ -143,7 +148,7 @@ export default function Me() {
       setGoogleError(message);
       setSyncStage('Sincronizzazione interrotta');
       recordDiagnostic('sync-ui-failed', { message }, 'error');
-      Alert.alert('Sincronizzazione Google', message);
+      showAlert('Sincronizzazione Google', message);
       await loadGoogle(false);
     } finally {
       setGoogleBusy(false);
@@ -159,7 +164,7 @@ export default function Me() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Logout non riuscito.';
       recordDiagnostic('flowos-logout-failed', { message }, 'error');
-      Alert.alert('FlowOS', message);
+      showAlert('FlowOS', message);
     }
   }
 
@@ -231,7 +236,7 @@ export default function Me() {
       <Card>
         <Text style={styles.label}>Logger</Text>
         <Text style={styles.meta}>Mostra automaticamente tutto il log della sessione corrente e si aggiorna in tempo reale. Viene azzerato soltanto al login e al logout.</Text>
-        <View style={styles.actions}><Button secondary label={showLogs ? 'Nascondi log' : 'Mostra log'} onPress={() => setShowLogs((value) => !value)}/><Button secondary label="Copia log" onPress={() => { void copyLogs(); }}/></View>
+        <View style={styles.actions}><Button secondary label={showLogs ? 'Nascondi log' : 'Mostra log'} onPress={() => setShowLogs((value) => !value)}/><Button secondary label="Copia log" onPress={() => { void copyLogs(); }}/><Button secondary label="Pulisci log" onPress={clearLogs}/></View>
         {showLogs ? <View style={styles.logBox}>{logs.length ? logs.map((entry, index) => <Text key={`${entry.at}-${index}`} selectable style={[styles.logLine, entry.level === 'error' && styles.logError]}>{logLine(entry)}</Text>) : <Text style={styles.meta}>Nessun evento registrato.</Text>}</View> : null}
       </Card>
 

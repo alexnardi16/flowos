@@ -1,5 +1,19 @@
 import { PropsWithChildren } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+
+/**
+ * Alert.alert routinely shows nothing on web (react-native-web's support for
+ * it is incomplete depending on setup) — buttons that call it there can
+ * look like they "do nothing". Falls back to window.alert/window.confirm on
+ * web so feedback is always visible, whatever platform this runs on.
+ */
+export function showAlert(title: string, message?: string) {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') window.alert(message ? `${title}\n\n${message}` : title);
+    return;
+  }
+  Alert.alert(title, message);
+}
 
 export const palette = {
   bg:'#F6F7FB', card:'#FFFFFF', ink:'#172033', muted:'#687086', primary:'#6658D3',

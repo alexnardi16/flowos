@@ -2,9 +2,10 @@ import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
-import { beginDiagnosticSession, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
+import { beginDiagnosticSession, clearDiagnostics, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
 import { connectGoogleFromSession, syncGoogleWorkspace } from '../lib/googleWorkspace';
 import { checkAndRecoverMissedDailySummary, refreshReminders, registerBackgroundSync } from '../lib/backgroundSyncService';
+import { clearNotificationLog } from '../lib/notificationLog';
 import { useFlowStore } from '../lib/store';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -25,6 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hydrateFromCloud = useFlowStore((state) => state.hydrateFromCloud);
 
   useEffect(() => {
+    clearDiagnostics();
+    void clearNotificationLog();
     recordDiagnostic('auth-provider-mounted', { configured: isSupabaseConfigured });
     if (!isSupabaseConfigured) { setLoading(false); return; }
     let active = true;

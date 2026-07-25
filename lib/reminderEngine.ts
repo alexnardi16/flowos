@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildReminderPlan, summarizeTaskList, type ReminderPlan } from './reminderPlan';
-import { ensureDailySummaryChannel, requestNotificationPermission } from './notificationService';
+import { ensureDailySummaryChannel, NOTIFICATIONS_SUPPORTED_HERE, requestNotificationPermission } from './notificationService';
 import { syncTodayWidget } from './widgetSync';
 import { logNotificationEvent } from './notificationLog';
 import type { Commitment } from '../types';
@@ -151,7 +151,11 @@ async function syncBadge(count: number) {
 export async function runReminderEngine(commitments: Commitment[], now: Date = new Date()): Promise<ReminderPlan | null> {
   const allowed = await requestNotificationPermission();
   if (!allowed) {
-    await logNotificationEvent('reminder-engine-permission-denied', undefined, 'warn');
+    await logNotificationEvent(
+      NOTIFICATIONS_SUPPORTED_HERE ? 'reminder-engine-permission-denied' : 'reminder-engine-skipped-web-unsupported',
+      undefined,
+      NOTIFICATIONS_SUPPORTED_HERE ? 'warn' : 'info',
+    );
     return null;
   }
   await ensureDailySummaryChannel();
