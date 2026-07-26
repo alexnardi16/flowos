@@ -1,4 +1,4 @@
-const { withGradleProperties } = require('@expo/config-plugins');
+const { withGradleProperties } = require('expo/config-plugins');
 
 const NATIVE_ACCESS_FLAG = '--enable-native-access=ALL-UNNAMED';
 

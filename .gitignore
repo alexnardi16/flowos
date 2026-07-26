@@ -10,3 +10,6 @@ coverage/
 .test-dist/
 .test-dist-notifications/
 package-lock.json
+*.apk
+*.aab
+supabase/.temp/
