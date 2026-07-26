@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Commitment } from '@/types';
-import { deleteCommitmentAlsoFromGoogle, flushOfflineQueue, loadCommitments, removeCommitmentOnlyFromFlowOS, saveCommitment } from './commitmentsRepository';
+import { deleteCommitmentAlsoFromGoogle, deleteRecurringSeries, flushOfflineQueue, loadCommitments, removeCommitmentOnlyFromFlowOS, saveCommitment } from './commitmentsRepository';
+import { materializeNextOccurrence } from './recurrence';
 import { createAutomaticPlan } from './scheduler';
 
 type State = {
@@ -16,6 +17,7 @@ type State = {
   updateCommitment: (commitment: Commitment) => Promise<void>;
   removeOnlyFromFlowOS: (id: string) => Promise<void>;
   removeAlsoFromGoogle: (id: string) => Promise<void>;
+  removeSeriesFromGoogle: (id: string) => Promise<void>;
   autoPlan: () => Promise<void>;
   startFocus: (id: string) => void;
   stopFocus: () => void;
@@ -45,8 +47,14 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     const item = get().commitments.find((commitment) => commitment.id === id);
     if (!item) return;
     const updated: Commitment = { ...item, status: 'done' };
-    set((state) => ({ commitments: state.commitments.map((commitment) => commitment.id === id ? updated : commitment) }));
+    const next = materializeNextOccurrence(updated);
+    set((state) => ({
+      commitments: next
+        ? [next, ...state.commitments.map((commitment) => commitment.id === id ? updated : commitment)]
+        : state.commitments.map((commitment) => commitment.id === id ? updated : commitment),
+    }));
     await saveCommitment(updated);
+    if (next) await saveCommitment(next);
   },
 
   postpone: async (id) => {
@@ -72,6 +80,14 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     if (!item) return;
     await deleteCommitmentAlsoFromGoogle(item);
     set((state) => ({ commitments: state.commitments.filter((commitment) => commitment.id !== id) }));
+  },
+
+  removeSeriesFromGoogle: async (id) => {
+    const item = get().commitments.find((commitment) => commitment.id === id);
+    if (!item) return;
+    await deleteRecurringSeries(item);
+    const seriesId = item.googleRecurringEventId;
+    set((state) => ({ commitments: state.commitments.filter((commitment) => commitment.googleRecurringEventId !== seriesId) }));
   },
 
   autoPlan: async () => {

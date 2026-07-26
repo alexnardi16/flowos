@@ -61,3 +61,15 @@ test('done items are never rescheduled', () => {
   const plan = createAutomaticPlan(commitments, DEFAULT_WEEKLY_AVAILABILITY, WEDNESDAY_MORNING);
   assert.equal(plan.find((item) => item.id === 'done').scheduledAt, undefined);
 });
+
+test('an all-day fixed event does not block flexible tasks from being scheduled that same day', () => {
+  const allDayStart = new Date(2026, 6, 22, 0, 0).toISOString();
+  const commitments = [
+    commitment({ id: 'birthday', fixed: true, allDay: true, status: 'scheduled', scheduledAt: allDayStart, durationMinutes: 1440 }),
+    commitment({ id: 'task' }),
+  ];
+  const plan = createAutomaticPlan(commitments, DEFAULT_WEEKLY_AVAILABILITY, WEDNESDAY_MORNING);
+  const task = plan.find((item) => item.id === 'task');
+  assert.ok(task.scheduledAt, 'the flexible task should have been placed somewhere');
+  assert.equal(new Date(task.scheduledAt).getDate(), 22, 'it should still be placeable on the same day as the all-day event');
+});

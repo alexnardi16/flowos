@@ -30,7 +30,7 @@ export function buildReminderPlan(commitments: Commitment[], now: Date = new Dat
   const active = commitments.filter(isActive);
 
   const eventReminders: EventReminder[] = active
-    .filter((item) => item.kind === 'event' && item.scheduledAt)
+    .filter((item) => item.kind === 'event' && item.scheduledAt && !item.allDay)
     .map((item) => {
       const triggerAt = new Date(new Date(item.scheduledAt as string).getTime() - EVENT_REMINDER_LEAD_MINUTES * 60000);
       return { id: item.id, commitmentId: item.id, title: item.title, triggerAt: triggerAt.toISOString() };

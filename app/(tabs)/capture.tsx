@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
-import { Button, Card, Chip, SectionTitle, palette } from '@/components/ui';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { Button, Card, Chip, SectionTitle, palette, showAlert } from '@/components/ui';
 import { getGoogleWorkspaceStatus, syncGoogleWorkspace, type GoogleCalendar, type GoogleTaskList } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
-import type { CommitmentKind } from '@/types';
+import type { CommitmentKind, RecurrenceFrequency } from '@/types';
 
 type CreatableKind = Extract<CommitmentKind,'event'|'task'|'reminder'>;
+type RepeatOption='none'|RecurrenceFrequency;
+const REPEAT_LABELS:Record<RepeatOption,string>={none:'Non ripetere',daily:'Ogni giorno',weekly:'Ogni settimana',monthly:'Ogni mese'};
 const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 function localIso(date:string,time:string) { if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{2}:\d{2}$/.test(time)) return; const value=new Date(`${date}T${time}:00`); return Number.isNaN(value.getTime())?undefined:value.toISOString(); }
 function kindName(kind:CreatableKind){return kind==='event'?'Evento':kind==='task'?'Task':'Reminder';}
@@ -28,6 +30,7 @@ export default function Capture() {
   const [taskLists,setTaskLists]=useState<GoogleTaskList[]>([]);
   const [calendarId,setCalendarId]=useState<string>();
   const [taskListId,setTaskListId]=useState<string>();
+  const [repeat,setRepeat]=useState<RepeatOption>('none');
   const addCommitment=useFlowStore((state)=>state.addCommitment);
 
   useEffect(()=>{ void getGoogleWorkspaceStatus().then((status)=>{
@@ -41,7 +44,7 @@ export default function Capture() {
   const destinationName=useMemo(()=>kind==='event'?calendars.find((item)=>item.google_calendar_id===calendarId)?.summary:taskLists.find((item)=>item.google_task_list_id===taskListId)?.title,[kind,calendars,taskLists,calendarId,taskListId]);
   const valid=Boolean(title.trim()&&localIso(date,time)&&Number(duration)>0&&destinationName);
 
-  function reset(){setTitle('');setDescription('');setNotes('');setLocation('');setLink('');setDuration('30');setShowDetails(false);}
+  function reset(){setTitle('');setDescription('');setNotes('');setLocation('');setLink('');setDuration('30');setShowDetails(false);setRepeat('none');}
   async function create(){
     if(loading)return;
     setSaved(false);setError(null);
@@ -53,9 +56,10 @@ export default function Capture() {
       const id=typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`;
       const googleCalendarId=kind==='event'?calendarId:undefined;
       const googleTaskListId=kind!=='event'?taskListId:undefined;
-      await addCommitment({id,title:title.trim(),kind,description:description.trim()||undefined,notes:notes.trim()||undefined,location:location.trim()||undefined,link:link.trim()||undefined,status:kind==='event'?'scheduled':'active',durationMinutes:Math.max(1,Number(duration)||30),energy:'medium',context:kind==='event'?'Calendario':kind==='task'?'Google Tasks':'Reminder',scheduledAt:kind==='event'?at:undefined,dueAt:kind!=='event'?at:undefined,fixed:kind==='event',confidence:1,googleCalendarId,googleTaskListId,syncStatus:'pending'});
+      const recurrenceRule=repeat!=='none'?{frequency:repeat,interval:1}:undefined;
+      await addCommitment({id,title:title.trim(),kind,description:description.trim()||undefined,notes:notes.trim()||undefined,location:location.trim()||undefined,link:link.trim()||undefined,status:kind==='event'?'scheduled':'active',durationMinutes:Math.max(1,Number(duration)||30),energy:'medium',context:kind==='event'?'Calendario':kind==='task'?'Google Tasks':'Reminder',scheduledAt:kind==='event'?at:undefined,dueAt:kind!=='event'?at:undefined,fixed:kind==='event',confidence:1,googleCalendarId,googleTaskListId,recurrenceRule,syncStatus:'pending'});
       await syncGoogleWorkspace(); reset(); setSaved(true);
-    }catch(e){const message=e instanceof Error?e.message:'Creazione non riuscita.';setError(message);Alert.alert('Aggiungi',message);}finally{setLoading(false);}
+    }catch(e){const message=e instanceof Error?e.message:'Creazione non riuscita.';setError(message);showAlert('Aggiungi',message);}finally{setLoading(false);}
   }
 
   return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.wrap} keyboardShouldPersistTaps="handled">
@@ -69,6 +73,8 @@ export default function Capture() {
       <Field required label="Titolo" value={title} onChangeText={(v)=>{setTitle(v);setSaved(false);setError(null);}} placeholder={kind==='event'?'Es. Visita pediatrica':kind==='task'?'Es. Preparare il budget':'Es. Chiamare il medico'}/>
       <View style={styles.inline}><View style={styles.flex}><Field required label="Data" value={date} onChangeText={setDate} placeholder="AAAA-MM-GG"/></View><View style={styles.flex}><Field required label="Orario" value={time} onChangeText={setTime} placeholder="HH:MM"/></View></View>
       <Field required label="Durata stimata (minuti)" value={duration} onChangeText={(v)=>setDuration(v.replace(/\D/g,''))} keyboardType="number-pad" placeholder="30"/>
+      <Text style={styles.fieldLabel}>Ripeti{kind==='task'?' (gestito da FlowOS: Google Tasks non supporta la ricorrenza)':''}</Text>
+      <View style={styles.choices}>{(['none','daily','weekly','monthly'] as const).map((option)=><Choice key={option} label={REPEAT_LABELS[option]} active={repeat===option} onPress={()=>setRepeat(option)}/>)}</View>
     </Card>
 
     <SectionTitle title="3. Destinazione Google" subtitle={kind==='event'?'Scegli il calendario in cui creare l’evento.':'Scegli la lista in cui creare l’attività.'}/>

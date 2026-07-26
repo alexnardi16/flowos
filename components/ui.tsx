@@ -15,6 +15,20 @@ export function showAlert(title: string, message?: string) {
   Alert.alert(title, message);
 }
 
+/** Same web-fallback reasoning as showAlert, but for destructive confirm/cancel choices. */
+export function showConfirm(title: string, message: string, confirmLabel = 'Conferma'): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined') return Promise.resolve(false);
+    return Promise.resolve(window.confirm(`${title}\n\n${message}`));
+  }
+  return new Promise((resolve) => {
+    Alert.alert(title, message, [
+      { text: 'Annulla', style: 'cancel', onPress: () => resolve(false) },
+      { text: confirmLabel, style: 'destructive', onPress: () => resolve(true) },
+    ]);
+  });
+}
+
 export const palette = {
   bg:'#F6F7FB', card:'#FFFFFF', ink:'#172033', muted:'#687086', primary:'#6658D3',
   soft:'#ECE9FF', success:'#15866B', warning:'#B66A14', danger:'#A12626', border:'#E2E4EA',

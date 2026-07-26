@@ -1,4 +1,5 @@
 import type { Commitment } from '../types';
+import { toRRuleString } from './recurrence';
 import { enqueueMutation, readQueue, replaceQueue } from './offlineQueue';
 import { isSupabaseConfigured, supabase } from './supabase';
 
@@ -29,7 +30,7 @@ function toRow(item: Commitment, userId: string) {
     energy: item.energy,
     context: item.context,
     confidence_score: item.confidence,
-    ai_metadata: { fixed: item.fixed, outcome: item.outcome, originalDescription: item.description, notes: item.notes, location: item.location, link: item.link },
+    ai_metadata: { fixed: item.fixed, outcome: item.outcome, originalDescription: item.description, notes: item.notes, location: item.location, link: item.link, allDay: item.allDay, recurrenceRule: item.recurrenceRule ? (item.kind === 'event' ? toRRuleString(item.recurrenceRule) : item.recurrenceRule) : undefined, recurrenceSeriesId: item.recurrenceSeriesId },
     external_provider: resourceType ? 'google' : null,
     external_resource_type: resourceType,
     google_calendar_id: item.googleCalendarId ?? null,
@@ -62,10 +63,15 @@ function fromRow(row: any): Commitment {
     dueAt: row.deadline_at ?? undefined,
     scheduledAt: row.starts_at ?? undefined,
     fixed: row.ai_metadata?.fixed ?? false,
+    allDay: row.ai_metadata?.allDay ?? false,
     outcome: row.ai_metadata?.outcome,
     confidence: Number(row.confidence_score ?? 0.5),
     googleCalendarId: row.google_calendar_id ?? undefined,
     googleTaskListId: row.google_task_list_id ?? undefined,
+    googleRecurringEventId: row.ai_metadata?.googleRecurringEventId ?? undefined,
+    googleEventType: row.ai_metadata?.googleEventType ?? undefined,
+    recurrenceRule: row.kind === 'event' ? undefined : row.ai_metadata?.recurrenceRule ?? undefined,
+    recurrenceSeriesId: row.ai_metadata?.recurrenceSeriesId ?? undefined,
     externalId: row.external_id ?? undefined,
     externalEtag: row.external_etag ?? undefined,
     externalUpdatedAt: row.external_updated_at ?? undefined,
@@ -104,6 +110,15 @@ export async function deleteCommitmentAlsoFromGoogle(item: Commitment) {
   const { data, error } = await supabase.functions.invoke('google-delete-item', { body: { commitmentId: item.id } });
   if (error) throw error;
   if (data?.error) throw new Error(String(data.error));
+}
+
+/** Deletes an entire recurring Google Calendar series (the master event and every instance), not just this one occurrence. */
+export async function deleteRecurringSeries(item: Commitment) {
+  if (!item.googleRecurringEventId) throw new Error('Questo elemento non fa parte di una serie ricorrente.');
+  const { data, error } = await supabase.functions.invoke('google-workspace', { body: { action: 'sync-delete-series', commitmentId: item.id } });
+  if (error) throw error;
+  if (data?.error) throw new Error(String(data.error));
+  return Number(data?.deletedCount ?? 0);
 }
 
 export async function flushOfflineQueue() {

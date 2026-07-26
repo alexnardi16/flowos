@@ -11,5 +11,5 @@
     "ignoreDeprecations": "6.0",
     "types": []
   },
-  "include": ["../lib/dailySummary.ts", "../lib/notificationDedup.ts", "../lib/reminderPlan.ts", "../lib/widgetData.ts", "../lib/scheduler.ts", "../lib/replanTriggers.ts", "../lib/planningSuggestions.ts", "../lib/weatherSummary.ts", "../types/index.ts"]
+  "include": ["../lib/dailySummary.ts", "../lib/notificationDedup.ts", "../lib/reminderPlan.ts", "../lib/widgetData.ts", "../lib/scheduler.ts", "../lib/replanTriggers.ts", "../lib/planningSuggestions.ts", "../lib/weatherSummary.ts", "../lib/allDayDate.ts", "../lib/recurrence.ts", "../types/index.ts"]
 }

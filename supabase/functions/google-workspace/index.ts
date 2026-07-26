@@ -1,0 +1,154 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2.57.4";
+
+const cors = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type"};
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {status, headers:{...cors,"Content-Type":"application/json"}});
+const URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") ?? "";
+const CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") ?? "";
+const admin = createClient(URL, SERVICE, {auth:{persistSession:false}});
+const now = () => new Date().toISOString();
+const expiresAt = (seconds = 3600) => new Date(Date.now() + Math.max(60, seconds) * 1000).toISOString();
+type TokenRow = {access_token:string;refresh_token:string|null;expires_at:string|null;token_type:string|null;scopes:string[]};
+
+function syncRange(){
+  const current = new Date().getUTCFullYear();
+  const startYear = current - 3;
+  const endYear = current + 3;
+  return {startYear,endYear,start:`${startYear}-01-01T00:00:00.000Z`,endExclusive:`${endYear+1}-01-01T00:00:00.000Z`,labelStart:`01/01/${startYear}`,labelEnd:`31/12/${endYear}`,years:Array.from({length:7},(_,i)=>startYear+i)};
+}
+async function currentUser(req:Request){
+  const jwt=(req.headers.get("Authorization")??"").replace(/^Bearer\s+/i,"");
+  if(!jwt) throw new Error("Missing authorization token");
+  const {data,error}=await admin.auth.getUser(jwt);
+  if(error||!data.user) throw new Error("Invalid session");
+  return data.user;
+}
+async function gfetch(url:string,token:string,init:RequestInit={}){
+  const r=await fetch(url,{...init,headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json",...(init.headers??{})}});
+  const text=await r.text(); let data:any=null; try{data=text?JSON.parse(text):null}catch{data=text}
+  if(!r.ok){const message=typeof data==='string'?data:(data?.error?.message??JSON.stringify(data));const e:any=new Error(`Google API ${r.status}: ${message}`);e.status=r.status;throw e;}
+  return data;
+}
+async function tokenFor(userId:string):Promise<TokenRow>{
+  const {data,error}=await admin.schema("private").from("google_oauth_tokens").select("*").eq("user_id",userId).maybeSingle();
+  if(error||!data) throw new Error("Google account is not connected");
+  const row=data as TokenRow;
+  if(!row.expires_at||new Date(row.expires_at).getTime()>Date.now()+60000) return row;
+  if(!row.refresh_token||!CLIENT_ID||!CLIENT_SECRET) throw new Error("Google authorization expired. Reconnect Google to continue.");
+  const r=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:CLIENT_ID,client_secret:CLIENT_SECRET,refresh_token:row.refresh_token,grant_type:"refresh_token"})});
+  const payload:any=await r.json();
+  if(!r.ok||!payload.access_token) throw new Error(`Unable to refresh Google token: ${payload.error_description??payload.error??r.status}`);
+  const next={...row,access_token:payload.access_token,expires_at:expiresAt(payload.expires_in),token_type:payload.token_type??row.token_type};
+  await admin.schema("private").from("google_oauth_tokens").update({access_token:next.access_token,expires_at:next.expires_at,token_type:next.token_type,updated_at:now()}).eq("user_id",userId);
+  return next;
+}
+async function discover(userId:string,token:string,scopes:string[]){
+  const profile:any=await gfetch("https://openidconnect.googleapis.com/v1/userinfo",token);
+  const calendars:any=await gfetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250&showDeleted=false&showHidden=true",token);
+  const calendarRows=(calendars?.items??[]).map((c:any)=>({user_id:userId,google_calendar_id:c.id,summary:c.summaryOverride??c.summary??c.id,description:c.description??null,color_id:c.colorId??null,background_color:c.backgroundColor??null,foreground_color:c.foregroundColor??null,access_role:c.accessRole??"reader",primary_calendar:Boolean(c.primary),selected:true,deleted_at:null,updated_at:now()}));
+  if(calendarRows.length){const {error}=await admin.from("google_calendars").upsert(calendarRows,{onConflict:"user_id,google_calendar_id"});if(error)throw error;}
+  const lists:any=await gfetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=100",token);
+  const listRows=(lists?.items??[]).map((t:any)=>({user_id:userId,google_task_list_id:t.id,title:t.title??"Google Tasks",selected:true,deleted_at:null,updated_at:now()}));
+  if(listRows.length){const {error}=await admin.from("google_task_lists").upsert(listRows,{onConflict:"user_id,google_task_list_id"});if(error)throw error;}
+  const {data:defCal}=await admin.from("google_calendars").select("id").eq("user_id",userId).eq("is_default",true).maybeSingle();
+  if(!defCal){const preferred=calendarRows.find((c:any)=>c.primary_calendar&&["owner","writer"].includes(c.access_role))??calendarRows.find((c:any)=>["owner","writer"].includes(c.access_role));if(preferred){await admin.from("google_calendars").update({is_default:false}).eq("user_id",userId);await admin.from("google_calendars").update({is_default:true}).eq("user_id",userId).eq("google_calendar_id",preferred.google_calendar_id);}}
+  const {data:defList}=await admin.from("google_task_lists").select("id").eq("user_id",userId).eq("is_default",true).maybeSingle();
+  if(!defList&&listRows[0]) await admin.from("google_task_lists").update({is_default:true}).eq("user_id",userId).eq("google_task_list_id",listRows[0].google_task_list_id);
+  await admin.from("google_connections").upsert({user_id:userId,google_email:profile?.email??null,google_account_id:profile?.sub??null,scopes,last_sync_status:"pending",last_sync_error:null,updated_at:now()});
+  return {googleEmail:profile?.email??null,calendars:calendarRows.length,taskLists:listRows.length};
+}
+function eventBody(c:any){const start=c.starts_at?new Date(c.starts_at):new Date();const end=new Date(start.getTime()+Math.max(1,c.duration_minutes??30)*60000);const body:any={summary:c.title,description:c.description??c.ai_metadata?.outcome??undefined,start:{dateTime:start.toISOString()},end:{dateTime:end.toISOString()},extendedProperties:{private:{flowosCommitmentId:c.id}}};if(c.ai_metadata?.recurrenceRule)body.recurrence=[c.ai_metadata.recurrenceRule];return body;}
+function taskBody(c:any){return{title:c.title,notes:c.description??c.ai_metadata?.outcome??undefined,due:c.deadline_at?new Date(c.deadline_at).toISOString():undefined,status:c.status==="completed"||c.status==="done"?"completed":"needsAction"};}
+async function pushLocal(userId:string,token:string){
+  const {data:defCal}=await admin.from("google_calendars").select("google_calendar_id").eq("user_id",userId).eq("is_default",true).maybeSingle();
+  const {data:defList}=await admin.from("google_task_lists").select("google_task_list_id").eq("user_id",userId).eq("is_default",true).maybeSingle();
+  const {data:items,error}=await admin.from("commitments").select("*").eq("user_id",userId).in("sync_status",["pending","error"]).order("updated_at").limit(100);if(error)throw error;
+  let count=0;
+  for(const c of items??[]){try{
+    if(c.kind==="event"){
+      const calendarId=c.google_calendar_id??defCal?.google_calendar_id;if(!calendarId)continue;const base=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
+      if(c.deleted_at&&c.external_id)await gfetch(`${base}/${encodeURIComponent(c.external_id)}`,token,{method:"DELETE"});
+      else{const remote:any=await gfetch(c.external_id?`${base}/${encodeURIComponent(c.external_id)}`:base,token,{method:c.external_id?"PATCH":"POST",body:JSON.stringify(eventBody(c))});await admin.from("commitments").update({external_provider:"google",external_resource_type:"calendar_event",google_calendar_id:calendarId,external_id:remote.id,external_etag:remote.etag??null,external_updated_at:remote.updated??null,last_sync_origin:"flowos",sync_status:"synced",sync_error:null}).eq("id",c.id).eq("user_id",userId);}
+    }else if(["task","reminder"].includes(c.kind)){
+      const listId=c.google_task_list_id??defList?.google_task_list_id;if(!listId)continue;const base=`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(listId)}/tasks`;
+      if(c.deleted_at&&c.external_id)await gfetch(`${base}/${encodeURIComponent(c.external_id)}`,token,{method:"DELETE"});
+      else{const remote:any=await gfetch(c.external_id?`${base}/${encodeURIComponent(c.external_id)}`:base,token,{method:c.external_id?"PATCH":"POST",body:JSON.stringify(taskBody(c))});await admin.from("commitments").update({external_provider:"google",external_resource_type:"task",google_task_list_id:listId,external_id:remote.id,external_etag:remote.etag??null,external_updated_at:remote.updated??null,last_sync_origin:"flowos",sync_status:"synced",sync_error:null}).eq("id",c.id).eq("user_id",userId);}
+    }count++;
+  }catch(e){await admin.from("commitments").update({sync_status:"error",sync_error:e instanceof Error?e.message:String(e)}).eq("id",c.id).eq("user_id",userId);}}
+  return count;
+}
+async function upsertRemoteRows(userId:string,rows:any[]){
+  if(!rows.length)return 0;const ids=rows.map(r=>r.external_id).filter(Boolean);
+  const {data:existing,error}=await admin.from("commitments").select("id,external_id,updated_at,last_sync_origin").eq("user_id",userId).in("external_id",ids);if(error)throw error;
+  const map=new Map((existing??[]).map((r:any)=>[r.external_id,r]));
+  const prepared=rows.flatMap(row=>{const found:any=map.get(row.external_id);if(found?.last_sync_origin==="flowos"&&new Date(found.updated_at)>new Date(row.external_updated_at??0))return[];return[{...row,id:found?.id??crypto.randomUUID()}];});
+  if(!prepared.length)return 0;const {error:upsertError}=await admin.from("commitments").upsert(prepared,{onConflict:"id"});if(upsertError)throw upsertError;return prepared.length;
+}
+async function pullCalendarPage(userId:string,calendarId:string,year:number,pageToken?:string){
+  const token=await tokenFor(userId);const p=new URLSearchParams({maxResults:"250",showDeleted:"true",singleEvents:"true",timeMin:`${year}-01-01T00:00:00.000Z`,timeMax:`${year+1}-01-01T00:00:00.000Z`,orderBy:"startTime"});if(pageToken)p.set("pageToken",pageToken);
+  const payload:any=await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${p}`,token.access_token);
+  const rows=(payload?.items??[]).map((ev:any)=>({user_id:userId,title:ev.summary??"(Senza titolo)",description:ev.description??null,kind:"event",status:ev.status==="cancelled"?"completed":"scheduled",starts_at:ev.start?.dateTime??(ev.start?.date?`${ev.start.date}T00:00:00.000Z`:null),deadline_at:null,duration_minutes:ev.start?.dateTime&&ev.end?.dateTime?Math.max(1,Math.round((new Date(ev.end.dateTime).getTime()-new Date(ev.start.dateTime).getTime())/60000)):1440,energy:"medium",context:"Google Calendar",confidence_score:1,external_provider:"google",external_resource_type:"calendar_event",google_calendar_id:calendarId,google_task_list_id:null,external_id:ev.id,external_etag:ev.etag??null,external_updated_at:ev.updated??null,last_sync_origin:"google",sync_status:"synced",sync_error:null,deleted_at:ev.status==="cancelled"?now():null,updated_at:ev.updated??now(),ai_metadata:{fixed:true,googleHtmlLink:ev.htmlLink,allDay:Boolean(ev.start?.date&&!ev.start?.dateTime),googleRecurringEventId:ev.recurringEventId??null,googleEventType:ev.eventType??"default"}}));
+  return {imported:await upsertRemoteRows(userId,rows),nextPageToken:payload?.nextPageToken??null};
+}
+async function pullTaskPage(userId:string,listId:string,pageToken?:string){
+  const token=await tokenFor(userId);const range=syncRange();const p=new URLSearchParams({maxResults:"100",showCompleted:"true",showDeleted:"true",showHidden:"true"});if(pageToken)p.set("pageToken",pageToken);
+  const payload:any=await gfetch(`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(listId)}/tasks?${p}`,token.access_token);
+  const startMs=new Date(range.start).getTime(),endMs=new Date(range.endExclusive).getTime();
+  const rows=(payload?.items??[]).filter((t:any)=>t.due&&new Date(t.due).getTime()>=startMs&&new Date(t.due).getTime()<endMs).map((t:any)=>({user_id:userId,title:t.title??"(Senza titolo)",description:t.notes??null,kind:"task",status:t.status==="completed"?"completed":"active",starts_at:null,deadline_at:t.due??null,duration_minutes:30,energy:"medium",context:"Google Tasks",confidence_score:1,external_provider:"google",external_resource_type:"task",google_calendar_id:null,google_task_list_id:listId,external_id:t.id,external_etag:t.etag??null,external_updated_at:t.updated??null,last_sync_origin:"google",sync_status:"synced",sync_error:null,deleted_at:t.deleted?now():null,updated_at:t.updated??now(),ai_metadata:{googleWebViewLink:t.webViewLink}}));
+  return {imported:await upsertRemoteRows(userId,rows),nextPageToken:payload?.nextPageToken??null};
+}
+async function markOutOfRange(userId:string){
+  const r=syncRange();
+  await admin.from("commitments").update({deleted_at:now()}).eq("user_id",userId).eq("external_provider","google").eq("external_resource_type","calendar_event").or(`starts_at.lt.${r.start},starts_at.gte.${r.endExclusive}`);
+  await admin.from("commitments").update({deleted_at:now()}).eq("user_id",userId).eq("external_provider","google").eq("external_resource_type","task").or(`deadline_at.is.null,deadline_at.lt.${r.start},deadline_at.gte.${r.endExclusive}`);
+}
+async function deleteRecurringSeries(userId:string,commitmentId:string){
+  const {data:item,error:itemError}=await admin.from("commitments").select("*").eq("id",commitmentId).eq("user_id",userId).maybeSingle();
+  if(itemError)throw itemError;
+  if(!item)throw new Error("Commitment not found");
+  const seriesId=item.ai_metadata?.googleRecurringEventId;
+  if(!seriesId)throw new Error("This item is not part of a recurring series");
+  const calendarId=item.google_calendar_id;
+  if(calendarId){
+    const token=await tokenFor(userId);
+    try{await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(seriesId)}`,token.access_token,{method:"DELETE"});}
+    catch(e:any){if(e?.status!==404&&e?.status!==410)throw e;}
+  }
+  const {data:siblings,error:siblingsError}=await admin.from("commitments").select("id").eq("user_id",userId).filter("ai_metadata->>googleRecurringEventId","eq",seriesId);
+  if(siblingsError)throw siblingsError;
+  const ids=(siblings??[]).map((s:any)=>s.id);
+  if(ids.length){const {error:delError}=await admin.from("commitments").update({deleted_at:now(),sync_status:"synced"}).in("id",ids);if(delError)throw delError;}
+  return ids.length;
+}
+Deno.serve(async(req)=>{
+  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});let userId:string|undefined;let action="status";
+  try{const user=await currentUser(req);userId=user.id;const body=req.method==="POST"?await req.json().catch(()=>({})):{};action=body.action??"status";console.log(JSON.stringify({event:"request",action,userId}));
+    if(action==="connect"){
+      if(!body.providerToken)return json({error:"Missing Google provider token"},400);
+      const {data:current}=await admin.schema("private").from("google_oauth_tokens").select("refresh_token").eq("user_id",userId).maybeSingle();const scopes=String(body.scopes??"").split(/[ ,]+/).filter(Boolean);
+      const {error}=await admin.schema("private").from("google_oauth_tokens").upsert({user_id:userId,access_token:body.providerToken,refresh_token:body.providerRefreshToken??current?.refresh_token??null,expires_at:expiresAt(body.expiresIn),token_type:"Bearer",scopes,updated_at:now()});if(error)throw error;
+      return json({ok:true,...await discover(userId,body.providerToken,scopes),range:syncRange()});
+    }
+    if(action==="sync-start"){
+      await admin.from("google_connections").update({last_sync_status:"syncing",last_sync_error:null}).eq("user_id",userId);await markOutOfRange(userId);
+      const {data:calendars,error:calError}=await admin.from("google_calendars").select("google_calendar_id,summary").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(calError)throw calError;
+      const {data:taskLists,error:taskError}=await admin.from("google_task_lists").select("google_task_list_id,title").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(taskError)throw taskError;
+      return json({ok:true,calendars:calendars??[],taskLists:taskLists??[],range:syncRange()});
+    }
+    if(action==="sync-push"){const token=await tokenFor(userId);return json({ok:true,pushed:await pushLocal(userId,token.access_token)});}
+    if(action==="sync-calendar-page")return json({ok:true,...await pullCalendarPage(userId,body.calendarId,Number(body.year),body.pageToken)});
+    if(action==="sync-task-page")return json({ok:true,...await pullTaskPage(userId,body.listId,body.pageToken)});
+    if(action==="sync-finish"){await admin.from("google_connections").update({last_sync_status:"ok",last_sync_at:now(),last_sync_error:null}).eq("user_id",userId);return json({ok:true,range:syncRange()});}
+    if(action==="sync-fail"){const message=String(body.message??"Sincronizzazione interrotta.");await admin.from("google_connections").update({last_sync_status:"error",last_sync_error:message}).eq("user_id",userId);return json({ok:true});}
+    if(action==="sync-delete-series"){
+      const commitmentId=String(body.commitmentId??"");
+      if(!commitmentId)return json({error:"Missing commitmentId"},400);
+      const deletedCount=await deleteRecurringSeries(userId,commitmentId);
+      return json({ok:true,deletedCount});
+    }
+    if(action==="disconnect"){await admin.schema("private").from("google_calendar_sync_state").delete().eq("user_id",userId);await admin.schema("private").from("google_task_sync_state").delete().eq("user_id",userId);await admin.schema("private").from("google_oauth_tokens").delete().eq("user_id",userId);await admin.from("google_connections").update({last_sync_status:"disconnected",last_sync_error:null}).eq("user_id",userId);return json({ok:true});}
+    const {data:connection}=await admin.from("google_connections").select("*").eq("user_id",userId).maybeSingle();const {data:calendars}=await admin.from("google_calendars").select("*").eq("user_id",userId).is("deleted_at",null).order("primary_calendar",{ascending:false}).order("summary");const {data:taskLists}=await admin.from("google_task_lists").select("*").eq("user_id",userId).is("deleted_at",null).order("title");return json({connection,calendars:calendars??[],taskLists:taskLists??[],range:syncRange()});
+  }catch(e){const message=e instanceof Error?e.message:String(e);console.error(JSON.stringify({event:"request-error",action,userId,message}));if(userId&&action.startsWith("sync-")){await admin.from("google_connections").update({last_sync_status:"error",last_sync_error:message}).eq("user_id",userId);}return json({error:message},500);}
+});

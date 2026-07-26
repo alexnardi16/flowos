@@ -1,5 +1,6 @@
 import type { Commitment } from '../types';
 import { DEFAULT_WEEKLY_AVAILABILITY, type WeeklyAvailability } from './scheduler';
+import { isSameCalendarDay } from './allDayDate';
 
 export type PlanningSuggestion = { id: string; text: string };
 
@@ -37,7 +38,7 @@ export function buildPlanningSuggestions(
 ): PlanningSuggestion[] {
   const active = commitments.filter(isActive);
   const todayScheduled = active
-    .filter((item) => item.scheduledAt && new Date(item.scheduledAt).toDateString() === now.toDateString())
+    .filter((item) => item.scheduledAt && !item.allDay && isSameCalendarDay(item, item.scheduledAt, now))
     .sort((a, b) => new Date(a.scheduledAt as string).getTime() - new Date(b.scheduledAt as string).getTime());
 
   const busyIntervals = todayScheduled.map((item) => {

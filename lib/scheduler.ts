@@ -84,11 +84,15 @@ export function createAutomaticPlan(
   now: Date = new Date(),
 ): Commitment[] {
   const fixed = commitments.filter((item) => item.fixed && item.scheduledAt && item.status !== 'done');
+  // All-day fixed events (birthdays, "vacanza", etc.) span the entire day by
+  // construction (duration 1440) — they must stay visible/scheduled, but
+  // must not block every flexible slot that day.
+  const blockingFixed = fixed.filter((item) => !item.allDay);
   const flexible = commitments
     .filter((item) => !item.fixed && item.status !== 'done')
     .sort((a, b) => priority(b) - priority(a));
 
-  const scheduled: Commitment[] = [...fixed];
+  const scheduled: Commitment[] = [...blockingFixed];
   const replacements = new Map<string, Commitment>();
 
   for (const item of flexible) {

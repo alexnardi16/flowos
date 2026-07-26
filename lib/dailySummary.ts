@@ -1,4 +1,5 @@
 import type { Commitment } from '../types';
+import { isSameCalendarDay, formatCommitmentTime } from './allDayDate';
 
 export type DailySummaryItem = {
   id: string;
@@ -23,14 +24,6 @@ export function toDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function formatTime(date: Date): string {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
 /**
  * Pure function: given the current commitments and a reference instant, builds
  * the notification-ready daily summary. No I/O, no Expo/RN imports, so it can
@@ -41,19 +34,19 @@ export function buildDailySummary(commitments: Commitment[], now: Date = new Dat
   const active = commitments.filter((item) => item.status !== 'done' && !item.deletedAt);
 
   const scheduledToday = active
-    .filter((item) => item.scheduledAt && isSameDay(new Date(item.scheduledAt), now))
+    .filter((item) => item.scheduledAt && isSameCalendarDay(item, item.scheduledAt, now))
     .sort((a, b) => new Date(a.scheduledAt as string).getTime() - new Date(b.scheduledAt as string).getTime());
 
   const overdue = active.filter((item) => {
     if (!item.dueAt) return false;
     const due = new Date(item.dueAt);
-    return due.getTime() < now.getTime() && !isSameDay(due, now);
+    return due.getTime() < now.getTime() && !isSameCalendarDay(item, item.dueAt, now);
   });
 
   const items: DailySummaryItem[] = scheduledToday.map((item) => ({
     id: item.id,
     title: item.title,
-    time: item.scheduledAt ? formatTime(new Date(item.scheduledAt)) : undefined,
+    time: item.scheduledAt ? formatCommitmentTime(item, item.scheduledAt) : undefined,
     kind: item.kind,
   }));
 
@@ -64,7 +57,7 @@ export function buildDailySummary(commitments: Commitment[], now: Date = new Dat
   const bodyParts: string[] = [];
   if (scheduledToday.length) {
     const first = scheduledToday[0];
-    const firstLabel = first.scheduledAt ? `${formatTime(new Date(first.scheduledAt))} · ${first.title}` : first.title;
+    const firstLabel = first.scheduledAt ? `${formatCommitmentTime(first, first.scheduledAt)} · ${first.title}` : first.title;
     bodyParts.push(`Il primo è ${firstLabel}.`);
   }
   if (overdue.length) {

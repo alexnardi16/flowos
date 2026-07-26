@@ -1,5 +1,6 @@
 import type { Commitment } from '../types';
 import { toDateKey } from './dailySummary';
+import { formatCommitmentTime } from './allDayDate';
 
 export type TodayGlance = {
   dateKey: string;
@@ -12,10 +13,6 @@ export type TodayGlance = {
 
 function isActive(item: Commitment): boolean {
   return item.status !== 'done' && !item.deletedAt;
-}
-
-function formatTime(date: Date): string {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 /**
@@ -40,7 +37,7 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
   return {
     dateKey: toDateKey(now),
     nextEventTitle: nextEvent ? nextEvent.title : null,
-    nextEventTime: nextEvent?.scheduledAt ? formatTime(new Date(nextEvent.scheduledAt)) : null,
+    nextEventTime: nextEvent?.scheduledAt ? formatCommitmentTime(nextEvent, nextEvent.scheduledAt) : null,
     dueSoonCount,
     overdueCount,
     generatedAt: now.toISOString(),
