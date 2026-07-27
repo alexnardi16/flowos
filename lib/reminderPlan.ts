@@ -1,5 +1,6 @@
 import type { Commitment } from '../types';
 import { toDateKey } from './dailySummary';
+import { isExpired } from './itemTiming';
 
 export const EVENT_REMINDER_LEAD_MINUTES = 10;
 export const DUE_SOON_WINDOW_HOURS = 24;
@@ -49,7 +50,7 @@ export function buildReminderPlan(commitments: Commitment[], now: Date = new Dat
     .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
 
   const overdue: DueTask[] = dueTasks
-    .filter((item) => new Date(item.dueAt as string).getTime() < now.getTime())
+    .filter((item) => isExpired(item, now))
     .map((item) => ({ id: item.id, title: item.title, dueAt: item.dueAt as string }))
     .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
 

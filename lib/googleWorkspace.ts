@@ -47,6 +47,7 @@ export type GoogleWorkspaceStatus = {
     last_sync_at?: string | null;
     last_sync_status: 'pending' | 'syncing' | 'ok' | 'error' | 'disconnected';
     last_sync_error?: string | null;
+    updated_at?: string | null;
   };
   calendars: GoogleCalendar[];
   taskLists: GoogleTaskList[];
@@ -91,6 +92,15 @@ export async function recoverStaleGoogleSyncState() {
   const message = 'La precedente sincronizzazione è stata interrotta prima del completamento.';
   recordDiagnostic('google-sync-stale-state-recovered', { message }, 'warn');
   await updateSyncFailure(message);
+}
+
+const STALE_SYNC_THRESHOLD_MS = 3 * 60 * 1000;
+
+/** A "syncing" status only means something went wrong if it's been sitting there a while — a sync that started 5 seconds ago is not stuck, it's just running. */
+export function isSyncGenuinelyStale(connection: GoogleWorkspaceStatus['connection'], now: Date = new Date()): boolean {
+  if (!connection || connection.last_sync_status !== 'syncing') return false;
+  if (!connection.updated_at) return true; // no timestamp to trust — be conservative and treat as stale
+  return now.getTime() - new Date(connection.updated_at).getTime() > STALE_SYNC_THRESHOLD_MS;
 }
 
 async function invoke(body: Record<string, unknown>, retries = 1) {

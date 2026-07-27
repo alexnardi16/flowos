@@ -121,6 +121,15 @@ export async function deleteRecurringSeries(item: Commitment) {
   return Number(data?.deletedCount ?? 0);
 }
 
+/** Deletes every FlowOS commitment for this user directly (bypasses the Edge Function entirely, so no Google delete call is ever made). Google-sourced items reappear on the next sync within the configured date range; FlowOS-only items are gone for good. */
+export async function deleteAllFlowOSOnlyData() {
+  if (!isSupabaseConfigured) return;
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return;
+  const { error } = await supabase.from('commitments').delete().eq('user_id', auth.user.id);
+  if (error) throw error;
+}
+
 export async function flushOfflineQueue() {
   if (!isSupabaseConfigured) return;
   const queue = await readQueue();
@@ -130,4 +139,13 @@ export async function flushOfflineQueue() {
     if (result.error) failed.push(mutation);
   }
   await replaceQueue(failed);
+}
+
+/** Forces an immediate push of any pending local changes to Google (saveCommitment already marks Google-syncable items as sync_status='pending'; this is what actually sends them). */
+export async function pushPendingToGoogle() {
+  if (!isSupabaseConfigured) return;
+  const { data, error } = await supabase.functions.invoke('google-workspace', { body: { action: 'sync-push' } });
+  if (error) throw error;
+  if (data?.error) throw new Error(String(data.error));
+  return data;
 }

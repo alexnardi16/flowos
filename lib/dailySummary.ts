@@ -1,5 +1,6 @@
 import type { Commitment } from '../types';
 import { isSameCalendarDay, formatCommitmentTime } from './allDayDate';
+import { isExpired } from './itemTiming';
 
 export type DailySummaryItem = {
   id: string;
@@ -37,11 +38,7 @@ export function buildDailySummary(commitments: Commitment[], now: Date = new Dat
     .filter((item) => item.scheduledAt && isSameCalendarDay(item, item.scheduledAt, now))
     .sort((a, b) => new Date(a.scheduledAt as string).getTime() - new Date(b.scheduledAt as string).getTime());
 
-  const overdue = active.filter((item) => {
-    if (!item.dueAt) return false;
-    const due = new Date(item.dueAt);
-    return due.getTime() < now.getTime() && !isSameCalendarDay(item, item.dueAt, now);
-  });
+  const overdue = active.filter((item) => item.dueAt && isExpired(item, now));
 
   const items: DailySummaryItem[] = scheduledToday.map((item) => ({
     id: item.id,

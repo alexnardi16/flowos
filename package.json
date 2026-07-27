@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test:auth": "rm -rf .test-dist && tsc -p tests/tsconfig.auth.json && node --test tests/authFlow.test.cjs",
     "test:selectors": "node --test tests/zustandSelectors.test.cjs",
-    "test:notifications": "rm -rf .test-dist-notifications && tsc -p tests/tsconfig.notifications.json && node --test tests/dailySummary.test.cjs tests/notificationDedup.test.cjs tests/reminderPlan.test.cjs tests/widgetData.test.cjs tests/scheduler.test.cjs tests/replanTriggers.test.cjs tests/planningSuggestions.test.cjs tests/weatherSummary.test.cjs tests/allDayDate.test.cjs tests/recurrence.test.cjs",
+    "test:notifications": "rm -rf .test-dist-notifications && tsc -p tests/tsconfig.notifications.json && node --test tests/dailySummary.test.cjs tests/notificationDedup.test.cjs tests/reminderPlan.test.cjs tests/widgetData.test.cjs tests/scheduler.test.cjs tests/replanTriggers.test.cjs tests/planningSuggestions.test.cjs tests/weatherSummary.test.cjs tests/allDayDate.test.cjs tests/recurrence.test.cjs tests/itemTiming.test.cjs",
     "test": "npm run test:auth && npm run test:selectors && npm run test:notifications",
     "validate:web": "npm run typecheck && npm test && npx expo export --platform web",
     "eas:preview": "eas update --channel preview --message \"FlowOS preview\" --environment preview",

@@ -132,7 +132,7 @@ Deno.serve(async(req)=>{
       return json({ok:true,...await discover(userId,body.providerToken,scopes),range:syncRange()});
     }
     if(action==="sync-start"){
-      await admin.from("google_connections").update({last_sync_status:"syncing",last_sync_error:null}).eq("user_id",userId);await markOutOfRange(userId);
+      await admin.from("google_connections").update({last_sync_status:"syncing",last_sync_error:null,updated_at:now()}).eq("user_id",userId);await markOutOfRange(userId);
       const {data:calendars,error:calError}=await admin.from("google_calendars").select("google_calendar_id,summary").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(calError)throw calError;
       const {data:taskLists,error:taskError}=await admin.from("google_task_lists").select("google_task_list_id,title").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(taskError)throw taskError;
       return json({ok:true,calendars:calendars??[],taskLists:taskLists??[],range:syncRange()});

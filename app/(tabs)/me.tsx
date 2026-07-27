@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Card, palette, showAlert } from '@/components/ui';
+import { Button, Card, palette, showAlert, showConfirm } from '@/components/ui';
 import { clearDiagnostics, readDiagnostics, recordDiagnostic, subscribeDiagnostics, type DiagnosticEntry } from '@/lib/diagnostics';
+import { deleteAllFlowOSOnlyData } from '@/lib/commitmentsRepository';
 import {
   connectGoogleFromSession,
   disconnectGoogleWorkspace,
   getGoogleWorkspaceStatus,
+  isSyncGenuinelyStale,
   recoverStaleGoogleSyncState,
   setCalendarSelected,
   setDefaultCalendar,
@@ -18,6 +20,11 @@ import {
 } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
 import { useAuth } from '@/providers/AuthProvider';
+
+/** The connected account's own calendar is usually just named after its email — show a friendlier label instead. */
+function friendlyCalendarName(name: string, ownEmail?: string | null) {
+  return ownEmail && name.trim().toLowerCase() === ownEmail.trim().toLowerCase() ? 'Alex' : name;
+}
 
 function formatSyncDate(value?: string | null) {
   if (!value) return 'mai';
@@ -38,7 +45,6 @@ function isMissingGoogleAuthorization(status: GoogleWorkspaceStatus | null, erro
 }
 
 export default function Me() {
-  const [assisted, setAssisted] = useState(true);
   const [google, setGoogle] = useState<GoogleWorkspaceStatus | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
@@ -83,7 +89,7 @@ export default function Me() {
   async function loadGoogle(repairStale = true) {
     try {
       const status = await getGoogleWorkspaceStatus();
-      if (repairStale && !googleBusy && status.connection?.last_sync_status === 'syncing') {
+      if (repairStale && !googleBusy && isSyncGenuinelyStale(status.connection)) {
         await recoverStaleGoogleSyncState();
         const repaired = await getGoogleWorkspaceStatus();
         setGoogle(repaired);
@@ -168,6 +174,24 @@ export default function Me() {
     }
   }
 
+  async function wipeFlowOSData() {
+    const ok = await showConfirm('Eliminare ogni attività su FlowOS?', 'Tutti gli elementi verranno rimossi da FlowOS. Google Calendar e Google Tasks non vengono toccati, né ora né alla prossima sincronizzazione: gli elementi provenienti da Google verranno semplicemente reimportati.', 'Elimina tutto');
+    if (!ok) return;
+    setGoogleBusy(true);
+    try {
+      await deleteAllFlowOSOnlyData();
+      await hydrateFromCloud();
+      recordDiagnostic('flowos-data-wiped');
+      showAlert('FlowOS', 'Tutti gli elementi FlowOS sono stati eliminati.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Eliminazione non riuscita.';
+      recordDiagnostic('flowos-data-wipe-failed', { message }, 'error');
+      showAlert('FlowOS', message);
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
   const rangeLabel = google?.range
     ? `Elementi importati visibili dal ${google.range.labelStart} al ${google.range.labelEnd}.`
     : 'Intervallo di importazione in caricamento…';
@@ -176,13 +200,14 @@ export default function Me() {
 
   return <SafeAreaView style={styles.safe}>
     <ScrollView contentContainerStyle={styles.wrap}>
-      <Text style={styles.title}>Io</Text>
+      <Text style={styles.eyebrow}>FlowOS</Text>
+      <Text style={styles.title}>Impostazioni</Text>
 
       <Card>
         <Text style={styles.label}>Google Workspace</Text>
         <Text style={styles.rangeLabel}>{rangeLabel}</Text>
         {googleConnected ? <>
-          <Text style={styles.item}>{google?.connection?.google_email ?? 'Account Google collegato'}</Text>
+          <Text style={styles.item}>{google?.connection?.google_email ? friendlyCalendarName(google.connection.google_email, google.connection.google_email) : 'Account Google collegato'}</Text>
           <Text style={styles.meta}>Stato: {google?.connection?.last_sync_status} · Ultima sincronizzazione: {formatSyncDate(google?.connection?.last_sync_at)}</Text>
           {google?.connection?.last_sync_error ? <Text style={styles.error}>{google.connection.last_sync_error}</Text> : null}
           {googleError && googleError !== google?.connection?.last_sync_error ? <Text style={styles.error}>{googleError}</Text> : null}
@@ -191,6 +216,7 @@ export default function Me() {
             <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${syncProgress}%` }]} /></View>
           </View> : null}
           <View style={styles.actions}><Button label={googleBusy ? 'Sincronizzazione…' : 'Sincronizza ora'} onPress={() => { void runSync(); }}/><Button secondary label="Scollega Google" onPress={() => { void run(disconnectGoogleWorkspace); }}/></View>
+          {!googleConnected ? null : <View style={styles.actions}><Button secondary danger label="Elimina ogni attività su FlowOS senza alcun impatto su Google" onPress={() => { void wipeFlowOSData(); }}/></View>}
         </> : <>
           <Text style={styles.meta}>{authorizationMissing ? 'La sessione FlowOS è attiva, ma l’autorizzazione Google deve essere ripristinata.' : 'Collega Google per sincronizzare Calendar e Tasks in entrambe le direzioni.'}</Text>
           {googleError ? <Text style={styles.error}>{googleError}</Text> : null}
@@ -201,13 +227,12 @@ export default function Me() {
       {googleConnected ? <>
         <Card>
           <Text style={styles.label}>Calendari sincronizzati</Text>
-          <Text style={styles.meta}>{rangeLabel}</Text>
           <Text style={styles.meta}>Puoi includere più calendari, anche condivisi. Solo quelli con permesso di scrittura possono essere usati per creare o modificare eventi.</Text>
           {google?.calendars.map((calendar) => {
             const writable = ['owner', 'writer'].includes(calendar.access_role);
             const holidayCalendar = /^Jours fériés en (France|Italie)$/i.test(calendar.summary.trim());
             return <View key={calendar.id} style={styles.resourceRow}>
-              <View style={styles.resourceText}><Text style={styles.resourceTitle}>{calendar.summary}{calendar.primary_calendar ? ' · principale' : ''}</Text><Text style={styles.meta}>{calendar.access_role}{calendar.is_default ? ' · predefinito' : ''}</Text></View>
+              <View style={styles.resourceText}><Text style={styles.resourceTitle}>{friendlyCalendarName(calendar.summary, google?.connection?.google_email)}{calendar.primary_calendar ? ' · principale' : ''}</Text><Text style={styles.meta}>{calendar.access_role}{calendar.is_default ? ' · predefinito' : ''}</Text></View>
               <Switch value={calendar.selected} onValueChange={(selected) => { void run(() => setCalendarSelected(calendar.id, selected)); }}/>
               {!holidayCalendar ? <Pressable disabled={!calendar.selected || !writable || calendar.is_default} onPress={() => { void run(() => setDefaultCalendar(calendar.id)); }} style={[styles.defaultButton, (!calendar.selected || !writable || calendar.is_default) && styles.disabled]}><Text style={styles.defaultText}>{calendar.is_default ? 'Default' : 'Imposta come default'}</Text></Pressable> : null}
             </View>;
@@ -216,7 +241,6 @@ export default function Me() {
 
         <Card>
           <Text style={styles.label}>Liste Google Tasks</Text>
-          <Text style={styles.meta}>{rangeLabel}</Text>
           <Text style={styles.meta}>La lista predefinita viene proposta automaticamente, ma puoi cambiarla per ogni nuova attività.</Text>
           {google?.taskLists.map((list) => <View key={list.id} style={styles.resourceRow}>
             <View style={styles.resourceText}><Text style={styles.resourceTitle}>{list.title}</Text><Text style={styles.meta}>{list.is_default ? 'Predefinita' : 'Lista attività'}</Text></View>
@@ -227,10 +251,8 @@ export default function Me() {
       </> : null}
 
       <Card><Text style={styles.label}>Notifiche</Text><Text style={styles.meta}>Riepilogo giornaliero, recupero automatico e log dedicato.</Text><View style={styles.actions}><Button secondary label="Apri impostazioni notifiche" onPress={() => router.push('/notifications-settings')} /></View></Card>
-      <Card><Text style={styles.label}>Modalità di controllo</Text><View style={styles.row}><View style={{ flex: 1 }}><Text style={styles.item}>Controllo assistito</Text><Text style={styles.meta}>L’IA propone. Tu approvi le modifiche importanti.</Text></View><Switch value={assisted} onValueChange={setAssisted} /></View></Card>
       <View style={styles.metrics}><Card style={styles.metricCard}><Text style={styles.metric}>{insights.completionRate}%</Text><Text style={styles.metricLabel}>Completamento</Text></Card><Card style={styles.metricCard}><Text style={styles.metric}>{insights.planned}</Text><Text style={styles.metricLabel}>Pianificati</Text></Card></View>
       <View style={styles.metrics}><Card style={styles.metricCard}><Text style={styles.metric}>{insights.done}</Text><Text style={styles.metricLabel}>Completati</Text></Card><Card style={styles.metricCard}><Text style={styles.metric}>{insights.totalMinutes}</Text><Text style={styles.metricLabel}>Minuti conclusi</Text></Card></View>
-      <Card><Text style={styles.label}>Il sistema sta imparando</Text><Text style={styles.score}>{insights.averageConfidence}%</Text><Text style={styles.meta}>Affidabilità media delle stime di durata, energia e classificazione.</Text></Card>
       <Card><Text style={styles.label}>Carico attuale</Text><Text style={styles.item}>{insights.active} Commitment aperti</Text><Text style={styles.meta}>FlowOS usa questo dato per evitare giornate sovraccariche e distribuire il lavoro nei prossimi giorni.</Text></Card>
 
       <Card>
@@ -246,5 +268,5 @@ export default function Me() {
 }
 
 const styles = StyleSheet.create({
-  safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:16},title:{fontSize:31,fontWeight:'900',color:palette.ink,marginTop:14},label:{fontSize:13,fontWeight:'800',color:palette.primary,textTransform:'uppercase'},row:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:8},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:4},rangeLabel:{fontSize:13,lineHeight:18,color:palette.ink,marginTop:8,fontWeight:'800'},error:{fontSize:13,lineHeight:18,color:'#A12626',marginTop:8,fontWeight:'700'},score:{fontSize:42,fontWeight:'900',color:palette.ink,marginTop:10},metrics:{flexDirection:'row',gap:12},metricCard:{flex:1},metric:{fontSize:30,fontWeight:'900',color:palette.ink},metricLabel:{fontSize:12,color:palette.muted,marginTop:4},actions:{flexDirection:'row',gap:10,marginTop:16,flexWrap:'wrap'},resourceRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:12,borderBottomWidth:1,borderBottomColor:'#ECEEF4'},resourceText:{flex:1},resourceTitle:{fontSize:15,fontWeight:'800',color:palette.ink},defaultButton:{maxWidth:124,backgroundColor:palette.soft,borderRadius:12,paddingHorizontal:10,paddingVertical:8},defaultText:{fontSize:11,fontWeight:'800',textAlign:'center',color:palette.primary},disabled:{opacity:.45},progressBlock:{marginTop:16},progressHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},progressStage:{fontSize:13,fontWeight:'700',color:palette.ink,flex:1},progressPercent:{fontSize:14,fontWeight:'900',color:palette.primary},progressTrack:{height:10,borderRadius:99,backgroundColor:'#E4E2EC',overflow:'hidden',marginTop:8},progressFill:{height:'100%',borderRadius:99,backgroundColor:palette.primary},logoutButton:{borderRadius:16,paddingVertical:13,paddingHorizontal:16,backgroundColor:'#FDECEC'},logoutText:{color:'#A12626',fontWeight:'800',fontSize:15},logBox:{marginTop:14,padding:12,borderRadius:14,backgroundColor:'#111827',gap:6},logLine:{fontSize:10,lineHeight:14,color:'#D1D5DB',fontFamily:'monospace'},logError:{color:'#FCA5A5'}
+  safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:16},eyebrow:{fontSize:14,color:palette.primary,fontWeight:'900',letterSpacing:1.3,textTransform:'uppercase',marginTop:14},title:{fontSize:31,fontWeight:'900',color:palette.ink},label:{fontSize:13,fontWeight:'800',color:palette.primary,textTransform:'uppercase'},row:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:8},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:4},rangeLabel:{fontSize:13,lineHeight:18,color:palette.ink,marginTop:8,fontWeight:'800'},error:{fontSize:13,lineHeight:18,color:'#A12626',marginTop:8,fontWeight:'700'},score:{fontSize:42,fontWeight:'900',color:palette.ink,marginTop:10},metrics:{flexDirection:'row',gap:12},metricCard:{flex:1},metric:{fontSize:30,fontWeight:'900',color:palette.ink},metricLabel:{fontSize:12,color:palette.muted,marginTop:4},actions:{flexDirection:'row',gap:10,marginTop:16,flexWrap:'wrap'},resourceRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:12,borderBottomWidth:1,borderBottomColor:'#ECEEF4'},resourceText:{flex:1},resourceTitle:{fontSize:15,fontWeight:'800',color:palette.ink},defaultButton:{maxWidth:124,backgroundColor:palette.soft,borderRadius:12,paddingHorizontal:10,paddingVertical:8},defaultText:{fontSize:11,fontWeight:'800',textAlign:'center',color:palette.primary},disabled:{opacity:.45},progressBlock:{marginTop:16},progressHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},progressStage:{fontSize:13,fontWeight:'700',color:palette.ink,flex:1},progressPercent:{fontSize:14,fontWeight:'900',color:palette.primary},progressTrack:{height:10,borderRadius:99,backgroundColor:'#E4E2EC',overflow:'hidden',marginTop:8},progressFill:{height:'100%',borderRadius:99,backgroundColor:palette.primary},logoutButton:{borderRadius:16,paddingVertical:13,paddingHorizontal:16,backgroundColor:'#FDECEC'},logoutText:{color:'#A12626',fontWeight:'800',fontSize:15},logBox:{marginTop:14,padding:12,borderRadius:14,backgroundColor:'#111827',gap:6},logLine:{fontSize:10,lineHeight:14,color:'#D1D5DB',fontFamily:'monospace'},logError:{color:'#FCA5A5'}
 });

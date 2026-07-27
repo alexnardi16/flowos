@@ -2,9 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Commitment } from '@/types';
-import { deleteCommitmentAlsoFromGoogle, deleteRecurringSeries, flushOfflineQueue, loadCommitments, removeCommitmentOnlyFromFlowOS, saveCommitment } from './commitmentsRepository';
+import { deleteCommitmentAlsoFromGoogle, deleteRecurringSeries, flushOfflineQueue, loadCommitments, pushPendingToGoogle, removeCommitmentOnlyFromFlowOS, saveCommitment } from './commitmentsRepository';
+import { logNotificationEvent } from './notificationLog';
 import { materializeNextOccurrence } from './recurrence';
 import { createAutomaticPlan } from './scheduler';
+
+/** Fire-and-forget: never let a push failure block the UI action that triggered it (Controlla already surfaces sync errors on the next full sync). */
+function pushGoogleSafely() {
+  void pushPendingToGoogle().catch((error) => { void logNotificationEvent('auto-push-failed', error, 'warn'); });
+}
 
 type State = {
   commitments: Commitment[];
@@ -18,6 +24,7 @@ type State = {
   removeOnlyFromFlowOS: (id: string) => Promise<void>;
   removeAlsoFromGoogle: (id: string) => Promise<void>;
   removeSeriesFromGoogle: (id: string) => Promise<void>;
+  syncItemToGoogleNow: () => Promise<void>;
   autoPlan: () => Promise<void>;
   startFocus: (id: string) => void;
   stopFocus: () => void;
@@ -55,19 +62,29 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     }));
     await saveCommitment(updated);
     if (next) await saveCommitment(next);
+    pushGoogleSafely();
   },
 
   postpone: async (id) => {
     const item = get().commitments.find((commitment) => commitment.id === id);
     if (!item) return;
-    const updated: Commitment = { ...item, status: 'scheduled', scheduledAt: new Date(Date.now() + 86400000).toISOString() };
+    const base = item.scheduledAt ?? item.dueAt ?? new Date().toISOString();
+    const nextDay = new Date(new Date(base).getTime() + 86400000).toISOString();
+    const updated: Commitment = {
+      ...item,
+      status: item.kind === 'event' ? 'scheduled' : item.status,
+      scheduledAt: item.scheduledAt ? nextDay : undefined,
+      dueAt: item.dueAt ? nextDay : undefined,
+    };
     set((state) => ({ commitments: state.commitments.map((commitment) => commitment.id === id ? updated : commitment) }));
     await saveCommitment(updated);
+    pushGoogleSafely();
   },
 
   updateCommitment: async (updated) => {
     set((state) => ({ commitments: state.commitments.map((item) => item.id === updated.id ? updated : item) }));
     await saveCommitment(updated);
+    pushGoogleSafely();
   },
 
   removeOnlyFromFlowOS: async (id) => {
@@ -88,6 +105,11 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     await deleteRecurringSeries(item);
     const seriesId = item.googleRecurringEventId;
     set((state) => ({ commitments: state.commitments.filter((commitment) => commitment.googleRecurringEventId !== seriesId) }));
+  },
+
+  /** Manual "Sincronizza con Google" — unlike pushGoogleSafely, errors are surfaced to the caller since this is a deliberate user action. */
+  syncItemToGoogleNow: async () => {
+    await pushPendingToGoogle();
   },
 
   autoPlan: async () => {
