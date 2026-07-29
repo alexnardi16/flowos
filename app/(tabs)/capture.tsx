@@ -3,7 +3,8 @@ import { Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInpu
 import { Button, Card, Chip, SectionTitle, palette, showAlert } from '@/components/ui';
 import { getGoogleWorkspaceStatus, syncGoogleWorkspace, type GoogleCalendar, type GoogleTaskList } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
-import type { CommitmentKind, RecurrenceFrequency } from '@/types';
+import { formatReminderOffsetLabel } from '@/lib/customReminders';
+import type { CommitmentKind, ReminderOffset, RecurrenceFrequency } from '@/types';
 
 type CreatableKind = Extract<CommitmentKind,'event'|'task'|'reminder'>;
 type RepeatOption='none'|RecurrenceFrequency;
@@ -36,6 +37,10 @@ export default function Capture() {
   const [calendarId,setCalendarId]=useState<string>();
   const [taskListId,setTaskListId]=useState<string>();
   const [repeat,setRepeat]=useState<RepeatOption>('none');
+  const [reminders,setReminders]=useState<ReminderOffset[]>([]);
+  const [customMinutes,setCustomMinutes]=useState('');
+  function addReminder(minutesBefore:number){if(reminders.some((r)=>r.minutesBefore===minutesBefore))return;setReminders((current)=>[...current,{id:`${Date.now()}-${minutesBefore}`,minutesBefore}].sort((a,b)=>a.minutesBefore-b.minutesBefore));}
+  function removeReminder(id:string){setReminders((current)=>current.filter((r)=>r.id!==id));}
   const addCommitment=useFlowStore((state)=>state.addCommitment);
 
   useEffect(()=>{ void getGoogleWorkspaceStatus().then((status)=>{
@@ -51,7 +56,7 @@ export default function Capture() {
   const durationMinutes=totalDurationMinutes(allDay,days,hours,minutes);
   const valid=Boolean(title.trim()&&at&&durationMinutes>0&&destinationName);
 
-  function reset(){setTitle('');setDescription('');setNotes('');setLocation('');setLink('');setAllDay(false);setTime('00:00');setDays('0');setHours('0');setMinutes('30');setShowDetails(false);setRepeat('none');}
+  function reset(){setTitle('');setDescription('');setNotes('');setLocation('');setLink('');setAllDay(false);setTime('00:00');setDays('0');setHours('0');setMinutes('30');setShowDetails(false);setRepeat('none');setReminders([]);}
   async function create(){
     if(loading)return;
     setSaved(false);setError(null);
@@ -64,7 +69,7 @@ export default function Capture() {
       const googleCalendarId=kind==='event'?calendarId:undefined;
       const googleTaskListId=kind!=='event'?taskListId:undefined;
       const recurrenceRule=repeat!=='none'?{frequency:repeat,interval:1}:undefined;
-      await addCommitment({id,title:title.trim(),kind,description:description.trim()||undefined,notes:notes.trim()||undefined,location:location.trim()||undefined,link:link.trim()||undefined,status:kind==='event'?'scheduled':'active',durationMinutes,allDay,energy:'medium',context:kind==='event'?'Calendario':kind==='task'?'Google Tasks':'Reminder',scheduledAt:kind==='event'?at:undefined,dueAt:kind!=='event'?at:undefined,fixed:kind==='event',confidence:1,googleCalendarId,googleTaskListId,recurrenceRule,syncStatus:'pending'});
+      await addCommitment({id,title:title.trim(),kind,description:description.trim()||undefined,notes:notes.trim()||undefined,location:location.trim()||undefined,link:link.trim()||undefined,status:kind==='event'?'scheduled':'active',durationMinutes,allDay,energy:'medium',context:kind==='event'?'Calendario':kind==='task'?'Google Tasks':'Reminder',scheduledAt:kind==='event'?at:undefined,dueAt:kind!=='event'?at:undefined,fixed:kind==='event',confidence:1,googleCalendarId,googleTaskListId,recurrenceRule,reminders:reminders.length?reminders:undefined,syncStatus:'pending'});
       await syncGoogleWorkspace(); reset(); setSaved(true);
     }catch(e){const message=e instanceof Error?e.message:'Creazione non riuscita.';setError(message);showAlert('Aggiungi',message);}finally{setLoading(false);}
   }
@@ -91,6 +96,13 @@ export default function Capture() {
       </View>
       <Text style={styles.fieldLabel}>Ripeti{kind==='task'?' (gestito da FlowOS: Google Tasks non supporta la ricorrenza)':''}</Text>
       <View style={styles.choices}>{(['none','daily','weekly','monthly'] as const).map((option)=><Choice key={option} label={REPEAT_LABELS[option]} active={repeat===option} onPress={()=>setRepeat(option)}/>)}</View>
+      <Text style={styles.fieldLabel}>Notifiche di rappel</Text>
+      {reminders.length?<View style={styles.remindersList}>{reminders.map((r)=><View key={r.id} style={styles.reminderChip}><Text style={styles.reminderChipText}>{formatReminderOffsetLabel(r.minutesBefore)}</Text><Pressable onPress={()=>removeReminder(r.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable></View>)}</View>:null}
+      <View style={styles.choices}>{[10,60,1440].map((m)=><Choice key={m} label={`+ ${formatReminderOffsetLabel(m)}`} active={false} onPress={()=>addReminder(m)}/>)}</View>
+      <View style={styles.inline}>
+        <View style={styles.flex}><Field label="minuti personalizzati" value={customMinutes} onChangeText={(v)=>setCustomMinutes(v.replace(/\D/g,''))} keyboardType="number-pad" placeholder="es. 45"/></View>
+        <Pressable onPress={()=>{const m=Number(customMinutes);if(m>0){addReminder(m);setCustomMinutes('');}}} style={styles.addReminderButton}><Text style={styles.addReminderButtonText}>Aggiungi</Text></Pressable>
+      </View>
     </Card>
 
     <SectionTitle title="3. Destinazione Google" subtitle={kind==='event'?'Scegli il calendario in cui creare l’evento.':'Scegli la lista in cui creare l’attività.'}/>
@@ -110,4 +122,4 @@ function Choice({label,active,onPress}:{label:string;active:boolean;onPress:()=>
 type FieldProps=TextInputProps&{label:string;required?:boolean};
 function Field({label,required,multiline,style,...props}:FieldProps){return <View style={styles.field}><Text style={styles.fieldLabel}>{label}{required?<Text style={styles.required}> *</Text>:null}</Text><TextInput {...props} multiline={multiline} placeholderTextColor="#979DAE" style={[styles.input,multiline&&styles.multiline,style]}/></View>;}
 
-const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:14},eyebrow:{fontSize:12,fontWeight:'900',letterSpacing:1.5,color:palette.primary,marginTop:14},title:{fontSize:32,fontWeight:'900',color:palette.ink},sub:{fontSize:15,lineHeight:22,color:palette.muted},kindGrid:{flexDirection:'row',gap:8,flexWrap:'wrap'},kindGridRow:{flexDirection:'row',gap:8,flexWrap:'nowrap'},kindCard:{flex:1,minWidth:0,padding:12,borderRadius:17,backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border},rowBetween:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:13},kindCardActive:{backgroundColor:palette.primary,borderColor:palette.primary},kindTitle:{fontSize:16,fontWeight:'900',color:palette.ink},kindTitleActive:{color:'#FFF'},kindHelp:{fontSize:12,lineHeight:17,color:palette.muted,marginTop:4},kindHelpActive:{color:'#EAE7FF'},field:{marginTop:13},fieldLabel:{fontSize:12,fontWeight:'800',color:palette.muted,marginBottom:6},required:{color:palette.danger},input:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:12,padding:12,color:palette.ink,fontSize:15},multiline:{minHeight:88,textAlignVertical:'top'},inline:{flexDirection:'row',gap:10},flex:{flex:1},destination:{fontSize:14,color:palette.muted},destinationStrong:{fontWeight:'900',color:palette.ink},choices:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:12},choice:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},choiceActive:{backgroundColor:palette.primary,borderColor:palette.primary},choiceText:{fontSize:13,fontWeight:'700',color:palette.ink},choiceTextActive:{color:'#FFF'},warning:{fontSize:13,lineHeight:18,color:palette.warning,marginTop:10},detailsToggle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:13},detailsToggleText:{fontSize:15,fontWeight:'800',color:palette.primary},chevron:{fontSize:24,color:palette.primary},preview:{gap:8,backgroundColor:'#FAFAFE'},previewRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},previewDestination:{fontSize:12,color:palette.muted,flexShrink:1},previewTitle:{fontSize:18,fontWeight:'900',color:palette.ink},previewMeta:{fontSize:13,color:palette.muted},error:{fontSize:14,lineHeight:20,color:palette.danger,fontWeight:'700'},saved:{fontWeight:'800',color:palette.success}});
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:14},eyebrow:{fontSize:12,fontWeight:'900',letterSpacing:1.5,color:palette.primary,marginTop:14},title:{fontSize:32,fontWeight:'900',color:palette.ink},sub:{fontSize:15,lineHeight:22,color:palette.muted},kindGrid:{flexDirection:'row',gap:8,flexWrap:'wrap'},kindGridRow:{flexDirection:'row',gap:8,flexWrap:'nowrap'},remindersList:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:6},reminderChip:{flexDirection:'row',alignItems:'center',gap:6,backgroundColor:palette.soft,borderRadius:99,paddingHorizontal:10,paddingVertical:6},reminderChipText:{fontSize:12,fontWeight:'800',color:palette.primary},reminderRemove:{fontSize:12,fontWeight:'900',color:palette.muted},addReminderButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:12,justifyContent:'center'},addReminderButtonText:{fontSize:12,fontWeight:'800',color:palette.ink},kindCard:{flex:1,minWidth:0,padding:12,borderRadius:17,backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border},rowBetween:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:13},kindCardActive:{backgroundColor:palette.primary,borderColor:palette.primary},kindTitle:{fontSize:16,fontWeight:'900',color:palette.ink},kindTitleActive:{color:'#FFF'},kindHelp:{fontSize:12,lineHeight:17,color:palette.muted,marginTop:4},kindHelpActive:{color:'#EAE7FF'},field:{marginTop:13},fieldLabel:{fontSize:12,fontWeight:'800',color:palette.muted,marginBottom:6},required:{color:palette.danger},input:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:12,padding:12,color:palette.ink,fontSize:15},multiline:{minHeight:88,textAlignVertical:'top'},inline:{flexDirection:'row',gap:10},flex:{flex:1},destination:{fontSize:14,color:palette.muted},destinationStrong:{fontWeight:'900',color:palette.ink},choices:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:12},choice:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},choiceActive:{backgroundColor:palette.primary,borderColor:palette.primary},choiceText:{fontSize:13,fontWeight:'700',color:palette.ink},choiceTextActive:{color:'#FFF'},warning:{fontSize:13,lineHeight:18,color:palette.warning,marginTop:10},detailsToggle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:13},detailsToggleText:{fontSize:15,fontWeight:'800',color:palette.primary},chevron:{fontSize:24,color:palette.primary},preview:{gap:8,backgroundColor:'#FAFAFE'},previewRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},previewDestination:{fontSize:12,color:palette.muted,flexShrink:1},previewTitle:{fontSize:18,fontWeight:'900',color:palette.ink},previewMeta:{fontSize:13,color:palette.muted},error:{fontSize:14,lineHeight:20,color:palette.danger,fontWeight:'700'},saved:{fontWeight:'800',color:palette.success}});

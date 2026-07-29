@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Button, Card, palette, showAlert } from '@/components/ui';
 import { buildDailySummary, DailySummary } from '@/lib/dailySummary';
 import { buildReminderPlan } from '@/lib/reminderPlan';
+import { buildCustomReminders } from '@/lib/customReminders';
 import { checkAndRecoverMissedDailySummary, registerBackgroundSync, runDailySummaryRefresh, unregisterBackgroundSync } from '@/lib/backgroundSyncService';
 import {
   DAILY_SUMMARY_HOUR,
@@ -33,6 +34,7 @@ export default function NotificationsSettings() {
   const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
   const commitments = useFlowStore((state) => state.commitments);
   const reminderPlan = buildReminderPlan(commitments, new Date());
+  const upcomingReminders = buildCustomReminders(commitments, new Date());
 
   useEffect(() => {
     void isDailySummaryEnabledStored().then(setEnabled);
@@ -124,9 +126,9 @@ export default function NotificationsSettings() {
 
       <Card>
         <Text style={styles.label}>Promemoria</Text>
-        <Text style={styles.meta}>Un avviso 10 minuti prima di ogni evento, più una notifica raggruppata per i task in scadenza e per quelli scaduti. Il badge sull'icona conta {reminderPlan.badgeCount} task da guardare.</Text>
+        <Text style={styles.meta}>Un avviso per ogni promemoria configurato su un'attività, più una notifica raggruppata per i task in scadenza e per quelli scaduti. Il badge sull'icona conta {reminderPlan.badgeCount} task da guardare.</Text>
         <View style={styles.row}>
-          <Text style={styles.item}>{reminderPlan.eventReminders.length} promemoria evento in coda</Text>
+          <Text style={styles.item}>{upcomingReminders.length} promemoria in coda</Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.item}>{reminderPlan.dueSoon.length} task in scadenza · {reminderPlan.overdue.length} scadute</Text>

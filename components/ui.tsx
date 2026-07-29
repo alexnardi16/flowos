@@ -42,12 +42,12 @@ export function Chip({ children, tone='primary' }: PropsWithChildren<{tone?:'pri
   return <View style={[styles.chip, styles[`chip_${tone}`]]}><Text style={[styles.chipText, styles[`chipText_${tone}`]]}>{children}</Text></View>;
 }
 
-export function Button({ label, onPress, secondary=false, danger=false, disabled=false, loading=false }: {
-  label:string; onPress:()=>void; secondary?:boolean; danger?:boolean; disabled?:boolean; loading?:boolean;
+export function Button({ label, onPress, secondary=false, danger=false, disabled=false, loading=false, style }: {
+  label:string; onPress:()=>void; secondary?:boolean; danger?:boolean; disabled?:boolean; loading?:boolean; style?: ViewStyle;
 }) {
   const inactive = disabled || loading;
   return <Pressable disabled={inactive} onPress={onPress} accessibilityRole="button" accessibilityState={{disabled:inactive,busy:loading}} style={({pressed})=>[
-    styles.button, secondary&&styles.secondary, danger&&styles.danger, inactive&&styles.disabled, pressed&&!inactive&&styles.pressed,
+    styles.button, secondary&&styles.secondary, danger&&styles.danger, inactive&&styles.disabled, pressed&&!inactive&&styles.pressed, style,
   ]}>
     {loading ? <ActivityIndicator color={secondary ? palette.primary : '#fff'} size="small"/> : <Text style={[styles.buttonText,secondary&&styles.secondaryText]}>{label}</Text>}
   </Pressable>;

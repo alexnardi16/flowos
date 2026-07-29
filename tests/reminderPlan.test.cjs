@@ -16,34 +16,6 @@ function commitment(overrides) {
   };
 }
 
-test('an event 10 minutes in the future produces a reminder due right now', () => {
-  const now = new Date(2026, 6, 23, 9, 0);
-  const commitments = [
-    commitment({ id: 'ev1', kind: 'event', scheduledAt: new Date(2026, 6, 23, 9, 10).toISOString() }),
-  ];
-  const plan = buildReminderPlan(commitments, now);
-  assert.equal(plan.eventReminders.length, 1);
-  assert.equal(plan.eventReminders[0].triggerAt, now.toISOString());
-});
-
-test('an event whose 10-minute mark has already passed is not reminded again', () => {
-  const now = new Date(2026, 6, 23, 9, 5);
-  const commitments = [
-    commitment({ id: 'ev1', kind: 'event', scheduledAt: new Date(2026, 6, 23, 9, 10).toISOString() }),
-  ];
-  const plan = buildReminderPlan(commitments, now);
-  assert.equal(plan.eventReminders.length, 0);
-});
-
-test('only kind=event items get event reminders, tasks with scheduledAt do not', () => {
-  const now = new Date(2026, 6, 23, 9, 0);
-  const commitments = [
-    commitment({ id: 't1', kind: 'task', scheduledAt: new Date(2026, 6, 23, 9, 10).toISOString() }),
-  ];
-  const plan = buildReminderPlan(commitments, now);
-  assert.equal(plan.eventReminders.length, 0);
-});
-
 test('a task due within 24h is due-soon, one due in 30h is not', () => {
   const now = new Date(2026, 6, 23, 9, 0);
   const commitments = [

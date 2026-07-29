@@ -45,8 +45,18 @@ test('fixed items are never returned as replan candidates themselves', () => {
   assert.equal(findItemsNeedingReplan(commitments, now).length, 0);
 });
 
-test('an unscheduled item (no scheduledAt) is never a candidate', () => {
+test('an active item with no scheduledAt at all is a never-scheduled candidate (no manual "genera piano" button anymore, so this is the only path that assigns it a slot)', () => {
   const now = new Date(2026, 6, 23, 8, 0);
   const commitments = [commitment({ id: 'unscheduled', status: 'active', scheduledAt: undefined })];
+  const candidates = findItemsNeedingReplan(commitments, now);
+  assert.deepEqual(candidates, [{ id: 'unscheduled', reason: 'never-scheduled' }]);
+});
+
+test('a done or someday item with no scheduledAt is not a never-scheduled candidate', () => {
+  const now = new Date(2026, 6, 23, 8, 0);
+  const commitments = [
+    commitment({ id: 'someday', status: 'someday', scheduledAt: undefined }),
+    commitment({ id: 'blocked', status: 'blocked', scheduledAt: undefined }),
+  ];
   assert.equal(findItemsNeedingReplan(commitments, now).length, 0);
 });

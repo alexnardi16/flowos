@@ -187,7 +187,47 @@ export async function getGoogleWorkspaceStatus(): Promise<GoogleWorkspaceStatus>
   return { ...result, range: currentRange() };
 }
 
+/** Subscribes to progress from whatever sync is currently running (or the next one that starts), without triggering a sync itself. Returns an unsubscribe function. Lets the UI show a progress bar for syncs it didn't personally trigger — e.g. the automatic one that runs right after opening FlowOS. */
+export function subscribeToSyncProgress(onProgress: (progress: SyncProgress) => void): () => void {
+  activeProgressListeners.add(onProgress);
+  return () => { activeProgressListeners.delete(onProgress); };
+}
+
+export function isGoogleSyncInFlight(): boolean {
+  return syncInFlight !== null;
+}
+
+let syncInFlight: Promise<{ pushed: number; events: number; tasks: number }> | null = null;
+const activeProgressListeners = new Set<(progress: SyncProgress) => void>();
+
+/**
+ * Every caller of syncGoogleWorkspace shares a single in-flight sync instead
+ * of each starting its own. Without this, AuthProvider's two independent
+ * effects (the connect/auto-sync effect and the daily-summary/reminder
+ * refresh effect) both fire a full sync on the same app launch, doubling
+ * every Google Calendar API call in the same time window — this is what was
+ * tripping Google's "Queries per minute per user" quota. Every caller still
+ * gets its own onProgress callback fed from whichever sync is actually
+ * running.
+ */
 export async function syncGoogleWorkspace(onProgress?: (progress: SyncProgress) => void) {
+  if (onProgress) activeProgressListeners.add(onProgress);
+  if (syncInFlight) {
+    recordDiagnostic('google-sync-coalesced-into-in-flight');
+    try { return await syncInFlight; }
+    finally { if (onProgress) activeProgressListeners.delete(onProgress); }
+  }
+  const broadcast = (progress: SyncProgress) => { activeProgressListeners.forEach((listener) => listener(progress)); };
+  syncInFlight = syncGoogleWorkspaceInternal(broadcast);
+  try {
+    return await syncInFlight;
+  } finally {
+    syncInFlight = null;
+    if (onProgress) activeProgressListeners.delete(onProgress);
+  }
+}
+
+async function syncGoogleWorkspaceInternal(onProgress?: (progress: SyncProgress) => void) {
   recordDiagnostic('google-sync-started');
   const totals = { pushed: 0, events: 0, tasks: 0 };
   const range = currentRange();
@@ -257,6 +297,11 @@ export async function syncGoogleWorkspace(onProgress?: (progress: SyncProgress) 
 }
 
 export async function disconnectGoogleWorkspace() { return invoke({ action: 'disconnect' }); }
+
+/** startDate/endDate as 'YYYY-MM-DD', or null to reset to the default (current year ± 3). */
+export async function setSyncRange(startDate: string | null, endDate: string | null) {
+  return invoke({ action: 'set-sync-range', startDate, endDate });
+}
 export async function setDefaultCalendar(id: string) { const { error } = await supabase.rpc('set_default_google_calendar', { p_calendar_id: id }); if (error) throw error; }
 export async function setDefaultTaskList(id: string) { const { error } = await supabase.rpc('set_default_google_task_list', { p_task_list_id: id }); if (error) throw error; }
 export async function setCalendarSelected(id: string, selected: boolean) { const { error } = await supabase.from('google_calendars').update({ selected }).eq('id', id); if (error) throw error; }

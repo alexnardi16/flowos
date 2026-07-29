@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { Button, palette, showAlert, showConfirm } from '@/components/ui';
+import { formatReminderOffsetLabel } from '@/lib/customReminders';
 import { useFlowStore } from '@/lib/store';
-import type { Commitment, CommitmentKind } from '@/types';
+import type { Commitment, CommitmentKind, ReminderOffset } from '@/types';
+
+const REMINDER_PRESETS = [10, 60, 1440];
 
 function toDateInput(iso?: string, allDay?: boolean): string {
   if (!iso) return '';
@@ -44,7 +47,17 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const [notes, setNotes] = useState(item.notes ?? '');
   const [link, setLink] = useState(item.link ?? '');
   const [description, setDescription] = useState(item.description ?? '');
+  const [reminders, setReminders] = useState<ReminderOffset[]>(item.reminders ?? []);
+  const [customMinutes, setCustomMinutes] = useState('');
   const [busy, setBusy] = useState(false);
+
+  function addReminder(minutesBefore: number) {
+    if (reminders.some((r) => r.minutesBefore === minutesBefore)) return;
+    setReminders((current) => [...current, { id: `${Date.now()}-${minutesBefore}`, minutesBefore }].sort((a, b) => a.minutesBefore - b.minutesBefore));
+  }
+  function removeReminder(id: string) {
+    setReminders((current) => current.filter((r) => r.id !== id));
+  }
 
   async function save() {
     setBusy(true);
@@ -61,6 +74,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         notes: notes.trim() || undefined,
         link: link.trim() || undefined,
         description: description.trim() || undefined,
+        reminders: reminders.length ? reminders : undefined,
         scheduledAt: kind === 'event' ? when : undefined,
         dueAt: kind !== 'event' ? when : undefined,
       };
@@ -136,6 +150,21 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       <Text style={styles.label}>Link</Text>
       <TextInput value={link} onChangeText={setLink} style={styles.input} autoCapitalize="none" />
 
+      <Text style={styles.label}>Notifiche di rappel</Text>
+      {reminders.length ? <View style={styles.reminderList}>{reminders.map((r) => (
+        <View key={r.id} style={styles.reminderChip}>
+          <Text style={styles.reminderChipText}>{formatReminderOffsetLabel(r.minutesBefore)}</Text>
+          <Pressable onPress={() => removeReminder(r.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable>
+        </View>
+      ))}</View> : <Text style={styles.help}>Nessun rappel configurato.</Text>}
+      <View style={styles.row}>
+        {REMINDER_PRESETS.map((minutes) => <Pressable key={minutes} onPress={() => addReminder(minutes)} style={styles.presetButton}><Text style={styles.presetButtonText}>+ {formatReminderOffsetLabel(minutes)}</Text></Pressable>)}
+      </View>
+      <View style={styles.row}>
+        <TextInput value={customMinutes} onChangeText={(v) => setCustomMinutes(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="minuti personalizzati" style={[styles.input, { flex: 1 }]} />
+        <Pressable onPress={() => { const m = Number(customMinutes); if (m > 0) { addReminder(m); setCustomMinutes(''); } }} style={styles.presetButton}><Text style={styles.presetButtonText}>Aggiungi</Text></Pressable>
+      </View>
+
       <View style={styles.actionsRow}>
         <Button secondary label="Annulla" onPress={onClose} disabled={busy} />
         <Button label="Salva modifiche" onPress={() => void save()} loading={busy} />
@@ -177,4 +206,10 @@ const styles = StyleSheet.create({
   localDeleteText: { color: '#A12626', fontWeight: '900' },
   googleDelete: { alignSelf: 'flex-start', backgroundColor: '#A12626', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
   googleDeleteText: { color: '#FFF', fontWeight: '900' },
+  reminderList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  reminderChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: palette.soft, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  reminderChipText: { fontSize: 12, fontWeight: '800', color: palette.primary },
+  reminderRemove: { fontSize: 12, fontWeight: '900', color: palette.muted },
+  presetButton: { backgroundColor: '#ECEEF4', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 9 },
+  presetButtonText: { fontSize: 12, fontWeight: '800', color: palette.ink },
 });

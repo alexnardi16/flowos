@@ -33,8 +33,6 @@ function searchable(item:Commitment){return [item.title,item.description,item.no
 
 export default function Plan(){
   const commitments=useFlowStore((state)=>state.commitments);
-  const autoPlan=useFlowStore((state)=>state.autoPlan);
-  const [planning,setPlanning]=useState(false);
   const [query,setQuery]=useState('');
   const [filters,setFilters]=useState<Filters>(DEFAULT_FILTERS);
   const [manageId,setManageId]=useState<string|null>(null);
@@ -50,7 +48,6 @@ export default function Plan(){
   const overdueCount=items.filter((item)=>item.status!=='done'&&isExpired(item)).length;
   const suggestions=useMemo(()=>buildPlanningSuggestions(commitments),[commitments]);
   const toggle=(key:FilterKey)=>setFilters((current)=>({...current,[key]:!current[key]}));
-  async function handleAutoPlan(){setPlanning(true);try{await autoPlan();}finally{setPlanning(false);}}
   const manageItem=manageId?commitments.find((item)=>item.id===manageId)??null:null;
 
   return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.wrap}>
@@ -60,7 +57,6 @@ export default function Plan(){
     <View style={styles.filters}><Filter label="Eventi" active={filters.events} onPress={()=>toggle('events')}/><Filter label="Task e reminder" active={filters.tasks} onPress={()=>toggle('tasks')}/><Filter label="Passati e completati" active={filters.past} onPress={()=>toggle('past')}/><Filter label="Scaduti aperti" active={filters.overdue} onPress={()=>toggle('overdue')}/></View>
     <View style={styles.filters}><Filter label="Tutti gli eventi" active={contactsFilter==='all'} onPress={()=>setContactsFilter('all')}/><Filter label="Solo contatti (compleanni)" active={contactsFilter==='onlyContacts'} onPress={()=>setContactsFilter('onlyContacts')}/><Filter label="Escludi contatti" active={contactsFilter==='excludeContacts'} onPress={()=>setContactsFilter('excludeContacts')}/></View>
     {suggestions.length?<View style={styles.filters}>{suggestions.map((suggestion)=><Card key={suggestion.id} style={styles.suggestionCard}><Text style={styles.suggestionText}>{suggestion.text}</Text></Card>)}</View>:null}
-    <Button label="Genera piano automatico" onPress={()=>void handleAutoPlan()} loading={planning}/>
     <SectionTitle title="Elementi" subtitle="Le azioni di eliminazione sono nascoste dietro “Gestisci” per evitare tocchi accidentali."/>
     {items.length?items.map((item)=>{const overdue=item.status!=='done'&&isExpired(item);return <Card key={item.id} style={styles.itemCard}>
       <View style={styles.row}><View style={styles.chips}><Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':item.kind==='reminder'?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip></View><Pressable onPress={()=>setManageId(item.id)} style={styles.manage}><Text style={styles.manageText}>Gestisci</Text></Pressable></View>

@@ -26,6 +26,7 @@ export interface Commitment {
   googleEventType?: string;
   recurrenceRule?: RecurrenceRule;
   recurrenceSeriesId?: string;
+  reminders?: ReminderOffset[];
   externalId?: string;
   externalEtag?: string;
   externalUpdatedAt?: string;
@@ -42,4 +43,10 @@ export interface RecurrenceRule {
   interval: number;
   until?: string;
   count?: number;
+}
+
+/** A single configurable reminder notification offset — an item can have several. */
+export interface ReminderOffset {
+  id: string;
+  minutesBefore: number;
 }

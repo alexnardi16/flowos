@@ -12,11 +12,19 @@ const now = () => new Date().toISOString();
 const expiresAt = (seconds = 3600) => new Date(Date.now() + Math.max(60, seconds) * 1000).toISOString();
 type TokenRow = {access_token:string;refresh_token:string|null;expires_at:string|null;token_type:string|null;scopes:string[]};
 
-function syncRange(){
+function syncRange(connection?: { sync_range_start?: string | null; sync_range_end?: string | null } | null){
   const current = new Date().getUTCFullYear();
-  const startYear = current - 3;
-  const endYear = current + 3;
-  return {startYear,endYear,start:`${startYear}-01-01T00:00:00.000Z`,endExclusive:`${endYear+1}-01-01T00:00:00.000Z`,labelStart:`01/01/${startYear}`,labelEnd:`31/12/${endYear}`,years:Array.from({length:7},(_,i)=>startYear+i)};
+  const defaultStartYear = current - 3;
+  const defaultEndYear = current + 3;
+  const startDate = connection?.sync_range_start ? new Date(connection.sync_range_start) : null;
+  const endDate = connection?.sync_range_end ? new Date(connection.sync_range_end) : null;
+  const startYear = startDate ? startDate.getUTCFullYear() : defaultStartYear;
+  const endYear = endDate ? endDate.getUTCFullYear() : defaultEndYear;
+  const start = startDate ? `${startDate.toISOString().slice(0,10)}T00:00:00.000Z` : `${startYear}-01-01T00:00:00.000Z`;
+  const endExclusive = endDate ? `${new Date(endDate.getTime()+86400000).toISOString().slice(0,10)}T00:00:00.000Z` : `${endYear+1}-01-01T00:00:00.000Z`;
+  const labelStart = startDate ? startDate.toISOString().slice(0,10).split('-').reverse().join('/') : `01/01/${startYear}`;
+  const labelEnd = endDate ? endDate.toISOString().slice(0,10).split('-').reverse().join('/') : `31/12/${endYear}`;
+  return {startYear,endYear,start,endExclusive,labelStart,labelEnd,years:Array.from({length:Math.max(1,endYear-startYear+1)},(_,i)=>startYear+i)};
 }
 async function currentUser(req:Request){
   const jwt=(req.headers.get("Authorization")??"").replace(/^Bearer\s+/i,"");
@@ -59,7 +67,7 @@ async function discover(userId:string,token:string,scopes:string[]){
   await admin.from("google_connections").upsert({user_id:userId,google_email:profile?.email??null,google_account_id:profile?.sub??null,scopes,last_sync_status:"pending",last_sync_error:null,updated_at:now()});
   return {googleEmail:profile?.email??null,calendars:calendarRows.length,taskLists:listRows.length};
 }
-function eventBody(c:any){const start=c.starts_at?new Date(c.starts_at):new Date();const end=new Date(start.getTime()+Math.max(1,c.duration_minutes??30)*60000);const body:any={summary:c.title,description:c.description??c.ai_metadata?.outcome??undefined,start:{dateTime:start.toISOString()},end:{dateTime:end.toISOString()},extendedProperties:{private:{flowosCommitmentId:c.id}}};if(c.ai_metadata?.recurrenceRule)body.recurrence=[c.ai_metadata.recurrenceRule];return body;}
+function eventBody(c:any){const start=c.starts_at?new Date(c.starts_at):new Date();const end=new Date(start.getTime()+Math.max(1,c.duration_minutes??30)*60000);const body:any={summary:c.title,description:c.description??c.ai_metadata?.outcome??undefined,start:{dateTime:start.toISOString()},end:{dateTime:end.toISOString()},extendedProperties:{private:{flowosCommitmentId:c.id}}};if(c.ai_metadata?.recurrenceRule)body.recurrence=[c.ai_metadata.recurrenceRule];const reminders=Array.isArray(c.ai_metadata?.reminders)?c.ai_metadata.reminders:null;if(reminders&&reminders.length)body.reminders={useDefault:false,overrides:reminders.slice(0,5).map((r:any)=>({method:"popup",minutes:Math.max(0,Math.round(r.minutesBefore))}))};return body;}
 function taskBody(c:any){return{title:c.title,notes:c.description??c.ai_metadata?.outcome??undefined,due:c.deadline_at?new Date(c.deadline_at).toISOString():undefined,status:c.status==="completed"||c.status==="done"?"completed":"needsAction"};}
 async function pushLocal(userId:string,token:string){
   const {data:defCal}=await admin.from("google_calendars").select("google_calendar_id").eq("user_id",userId).eq("is_default",true).maybeSingle();
@@ -86,6 +94,10 @@ async function upsertRemoteRows(userId:string,rows:any[]){
   const prepared=rows.flatMap(row=>{const found:any=map.get(row.external_id);if(found?.last_sync_origin==="flowos"&&new Date(found.updated_at)>new Date(row.external_updated_at??0))return[];return[{...row,id:found?.id??crypto.randomUUID()}];});
   if(!prepared.length)return 0;const {error:upsertError}=await admin.from("commitments").upsert(prepared,{onConflict:"id"});if(upsertError)throw upsertError;return prepared.length;
 }
+async function getConnectionRange(userId:string){
+  const {data}=await admin.from("google_connections").select("sync_range_start,sync_range_end").eq("user_id",userId).maybeSingle();
+  return syncRange(data);
+}
 async function pullCalendarPage(userId:string,calendarId:string,year:number,pageToken?:string){
   const token=await tokenFor(userId);const p=new URLSearchParams({maxResults:"250",showDeleted:"true",singleEvents:"true",timeMin:`${year}-01-01T00:00:00.000Z`,timeMax:`${year+1}-01-01T00:00:00.000Z`,orderBy:"startTime"});if(pageToken)p.set("pageToken",pageToken);
   const payload:any=await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${p}`,token.access_token);
@@ -93,14 +105,14 @@ async function pullCalendarPage(userId:string,calendarId:string,year:number,page
   return {imported:await upsertRemoteRows(userId,rows),nextPageToken:payload?.nextPageToken??null};
 }
 async function pullTaskPage(userId:string,listId:string,pageToken?:string){
-  const token=await tokenFor(userId);const range=syncRange();const p=new URLSearchParams({maxResults:"100",showCompleted:"true",showDeleted:"true",showHidden:"true"});if(pageToken)p.set("pageToken",pageToken);
+  const token=await tokenFor(userId);const range=await getConnectionRange(userId);const p=new URLSearchParams({maxResults:"100",showCompleted:"true",showDeleted:"true",showHidden:"true"});if(pageToken)p.set("pageToken",pageToken);
   const payload:any=await gfetch(`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(listId)}/tasks?${p}`,token.access_token);
   const startMs=new Date(range.start).getTime(),endMs=new Date(range.endExclusive).getTime();
   const rows=(payload?.items??[]).filter((t:any)=>t.due&&new Date(t.due).getTime()>=startMs&&new Date(t.due).getTime()<endMs).map((t:any)=>({user_id:userId,title:t.title??"(Senza titolo)",description:t.notes??null,kind:"task",status:t.status==="completed"?"completed":"active",starts_at:null,deadline_at:t.due??null,duration_minutes:30,energy:"medium",context:"Google Tasks",confidence_score:1,external_provider:"google",external_resource_type:"task",google_calendar_id:null,google_task_list_id:listId,external_id:t.id,external_etag:t.etag??null,external_updated_at:t.updated??null,last_sync_origin:"google",sync_status:"synced",sync_error:null,deleted_at:t.deleted?now():null,updated_at:t.updated??now(),ai_metadata:{googleWebViewLink:t.webViewLink}}));
   return {imported:await upsertRemoteRows(userId,rows),nextPageToken:payload?.nextPageToken??null};
 }
 async function markOutOfRange(userId:string){
-  const r=syncRange();
+  const r=await getConnectionRange(userId);
   await admin.from("commitments").update({deleted_at:now()}).eq("user_id",userId).eq("external_provider","google").eq("external_resource_type","calendar_event").or(`starts_at.lt.${r.start},starts_at.gte.${r.endExclusive}`);
   await admin.from("commitments").update({deleted_at:now()}).eq("user_id",userId).eq("external_provider","google").eq("external_resource_type","task").or(`deadline_at.is.null,deadline_at.lt.${r.start},deadline_at.gte.${r.endExclusive}`);
 }
@@ -129,18 +141,18 @@ Deno.serve(async(req)=>{
       if(!body.providerToken)return json({error:"Missing Google provider token"},400);
       const {data:current}=await admin.schema("private").from("google_oauth_tokens").select("refresh_token").eq("user_id",userId).maybeSingle();const scopes=String(body.scopes??"").split(/[ ,]+/).filter(Boolean);
       const {error}=await admin.schema("private").from("google_oauth_tokens").upsert({user_id:userId,access_token:body.providerToken,refresh_token:body.providerRefreshToken??current?.refresh_token??null,expires_at:expiresAt(body.expiresIn),token_type:"Bearer",scopes,updated_at:now()});if(error)throw error;
-      return json({ok:true,...await discover(userId,body.providerToken,scopes),range:syncRange()});
+      return json({ok:true,...await discover(userId,body.providerToken,scopes),range:await getConnectionRange(userId)});
     }
     if(action==="sync-start"){
       await admin.from("google_connections").update({last_sync_status:"syncing",last_sync_error:null,updated_at:now()}).eq("user_id",userId);await markOutOfRange(userId);
       const {data:calendars,error:calError}=await admin.from("google_calendars").select("google_calendar_id,summary").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(calError)throw calError;
       const {data:taskLists,error:taskError}=await admin.from("google_task_lists").select("google_task_list_id,title").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(taskError)throw taskError;
-      return json({ok:true,calendars:calendars??[],taskLists:taskLists??[],range:syncRange()});
+      return json({ok:true,calendars:calendars??[],taskLists:taskLists??[],range:await getConnectionRange(userId)});
     }
     if(action==="sync-push"){const token=await tokenFor(userId);return json({ok:true,pushed:await pushLocal(userId,token.access_token)});}
     if(action==="sync-calendar-page")return json({ok:true,...await pullCalendarPage(userId,body.calendarId,Number(body.year),body.pageToken)});
     if(action==="sync-task-page")return json({ok:true,...await pullTaskPage(userId,body.listId,body.pageToken)});
-    if(action==="sync-finish"){await admin.from("google_connections").update({last_sync_status:"ok",last_sync_at:now(),last_sync_error:null}).eq("user_id",userId);return json({ok:true,range:syncRange()});}
+    if(action==="sync-finish"){await admin.from("google_connections").update({last_sync_status:"ok",last_sync_at:now(),last_sync_error:null}).eq("user_id",userId);return json({ok:true,range:await getConnectionRange(userId)});}
     if(action==="sync-fail"){const message=String(body.message??"Sincronizzazione interrotta.");await admin.from("google_connections").update({last_sync_status:"error",last_sync_error:message}).eq("user_id",userId);return json({ok:true});}
     if(action==="sync-delete-series"){
       const commitmentId=String(body.commitmentId??"");
@@ -148,7 +160,17 @@ Deno.serve(async(req)=>{
       const deletedCount=await deleteRecurringSeries(userId,commitmentId);
       return json({ok:true,deletedCount});
     }
+    if(action==="set-sync-range"){
+      const startDate=body.startDate?String(body.startDate):null;
+      const endDate=body.endDate?String(body.endDate):null;
+      if(startDate&&Number.isNaN(new Date(startDate).getTime()))return json({error:"Data di inizio non valida"},400);
+      if(endDate&&Number.isNaN(new Date(endDate).getTime()))return json({error:"Data di fine non valida"},400);
+      if(startDate&&endDate&&new Date(startDate).getTime()>=new Date(endDate).getTime())return json({error:"La data di inizio deve precedere quella di fine"},400);
+      const {error}=await admin.from("google_connections").update({sync_range_start:startDate,sync_range_end:endDate}).eq("user_id",userId);
+      if(error)throw error;
+      return json({ok:true,range:await getConnectionRange(userId)});
+    }
     if(action==="disconnect"){await admin.schema("private").from("google_calendar_sync_state").delete().eq("user_id",userId);await admin.schema("private").from("google_task_sync_state").delete().eq("user_id",userId);await admin.schema("private").from("google_oauth_tokens").delete().eq("user_id",userId);await admin.from("google_connections").update({last_sync_status:"disconnected",last_sync_error:null}).eq("user_id",userId);return json({ok:true});}
-    const {data:connection}=await admin.from("google_connections").select("*").eq("user_id",userId).maybeSingle();const {data:calendars}=await admin.from("google_calendars").select("*").eq("user_id",userId).is("deleted_at",null).order("primary_calendar",{ascending:false}).order("summary");const {data:taskLists}=await admin.from("google_task_lists").select("*").eq("user_id",userId).is("deleted_at",null).order("title");return json({connection,calendars:calendars??[],taskLists:taskLists??[],range:syncRange()});
+    const {data:connection}=await admin.from("google_connections").select("*").eq("user_id",userId).maybeSingle();const {data:calendars}=await admin.from("google_calendars").select("*").eq("user_id",userId).is("deleted_at",null).order("primary_calendar",{ascending:false}).order("summary");const {data:taskLists}=await admin.from("google_task_lists").select("*").eq("user_id",userId).is("deleted_at",null).order("title");return json({connection,calendars:calendars??[],taskLists:taskLists??[],range:await getConnectionRange(userId)});
   }catch(e){const message=e instanceof Error?e.message:String(e);console.error(JSON.stringify({event:"request-error",action,userId,message}));if(userId&&action.startsWith("sync-")){await admin.from("google_connections").update({last_sync_status:"error",last_sync_error:message}).eq("user_id",userId);}return json({error:message},500);}
 });

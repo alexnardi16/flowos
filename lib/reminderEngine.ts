@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildReminderPlan, summarizeTaskList, type ReminderPlan } from './reminderPlan';
+import { buildCustomReminders, formatReminderOffsetLabel } from './customReminders';
 import { ensureDailySummaryChannel, NOTIFICATIONS_SUPPORTED_HERE, requestNotificationPermission } from './notificationService';
 import { syncTodayWidget } from './widgetSync';
 import { logNotificationEvent } from './notificationLog';
@@ -47,12 +48,13 @@ async function writeReminderMap(map: ReminderMap) {
 }
 
 /**
- * Reconciles per-event reminders against the current plan: cancels every
- * previously scheduled reminder and re-schedules the current set. Simpler
- * and safer than diffing item-by-item, and — since it always starts from a
- * clean slate — it can never leave a duplicate pending for the same event.
+ * Reconciles configurable per-item reminders against the current
+ * commitments: cancels every previously scheduled reminder and re-schedules
+ * the current set. Simpler and safer than diffing item-by-item, and —
+ * since it always starts from a clean slate — it can never leave a
+ * duplicate pending for the same reminder.
  */
-async function syncEventReminders(plan: ReminderPlan) {
+async function syncEventReminders(commitments: Commitment[], now: Date) {
   const previous = await readReminderMap();
   await Promise.all(
     Object.values(previous).map((entry) =>
@@ -62,13 +64,14 @@ async function syncEventReminders(plan: ReminderPlan) {
     ),
   );
 
+  const reminders = buildCustomReminders(commitments, now);
   const next: ReminderMap = {};
-  for (const reminder of plan.eventReminders) {
+  for (const reminder of reminders) {
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
-        title: `Tra 10 minuti: ${reminder.title}`,
-        body: 'Il tuo evento sta per iniziare.',
-        data: { source: 'event-reminder', commitmentId: reminder.commitmentId },
+        title: reminder.title,
+        body: `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
+        data: { source: 'reminder', commitmentId: reminder.commitmentId, reminderId: reminder.id },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -76,10 +79,10 @@ async function syncEventReminders(plan: ReminderPlan) {
         ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
       },
     });
-    next[reminder.commitmentId] = { notificationId: identifier, triggerAt: reminder.triggerAt };
+    next[reminder.id] = { notificationId: identifier, triggerAt: reminder.triggerAt };
   }
   await writeReminderMap(next);
-  await logNotificationEvent('event-reminders-synced', { count: plan.eventReminders.length });
+  await logNotificationEvent('event-reminders-synced', { count: reminders.length });
 }
 
 /**
@@ -163,7 +166,7 @@ export async function runReminderEngine(commitments: Commitment[], now: Date = n
 
   const plan = buildReminderPlan(commitments, now);
 
-  await syncEventReminders(plan);
+  await syncEventReminders(commitments, now);
   await syncGroupedNotification(
     DUE_SOON_ID_KEY,
     DUE_SOON_CHANNEL,
@@ -184,7 +187,7 @@ export async function runReminderEngine(commitments: Commitment[], now: Date = n
   await syncTodayWidget(commitments, now);
 
   await logNotificationEvent('reminder-engine-completed', {
-    events: plan.eventReminders.length,
+    events: buildCustomReminders(commitments, now).length,
     dueSoon: plan.dueSoon.length,
     overdue: plan.overdue.length,
   });

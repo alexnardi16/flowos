@@ -2,15 +2,12 @@ import type { Commitment } from '../types';
 import { toDateKey } from './dailySummary';
 import { isExpired } from './itemTiming';
 
-export const EVENT_REMINDER_LEAD_MINUTES = 10;
 export const DUE_SOON_WINDOW_HOURS = 24;
 
-export type EventReminder = { id: string; commitmentId: string; title: string; triggerAt: string };
 export type DueTask = { id: string; title: string; dueAt: string };
 
 export type ReminderPlan = {
   dateKey: string;
-  eventReminders: EventReminder[];
   dueSoon: DueTask[];
   overdue: DueTask[];
   badgeCount: number;
@@ -22,22 +19,14 @@ function isActive(item: Commitment): boolean {
 
 /**
  * Pure function: given the current commitments and a reference instant,
- * decides which per-event reminders should be pending (10 minutes before
- * each future event), which tasks count as "in scadenza" (due within the
- * next 24h) and which as "scadute" (due date already passed). No I/O, no
- * Expo/RN imports — same testing approach as lib/dailySummary.ts.
+ * decides which tasks count as "in scadenza" (due within the next 24h) and
+ * which as "scadute" (past their end time). No I/O, no Expo/RN imports —
+ * same testing approach as lib/dailySummary.ts. Per-item reminder
+ * notifications (configurable, possibly several per item) are handled
+ * separately by lib/customReminders.ts.
  */
 export function buildReminderPlan(commitments: Commitment[], now: Date = new Date()): ReminderPlan {
   const active = commitments.filter(isActive);
-
-  const eventReminders: EventReminder[] = active
-    .filter((item) => item.kind === 'event' && item.scheduledAt && !item.allDay)
-    .map((item) => {
-      const triggerAt = new Date(new Date(item.scheduledAt as string).getTime() - EVENT_REMINDER_LEAD_MINUTES * 60000);
-      return { id: item.id, commitmentId: item.id, title: item.title, triggerAt: triggerAt.toISOString() };
-    })
-    .filter((reminder) => new Date(reminder.triggerAt).getTime() >= now.getTime())
-    .sort((a, b) => new Date(a.triggerAt).getTime() - new Date(b.triggerAt).getTime());
 
   const dueTasks = active.filter((item) => item.kind === 'task' && item.dueAt);
 
@@ -56,7 +45,6 @@ export function buildReminderPlan(commitments: Commitment[], now: Date = new Dat
 
   return {
     dateKey: toDateKey(now),
-    eventReminders,
     dueSoon,
     overdue,
     badgeCount: dueSoon.length + overdue.length,

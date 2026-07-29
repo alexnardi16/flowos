@@ -13,8 +13,10 @@ import {
   setCalendarSelected,
   setDefaultCalendar,
   setDefaultTaskList,
+  setSyncRange,
   setTaskListSelected,
   signInWithGoogle,
+  subscribeToSyncProgress,
   syncGoogleWorkspace,
   type GoogleWorkspaceStatus,
 } from '@/lib/googleWorkspace';
@@ -111,6 +113,17 @@ export default function Me() {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToSyncProgress(({ percent, stage }) => {
+      setSyncProgress(percent);
+      setSyncStage(stage);
+      if (percent >= 100) {
+        setTimeout(() => { setSyncProgress(0); void loadGoogle(false); }, 900);
+      }
+    });
+    return unsubscribe;
+  }, []);
+
   async function run(action: () => Promise<unknown>, refreshCommitments = false) {
     if (googleBusy) return;
     setGoogleBusy(true);
@@ -192,6 +205,30 @@ export default function Me() {
     }
   }
 
+  const [rangeStartInput,setRangeStartInput]=useState('');
+  const [rangeEndInput,setRangeEndInput]=useState('');
+  const [rangeSaving,setRangeSaving]=useState(false);
+  useEffect(()=>{
+    if(!google?.range)return;
+    const toIso=(label:string)=>{const [d,m,y]=label.split('/');return d&&m&&y?`${y}-${m}-${d}`:'';};
+    setRangeStartInput(toIso(google.range.labelStart));
+    setRangeEndInput(toIso(google.range.labelEnd));
+  },[google?.range?.labelStart,google?.range?.labelEnd]);
+  async function saveRange(){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(rangeStartInput)||!/^\d{4}-\d{2}-\d{2}$/.test(rangeEndInput)){
+      showAlert('Google Workspace','Usa il formato AAAA-MM-GG per entrambe le date.');return;
+    }
+    setRangeSaving(true);
+    try{
+      await setSyncRange(rangeStartInput,rangeEndInput);
+      await loadGoogle(false);
+      showAlert('Google Workspace','Periodo aggiornato. Sincronizza ora per applicarlo.');
+    }catch(error){
+      showAlert('Google Workspace',error instanceof Error?error.message:'Aggiornamento non riuscito.');
+    }finally{
+      setRangeSaving(false);
+    }
+  }
   const rangeLabel = google?.range
     ? `Elementi importati visibili dal ${google.range.labelStart} al ${google.range.labelEnd}.`
     : 'Intervallo di importazione in caricamento…';
@@ -206,6 +243,11 @@ export default function Me() {
       <Card>
         <Text style={styles.label}>Google Workspace</Text>
         <Text style={styles.rangeLabel}>{rangeLabel}</Text>
+        <View style={styles.inline}>
+          <View style={styles.flex}><Text style={styles.fieldLabel}>Dal</Text><TextInput value={rangeStartInput} onChangeText={setRangeStartInput} placeholder="AAAA-MM-GG" style={styles.rangeInput}/></View>
+          <View style={styles.flex}><Text style={styles.fieldLabel}>Al</Text><TextInput value={rangeEndInput} onChangeText={setRangeEndInput} placeholder="AAAA-MM-GG" style={styles.rangeInput}/></View>
+        </View>
+        <View style={styles.actions}><Button secondary label={rangeSaving?'Salvataggio…':'Salva periodo'} onPress={()=>{void saveRange();}} disabled={rangeSaving}/></View>
         {googleConnected ? <>
           <Text style={styles.item}>{google?.connection?.google_email ? friendlyCalendarName(google.connection.google_email, google.connection.google_email) : 'Account Google collegato'}</Text>
           <Text style={styles.meta}>Stato: {google?.connection?.last_sync_status} · Ultima sincronizzazione: {formatSyncDate(google?.connection?.last_sync_at)}</Text>
@@ -216,7 +258,7 @@ export default function Me() {
             <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${syncProgress}%` }]} /></View>
           </View> : null}
           <View style={styles.actions}><Button label={googleBusy ? 'Sincronizzazione…' : 'Sincronizza ora'} onPress={() => { void runSync(); }}/><Button secondary label="Scollega Google" onPress={() => { void run(disconnectGoogleWorkspace); }}/></View>
-          {!googleConnected ? null : <View style={styles.actions}><Button secondary danger label="Elimina ogni attività su FlowOS senza alcun impatto su Google" onPress={() => { void wipeFlowOSData(); }}/></View>}
+          <View style={styles.wipeRow}><Button secondary danger label="Elimina ogni attività su FlowOS senza alcun impatto su Google" onPress={() => { void wipeFlowOSData(); }} style={styles.wipeButton}/></View>
         </> : <>
           <Text style={styles.meta}>{authorizationMissing ? 'La sessione FlowOS è attiva, ma l’autorizzazione Google deve essere ripristinata.' : 'Collega Google per sincronizzare Calendar e Tasks in entrambe le direzioni.'}</Text>
           {googleError ? <Text style={styles.error}>{googleError}</Text> : null}
@@ -268,5 +310,5 @@ export default function Me() {
 }
 
 const styles = StyleSheet.create({
-  safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:16},eyebrow:{fontSize:14,color:palette.primary,fontWeight:'900',letterSpacing:1.3,textTransform:'uppercase',marginTop:14},title:{fontSize:31,fontWeight:'900',color:palette.ink},label:{fontSize:13,fontWeight:'800',color:palette.primary,textTransform:'uppercase'},row:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:8},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:4},rangeLabel:{fontSize:13,lineHeight:18,color:palette.ink,marginTop:8,fontWeight:'800'},error:{fontSize:13,lineHeight:18,color:'#A12626',marginTop:8,fontWeight:'700'},score:{fontSize:42,fontWeight:'900',color:palette.ink,marginTop:10},metrics:{flexDirection:'row',gap:12},metricCard:{flex:1},metric:{fontSize:30,fontWeight:'900',color:palette.ink},metricLabel:{fontSize:12,color:palette.muted,marginTop:4},actions:{flexDirection:'row',gap:10,marginTop:16,flexWrap:'wrap'},resourceRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:12,borderBottomWidth:1,borderBottomColor:'#ECEEF4'},resourceText:{flex:1},resourceTitle:{fontSize:15,fontWeight:'800',color:palette.ink},defaultButton:{maxWidth:124,backgroundColor:palette.soft,borderRadius:12,paddingHorizontal:10,paddingVertical:8},defaultText:{fontSize:11,fontWeight:'800',textAlign:'center',color:palette.primary},disabled:{opacity:.45},progressBlock:{marginTop:16},progressHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},progressStage:{fontSize:13,fontWeight:'700',color:palette.ink,flex:1},progressPercent:{fontSize:14,fontWeight:'900',color:palette.primary},progressTrack:{height:10,borderRadius:99,backgroundColor:'#E4E2EC',overflow:'hidden',marginTop:8},progressFill:{height:'100%',borderRadius:99,backgroundColor:palette.primary},logoutButton:{borderRadius:16,paddingVertical:13,paddingHorizontal:16,backgroundColor:'#FDECEC'},logoutText:{color:'#A12626',fontWeight:'800',fontSize:15},logBox:{marginTop:14,padding:12,borderRadius:14,backgroundColor:'#111827',gap:6},logLine:{fontSize:10,lineHeight:14,color:'#D1D5DB',fontFamily:'monospace'},logError:{color:'#FCA5A5'}
+  safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:16},eyebrow:{fontSize:14,color:palette.primary,fontWeight:'900',letterSpacing:1.3,textTransform:'uppercase',marginTop:14},title:{fontSize:31,fontWeight:'900',color:palette.ink},label:{fontSize:13,fontWeight:'800',color:palette.primary,textTransform:'uppercase'},row:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:8},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:4},rangeLabel:{fontSize:13,lineHeight:18,color:palette.ink,marginTop:8,fontWeight:'800'},error:{fontSize:13,lineHeight:18,color:'#A12626',marginTop:8,fontWeight:'700'},score:{fontSize:42,fontWeight:'900',color:palette.ink,marginTop:10},metrics:{flexDirection:'row',gap:12},metricCard:{flex:1},metric:{fontSize:30,fontWeight:'900',color:palette.ink},metricLabel:{fontSize:12,color:palette.muted,marginTop:4},actions:{flexDirection:'row',gap:10,marginTop:16,flexWrap:'wrap'},wipeRow:{marginTop:12,width:'100%'},wipeButton:{width:'100%',minHeight:58,paddingVertical:14},resourceRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:12,borderBottomWidth:1,borderBottomColor:'#ECEEF4'},resourceText:{flex:1},resourceTitle:{fontSize:15,fontWeight:'800',color:palette.ink},defaultButton:{maxWidth:124,backgroundColor:palette.soft,borderRadius:12,paddingHorizontal:10,paddingVertical:8},defaultText:{fontSize:11,fontWeight:'800',textAlign:'center',color:palette.primary},disabled:{opacity:.45},progressBlock:{marginTop:16},progressHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},progressStage:{fontSize:13,fontWeight:'700',color:palette.ink,flex:1},progressPercent:{fontSize:14,fontWeight:'900',color:palette.primary},progressTrack:{height:10,borderRadius:99,backgroundColor:'#E4E2EC',overflow:'hidden',marginTop:8},progressFill:{height:'100%',borderRadius:99,backgroundColor:palette.primary},logoutButton:{borderRadius:16,paddingVertical:13,paddingHorizontal:16,backgroundColor:'#FDECEC'},logoutText:{color:'#A12626',fontWeight:'800',fontSize:15},logBox:{marginTop:14,padding:12,borderRadius:14,backgroundColor:'#111827',gap:6},logLine:{fontSize:10,lineHeight:14,color:'#D1D5DB',fontFamily:'monospace'},logError:{color:'#FCA5A5'},inline:{flexDirection:'row',gap:10,marginTop:10},flex:{flex:1},fieldLabel:{fontSize:11,fontWeight:'800',color:palette.muted},rangeInput:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:10,padding:9,marginTop:4,color:palette.ink}
 });
