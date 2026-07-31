@@ -44,6 +44,20 @@ test('a multi-day all-day item only expires after its last day ends', () => {
   assert.equal(isExpired(it, afterEnd), true);
 });
 
+test('a date-only deadline (Google Tasks due date, always midnight UTC) only expires at the END of that day, not 30 minutes after midnight', () => {
+  const it = item({ kind: 'task', dueAt: '2026-07-25T00:00:00.000Z', durationMinutes: 30 });
+  const stillToday = new Date(Date.UTC(2026, 6, 25, 20, 0));
+  const nextDay = new Date(Date.UTC(2026, 6, 26, 0, 30));
+  assert.equal(isExpired(it, stillToday), false);
+  assert.equal(isExpired(it, nextDay), true);
+});
+
+test('a task with an explicit scheduledAt time is NOT treated as a date-only deadline — its own duration still applies', () => {
+  const it = item({ kind: 'task', scheduledAt: new Date(2026, 6, 25, 14, 0).toISOString(), durationMinutes: 30 });
+  const justAfter = new Date(2026, 6, 25, 14, 31);
+  assert.equal(isExpired(it, justAfter), true);
+});
+
 test('formatDurationLabel shows "1 d" for a single 24h all-day item, not "24 h"', () => {
   const it = item({ allDay: true, scheduledAt: '2026-07-25T00:00:00.000Z', durationMinutes: 1440 });
   assert.equal(formatDurationLabel(it), '1 d');

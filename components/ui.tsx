@@ -1,5 +1,5 @@
 import { PropsWithChildren } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, StyleProp, Text, View, ViewStyle } from 'react-native';
 
 /**
  * Alert.alert routinely shows nothing on web (react-native-web's support for
@@ -34,7 +34,7 @@ export const palette = {
   soft:'#ECE9FF', success:'#15866B', warning:'#B66A14', danger:'#A12626', border:'#E2E4EA',
 };
 
-export function Card({ children, style }: PropsWithChildren<{style?: ViewStyle}>) {
+export function Card({ children, style }: PropsWithChildren<{style?: StyleProp<ViewStyle>}>) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
@@ -43,7 +43,7 @@ export function Chip({ children, tone='primary' }: PropsWithChildren<{tone?:'pri
 }
 
 export function Button({ label, onPress, secondary=false, danger=false, disabled=false, loading=false, style }: {
-  label:string; onPress:()=>void; secondary?:boolean; danger?:boolean; disabled?:boolean; loading?:boolean; style?: ViewStyle;
+  label:string; onPress:()=>void; secondary?:boolean; danger?:boolean; disabled?:boolean; loading?:boolean; style?: StyleProp<ViewStyle>;
 }) {
   const inactive = disabled || loading;
   return <Pressable disabled={inactive} onPress={onPress} accessibilityRole="button" accessibilityState={{disabled:inactive,busy:loading}} style={({pressed})=>[

@@ -13,6 +13,7 @@ import {
   setCalendarSelected,
   setDefaultCalendar,
   setDefaultTaskList,
+  friendlyCalendarName,
   setSyncRange,
   setTaskListSelected,
   signInWithGoogle,
@@ -23,10 +24,7 @@ import {
 import { useFlowStore } from '@/lib/store';
 import { useAuth } from '@/providers/AuthProvider';
 
-/** The connected account's own calendar is usually just named after its email — show a friendlier label instead. */
-function friendlyCalendarName(name: string, ownEmail?: string | null) {
-  return ownEmail && name.trim().toLowerCase() === ownEmail.trim().toLowerCase() ? 'Alex' : name;
-}
+
 
 function formatSyncDate(value?: string | null) {
   if (!value) return 'mai';
@@ -258,7 +256,7 @@ export default function Me() {
             <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${syncProgress}%` }]} /></View>
           </View> : null}
           <View style={styles.actions}><Button label={googleBusy ? 'Sincronizzazione…' : 'Sincronizza ora'} onPress={() => { void runSync(); }}/><Button secondary label="Scollega Google" onPress={() => { void run(disconnectGoogleWorkspace); }}/></View>
-          <View style={styles.wipeRow}><Button secondary danger label="Elimina ogni attività su FlowOS senza alcun impatto su Google" onPress={() => { void wipeFlowOSData(); }} style={styles.wipeButton}/></View>
+          <View style={styles.wipeRow}><Pressable onPress={() => { void wipeFlowOSData(); }} style={styles.wipeButton}><Text style={styles.logoutText}>Elimina ogni attività su FlowOS senza alcun impatto su Google</Text></Pressable></View>
         </> : <>
           <Text style={styles.meta}>{authorizationMissing ? 'La sessione FlowOS è attiva, ma l’autorizzazione Google deve essere ripristinata.' : 'Collega Google per sincronizzare Calendar e Tasks in entrambe le direzioni.'}</Text>
           {googleError ? <Text style={styles.error}>{googleError}</Text> : null}
@@ -274,7 +272,7 @@ export default function Me() {
             const writable = ['owner', 'writer'].includes(calendar.access_role);
             const holidayCalendar = /^Jours fériés en (France|Italie)$/i.test(calendar.summary.trim());
             return <View key={calendar.id} style={styles.resourceRow}>
-              <View style={styles.resourceText}><Text style={styles.resourceTitle}>{friendlyCalendarName(calendar.summary, google?.connection?.google_email)}{calendar.primary_calendar ? ' · principale' : ''}</Text><Text style={styles.meta}>{calendar.access_role}{calendar.is_default ? ' · predefinito' : ''}</Text></View>
+              <View style={styles.resourceText}><Text style={styles.resourceTitle}>{friendlyCalendarName(calendar.summary, google?.connection?.google_email)}{calendar.primary_calendar && friendlyCalendarName(calendar.summary, google?.connection?.google_email)!=='Alex' ? ' · principale' : ''}</Text><Text style={styles.meta}>{calendar.access_role}{calendar.is_default ? ' · predefinito' : ''}</Text></View>
               <Switch value={calendar.selected} onValueChange={(selected) => { void run(() => setCalendarSelected(calendar.id, selected)); }}/>
               {!holidayCalendar ? <Pressable disabled={!calendar.selected || !writable || calendar.is_default} onPress={() => { void run(() => setDefaultCalendar(calendar.id)); }} style={[styles.defaultButton, (!calendar.selected || !writable || calendar.is_default) && styles.disabled]}><Text style={styles.defaultText}>{calendar.is_default ? 'Default' : 'Imposta come default'}</Text></Pressable> : null}
             </View>;
@@ -310,5 +308,5 @@ export default function Me() {
 }
 
 const styles = StyleSheet.create({
-  safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:16},eyebrow:{fontSize:14,color:palette.primary,fontWeight:'900',letterSpacing:1.3,textTransform:'uppercase',marginTop:14},title:{fontSize:31,fontWeight:'900',color:palette.ink},label:{fontSize:13,fontWeight:'800',color:palette.primary,textTransform:'uppercase'},row:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:8},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:4},rangeLabel:{fontSize:13,lineHeight:18,color:palette.ink,marginTop:8,fontWeight:'800'},error:{fontSize:13,lineHeight:18,color:'#A12626',marginTop:8,fontWeight:'700'},score:{fontSize:42,fontWeight:'900',color:palette.ink,marginTop:10},metrics:{flexDirection:'row',gap:12},metricCard:{flex:1},metric:{fontSize:30,fontWeight:'900',color:palette.ink},metricLabel:{fontSize:12,color:palette.muted,marginTop:4},actions:{flexDirection:'row',gap:10,marginTop:16,flexWrap:'wrap'},wipeRow:{marginTop:12,width:'100%'},wipeButton:{width:'100%',minHeight:58,paddingVertical:14},resourceRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:12,borderBottomWidth:1,borderBottomColor:'#ECEEF4'},resourceText:{flex:1},resourceTitle:{fontSize:15,fontWeight:'800',color:palette.ink},defaultButton:{maxWidth:124,backgroundColor:palette.soft,borderRadius:12,paddingHorizontal:10,paddingVertical:8},defaultText:{fontSize:11,fontWeight:'800',textAlign:'center',color:palette.primary},disabled:{opacity:.45},progressBlock:{marginTop:16},progressHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},progressStage:{fontSize:13,fontWeight:'700',color:palette.ink,flex:1},progressPercent:{fontSize:14,fontWeight:'900',color:palette.primary},progressTrack:{height:10,borderRadius:99,backgroundColor:'#E4E2EC',overflow:'hidden',marginTop:8},progressFill:{height:'100%',borderRadius:99,backgroundColor:palette.primary},logoutButton:{borderRadius:16,paddingVertical:13,paddingHorizontal:16,backgroundColor:'#FDECEC'},logoutText:{color:'#A12626',fontWeight:'800',fontSize:15},logBox:{marginTop:14,padding:12,borderRadius:14,backgroundColor:'#111827',gap:6},logLine:{fontSize:10,lineHeight:14,color:'#D1D5DB',fontFamily:'monospace'},logError:{color:'#FCA5A5'},inline:{flexDirection:'row',gap:10,marginTop:10},flex:{flex:1},fieldLabel:{fontSize:11,fontWeight:'800',color:palette.muted},rangeInput:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:10,padding:9,marginTop:4,color:palette.ink}
+  safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:16},eyebrow:{fontSize:14,color:palette.primary,fontWeight:'900',letterSpacing:1.3,textTransform:'uppercase',marginTop:14},title:{fontSize:31,fontWeight:'900',color:palette.ink},label:{fontSize:13,fontWeight:'800',color:palette.primary,textTransform:'uppercase'},row:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},item:{fontSize:18,fontWeight:'800',color:palette.ink,marginTop:8},meta:{fontSize:13,lineHeight:18,color:palette.muted,marginTop:4},rangeLabel:{fontSize:13,lineHeight:18,color:palette.ink,marginTop:8,fontWeight:'800'},error:{fontSize:13,lineHeight:18,color:'#A12626',marginTop:8,fontWeight:'700'},score:{fontSize:42,fontWeight:'900',color:palette.ink,marginTop:10},metrics:{flexDirection:'row',gap:12},metricCard:{flex:1},metric:{fontSize:30,fontWeight:'900',color:palette.ink},metricLabel:{fontSize:12,color:palette.muted,marginTop:4},actions:{flexDirection:'row',gap:10,marginTop:16,flexWrap:'wrap'},wipeRow:{marginTop:12,width:'100%'},wipeButton:{width:'100%',minHeight:58,paddingVertical:14,paddingHorizontal:16,borderRadius:16,backgroundColor:'#FDECEC',alignItems:'center',justifyContent:'center'},resourceRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:12,borderBottomWidth:1,borderBottomColor:'#ECEEF4'},resourceText:{flex:1},resourceTitle:{fontSize:15,fontWeight:'800',color:palette.ink},defaultButton:{maxWidth:124,backgroundColor:palette.soft,borderRadius:12,paddingHorizontal:10,paddingVertical:8},defaultText:{fontSize:11,fontWeight:'800',textAlign:'center',color:palette.primary},disabled:{opacity:.45},progressBlock:{marginTop:16},progressHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},progressStage:{fontSize:13,fontWeight:'700',color:palette.ink,flex:1},progressPercent:{fontSize:14,fontWeight:'900',color:palette.primary},progressTrack:{height:10,borderRadius:99,backgroundColor:'#E4E2EC',overflow:'hidden',marginTop:8},progressFill:{height:'100%',borderRadius:99,backgroundColor:palette.primary},logoutButton:{borderRadius:16,paddingVertical:13,paddingHorizontal:16,backgroundColor:'#FDECEC'},logoutText:{color:'#A12626',fontWeight:'800',fontSize:15},logBox:{marginTop:14,padding:12,borderRadius:14,backgroundColor:'#111827',gap:6},logLine:{fontSize:10,lineHeight:14,color:'#D1D5DB',fontFamily:'monospace'},logError:{color:'#FCA5A5'},inline:{flexDirection:'row',gap:10,marginTop:10},flex:{flex:1},fieldLabel:{fontSize:11,fontWeight:'800',color:palette.muted},rangeInput:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:10,padding:9,marginTop:4,color:palette.ink}
 });

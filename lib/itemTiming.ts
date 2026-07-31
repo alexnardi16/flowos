@@ -7,10 +7,27 @@ function startTime(item: Commitment): number | null {
   return value ? new Date(value).getTime() : null;
 }
 
-/** The instant this item stops being "current" — start + duration, not just the start time. */
+/** Google Tasks' `due` field is always exactly midnight UTC — it has no time-of-day component at all, by design of Google's API. A dueAt at exactly :00:00.000 UTC with no scheduledAt is that kind of date-only deadline. */
+function isDateOnlyDeadline(item: Commitment): boolean {
+  if (item.scheduledAt || !item.dueAt) return false;
+  const d = new Date(item.dueAt);
+  return d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0 && d.getUTCMilliseconds() === 0;
+}
+
+/**
+ * The instant this item stops being "current". For a normal timed item,
+ * that's start + duration. For a date-only deadline (a Google Tasks due
+ * date, which never carries a time — see isDateOnlyDeadline), the item's
+ * own durationMinutes (how long the task takes to do, e.g. 30 minutes)
+ * says nothing about when in the day it's still relevant, so the deadline
+ * is treated as lasting the whole day: it only expires at midnight of the
+ * NEXT day. Without this, a task due "today" reads as overdue by ~00:30,
+ * even though "due today" normally means "due by the end of today".
+ */
 export function getEndTime(item: Commitment): number | null {
   const start = startTime(item);
   if (start === null) return null;
+  if (isDateOnlyDeadline(item)) return start + DAY_MS;
   return start + item.durationMinutes * 60000;
 }
 

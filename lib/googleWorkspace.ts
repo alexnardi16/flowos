@@ -302,6 +302,11 @@ export async function disconnectGoogleWorkspace() { return invoke({ action: 'dis
 export async function setSyncRange(startDate: string | null, endDate: string | null) {
   return invoke({ action: 'set-sync-range', startDate, endDate });
 }
+
+/** The connected account's own calendar is usually just named after its email — show a friendlier label instead. */
+export function friendlyCalendarName(name: string, ownEmail?: string | null) {
+  return ownEmail && name.trim().toLowerCase() === ownEmail.trim().toLowerCase() ? 'Alex' : name;
+}
 export async function setDefaultCalendar(id: string) { const { error } = await supabase.rpc('set_default_google_calendar', { p_calendar_id: id }); if (error) throw error; }
 export async function setDefaultTaskList(id: string) { const { error } = await supabase.rpc('set_default_google_task_list', { p_task_list_id: id }); if (error) throw error; }
 export async function setCalendarSelected(id: string, selected: boolean) { const { error } = await supabase.from('google_calendars').update({ selected }).eq('id', id); if (error) throw error; }

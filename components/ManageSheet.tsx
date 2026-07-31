@@ -130,15 +130,16 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
 
       <View style={styles.rowBetween}><Text style={styles.label}>Giornata intera</Text><Switch value={allDay} onValueChange={setAllDay} /></View>
 
-      <Text style={styles.label}>Data</Text>
-      <TextInput value={dateStr} onChangeText={setDateStr} placeholder="AAAA-MM-GG" style={styles.input} />
-      {!allDay ? <><Text style={styles.label}>Orario</Text><TextInput value={timeStr} onChangeText={setTimeStr} placeholder="HH:MM" style={styles.input} /></> : null}
+      <View style={styles.row}>
+        <View style={styles.flexField}><Text style={styles.label}>Data</Text><TextInput value={dateStr} onChangeText={setDateStr} placeholder="AAAA-MM-GG" style={styles.input} /></View>
+        {!allDay ? <View style={styles.flexField}><Text style={styles.label}>Orario</Text><TextInput value={timeStr} onChangeText={setTimeStr} placeholder="HH:MM" style={styles.input} /></View> : null}
+      </View>
 
       <Text style={styles.label}>Durata</Text>
       <View style={styles.row}>
-        <TextInput value={days} onChangeText={(v) => setDays(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="gg" style={[styles.input, styles.durationInput]} />
-        <TextInput value={hours} onChangeText={(v) => setHours(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="hh" style={[styles.input, styles.durationInput]} />
-        <TextInput value={minutes} onChangeText={(v) => setMinutes(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="min" style={[styles.input, styles.durationInput]} />
+        <View style={styles.flexField}><Text style={styles.durationLabel}>giorni</Text><TextInput value={days} onChangeText={(v) => setDays(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="0" style={[styles.input, styles.durationInput]} /></View>
+        <View style={styles.flexField}><Text style={styles.durationLabel}>ore</Text><TextInput value={hours} onChangeText={(v) => setHours(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="0" style={[styles.input, styles.durationInput]} /></View>
+        <View style={styles.flexField}><Text style={styles.durationLabel}>minuti</Text><TextInput value={minutes} onChangeText={(v) => setMinutes(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="0" style={[styles.input, styles.durationInput]} /></View>
       </View>
 
       <Text style={styles.label}>Descrizione</Text>
@@ -192,7 +193,9 @@ const styles = StyleSheet.create({
   label: { fontSize: 12, fontWeight: '800', color: palette.muted, marginTop: 12 },
   input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E4EA', borderRadius: 12, padding: 12, marginTop: 5, color: palette.ink },
   durationInput: { flex: 1 },
-  row: { flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'wrap' },
+  row: { flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'nowrap' },
+  flexField: { flex: 1, minWidth: 0 },
+  durationLabel: { fontSize: 11, fontWeight: '700', color: palette.muted, marginBottom: 4 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
   choice: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 99, backgroundColor: '#ECEEF4' },
   choiceActive: { backgroundColor: palette.primary },

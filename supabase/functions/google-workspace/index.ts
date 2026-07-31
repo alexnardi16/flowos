@@ -55,7 +55,20 @@ async function tokenFor(userId:string):Promise<TokenRow>{
 async function discover(userId:string,token:string,scopes:string[]){
   const profile:any=await gfetch("https://openidconnect.googleapis.com/v1/userinfo",token);
   const calendars:any=await gfetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250&showDeleted=false&showHidden=true",token);
-  const calendarRows=(calendars?.items??[]).map((c:any)=>({user_id:userId,google_calendar_id:c.id,summary:c.summaryOverride??c.summary??c.id,description:c.description??null,color_id:c.colorId??null,background_color:c.backgroundColor??null,foreground_color:c.foregroundColor??null,access_role:c.accessRole??"reader",primary_calendar:Boolean(c.primary),selected:true,deleted_at:null,updated_at:now()}));
+  const BIRTHDAYS_CALENDAR_ID="addressbook#contacts@group.v.calendar.google.com";
+  let calendarItems:any[]=calendars?.items??[];
+  if(!calendarItems.some((c:any)=>c.id===BIRTHDAYS_CALENDAR_ID)){
+    try{
+      const inserted:any=await gfetch("https://www.googleapis.com/calendar/v3/users/me/calendarList",token,{method:"POST",body:JSON.stringify({id:BIRTHDAYS_CALENDAR_ID})});
+      calendarItems=[...calendarItems,inserted];
+    }catch(e:any){
+      // 409 = already subscribed (a race with a previous sync); 404 = this
+      // Google account has no birthdays calendar to subscribe to at all.
+      // Either way, don't fail the whole sync over a "nice to have" calendar.
+      if(e?.status!==409&&e?.status!==404)console.error("birthdays-calendar-subscribe-failed",e?.message);
+    }
+  }
+  const calendarRows=calendarItems.map((c:any)=>({user_id:userId,google_calendar_id:c.id,summary:c.summaryOverride??c.summary??c.id,description:c.description??null,color_id:c.colorId??null,background_color:c.backgroundColor??null,foreground_color:c.foregroundColor??null,access_role:c.accessRole??"reader",primary_calendar:Boolean(c.primary),selected:true,deleted_at:null,updated_at:now()}));
   if(calendarRows.length){const {error}=await admin.from("google_calendars").upsert(calendarRows,{onConflict:"user_id,google_calendar_id"});if(error)throw error;}
   const lists:any=await gfetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=100",token);
   const listRows=(lists?.items??[]).map((t:any)=>({user_id:userId,google_task_list_id:t.id,title:t.title??"Google Tasks",selected:true,deleted_at:null,updated_at:now()}));
