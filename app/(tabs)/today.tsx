@@ -97,6 +97,6 @@ const s=StyleSheet.create({
   manageButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:12,paddingVertical:8},manageButtonText:{fontSize:12,fontWeight:'900',color:palette.ink},
   flowOnlyTag:{alignSelf:'flex-start',backgroundColor:'#FDECEC',borderRadius:99,paddingHorizontal:10,paddingVertical:4},flowOnlyText:{fontSize:11,fontWeight:'900',color:'#A12626'},
   actions:{flexDirection:'row',gap:6,flexWrap:'nowrap'},
-  secondaryAction:{flex:1,backgroundColor:'#ECEEF4',borderRadius:12,paddingVertical:10,alignItems:'center'},secondaryActionText:{fontSize:12,fontWeight:'900',color:palette.ink,textAlign:'center'},
-  primaryAction:{flex:1,backgroundColor:palette.primary,borderRadius:12,paddingVertical:10,alignItems:'center'},primaryActionText:{fontSize:12,fontWeight:'900',color:'#FFF',textAlign:'center'},
+  secondaryAction:{flex:1,backgroundColor:'#ECEEF4',borderRadius:12,paddingVertical:10,alignItems:'center',justifyContent:'center'},secondaryActionText:{fontSize:12,fontWeight:'900',color:palette.ink,textAlign:'center'},
+  primaryAction:{flex:1,backgroundColor:palette.primary,borderRadius:12,paddingVertical:10,alignItems:'center',justifyContent:'center'},primaryActionText:{fontSize:12,fontWeight:'900',color:'#FFF',textAlign:'center'},
 });

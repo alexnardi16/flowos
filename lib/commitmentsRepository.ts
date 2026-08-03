@@ -1,6 +1,7 @@
 import type { Commitment } from '../types';
 import { toRRuleString } from './recurrence';
 import { enqueueMutation, readQueue, replaceQueue } from './offlineQueue';
+import { logNotificationEvent } from './notificationLog';
 import { isSupabaseConfigured, supabase } from './supabase';
 
 function googleDescription(item: Commitment) {
@@ -148,5 +149,15 @@ export async function pushPendingToGoogle() {
   const { data, error } = await supabase.functions.invoke('google-workspace', { body: { action: 'sync-push' } });
   if (error) throw error;
   if (data?.error) throw new Error(String(data.error));
+  await logAnyPushErrors();
   return data;
+}
+
+/** pushLocal (server-side) catches failures per item and marks that row sync_status='error' without failing the overall sync-push call — so without this, an individual item that can't be written to Google (e.g. a birthday from the read-only Contacts calendar) fails silently. This surfaces those into the notification log so they're diagnosable instead of just an unexplained warning badge. */
+async function logAnyPushErrors() {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return;
+  const { data: errored } = await supabase.from('commitments').select('title,sync_error').eq('user_id', auth.user.id).eq('sync_status', 'error').limit(10);
+  if (!errored?.length) return;
+  await logNotificationEvent('push-to-google-item-failed', { items: errored.map((item) => ({ title: item.title, error: item.sync_error })) }, 'warn');
 }
