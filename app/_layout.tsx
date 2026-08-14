@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatDiagnostics, recordDiagnostic } from '../lib/diagnostics';
 import { AuthProvider } from '../providers/AuthProvider';
+import { SnackbarHost } from '../components/SnackbarHost';
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function Root() {
       <StatusBar style="dark" />
       <View style={styles.root}>
         <Stack screenOptions={{ headerShown: false }} />
+        <SnackbarHost />
       </View>
     </AuthProvider>
   );

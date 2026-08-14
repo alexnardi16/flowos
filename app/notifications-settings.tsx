@@ -138,10 +138,10 @@ export default function NotificationsSettings() {
       <Card>
         <Text style={styles.label}>Logger notifiche</Text>
         <Text style={styles.meta}>Registra ogni pianificazione, invio e sincronizzazione legata alle notifiche, su tutte le piattaforme.</Text>
-        <View style={styles.actions}>
-          <Button secondary label={showLogs ? 'Nascondi log' : 'Mostra log'} onPress={() => setShowLogs((value) => !value)} />
-          <Button secondary label="Copia log" onPress={() => { void copyLogs(); }} />
-          <Button secondary label="Pulisci log" onPress={clearLogs} />
+        <View style={styles.logActions}>
+          <Button secondary label={showLogs ? 'Nascondi log' : 'Mostra log'} onPress={() => setShowLogs((value) => !value)} style={{flex:1}} />
+          <Button secondary label="Copia log" onPress={() => { void copyLogs(); }} style={{flex:1}} />
+          <Button secondary label="Pulisci log" onPress={clearLogs} style={{flex:1}} />
         </View>
         {showLogs ? <View style={styles.logBox}>
           {logs.length ? logs.map((entry, index) => (
@@ -165,6 +165,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: 13, lineHeight: 18, color: palette.muted, marginTop: 6 },
   note: { fontSize: 12, lineHeight: 17, color: palette.muted, marginTop: 14, fontStyle: 'italic' },
   actions: { flexDirection: 'row', gap: 10, marginTop: 14, flexWrap: 'wrap' },
+  logActions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'nowrap' },
   logBox: { marginTop: 14, padding: 12, borderRadius: 14, backgroundColor: '#111827', gap: 6 },
   logLine: { fontSize: 10, lineHeight: 14, color: '#D1D5DB', fontFamily: 'monospace' },
   logError: { color: '#FCA5A5' },

@@ -7,6 +7,7 @@ import { ManageSheet } from '@/components/ManageSheet';
 import { formatCommitmentTime } from '@/lib/allDayDate';
 import { isContactEvent } from '@/lib/contactEvents';
 import { recordDiagnostic } from '@/lib/diagnostics';
+import { subscribeToSyncProgress } from '@/lib/googleWorkspace';
 import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
@@ -32,6 +33,14 @@ export default function Today() {
   const postpone = useFlowStore((state) => state.postpone);
   const [contactsFilter,setContactsFilter]=useState<ContactsFilter>('all');
   const [manageId,setManageId]=useState<string|null>(null);
+  const [syncProgress,setSyncProgress]=useState<{percent:number;stage:string}|null>(null);
+  useEffect(()=>{
+    const unsubscribe=subscribeToSyncProgress(({percent,stage})=>{
+      setSyncProgress({percent,stage});
+      if(percent>=100)setTimeout(()=>setSyncProgress(null),900);
+    });
+    return unsubscribe;
+  },[]);
   useEffect(()=>{void AsyncStorage.getItem(CONTACTS_FILTER_KEY).then((raw)=>{if(raw==='onlyContacts'||raw==='excludeContacts'||raw==='all')setContactsFilter(raw);}).catch(()=>undefined);},[]);
   useEffect(()=>{void AsyncStorage.setItem(CONTACTS_FILTER_KEY,contactsFilter);},[contactsFilter]);
 
@@ -52,6 +61,7 @@ export default function Today() {
   return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.wrap}>
     <Text style={s.hello}>FlowOS</Text>
     <Text style={s.title}>Oggi</Text>
+    {syncProgress ? <View style={s.syncBar}><View style={[s.syncBarFill,{width:`${syncProgress.percent}%`}]}/><Text style={s.syncBarText}>{syncProgress.stage} · {syncProgress.percent}%</Text></View> : null}
     <View style={s.stats}>
       <Card style={s.stat}><Text style={s.statValue}>{todayItems.length}</Text><Text style={s.statLabel}>elementi</Text></Card>
       <Card style={s.stat}><Text style={s.statValue}>{totalLoadLabel(plannedMinutes)}</Text><Text style={s.statLabel}>carico previsto</Text></Card>
@@ -92,6 +102,7 @@ const s=StyleSheet.create({
   safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,paddingBottom:110,gap:14},hello:{fontSize:14,color:palette.primary,fontWeight:'900',letterSpacing:1.3,textTransform:'uppercase'},title:{fontSize:32,lineHeight:38,fontWeight:'900',color:palette.ink,marginBottom:4},
   stats:{flexDirection:'row',gap:8,flexWrap:'nowrap'},stat:{flex:1,minWidth:0,padding:12},statValue:{fontSize:20,fontWeight:'900',color:palette.ink},statLabel:{fontSize:11,color:palette.muted,marginTop:3},warning:{color:palette.warning},
   quick:{flexDirection:'row',gap:8,flexWrap:'wrap'},filter:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#ECEEF4'},filterActive:{backgroundColor:palette.primary},filterText:{fontSize:12,fontWeight:'800',color:palette.muted},filterTextActive:{color:'#FFF'},
+  syncBar:{height:28,borderRadius:14,backgroundColor:'#ECEEF4',overflow:'hidden',justifyContent:'center'},syncBarFill:{position:'absolute',left:0,top:0,bottom:0,backgroundColor:palette.soft},syncBarText:{fontSize:11,fontWeight:'800',color:palette.primary,textAlign:'center'},
   itemCard:{gap:8},cardEvent:{backgroundColor:'#EEF1FE',borderColor:'#C7D0FB',borderWidth:1},cardTask:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1},cardReminder:{backgroundColor:'#EAFBF3',borderColor:'#B9EAD4',borderWidth:1},
   itemHeader:{flexDirection:'row',alignItems:'flex-start',gap:8},task:{fontSize:19,lineHeight:24,fontWeight:'900',color:palette.ink},meta:{fontSize:13,lineHeight:18,color:palette.muted},description:{fontSize:14,lineHeight:20,color:palette.ink},
   manageButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:12,paddingVertical:8},manageButtonText:{fontSize:12,fontWeight:'900',color:palette.ink},

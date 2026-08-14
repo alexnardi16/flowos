@@ -64,12 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!session?.provider_token) return;
-    const marker = `flowos-auto-sync-${session.user.id}-${session.access_token.slice(-12)}`;
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(marker)) {
-      recordDiagnostic('google-auto-sync-skipped', { reason: 'already-started-for-session' });
-      return;
-    }
-    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(marker, '1');
     let active = true;
     void (async () => {
       try {
