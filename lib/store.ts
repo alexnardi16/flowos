@@ -6,6 +6,7 @@ import { deleteCommitmentAlsoFromGoogle, deleteRecurringSeries, flushOfflineQueu
 import { logNotificationEvent } from './notificationLog';
 import { materializeNextOccurrence } from './recurrence';
 import { createAutomaticPlan } from './scheduler';
+import { showSnackbar } from './snackbar';
 
 /** Fire-and-forget: never let a push failure block the UI action that triggered it (Controlla already surfaces sync errors on the next full sync). */
 function pushGoogleSafely() {
@@ -63,6 +64,19 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     await saveCommitment(updated);
     if (next) await saveCommitment(next);
     pushGoogleSafely();
+
+    showSnackbar('Attività completata', 'Annulla', () => {
+      void (async () => {
+        set((state) => ({
+          commitments: next
+            ? state.commitments.filter((c) => c.id !== next.id).map((c) => c.id === id ? item : c)
+            : state.commitments.map((c) => c.id === id ? item : c),
+        }));
+        await saveCommitment(item);
+        if (next) await removeCommitmentOnlyFromFlowOS(next.id);
+        pushGoogleSafely();
+      })();
+    });
   },
 
   postpone: async (id) => {
@@ -79,17 +93,46 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     set((state) => ({ commitments: state.commitments.map((commitment) => commitment.id === id ? updated : commitment) }));
     await saveCommitment(updated);
     pushGoogleSafely();
+
+    showSnackbar('Attività rimandata di 1 giorno', 'Annulla', () => {
+      void (async () => {
+        set((state) => ({ commitments: state.commitments.map((c) => c.id === id ? item : c) }));
+        await saveCommitment(item);
+        pushGoogleSafely();
+      })();
+    });
   },
 
   updateCommitment: async (updated) => {
+    const previous = get().commitments.find((item) => item.id === updated.id);
     set((state) => ({ commitments: state.commitments.map((item) => item.id === updated.id ? updated : item) }));
     await saveCommitment(updated);
     pushGoogleSafely();
+
+    if (previous) {
+      showSnackbar('Modifiche salvate', 'Annulla', () => {
+        void (async () => {
+          set((state) => ({ commitments: state.commitments.map((c) => c.id === updated.id ? previous : c) }));
+          await saveCommitment(previous);
+          pushGoogleSafely();
+        })();
+      });
+    }
   },
 
   removeOnlyFromFlowOS: async (id) => {
+    const item = get().commitments.find((commitment) => commitment.id === id);
     await removeCommitmentOnlyFromFlowOS(id);
-    set((state) => ({ commitments: state.commitments.filter((item) => item.id !== id) }));
+    set((state) => ({ commitments: state.commitments.filter((commitment) => commitment.id !== id) }));
+
+    if (item) {
+      showSnackbar('Attività eliminata da FlowOS', 'Annulla', () => {
+        void (async () => {
+          set((state) => ({ commitments: [item, ...state.commitments] }));
+          await saveCommitment({ ...item, deletedAt: undefined });
+        })();
+      });
+    }
   },
 
   removeAlsoFromGoogle: async (id) => {
@@ -97,6 +140,11 @@ export const useFlowStore = create<State>()(persist((set, get) => ({
     if (!item) return;
     await deleteCommitmentAlsoFromGoogle(item);
     set((state) => ({ commitments: state.commitments.filter((commitment) => commitment.id !== id) }));
+    // No "Annulla" here: this also deletes the item on Google, and safely
+    // recreating it there (a genuine new event/task, new external id) isn't
+    // something a simple undo can do — showing an undo button that can't
+    // really undo the Google-side part would be misleading.
+    showSnackbar('Eliminata da FlowOS e da Google');
   },
 
   removeSeriesFromGoogle: async (id) => {
