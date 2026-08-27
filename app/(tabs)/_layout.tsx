@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { palette } from '@/components/ui';
 import { recordDiagnostic, subscribeDiagnostics } from '@/lib/diagnostics';
-import { subscribeNotificationLog } from '@/lib/notificationLog';
 import { useFlowStore } from '@/lib/store';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -18,14 +17,16 @@ function isTodayItem(value: string | undefined, allDay?: boolean) {
 export default function TabsLayout() {
   const { configured, loading, session } = useAuth();
   const commitments = useFlowStore((state) => state.commitments);
-  const [warningCount, setWarningCount] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
 
   useEffect(() => {
-    let diagnosticsWarnings = 0, notificationWarnings = 0;
-    const update = () => setWarningCount(diagnosticsWarnings + notificationWarnings);
-    const unsubDiag = subscribeDiagnostics((entries) => { diagnosticsWarnings = entries.filter((e) => e.level === 'warn' || e.level === 'error').length; update(); });
-    const unsubNotif = subscribeNotificationLog((entries) => { notificationWarnings = entries.filter((e) => e.level === 'warn' || e.level === 'error').length; update(); });
-    return () => { unsubDiag(); unsubNotif(); };
+    const unsubscribe = subscribeDiagnostics((entries) => {
+      // The Settings badge is reserved for actionable errors from the current
+      // FlowOS session. Do not count warnings or the persistent notification
+      // log here: old notification warnings must never look like a new error.
+      setErrorCount(entries.filter((entry) => entry.level === 'error').length);
+    });
+    return unsubscribe;
   }, []);
 
   const todayCount = useMemo(() => commitments.filter((item) => item.status !== 'done' && isTodayItem(item.scheduledAt ?? item.dueAt, item.allDay)).length, [commitments]);
@@ -44,6 +45,6 @@ export default function TabsLayout() {
     <Tabs.Screen name="calendar" options={{title:'Calendario',tabBarIcon:({color,size})=><Ionicons name="calendar-outline" color={color} size={size}/>}}/>
     <Tabs.Screen name="capture" options={{title:'Aggiungi',tabBarIcon:({color,size})=><Ionicons name="add-circle" color={color} size={size+10}/>}}/>
     <Tabs.Screen name="inbox" options={{title:'Controlla',tabBarBadge:actionCount>0?actionCount:undefined,tabBarIcon:({color,size})=><Ionicons name="layers" color={color} size={size}/>}}/>
-    <Tabs.Screen name="me" options={{title:'Impostazioni',tabBarBadge:warningCount>0?warningCount:undefined,tabBarIcon:({color,size})=><Ionicons name="person" color={color} size={size}/>}}/>
+    <Tabs.Screen name="me" options={{title:'Impostazioni',tabBarBadge:errorCount>0?errorCount:undefined,tabBarIcon:({color,size})=><Ionicons name="person" color={color} size={size}/>}}/>
   </Tabs>;
 }
