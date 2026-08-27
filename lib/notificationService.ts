@@ -6,31 +6,22 @@ import { logNotificationEvent } from './notificationLog';
 import { hasRecoveredToday } from './notificationDedup';
 
 export { hasRecoveredToday };
-
-// expo-notifications' scheduling APIs (scheduleNotificationAsync, permission
-// requests, channels) are not implemented on web — calling them throws
-// "is not available on web". Real web push notifications need a completely
-// different implementation (Service Worker + Web Push API), which does not
-// exist yet — see docs/IMPLEMENTATION_STATUS.md. Every function below
-// checks this first and no-ops instead of crashing.
 export const NOTIFICATIONS_SUPPORTED_HERE = Platform.OS !== 'web';
-
 export const DAILY_SUMMARY_CHANNEL = 'flowos-daily-summary';
 export const DAILY_SUMMARY_HOUR = 7;
 export const DAILY_SUMMARY_MINUTE = 30;
+export const TOMORROW_SUMMARY_HOUR = 8;
+export const TOMORROW_SUMMARY_MINUTE = 0;
 
 const SCHEDULED_ID_KEY = 'flowos:notifications:daily-summary-scheduled-id';
+const TOMORROW_SCHEDULED_ID_KEY = 'flowos:notifications:tomorrow-summary-scheduled-id';
 const LAST_RECOVERY_DATE_KEY = 'flowos:notifications:daily-summary-last-recovery-date';
 const ENABLED_KEY = 'flowos:notifications:daily-summary-enabled';
 
 export async function ensureDailySummaryChannel() {
   if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync(DAILY_SUMMARY_CHANNEL, {
-    name: 'Riepilogo giornaliero FlowOS',
-    importance: Notifications.AndroidImportance.DEFAULT,
-  });
+  await Notifications.setNotificationChannelAsync(DAILY_SUMMARY_CHANNEL, { name: 'Riepilogo giornaliero FlowOS', importance: Notifications.AndroidImportance.DEFAULT });
 }
-
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!NOTIFICATIONS_SUPPORTED_HERE) return false;
   const current = await Notifications.getPermissionsAsync();
@@ -38,106 +29,66 @@ export async function requestNotificationPermission(): Promise<boolean> {
   const requested = await Notifications.requestPermissionsAsync();
   return requested.granted;
 }
+export async function isDailySummaryEnabledStored(): Promise<boolean> { const raw = await AsyncStorage.getItem(ENABLED_KEY); return raw === null ? true : raw === '1'; }
+export async function setDailySummaryEnabledStored(enabled: boolean) { await AsyncStorage.setItem(ENABLED_KEY, enabled ? '1' : '0'); await logNotificationEvent('daily-summary-preference-changed', { enabled }); }
+export async function getLastRecoveryDateKey(): Promise<string | null> { return AsyncStorage.getItem(LAST_RECOVERY_DATE_KEY); }
+export async function markRecovered(dateKey: string) { await AsyncStorage.setItem(LAST_RECOVERY_DATE_KEY, dateKey); }
 
-export async function isDailySummaryEnabledStored(): Promise<boolean> {
-  const raw = await AsyncStorage.getItem(ENABLED_KEY);
-  return raw === null ? true : raw === '1';
-}
-
-export async function setDailySummaryEnabledStored(enabled: boolean) {
-  await AsyncStorage.setItem(ENABLED_KEY, enabled ? '1' : '0');
-  await logNotificationEvent('daily-summary-preference-changed', { enabled });
-}
-
-export async function getLastRecoveryDateKey(): Promise<string | null> {
-  return AsyncStorage.getItem(LAST_RECOVERY_DATE_KEY);
-}
-
-export async function markRecovered(dateKey: string) {
-  await AsyncStorage.setItem(LAST_RECOVERY_DATE_KEY, dateKey);
-}
-
-async function cancelPreviousScheduledSummary() {
+async function cancelStoredNotification(key: string, logEvent: string) {
   if (!NOTIFICATIONS_SUPPORTED_HERE) return;
-  const previousId = await AsyncStorage.getItem(SCHEDULED_ID_KEY);
+  const previousId = await AsyncStorage.getItem(key);
   if (!previousId) return;
   try { await Notifications.cancelScheduledNotificationAsync(previousId); }
-  catch (error) { await logNotificationEvent('cancel-previous-summary-failed', error, 'warn'); }
-  await AsyncStorage.removeItem(SCHEDULED_ID_KEY);
+  catch (error) { await logNotificationEvent(logEvent, error, 'warn'); }
+  await AsyncStorage.removeItem(key);
 }
 
-/**
- * (Re)schedules the recurring 07:30 local notification. Cancels any
- * previously scheduled one first, so there is always at most one pending
- * daily-summary notification (prevents duplicates when this is called
- * repeatedly, e.g. once at app start and again after each background sync).
- *
- * Important honesty note: the trigger fires reliably close to 07:30 because
- * it is a native OS calendar alarm, not something FlowOS's own code has to
- * wake up for. But the *content* is a snapshot taken whenever this function
- * last ran — if no sync managed to run before 07:30, the notification still
- * fires on time, just with slightly stale data.
- */
+async function cancelPreviousScheduledSummary() { await cancelStoredNotification(SCHEDULED_ID_KEY, 'cancel-previous-summary-failed'); }
+
 export async function scheduleDailySummaryNotification(summary: DailySummary): Promise<string | null> {
   const allowed = await requestNotificationPermission();
-  if (!allowed) {
-    await logNotificationEvent(
-      NOTIFICATIONS_SUPPORTED_HERE ? 'schedule-summary-permission-denied' : 'schedule-summary-skipped-web-unsupported',
-      undefined,
-      NOTIFICATIONS_SUPPORTED_HERE ? 'warn' : 'info',
-    );
-    return null;
-  }
+  if (!allowed) { await logNotificationEvent(NOTIFICATIONS_SUPPORTED_HERE ? 'schedule-summary-permission-denied' : 'schedule-summary-skipped-web-unsupported', undefined, NOTIFICATIONS_SUPPORTED_HERE ? 'warn' : 'info'); return null; }
   await ensureDailySummaryChannel();
   await cancelPreviousScheduledSummary();
-
   const identifier = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: summary.title,
-      body: summary.body,
-      data: { source: 'daily-summary', dateKey: summary.dateKey },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-      hour: DAILY_SUMMARY_HOUR,
-      minute: DAILY_SUMMARY_MINUTE,
-      repeats: true,
-      ...(Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null),
-    },
+    content: { title: summary.title, body: summary.body, data: { source: 'daily-summary', dateKey: summary.dateKey } },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.CALENDAR, hour: DAILY_SUMMARY_HOUR, minute: DAILY_SUMMARY_MINUTE, repeats: true, ...(Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null) },
   });
-
   await AsyncStorage.setItem(SCHEDULED_ID_KEY, identifier);
   await logNotificationEvent('daily-summary-scheduled', { dateKey: summary.dateKey, identifier });
   return identifier;
 }
 
+/** Schedules a fresh, one-shot preview of tomorrow every morning at 08:00 local time. Re-running after sync replaces the previous snapshot. */
+export async function scheduleTomorrowMorningSummary(summary: DailySummary, now: Date = new Date()): Promise<string | null> {
+  const allowed = await requestNotificationPermission();
+  if (!allowed) return null;
+  await ensureDailySummaryChannel();
+  await cancelStoredNotification(TOMORROW_SCHEDULED_ID_KEY, 'cancel-previous-tomorrow-summary-failed');
+  const triggerAt = new Date(now);
+  triggerAt.setDate(triggerAt.getDate() + 1);
+  triggerAt.setHours(TOMORROW_SUMMARY_HOUR, TOMORROW_SUMMARY_MINUTE, 0, 0);
+  const identifier = await Notifications.scheduleNotificationAsync({
+    content: { title: `Domani mattina · ${summary.title.replace(/^Domani /, '')}`, body: summary.body, data: { source: 'tomorrow-morning', dateKey: summary.dateKey } },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerAt, ...(Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null) },
+  });
+  await AsyncStorage.setItem(TOMORROW_SCHEDULED_ID_KEY, identifier);
+  await logNotificationEvent('tomorrow-morning-summary-scheduled', { dateKey: summary.dateKey, identifier, triggerAt: triggerAt.toISOString() });
+  return identifier;
+}
+
 export async function disableDailySummaryNotification() {
   await cancelPreviousScheduledSummary();
+  await cancelStoredNotification(TOMORROW_SCHEDULED_ID_KEY, 'cancel-tomorrow-summary-failed');
   await logNotificationEvent('daily-summary-disabled');
 }
 
-/**
- * Fires the summary right away instead of waiting for the recurring
- * trigger. Used for recovery (device off/offline at 07:30) and for the
- * "invia ora di prova" button in Settings → Notifiche.
- */
 export async function sendImmediateSummaryNotification(summary: DailySummary, test = false): Promise<string | null> {
   const allowed = await requestNotificationPermission();
-  if (!allowed) {
-    await logNotificationEvent(
-      NOTIFICATIONS_SUPPORTED_HERE ? 'send-immediate-summary-permission-denied' : 'send-immediate-summary-skipped-web-unsupported',
-      undefined,
-      NOTIFICATIONS_SUPPORTED_HERE ? 'warn' : 'info',
-    );
-    return null;
-  }
+  if (!allowed) { await logNotificationEvent(NOTIFICATIONS_SUPPORTED_HERE ? 'send-immediate-summary-permission-denied' : 'send-immediate-summary-skipped-web-unsupported', undefined, NOTIFICATIONS_SUPPORTED_HERE ? 'warn' : 'info'); return null; }
   await ensureDailySummaryChannel();
   const identifier = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: test ? `[Prova] ${summary.title}` : summary.title,
-      body: summary.body,
-      data: { source: test ? 'daily-summary-test' : 'daily-summary-recovered', dateKey: summary.dateKey },
-    },
+    content: { title: test ? `[Prova] ${summary.title}` : summary.title, body: summary.body, data: { source: test ? 'daily-summary-test' : 'daily-summary-recovered', dateKey: summary.dateKey } },
     trigger: null,
   });
   await logNotificationEvent(test ? 'daily-summary-test-sent' : 'daily-summary-recovered-sent', { dateKey: summary.dateKey, identifier });
