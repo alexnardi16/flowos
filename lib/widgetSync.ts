@@ -3,26 +3,41 @@ import { buildTodayGlance } from './widgetData';
 import { logNotificationEvent } from './notificationLog';
 import type { Commitment } from '../types';
 
-/**
- * Pushes the latest snapshot to the iOS home-screen widget via expo-widgets.
- * No-op on Android/web for now — see docs/IMPLEMENTATION_STATUS.md for the
- * Android widget plan (react-native-android-widget, not yet implemented).
- *
- * IMPORTANT: this has only been typechecked, never built or rendered — there
- * is no Xcode/macOS in the environment this was written in. Verify with a
- * real development build (`eas build --profile development --platform ios`,
- * or `npx expo run:ios` on a Mac) before relying on it.
- */
 export async function syncTodayWidget(commitments: Commitment[], now: Date = new Date()) {
-  if (Platform.OS !== 'ios') return;
   try {
-    const { default: TodayWidget } = await import('../widgets/TodayWidget');
-    const glance = buildTodayGlance(commitments, now);
-    TodayWidget.updateSnapshot(glance);
-    await logNotificationEvent('today-widget-updated', { dateKey: glance.dateKey });
+    if (Platform.OS === 'ios') {
+      const { default: TodayWidget } = await import('../widgets/TodayWidget');
+      const glance = buildTodayGlance(commitments, now);
+      TodayWidget.updateSnapshot(glance);
+      await logNotificationEvent('today-widget-updated', { platform: 'ios', dateKey: glance.dateKey });
+      return;
+    }
+    if (Platform.OS === 'android') {
+      const { requestWidgetUpdate } = await import('react-native-android-widget');
+      const { TodayWidget } = await import('../widgets/android/TodayWidget');
+      const active = commitments.filter((item) => item.status !== 'done' && !item.deletedAt);
+      const dayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const items = active
+        .map((item) => ({ item, date: item.scheduledAt ?? item.dueAt }))
+        .filter(({ item, date }) => {
+          if (!date) return false;
+          const d = new Date(date);
+          return item.allDay
+            ? `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}` === dayKey
+            : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === dayKey;
+        })
+        .sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime())
+        .map(({ item, date }) => ({
+          id: item.id,
+          title: item.title,
+          time: item.allDay ? 'Tutto il giorno' : new Date(date!).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+          kind: item.kind === 'event' ? 'Evento' : item.kind === 'task' ? 'Task' : 'Reminder',
+        }));
+      const overdueCount = active.filter((item) => item.dueAt && new Date(item.dueAt).getTime() < now.getTime()).length;
+      await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => <TodayWidget items={items} overdueCount={overdueCount} /> });
+      await logNotificationEvent('today-widget-updated', { platform: 'android', dateKey: dayKey, count: items.length });
+    }
   } catch (error) {
-    // Widget module isn't linked yet (Expo Go, or a build that predates the
-    // widget target) — never let this break the rest of the sync flow.
     await logNotificationEvent('today-widget-update-failed', error, 'warn');
   }
 }
