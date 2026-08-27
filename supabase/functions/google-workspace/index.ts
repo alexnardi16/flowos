@@ -62,9 +62,6 @@ async function discover(userId:string,token:string,scopes:string[]){
       const inserted:any=await gfetch("https://www.googleapis.com/calendar/v3/users/me/calendarList",token,{method:"POST",body:JSON.stringify({id:BIRTHDAYS_CALENDAR_ID})});
       calendarItems=[...calendarItems,inserted];
     }catch(e:any){
-      // 409 = already subscribed (a race with a previous sync); 404 = this
-      // Google account has no birthdays calendar to subscribe to at all.
-      // Either way, don't fail the whole sync over a "nice to have" calendar.
       if(e?.status!==409&&e?.status!==404)console.error("birthdays-calendar-subscribe-failed",e?.message);
     }
   }
@@ -95,16 +92,16 @@ async function pushLocal(userId:string,token:string){
     }else if(["task","reminder"].includes(c.kind)){
       const listId=c.google_task_list_id??defList?.google_task_list_id;if(!listId)continue;const base=`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(listId)}/tasks`;
       if(c.deleted_at&&c.external_id)await gfetch(`${base}/${encodeURIComponent(c.external_id)}`,token,{method:"DELETE"});
-      else{const remote:any=await gfetch(c.external_id?`${base}/${encodeURIComponent(c.external_id)}`:base,token,{method:c.external_id?"PATCH":"POST",body:JSON.stringify(taskBody(c))});await admin.from("commitments").update({external_provider:"google",external_resource_type:"task",google_task_list_id:listId,external_id:remote.id,external_etag:remote.etag??null,external_updated_at:remote.updated??null,last_sync_origin:"flowos",sync_status:"synced",sync_error:null}).eq("id",c.id).eq("user_id",userId);}
+      else{const remote:any=await gfetch(c.external_id?`${base}/${encodeURIComponent(c.external_id)}`:base,{method:c.external_id?"PATCH":"POST",body:JSON.stringify(taskBody(c))});await admin.from("commitments").update({external_provider:"google",external_resource_type:"task",google_task_list_id:listId,external_id:remote.id,external_etag:remote.etag??null,external_updated_at:remote.updated??null,last_sync_origin:"flowos",sync_status:"synced",sync_error:null}).eq("id",c.id).eq("user_id",userId);}
     }count++;
   }catch(e){await admin.from("commitments").update({sync_status:"error",sync_error:e instanceof Error?e.message:String(e)}).eq("id",c.id).eq("user_id",userId);}}
   return count;
 }
 async function upsertRemoteRows(userId:string,rows:any[]){
   if(!rows.length)return 0;const ids=rows.map(r=>r.external_id).filter(Boolean);
-  const {data:existing,error}=await admin.from("commitments").select("id,external_id,updated_at,last_sync_origin").eq("user_id",userId).in("external_id",ids);if(error)throw error;
+  const {data:existing,error}=await admin.from("commitments").select("id,external_id,updated_at,last_sync_origin,status,kind").eq("user_id",userId).in("external_id",ids);if(error)throw error;
   const map=new Map((existing??[]).map((r:any)=>[r.external_id,r]));
-  const prepared=rows.flatMap(row=>{const found:any=map.get(row.external_id);if(found?.last_sync_origin==="flowos"&&new Date(found.updated_at)>new Date(row.external_updated_at??0))return[];return[{...row,id:found?.id??crypto.randomUUID()}];});
+  const prepared=rows.flatMap(row=>{const found:any=map.get(row.external_id);if(found?.last_sync_origin==="flowos"&&new Date(found.updated_at)>new Date(row.external_updated_at??0))return[];const preservedCompletedEvent=found?.kind==="event"&&row.kind==="event"&&(found.status==="done"||found.status==="completed");return[{...row,id:found?.id??crypto.randomUUID(),status:preservedCompletedEvent?found.status:row.status}];});
   if(!prepared.length)return 0;const {error:upsertError}=await admin.from("commitments").upsert(prepared,{onConflict:"id"});if(upsertError)throw upsertError;return prepared.length;
 }
 async function getConnectionRange(userId:string){
@@ -114,7 +111,7 @@ async function getConnectionRange(userId:string){
 async function pullCalendarPage(userId:string,calendarId:string,year:number,pageToken?:string){
   const token=await tokenFor(userId);const p=new URLSearchParams({maxResults:"250",showDeleted:"true",singleEvents:"true",timeMin:`${year}-01-01T00:00:00.000Z`,timeMax:`${year+1}-01-01T00:00:00.000Z`,orderBy:"startTime"});if(pageToken)p.set("pageToken",pageToken);
   const payload:any=await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${p}`,token.access_token);
-  const rows=(payload?.items??[]).map((ev:any)=>({user_id:userId,title:ev.summary??"(Senza titolo)",description:ev.description??null,kind:"event",status:ev.status==="cancelled"?"completed":"scheduled",starts_at:ev.start?.dateTime??(ev.start?.date?`${ev.start.date}T00:00:00.000Z`:null),deadline_at:null,duration_minutes:ev.start?.dateTime&&ev.end?.dateTime?Math.max(1,Math.round((new Date(ev.end.dateTime).getTime()-new Date(ev.start.dateTime).getTime())/60000)):1440,energy:"medium",context:"Google Calendar",confidence_score:1,external_provider:"google",external_resource_type:"calendar_event",google_calendar_id:calendarId,google_task_list_id:null,external_id:ev.id,external_etag:ev.etag??null,external_updated_at:ev.updated??null,last_sync_origin:"google",sync_status:"synced",sync_error:null,deleted_at:ev.status==="cancelled"?now():null,updated_at:ev.updated??now(),ai_metadata:{fixed:true,googleHtmlLink:ev.htmlLink,allDay:Boolean(ev.start?.date&&!ev.start?.dateTime),googleRecurringEventId:ev.recurringEventId??null,googleEventType:ev.eventType??"default"}}));
+  const rows=(payload?.items??[]).map((ev:any)=>({user_id:userId,title:ev.summary??"(Senza titolo)",description:ev.description??null,kind:"event",status:"scheduled",starts_at:ev.start?.dateTime??(ev.start?.date?`${ev.start.date}T00:00:00.000Z`:null),deadline_at:null,duration_minutes:ev.start?.dateTime&&ev.end?.dateTime?Math.max(1,Math.round((new Date(ev.end.dateTime).getTime()-new Date(ev.start.dateTime).getTime())/60000)):1440,energy:"medium",context:"Google Calendar",confidence_score:1,external_provider:"google",external_resource_type:"calendar_event",google_calendar_id:calendarId,google_task_list_id:null,external_id:ev.id,external_etag:ev.etag??null,external_updated_at:ev.updated??null,last_sync_origin:"google",sync_status:"synced",sync_error:null,deleted_at:ev.status==="cancelled"?now():null,updated_at:ev.updated??now(),ai_metadata:{fixed:true,googleHtmlLink:ev.htmlLink,allDay:Boolean(ev.start?.date&&!ev.start?.dateTime),googleRecurringEventId:ev.recurringEventId??null,googleEventType:ev.eventType??"default"}}));
   return {imported:await upsertRemoteRows(userId,rows),nextPageToken:payload?.nextPageToken??null};
 }
 async function pullTaskPage(userId:string,listId:string,pageToken?:string){
@@ -158,31 +155,15 @@ Deno.serve(async(req)=>{
     }
     if(action==="sync-start"){
       await admin.from("google_connections").update({last_sync_status:"syncing",last_sync_error:null,updated_at:now()}).eq("user_id",userId);await markOutOfRange(userId);
-      const {data:calendars,error:calError}=await admin.from("google_calendars").select("google_calendar_id,summary").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(calError)throw calError;
-      const {data:taskLists,error:taskError}=await admin.from("google_task_lists").select("google_task_list_id,title").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(taskError)throw taskError;
-      return json({ok:true,calendars:calendars??[],taskLists:taskLists??[],range:await getConnectionRange(userId)});
+      const {data:calendars,error:calError}=await admin.from("google_calendars").select("google_calendar_id,summary").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(calError)throw calError;const {data:taskLists,error:taskError}=await admin.from("google_task_lists").select("google_task_list_id,title").eq("user_id",userId).eq("selected",true).is("deleted_at",null);if(taskError)throw taskError;return json({ok:true,calendars:calendars??[],taskLists:taskLists??[],range:await getConnectionRange(userId)});
     }
     if(action==="sync-push"){const token=await tokenFor(userId);return json({ok:true,pushed:await pushLocal(userId,token.access_token)});}
     if(action==="sync-calendar-page")return json({ok:true,...await pullCalendarPage(userId,body.calendarId,Number(body.year),body.pageToken)});
     if(action==="sync-task-page")return json({ok:true,...await pullTaskPage(userId,body.listId,body.pageToken)});
     if(action==="sync-finish"){await admin.from("google_connections").update({last_sync_status:"ok",last_sync_at:now(),last_sync_error:null}).eq("user_id",userId);return json({ok:true,range:await getConnectionRange(userId)});}
     if(action==="sync-fail"){const message=String(body.message??"Sincronizzazione interrotta.");await admin.from("google_connections").update({last_sync_status:"error",last_sync_error:message}).eq("user_id",userId);return json({ok:true});}
-    if(action==="sync-delete-series"){
-      const commitmentId=String(body.commitmentId??"");
-      if(!commitmentId)return json({error:"Missing commitmentId"},400);
-      const deletedCount=await deleteRecurringSeries(userId,commitmentId);
-      return json({ok:true,deletedCount});
-    }
-    if(action==="set-sync-range"){
-      const startDate=body.startDate?String(body.startDate):null;
-      const endDate=body.endDate?String(body.endDate):null;
-      if(startDate&&Number.isNaN(new Date(startDate).getTime()))return json({error:"Data di inizio non valida"},400);
-      if(endDate&&Number.isNaN(new Date(endDate).getTime()))return json({error:"Data di fine non valida"},400);
-      if(startDate&&endDate&&new Date(startDate).getTime()>=new Date(endDate).getTime())return json({error:"La data di inizio deve precedere quella di fine"},400);
-      const {error}=await admin.from("google_connections").update({sync_range_start:startDate,sync_range_end:endDate}).eq("user_id",userId);
-      if(error)throw error;
-      return json({ok:true,range:await getConnectionRange(userId)});
-    }
+    if(action==="sync-delete-series"){const commitmentId=String(body.commitmentId??"");if(!commitmentId)return json({error:"Missing commitmentId"},400);const deletedCount=await deleteRecurringSeries(userId,commitmentId);return json({ok:true,deletedCount});}
+    if(action==="set-sync-range"){const startDate=body.startDate?String(body.startDate):null;const endDate=body.endDate?String(body.endDate):null;if(startDate&&Number.isNaN(new Date(startDate).getTime()))return json({error:"Data di inizio non valida"},400);if(endDate&&Number.isNaN(new Date(endDate).getTime()))return json({error:"Data di fine non valida"},400);if(startDate&&endDate&&new Date(startDate).getTime()>=new Date(endDate).getTime())return json({error:"La data di inizio deve precedere quella di fine"},400);const {error}=await admin.from("google_connections").update({sync_range_start:startDate,sync_range_end:endDate}).eq("user_id",userId);if(error)throw error;return json({ok:true,range:await getConnectionRange(userId)});}
     if(action==="disconnect"){await admin.schema("private").from("google_calendar_sync_state").delete().eq("user_id",userId);await admin.schema("private").from("google_task_sync_state").delete().eq("user_id",userId);await admin.schema("private").from("google_oauth_tokens").delete().eq("user_id",userId);await admin.from("google_connections").update({last_sync_status:"disconnected",last_sync_error:null}).eq("user_id",userId);return json({ok:true});}
     const {data:connection}=await admin.from("google_connections").select("*").eq("user_id",userId).maybeSingle();const {data:calendars}=await admin.from("google_calendars").select("*").eq("user_id",userId).is("deleted_at",null).order("primary_calendar",{ascending:false}).order("summary");const {data:taskLists}=await admin.from("google_task_lists").select("*").eq("user_id",userId).is("deleted_at",null).order("title");return json({connection,calendars:calendars??[],taskLists:taskLists??[],range:await getConnectionRange(userId)});
   }catch(e){const message=e instanceof Error?e.message:String(e);console.error(JSON.stringify({event:"request-error",action,userId,message}));if(userId&&action.startsWith("sync-")){await admin.from("google_connections").update({last_sync_status:"error",last_sync_error:message}).eq("user_id",userId);}return json({error:message},500);}
