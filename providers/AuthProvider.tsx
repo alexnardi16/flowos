@@ -63,16 +63,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!session?.provider_token) return;
+    if (!session?.user.id) return;
     let active = true;
     void (async () => {
       try {
-        recordDiagnostic('google-auto-sync-started', { userId: session.user.id });
-        // The public connection row can survive after the private Google token was
-        // removed or expired. Refresh the private token on every new Google login
-        // before attempting any synchronization.
-        await connectGoogleFromSession(session, true);
-        recordDiagnostic('google-workspace-connection-refreshed', { userId: session.user.id });
+        recordDiagnostic('google-auto-sync-started', { userId: session.user.id, hasProviderToken: Boolean(session.provider_token) });
+        // A restored Supabase session normally no longer exposes provider_token.
+        // In that case the server-side refresh token is already stored and can
+        // perform the sync directly. When a fresh OAuth token is available, refresh
+        // the server-side connection first so the same code path works after login.
+        if (session.provider_token) {
+          await connectGoogleFromSession(session, true);
+          recordDiagnostic('google-workspace-connection-refreshed', { userId: session.user.id });
+        }
         await syncGoogleWorkspace((progress) => recordDiagnostic('google-auto-sync-progress', progress));
         if (active) await hydrateFromCloud();
         recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
