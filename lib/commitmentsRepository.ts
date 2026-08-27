@@ -18,6 +18,7 @@ function toRow(item: Commitment, userId: string) {
   const kindMap: Record<Commitment['kind'], string> = { task: 'task', event: 'event', reminder: 'reminder', routine: 'habit', idea: 'note' };
   const statusMap: Record<Commitment['status'], string> = { active: 'active', waiting: 'waiting', scheduled: 'scheduled', blocked: 'blocked', someday: 'someday', done: 'completed' };
   const resourceType = item.kind === 'event' ? 'calendar_event' : ['task', 'reminder'].includes(item.kind) ? 'task' : null;
+  const normalizedAllDayTask = item.kind === 'task' && item.allDay;
   return {
     id: item.id,
     user_id: userId,
@@ -25,9 +26,9 @@ function toRow(item: Commitment, userId: string) {
     description: googleDescription(item) ?? null,
     kind: kindMap[item.kind],
     status: statusMap[item.status],
-    starts_at: item.scheduledAt ?? null,
+    starts_at: item.scheduledAt ?? (normalizedAllDayTask ? item.dueAt ?? null : null),
     deadline_at: item.dueAt ?? null,
-    duration_minutes: item.durationMinutes,
+    duration_minutes: normalizedAllDayTask ? 1440 : item.durationMinutes,
     energy: item.energy,
     context: item.context,
     confidence_score: item.confidence,
@@ -49,6 +50,11 @@ function toRow(item: Commitment, userId: string) {
 
 function fromRow(row: any): Commitment {
   const kindMap: Record<string, Commitment['kind']> = { task: 'task', event: 'event', reminder: 'reminder', habit: 'routine', project: 'task', note: 'idea' };
+  const kind = kindMap[row.kind] ?? 'task';
+  const allDay = row.ai_metadata?.allDay ?? false;
+  const isGoogleAllDayTask = kind === 'task' && allDay && Boolean(row.deadline_at);
+  const durationMinutes = isGoogleAllDayTask ? 1440 : (row.duration_minutes ?? 30);
+  const scheduledAt = row.starts_at ?? (isGoogleAllDayTask ? row.deadline_at : undefined);
   return {
     id: row.id,
     title: row.title,
@@ -56,15 +62,15 @@ function fromRow(row: any): Commitment {
     notes: row.ai_metadata?.notes ?? undefined,
     location: row.ai_metadata?.location ?? undefined,
     link: row.ai_metadata?.link ?? undefined,
-    kind: kindMap[row.kind] ?? 'task',
+    kind,
     status: row.status === 'completed' ? 'done' : row.status,
-    durationMinutes: row.duration_minutes ?? 30,
+    durationMinutes,
     energy: row.energy ?? 'medium',
     context: row.context ?? 'generale',
     dueAt: row.deadline_at ?? undefined,
-    scheduledAt: row.starts_at ?? undefined,
+    scheduledAt,
     fixed: row.ai_metadata?.fixed ?? false,
-    allDay: row.ai_metadata?.allDay ?? false,
+    allDay,
     outcome: row.ai_metadata?.outcome,
     confidence: Number(row.confidence_score ?? 0.5),
     googleCalendarId: row.google_calendar_id ?? undefined,
