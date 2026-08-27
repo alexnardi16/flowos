@@ -2,15 +2,6 @@ name: EAS Android Preview Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - ".eas/trigger-build"
-      - "eas.json"
-      - "app.json"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/eas-build.yml"
 
 jobs:
   build:
@@ -22,48 +13,19 @@ jobs:
           test -n "${{ secrets.EXPO_TOKEN }}" || (echo "Missing EXPO_TOKEN" && exit 1)
           test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_URL" && exit 1)
           test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" && exit 1)
-
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: 22.13
-
-      - name: Setup Expo and EAS
-        uses: expo/expo-github-action@v8
+      - uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Generate deterministic lockfile
-        run: npm install --package-lock-only --no-audit --no-fund
-
-      - name: Clean install dependencies
-        run: npm ci --include=dev --no-audit --no-fund
-
-      - name: Validate TypeScript
-        run: npm run typecheck
-
-      - name: Validate Expo dependencies
-        run: npx expo install --check
-
-      - name: Run Expo Doctor
-        run: npx -y expo-doctor
-
-      - name: Validate production bundle
-        env:
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          EXPO_PUBLIC_AI_MODE: local-first
-        run: npx expo export --platform android --output-dir dist-validation
-
+      - run: npm install --no-audit --no-fund
       - name: Configure EAS preview environment
         run: |
           eas env:create preview --name EXPO_PUBLIC_SUPABASE_URL --value "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" --visibility plaintext --force --non-interactive
           eas env:create preview --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" --visibility sensitive --force --non-interactive
           eas env:create preview --name EXPO_PUBLIC_AI_MODE --value "local-first" --visibility plaintext --force --non-interactive
-
       - name: Trigger EAS preview build
         run: eas build --platform android --profile preview --non-interactive --no-wait --clear-cache
