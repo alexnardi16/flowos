@@ -17,7 +17,7 @@ export function TodayWidget({ items, overdueCount }: AndroidTodayWidgetProps) {
           <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://today?widgetAction=complete&id=${encodeURIComponent(item.id)}` }}>
             <TextWidget text="✓" style={{ fontSize: 17, color: '#1D7A55', width: 26 }} />
             <FlexWidget style={{ flexDirection: 'column', flex: 1 }}>
-              <TextWidget text={item.title} style={{ fontSize: 13, fontWeight: 'bold', color: '#172033', maxLines: 1 }} />
+              <TextWidget text={item.title} style={{ fontSize: 13, fontWeight: 'bold', color: '#172033' }} />
               <TextWidget text={`${item.time} · ${item.kind}`} style={{ fontSize: 10, color: '#697386' }} />
             </FlexWidget>
           </FlexWidget>
