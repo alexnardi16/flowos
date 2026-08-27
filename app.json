@@ -8,57 +8,22 @@
     "scheme": "flowos",
     "userInterfaceStyle": "automatic",
     "runtimeVersion": { "policy": "appVersion" },
-    "updates": {
-      "url": "https://u.expo.dev/95803fab-e55e-48a0-8e48-f8b504f6aeac",
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
-    },
-    "extra": {
-      "eas": {
-        "projectId": "95803fab-e55e-48a0-8e48-f8b504f6aeac"
-      }
-    },
+    "updates": {"url":"https://u.expo.dev/95803fab-e55e-48a0-8e48-f8b504f6aeac","checkAutomatically":"ON_LOAD","fallbackToCacheTimeout":0},
+    "extra": {"eas":{"projectId":"95803fab-e55e-48a0-8e48-f8b504f6aeac"}},
     "plugins": [
       "expo-router",
       "./plugins/withNativeAccessJvmArgs.js",
-      ["expo-notifications", { "defaultChannel": "flowos-reminders" }],
-      ["expo-calendar", { "calendarPermission": "FlowOS usa il calendario per pianificare i tuoi impegni." }],
+      ["expo-notifications", {"defaultChannel":"flowos-reminders"}],
+      ["expo-calendar", {"calendarPermission":"FlowOS usa il calendario per pianificare i tuoi impegni."}],
       "expo-task-manager",
       "expo-background-task",
-      ["expo-location", { "locationWhenInUsePermission": "FlowOS usa la posizione per mostrare il meteo di oggi nel riepilogo giornaliero." }],
-      [
-        "expo-widgets",
-        {
-          "widgets": [
-            {
-              "name": "TodayWidget",
-              "displayName": "FlowOS Oggi",
-              "description": "Prossimo evento e task in scadenza/scadute.",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
-            }
-          ]
-        }
-      ]
+      ["expo-location", {"locationWhenInUsePermission":"FlowOS usa la posizione per mostrare il meteo di oggi nel riepilogo giornaliero."}],
+      ["expo-widgets", {"widgets":[{"name":"TodayWidget","displayName":"FlowOS Oggi","description":"Prossimo evento e task in scadenza/scadute.","supportedFamilies":["systemSmall","systemMedium"]}]}],
+      ["react-native-android-widget", {"widgets":[{"name":"TodayAndroidWidget","label":"FlowOS Oggi","description":"Le prossime attività di oggi con azioni rapide.","minWidth":"320dp","minHeight":"180dp","targetCellWidth":4,"targetCellHeight":3,"resizeMode":"horizontal|vertical","updatePeriodMillis":1800000}] }]
     ],
-    "experiments": { "typedRoutes": true },
-    "web": {
-      "bundler": "metro",
-      "output": "static"
-    },
-    "android": {
-      "package": "com.alexnardi.flowos",
-      "versionCode": 2,
-      "permissions": ["POST_NOTIFICATIONS", "READ_CALENDAR", "WRITE_CALENDAR"]
-    },
-    "ios": {
-      "bundleIdentifier": "com.alexnardi.flowos",
-      "buildNumber": "2",
-      "infoPlist": {
-        "NSCalendarsFullAccessUsageDescription": "FlowOS usa il calendario per pianificare gli impegni.",
-        "NSRemindersFullAccessUsageDescription": "FlowOS usa i promemoria per aiutarti a non dimenticare gli impegni.",
-        "UIBackgroundModes": ["processing"],
-        "BGTaskSchedulerPermittedIdentifiers": ["com.expo.modules.backgroundtask.processing"]
-      }
-    }
+    "experiments":{"typedRoutes":true},
+    "web":{"bundler":"metro","output":"static"},
+    "android":{"package":"com.alexnardi.flowos","versionCode":2,"permissions":["POST_NOTIFICATIONS","READ_CALENDAR","WRITE_CALENDAR"]},
+    "ios":{"bundleIdentifier":"com.alexnardi.flowos","buildNumber":"2","infoPlist":{"NSCalendarsFullAccessUsageDescription":"FlowOS usa il calendario per pianificare gli impegni.","NSRemindersFullAccessUsageDescription":"FlowOS usa i promemoria per aiutarti a non dimenticare gli impegni.","UIBackgroundModes":["processing"],"BGTaskSchedulerPermittedIdentifiers":["com.expo.modules.backgroundtask.processing"]}}
   }
 }
