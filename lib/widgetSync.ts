@@ -1,3 +1,4 @@
+import React from 'react';
 import { Platform } from 'react-native';
 import { buildTodayGlance } from './widgetData';
 import { logNotificationEvent } from './notificationLog';
@@ -34,7 +35,7 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
           kind: item.kind === 'event' ? 'Evento' : item.kind === 'task' ? 'Task' : 'Reminder',
         }));
       const overdueCount = active.filter((item) => item.dueAt && new Date(item.dueAt).getTime() < now.getTime()).length;
-      await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => <TodayWidget items={items} overdueCount={overdueCount} /> });
+      await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => React.createElement(TodayWidget, { items, overdueCount }) });
       await logNotificationEvent('today-widget-updated', { platform: 'android', dateKey: dayKey, count: items.length });
     }
   } catch (error) {
