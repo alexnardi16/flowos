@@ -40,13 +40,17 @@ export default function Plan(){
   const [manageId,setManageId]=useState<string|null>(null);
   const [syncProgress,setSyncProgress]=useState<{percent:number;stage:string}|null>(null);
   const [contactsFilter,setContactsFilter]=useState<ContactsFilter>('all');
-  const [now] = useState(()=>Date.now());
+  const [now,setNow]=useState(()=>Date.now());
   useEffect(()=>{
     const unsubscribe=subscribeToSyncProgress(({percent,stage})=>{
       setSyncProgress({percent,stage});
       if(percent>=100)setTimeout(()=>setSyncProgress(null),900);
     });
     return unsubscribe;
+  },[]);
+  useEffect(()=>{
+    const interval=setInterval(()=>setNow(Date.now()),60_000);
+    return ()=>clearInterval(interval);
   },[]);
 
   useEffect(()=>{void AsyncStorage.getItem(FILTERS_KEY).then((raw)=>{if(raw)setFilters({...DEFAULT_FILTERS,...JSON.parse(raw)});}).catch(()=>undefined);},[]);
