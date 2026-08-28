@@ -3,7 +3,7 @@
     "name": "FlowOS",
     "slug": "flowos",
     "owner": "alex16nardi",
-    "version": "0.2.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "flowos",
     "userInterfaceStyle": "automatic",
@@ -14,7 +14,7 @@
       "expo-router",
       "./plugins/withNativeAccessJvmArgs.js",
       ["expo-notifications", {"defaultChannel":"flowos-reminders"}],
-      ["expo-calendar", {"calendarPermission":"FlowOS usa il calendario per pianificare i tuoi impegni."}],
+      ["expo-calendar", {"calendarPermission":"FlowOS usa il calendario per pianificare gli impegni."}],
       "expo-task-manager",
       "expo-background-task",
       ["expo-location", {"locationWhenInUsePermission":"FlowOS usa la posizione per mostrare il meteo di oggi nel riepilogo giornaliero."}],
@@ -23,7 +23,7 @@
     ],
     "experiments":{"typedRoutes":true},
     "web":{"bundler":"metro","output":"static"},
-    "android":{"package":"com.alexnardi.flowos","versionCode":2,"permissions":["POST_NOTIFICATIONS","READ_CALENDAR","WRITE_CALENDAR"]},
-    "ios":{"bundleIdentifier":"com.alexnardi.flowos","buildNumber":"2","infoPlist":{"NSCalendarsFullAccessUsageDescription":"FlowOS usa il calendario per pianificare gli impegni.","NSRemindersFullAccessUsageDescription":"FlowOS usa i promemoria per aiutarti a non dimenticare gli impegni.","UIBackgroundModes":["processing"],"BGTaskSchedulerPermittedIdentifiers":["com.expo.modules.backgroundtask.processing"]}}
+    "android":{"package":"com.alexnardi.flowos","versionCode":3,"permissions":["POST_NOTIFICATIONS","READ_CALENDAR","WRITE_CALENDAR"]},
+    "ios":{"bundleIdentifier":"com.alexnardi.flowos","buildNumber":"3","infoPlist":{"NSCalendarsFullAccessUsageDescription":"FlowOS usa il calendario per pianificare gli impegni.","NSRemindersFullAccessUsageDescription":"FlowOS usa i promemoria per aiutarti a non dimenticare gli impegni.","UIBackgroundModes":["processing"],"BGTaskSchedulerPermittedIdentifiers":["com.expo.modules.backgroundtask.processing"]}}
   }
 }
