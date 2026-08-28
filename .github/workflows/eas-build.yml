@@ -2,6 +2,18 @@ name: EAS Android Preview Build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/eas-build.yml"
+      - "eas.json"
+      - "app.json"
+      - "package.json"
+      - "package-lock.json"
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "widgets/**"
 
 jobs:
   build:
