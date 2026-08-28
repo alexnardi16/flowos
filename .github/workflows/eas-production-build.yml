@@ -3,7 +3,6 @@ name: EAS Android Production Build
 on:
   workflow_dispatch:
   push:
-    branches: [main]
     tags:
       - "v*"
   release:
@@ -18,10 +17,6 @@ concurrency:
 
 jobs:
   build:
-    # The main-branch condition is a one-time smoke trigger used to verify the
-    # local AAB path after the EAS cloud-build quota was exhausted. Normal main
-    # pushes do not create production builds; tags/releases remain the normal triggers.
-    if: github.event_name != 'push' || github.event.head_commit.message == 'ci: verify local production AAB build'
     name: Build Android production AAB locally
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +33,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22.13
-          cache: npm
 
       - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
