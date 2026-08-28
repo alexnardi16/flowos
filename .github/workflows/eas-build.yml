@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    name: Build installable Android APK
+    name: Build installable Android APK (local CI build)
     runs-on: ubuntu-latest
     steps:
       - name: Check required secrets
@@ -13,19 +13,40 @@ jobs:
           test -n "${{ secrets.EXPO_TOKEN }}" || (echo "Missing EXPO_TOKEN" && exit 1)
           test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_URL" && exit 1)
           test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" && exit 1)
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
         with:
           node-version: 22.13
-      - uses: expo/expo-github-action@v8
+          cache: npm
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-      - run: npm install --no-audit --no-fund
-      - name: Configure EAS preview environment
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build preview APK locally
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          EXPO_PUBLIC_AI_MODE: local-first
+          EAS_LOCAL_BUILD_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
         run: |
-          eas env:create preview --name EXPO_PUBLIC_SUPABASE_URL --value "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" --visibility plaintext --force --non-interactive
-          eas env:create preview --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" --visibility sensitive --force --non-interactive
-          eas env:create preview --name EXPO_PUBLIC_AI_MODE --value "local-first" --visibility plaintext --force --non-interactive
-      - name: Trigger EAS preview build
-        run: eas build --platform android --profile preview --non-interactive --no-wait --clear-cache
+          mkdir -p artifacts
+          eas build --platform android --profile preview --local --non-interactive --output "$GITHUB_WORKSPACE/artifacts/FlowOS-preview.apk"
+          test -s "$GITHUB_WORKSPACE/artifacts/FlowOS-preview.apk"
+
+      - name: Upload preview APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlowOS-preview-APK
+          path: artifacts/FlowOS-preview.apk
+          if-no-files-found: error
