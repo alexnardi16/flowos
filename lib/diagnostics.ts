@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export type DiagnosticLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export type DiagnosticEntry = {
@@ -10,6 +12,19 @@ export type DiagnosticEntry = {
 const STORAGE_KEY = 'flowos-diagnostics-v3';
 const SESSION_USER_KEY = 'flowos-diagnostics-session-user';
 const listeners = new Set<(entries: DiagnosticEntry[]) => void>();
+let cache: DiagnosticEntry[] = [];
+let sessionUser: string | null = null;
+let storageGeneration = 0;
+
+const storageReady = AsyncStorage.multiGet([STORAGE_KEY, SESSION_USER_KEY])
+  .then(([logEntry, userEntry]) => {
+    if (storageGeneration !== 0) return;
+    try { cache = logEntry[1] ? JSON.parse(logEntry[1]) as DiagnosticEntry[] : []; }
+    catch { cache = []; }
+    sessionUser = userEntry[1] ?? null;
+    notify();
+  })
+  .catch((error) => console.error('[FlowOS] diagnostics-storage-load-failed', error));
 
 function serializeDetails(details: unknown): string | undefined {
   if (details === undefined) return undefined;
@@ -22,6 +37,11 @@ function serializeDetails(details: unknown): string | undefined {
 function notify() {
   const entries = readDiagnostics();
   listeners.forEach((listener) => listener(entries));
+}
+
+function persist() {
+  void storageReady.then(() => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cache)))
+    .catch((error) => console.error('[FlowOS] diagnostics-storage-failed', error));
 }
 
 export function recordDiagnostic(event: string, details?: unknown, level: DiagnosticLevel = 'info') {
@@ -37,20 +57,13 @@ export function recordDiagnostic(event: string, details?: unknown, level: Diagno
   else if (level === 'debug') console.debug(`[FlowOS] ${event}`, details ?? '');
   else console.info(`[FlowOS] ${event}`, details ?? '');
 
-  if (typeof window === 'undefined') return;
-  try {
-    const previous = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '[]') as DiagnosticEntry[];
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...previous, entry]));
-    notify();
-  } catch (error) {
-    console.error('[FlowOS] diagnostics-storage-failed', error);
-  }
+  cache = [...cache, entry];
+  persist();
+  notify();
 }
 
 export function readDiagnostics(): DiagnosticEntry[] {
-  if (typeof window === 'undefined') return [];
-  try { return JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '[]') as DiagnosticEntry[]; }
-  catch { return []; }
+  return [...cache];
 }
 
 export function subscribeDiagnostics(listener: (entries: DiagnosticEntry[]) => void) {
@@ -60,38 +73,30 @@ export function subscribeDiagnostics(listener: (entries: DiagnosticEntry[]) => v
 }
 
 export function clearDiagnostics() {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-    notify();
-  } catch (error) {
-    console.error('[FlowOS] diagnostics-clear-failed', error);
-  }
+  storageGeneration += 1;
+  cache = [];
+  void storageReady.then(() => AsyncStorage.removeItem(STORAGE_KEY))
+    .catch((error) => console.error('[FlowOS] diagnostics-clear-failed', error));
+  notify();
 }
 
 export function beginDiagnosticSession(userId: string) {
-  if (typeof window === 'undefined') return;
-  try {
-    const currentUser = window.localStorage.getItem(SESSION_USER_KEY);
-    if (currentUser !== userId) {
-      window.localStorage.removeItem(STORAGE_KEY);
-      window.localStorage.setItem(SESSION_USER_KEY, userId);
-      notify();
-    }
-  } catch (error) {
-    console.error('[FlowOS] diagnostics-session-start-failed', error);
-  }
+  if (sessionUser === userId) return;
+  storageGeneration += 1;
+  cache = [];
+  sessionUser = userId;
+  void storageReady.then(() => AsyncStorage.multiSet([[STORAGE_KEY, '[]'], [SESSION_USER_KEY, userId]]))
+    .catch((error) => console.error('[FlowOS] diagnostics-session-start-failed', error));
+  notify();
 }
 
 export function endDiagnosticSession() {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-    window.localStorage.removeItem(SESSION_USER_KEY);
-    notify();
-  } catch (error) {
-    console.error('[FlowOS] diagnostics-session-end-failed', error);
-  }
+  storageGeneration += 1;
+  cache = [];
+  sessionUser = null;
+  void storageReady.then(() => AsyncStorage.multiRemove([STORAGE_KEY, SESSION_USER_KEY]))
+    .catch((error) => console.error('[FlowOS] diagnostics-session-end-failed', error));
+  notify();
 }
 
 export function formatDiagnostics(): string {
