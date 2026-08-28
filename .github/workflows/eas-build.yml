@@ -9,7 +9,6 @@ on:
       - "eas.json"
       - "app.json"
       - "package.json"
-      - "package-lock.json"
       - "app/**"
       - "components/**"
       - "lib/**"
@@ -33,7 +32,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22.13
-          cache: npm
 
       - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
@@ -50,7 +48,6 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           EXPO_PUBLIC_AI_MODE: local-first
-          EAS_LOCAL_BUILD_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
         run: |
           mkdir -p artifacts
           eas build --platform android --profile preview --local --non-interactive --output "$GITHUB_WORKSPACE/artifacts/FlowOS-preview.apk"
