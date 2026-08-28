@@ -41,7 +41,11 @@ function toRow(item: Commitment, userId: string) {
     external_etag: item.externalEtag ?? null,
     external_updated_at: item.externalUpdatedAt ?? null,
     last_sync_origin: 'flowos',
-    sync_status: resourceType ? 'pending' : 'local_only',
+    // Completing a Calendar event is a FlowOS-only state. Google Calendar
+    // events do not have a completed status, so never enqueue that transition
+    // as a Google write. Tasks can still use pending because Google Tasks has
+    // an explicit completed status.
+    sync_status: resourceType && !(item.kind === 'event' && item.status === 'done') ? 'pending' : resourceType ? 'synced' : 'local_only',
     sync_error: null,
     deleted_at: item.deletedAt ?? null,
     updated_at: new Date().toISOString(),
@@ -149,7 +153,7 @@ export async function flushOfflineQueue() {
   await replaceQueue(failed);
 }
 
-/** Forces an immediate push of any pending local changes to Google (saveCommitment already marks Google-syncable items as sync_status='pending'; this is what actually sends them). */
+/** Forces an immediate push of any pending local changes to Google (saveCommitment already marks Google-syncable items as pending; this is what actually sends them). */
 export async function pushPendingToGoogle() {
   if (!isSupabaseConfigured) return;
   const { data, error } = await supabase.functions.invoke('google-workspace', { body: { action: 'sync-push' } });
