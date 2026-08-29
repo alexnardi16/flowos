@@ -34,7 +34,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22.13
-          cache: npm
 
       - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
