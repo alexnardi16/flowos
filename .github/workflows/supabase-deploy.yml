@@ -39,7 +39,9 @@ jobs:
         run: |
           supabase functions deploy interpret-commitment --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
           supabase functions deploy google-workspace --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
+          supabase functions deploy google-delete-item --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
           supabase functions deploy ai-planner --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
+          supabase functions deploy delete-account --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
 
       - name: Apply database migrations
         continue-on-error: true
