@@ -18,12 +18,12 @@
       "expo-task-manager",
       "expo-background-task",
       ["expo-location", {"locationWhenInUsePermission":"FlowOS usa la posizione per mostrare il meteo di oggi nel riepilogo giornaliero."}],
-      ["expo-widgets", {"widgets":[{"name":"TodayWidget","displayName":"FlowOS Oggi","description":"Prossimo evento e task in scadenza/scadute.","supportedFamilies":["systemSmall","systemMedium"]}]}],
-      ["react-native-android-widget", {"widgets":[{"name":"TodayAndroidWidget","label":"FlowOS Oggi","description":"Le prossime attività di oggi con azioni rapide.","minWidth":"320dp","minHeight":"180dp","targetCellWidth":4,"targetCellHeight":3,"resizeMode":"horizontal|vertical","updatePeriodMillis":1800000}] }]
+      ["expo-widgets", {"widgets":[{"name":"TodayWidget","displayName":"FlowOS Oggi","description":"Prossimo evento e task in scadenza/scadute.","supportedFamilies":["systemSmall","systemMedium"]}] }],
+      ["react-native-android-widget", {"widgets":[{"name":"TodayAndroidWidget","label":"FlowOS Oggi","description":"Le prossime attività di oggi con azioni rapide.","minWidth":"320dp","minHeight":"180dp","targetCellWidth":4,"targetCellHeight":3,"resizeMode":"horizontal|vertical","updatePeriodMillis":1800000}]}]
     ],
     "experiments":{"typedRoutes":true},
     "web":{"bundler":"metro","output":"static"},
-    "android":{"package":"com.alexnardi.flowos","versionCode":3,"permissions":["POST_NOTIFICATIONS","READ_CALENDAR","WRITE_CALENDAR"]},
+    "android":{"package":"com.alexnardi.flowos","permissions":["POST_NOTIFICATIONS","READ_CALENDAR","WRITE_CALENDAR"]},
     "ios":{"bundleIdentifier":"com.alexnardi.flowos","buildNumber":"3","infoPlist":{"NSCalendarsFullAccessUsageDescription":"FlowOS usa il calendario per pianificare gli impegni.","NSRemindersFullAccessUsageDescription":"FlowOS usa i promemoria per aiutarti a non dimenticare gli impegni.","UIBackgroundModes":["processing"],"BGTaskSchedulerPermittedIdentifiers":["com.expo.modules.backgroundtask.processing"]}}
   }
 }
