@@ -1,51 +1,79 @@
 # FlowOS
 
-Prototype mobile-first per unificare task, eventi e reminder in un unico modello di **Commitment**.
+FlowOS è un'app mobile-first che unifica task, eventi e reminder in un unico modello di **Commitment**.
 
-## Avvio
+## Stato del progetto
+
+La codebase è in fase di preparazione alla prima release Android **1.0.0**.
+
+### Funzioni attualmente implementate
+
+- Home “Adesso” con suggerimento prioritario
+- Commitment unificati: task, eventi e reminder
+- Inserimento in linguaggio naturale
+- Piano giornaliero con elementi fissi e blocchi IA
+- Inbox delle ambiguità
+- Focus mode
+- Riepilogo giornaliero automatico alle 07:30
+- Sincronizzazione Google Calendar e Google Tasks
+- Completamento e rinvio
+- Confidence score
+- Controllo assistito
+- Autenticazione Supabase
+- Persistenza PostgreSQL con Row Level Security
+- Notifiche e reminder locali
+- Background tasks
+- Widget Android
+- Meteo basato sulla posizione, solo quando autorizzato
+- Eliminazione definitiva dell'account e dei dati associati
+- Privacy policy e pagina pubblica di eliminazione account
+
+## Stack
+
+- Expo SDK 57 / React Native 0.86
+- TypeScript
+- Expo Router
+- Supabase Auth + PostgreSQL + Edge Functions
+- Google Calendar / Google Tasks
+- EAS Build / EAS Update
+- GitHub Actions
+
+## Sviluppo locale
 
 ```bash
 npm install
 npx expo start
 ```
 
-Scansiona il QR code con Expo Go oppure avvia un emulatore Android/iOS.
+Per la validazione completa:
 
-## Funzioni implementate
+```bash
+npm run typecheck
+npm test
+npx expo export --platform web
+```
 
-- Home “Adesso” con singolo suggerimento prioritario
-- Commitment unificati: task, eventi e reminder
-- Inserimento in linguaggio naturale con classificazione locale simulata
-- Piano giornaliero con elementi fissi e blocchi IA
-- Inbox delle sole ambiguità
-- Focus mode
-- Riepilogo giornaliero automatico alle 07:30, con sincronizzazione Google e recupero se il dispositivo era spento/offline
-- Completamento e rinvio
-- Confidence score
-- Modalità “controllo assistito”
+## Android production
 
-## Limiti intenzionali dell’MVP
+Il profilo EAS `production` genera un **Android App Bundle (AAB)** ed usa credenziali remote e auto-incremento del `versionCode`. Il workflow GitHub Actions dedicato alla release costruisce l'AAB quando viene pubblicato un tag/release di versione.
 
-- Nessun backend: stato in memoria
-- Nessuna autenticazione
-- IA reale, notifiche, voce e sincronizzazione calendario ancora da collegare
-- Il parser locale in `lib/store.ts` simula lo structured output dell’IA
+Prima della pubblicazione su Google Play devono essere completati anche i controlli esterni al repository: test del binario su dispositivo Android, configurazione/verifica Google OAuth, Play Console Data Safety e store listing, privacy policy pubblicamente raggiungibile e, quando applicabile, closed testing richiesto da Google Play.
 
-## Prossima architettura consigliata
+## Privacy e account deletion
 
-1. Supabase Auth + PostgreSQL + Row Level Security
-2. Edge Function `interpret-commitment` con structured output
-3. Sync Google Calendar / Microsoft 365
-4. Expo Notifications per reminder locali e push
-5. Persistenza offline con SQLite e coda di sincronizzazione
-6. Widget e lock-screen actions tramite moduli Expo/native
+- Privacy policy in-app: `/privacy-policy`
+- Account deletion: `/delete-account`
+- URL pubblico previsto per la cancellazione: `https://getflowos.netlify.app/delete-account`
 
-## Struttura pronta per lo sviluppo
+## CI/CD
 
-- `.env.example`: variabili per Supabase e modalità IA
-- `supabase/migrations/0001_initial_schema.sql`: schema iniziale con RLS
-- `.github/workflows/ci.yml`: controllo TypeScript automatico
-- `docs/ROADMAP.md`: roadmap incrementale
+- `.github/workflows/ci.yml`: typecheck, test e validazione web
+- `.github/workflows/eas-build.yml`: build EAS di sviluppo/preview
+- `.github/workflows/eas-production-build.yml`: build production
+- `.github/workflows/eas-update.yml`: EAS Update
+- `.github/workflows/eas-web-preview.yml`: preview web
+- `.github/workflows/release-aab.yml`: build e allegato AAB per release Android
+- `.github/workflows/supabase-deploy.yml`: deploy Supabase
 
 ## Repository
 
