@@ -89,18 +89,40 @@ jobs:
           test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_URL" && exit 1)
           test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" && exit 1)
 
-      - uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install EAS CLI
+        shell: bash
+        run: npm install --global eas-cli@latest
+
+      - name: Validate EAS authentication
+        shell: bash
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5; do
+            echo "Validating EAS authentication (attempt $attempt/5)"
+            if eas whoami; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "EAS authentication check failed; retrying in 15 seconds..."
+              sleep 15
+            fi
+          done
+          echo "EAS authentication could not be validated after 5 attempts"
+          exit 1
 
       - name: Configure EAS production environment
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           eas env:create production --name EXPO_PUBLIC_SUPABASE_URL --value "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" --visibility plaintext --force --non-interactive
           eas env:create production --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" --visibility sensitive --force --non-interactive
           eas env:create production --name EXPO_PUBLIC_AI_MODE --value "local-first" --visibility plaintext --force --non-interactive
 
       - name: Build production AAB
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --platform android --profile production --non-interactive --wait --json > eas-build.json
 
       - name: Download AAB
