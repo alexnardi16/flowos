@@ -16,6 +16,9 @@ on:
 permissions:
   contents: write
 
+env:
+  EAS_NO_VCS: '1'
+
 jobs:
   build-aab:
     name: Build production AAB
@@ -112,13 +115,14 @@ jobs:
           echo "EAS authentication could not be validated after 5 attempts"
           exit 1
 
-      - name: Configure EAS production environment
+      - name: Verify EAS production environment configuration
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        shell: bash
         run: |
-          eas env:create production --name EXPO_PUBLIC_SUPABASE_URL --value "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" --visibility plaintext --force --non-interactive
-          eas env:create production --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" --visibility sensitive --force --non-interactive
-          eas env:create production --name EXPO_PUBLIC_AI_MODE --value "local-first" --visibility plaintext --force --non-interactive
+          set -euo pipefail
+          echo "Production EAS environment is managed persistently in EAS; no env:create mutation is performed during every build."
+          echo "The Expo project must already contain EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY and EXPO_PUBLIC_AI_MODE in the production environment."
 
       - name: Build production AAB
         env:
