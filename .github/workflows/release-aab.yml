@@ -61,11 +61,11 @@ jobs:
             echo "package-lock.json was not generated"
             exit 1
           fi
+          git fetch origin main
           if git ls-tree -r origin/main --name-only | grep -qx 'package-lock.json'; then
             echo "package-lock.json already exists on main"
             exit 0
           fi
-          git fetch origin main
           git clone --no-checkout --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/flowos-main
           cd /tmp/flowos-main
           git checkout main
@@ -100,13 +100,22 @@ jobs:
         run: eas build --platform android --profile production --non-interactive --wait --json > eas-build.json
 
       - name: Download AAB
+        shell: bash
         run: |
+          set -euo pipefail
           BUILD_ID=$(jq -r 'if type == "array" then .[0].id else .id end' eas-build.json)
+          ARTIFACT_URL=$(jq -r 'if type == "array" then .[0].artifacts.applicationArchiveUrl else .artifacts.applicationArchiveUrl end' eas-build.json)
           test -n "$BUILD_ID" && test "$BUILD_ID" != "null"
-          eas build:download --build-id "$BUILD_ID" --non-interactive
-          AAB=$(find . -type f -name '*.aab' -print -quit)
-          test -n "$AAB"
-          cp "$AAB" "FlowOS-${GITHUB_SHA}.aab"
+          test -n "$ARTIFACT_URL" && test "$ARTIFACT_URL" != "null"
+          echo "EAS build: $BUILD_ID"
+          echo "Downloading application archive directly from EAS artifact URL"
+          curl --fail --location --retry 3 --retry-delay 2 --output FlowOS-${GITHUB_SHA}.aab "$ARTIFACT_URL"
+          test -s FlowOS-${GITHUB_SHA}.aab
+          file FlowOS-${GITHUB_SHA}.aab
+          if ! unzip -t FlowOS-${GITHUB_SHA}.aab >/dev/null 2>&1; then
+            echo "Downloaded artifact is not a valid ZIP/AAB archive"
+            exit 1
+          fi
 
       - name: Upload AAB as workflow artifact
         uses: actions/upload-artifact@v4
