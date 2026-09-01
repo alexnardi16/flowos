@@ -6,6 +6,12 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Git tag to build and update (for example v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+        type: string
 
 permissions:
   contents: write
@@ -15,46 +21,103 @@ jobs:
     name: Build production AAB
     runs-on: ubuntu-latest
     steps:
+      - name: Determine release tag
+        id: release
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.release_tag }}"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          test -n "$TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Building release tag: $TAG"
+
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22.13
-      - run: npm install --no-audit --no-fund
+          cache: npm
+
+      - name: Generate npm lockfile when missing
+        shell: bash
+        run: |
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          fi
+
+      - name: Persist generated lockfile to main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json was not generated"
+            exit 1
+          fi
+          if git ls-tree -r origin/main --name-only | grep -qx 'package-lock.json'; then
+            echo "package-lock.json already exists on main"
+            exit 0
+          fi
+          git fetch origin main
+          git clone --no-checkout --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/flowos-main
+          cd /tmp/flowos-main
+          git checkout main
+          cp "$GITHUB_WORKSPACE/package-lock.json" ./package-lock.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: add npm lockfile"
+          git push origin HEAD:main
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Check EAS secrets
         run: |
           test -n "${{ secrets.EXPO_TOKEN }}" || (echo "Missing EXPO_TOKEN" && exit 1)
           test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_URL" && exit 1)
           test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" && exit 1)
+
       - uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+
       - name: Configure EAS production environment
         run: |
           eas env:create production --name EXPO_PUBLIC_SUPABASE_URL --value "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" --visibility plaintext --force --non-interactive
           eas env:create production --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" --visibility sensitive --force --non-interactive
           eas env:create production --name EXPO_PUBLIC_AI_MODE --value "local-first" --visibility plaintext --force --non-interactive
+
       - name: Build production AAB
         run: eas build --platform android --profile production --non-interactive --wait --json > eas-build.json
+
       - name: Download AAB
-        id: download
         run: |
           BUILD_ID=$(jq -r 'if type == "array" then .[0].id else .id end' eas-build.json)
           test -n "$BUILD_ID" && test "$BUILD_ID" != "null"
-          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
           eas build:download --build-id "$BUILD_ID" --non-interactive
           AAB=$(find . -type f -name '*.aab' -print -quit)
           test -n "$AAB"
           cp "$AAB" "FlowOS-${GITHUB_SHA}.aab"
+
       - name: Upload AAB as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FlowOS-AAB-${{ github.ref_name }}
+          name: FlowOS-AAB-${{ steps.release.outputs.tag }}
           path: FlowOS-${{ github.sha }}.aab
           if-no-files-found: error
+
       - name: Attach AAB to GitHub Release
-        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.release.tag_name }}
+          tag_name: ${{ steps.release.outputs.tag }}
           files: FlowOS-${{ github.sha }}.aab
+          fail_on_unmatched_files: true
