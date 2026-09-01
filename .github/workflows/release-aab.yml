@@ -34,6 +34,7 @@ jobs:
           fi
           test -n "$TAG"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "aab_name=FlowOS-${TAG}.aab" >> "$GITHUB_OUTPUT"
           echo "Building release tag: $TAG"
 
       - uses: actions/checkout@v4
@@ -112,10 +113,10 @@ jobs:
           test -n "$ARTIFACT_URL" && test "$ARTIFACT_URL" != "null"
           echo "EAS build: $BUILD_ID"
           echo "Downloading application archive directly from EAS artifact URL"
-          curl --fail --location --retry 3 --retry-delay 2 --output FlowOS-${GITHUB_SHA}.aab "$ARTIFACT_URL"
-          test -s FlowOS-${GITHUB_SHA}.aab
-          file FlowOS-${GITHUB_SHA}.aab
-          if ! unzip -t FlowOS-${GITHUB_SHA}.aab >/dev/null 2>&1; then
+          curl --fail --location --retry 3 --retry-delay 2 --output "${{ steps.release.outputs.aab_name }}" "$ARTIFACT_URL"
+          test -s "${{ steps.release.outputs.aab_name }}"
+          file "${{ steps.release.outputs.aab_name }}"
+          if ! unzip -t "${{ steps.release.outputs.aab_name }}" >/dev/null 2>&1; then
             echo "Downloaded artifact is not a valid ZIP/AAB archive"
             exit 1
           fi
@@ -124,12 +125,27 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FlowOS-AAB-${{ steps.release.outputs.tag }}
-          path: FlowOS-${{ github.sha }}.aab
+          path: ${{ steps.release.outputs.aab_name }}
           if-no-files-found: error
 
-      - name: Attach AAB to GitHub Release
+      - name: Remove existing AAB assets from GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.release.outputs.tag }}"
+          echo "Removing existing .aab assets from release $TAG"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[] | select(.name | endswith(".aab")) | .name' | while IFS= read -r ASSET; do
+            if [ -n "$ASSET" ]; then
+              echo "Deleting release asset: $ASSET"
+              gh release delete-asset "$TAG" "$ASSET" --repo "$GITHUB_REPOSITORY" --yes
+            fi
+          done
+
+      - name: Attach definitive AAB to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release.outputs.tag }}
-          files: FlowOS-${{ github.sha }}.aab
+          files: ${{ steps.release.outputs.aab_name }}
           fail_on_unmatched_files: true
+          overwrite_files: true
