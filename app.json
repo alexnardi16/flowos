@@ -17,7 +17,6 @@
       ["expo-notifications", {"defaultChannel":"flowos-reminders"}],
       "expo-task-manager",
       "expo-background-task",
-      ["expo-location", {"locationWhenInUsePermission":"FlowOS usa la posizione per mostrare il meteo di oggi nel riepilogo giornaliero."}],
       ["expo-widgets", {"widgets":[{"name":"TodayWidget","displayName":"FlowOS Oggi","description":"Prossimo evento e task in scadenza/scadute.","supportedFamilies":["systemSmall","systemMedium"]}] }],
       ["react-native-android-widget", {"widgets":[{"name":"TodayAndroidWidget","label":"FlowOS Oggi","description":"Le prossime attività di oggi con azioni rapide.","minWidth":"320dp","minHeight":"180dp","targetCellWidth":4,"targetCellHeight":3,"resizeMode":"horizontal|vertical","updatePeriodMillis":1800000}]}]
     ],
