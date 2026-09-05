@@ -1,17 +1,26 @@
-# FlowOS - proposed Google Play Data safety declaration
+# FlowOS - Google Play Data safety declaration preparation
 
-This document is a preparation aid. The final answers must be checked against the exact production build and the live Supabase/OpenAI/Google integrations before submission.
+This document is a preparation aid. The final answers must be checked against the exact production AAB and the live Supabase/Google/OpenAI integrations before submission.
 
-## Data likely collected / processed
+## Data collected / processed by the app
+
+Google defines collection as transmitting data off the user's device, including transmission by libraries and SDKs. citeturn2search0
 
 | Play Console category | Data type | Collection | Purpose | Optional | Deletion |
 |---|---|---:|---|---:|---|
-| Personal info | Email address | Yes | Account creation, authentication | No | Yes |
+| Personal info | Name | Yes, as part of the Google profile used for sign-in | Account management / app functionality | No | Yes |
+| Personal info | Email address | Yes | Account management / authentication | No | Yes |
 | Personal info | User IDs | Yes | Account management and associating user data | No | Yes |
-| Personal info | Name / profile information | Only if actually collected | Account/profile functionality | TBD | Yes |
-| Personal info | Calendar | Yes, when Google is connected | Calendar synchronization | Yes | Yes |
-| Personal info | Other user-generated content | Yes | Tasks/commitments and related user content | No | Yes |
-| Location | Approximate location | Yes, when weather is requested/authorized | Weather summary | Yes | Not retained as a location profile according to the current app privacy policy |
+| Personal info | Other user-generated content | Yes | Tasks, commitments, reminders and related user content | No | Yes |
+| Personal info | Calendar events | Yes, when Google is connected | Calendar synchronization / app functionality | Yes | Yes |
+| Location | Precise location | Yes, when weather is used and the user grants precise location | Weather / app functionality | Yes | Not retained by FlowOS as a location history |
+| Location | Approximate location | Yes, when weather is used and the user grants approximate location | Weather / app functionality | Yes | Not retained by FlowOS as a location history |
+
+### Data that is not collected by FlowOS for analytics/advertising
+
+- No advertising SDK is present in the application configuration.
+- Notifications are scheduled locally on the device; FlowOS does not register a push-token analytics database in the current code.
+- Diagnostic and notification logs are stored locally on the device and are not transmitted to FlowOS as an analytics profile.
 
 ## Third-party processing
 
@@ -19,31 +28,39 @@ FlowOS currently integrates with:
 
 - Supabase for authentication and application data storage.
 - Google APIs for user-authorized Calendar / Tasks synchronization.
-- Open-Meteo for weather requests based on the user's location.
-- OpenAI for optional AI planning when AI mode is available.
+- OpenAI for optional AI interpretation/planning when the production AI service is available.
+- Open-Meteo for weather requests based on device location.
 
-The current privacy policy states that Google OAuth tokens are stored server-side in a private database area, and that AI requests are configured with `store: false` at OpenAI. Verify these statements against the deployed backend before submission.
+Google Play requires disclosure of relevant data handling by third-party SDKs/services and consistency with the privacy policy. citeturn2search3turn2search4
+
+## Google API data
+
+The current Google OAuth scopes are `openid`, `email`, `profile`, `calendar.events`, `calendar.calendarlist.readonly`, and `tasks`. Calendar events and Google Tasks are synchronized through the FlowOS backend. OAuth access/refresh tokens are stored server-side in the private Supabase schema.
+
+## AI data
+
+When AI interpretation/planning is used, user-entered commitment text is sent from the FlowOS backend to OpenAI. The OpenAI Responses API request uses `store: false`. The production configuration should be verified before submission.
+
+## Location
+
+The app requests foreground device location for the weather feature and sends latitude/longitude to Open-Meteo. Because the runtime permission can provide either precise or approximate location, both Google Play location categories should be evaluated for the final declaration. Google Play distinguishes precise and approximate location in the Data safety form. citeturn2search0turn2search6
 
 ## Security
 
-Declare data as encrypted in transit if all production network paths use HTTPS/TLS, which is the intended configuration.
+Declare encryption in transit if all production network paths use HTTPS/TLS, which is the intended configuration. Authentication and row-level access controls are used for application data.
 
 ## Data deletion
 
-FlowOS provides an account deletion flow. Before submission, verify end-to-end that deleting an account permanently removes the user's FlowOS data, Google tokens and authentication account, as represented by the production `delete-account` function.
+FlowOS provides an in-app deletion path and an external web resource where users can request account and associated data deletion. Google explicitly requires both for apps that enable account creation. citeturn2search8turn2search10
 
-## Sharing vs service providers
+The deletion backend removes FlowOS commitments, Google connection records, Google OAuth tokens and the Supabase authentication account, subject to lawful retention requirements.
 
-Do not blindly mark every third-party processor as "shared". Apply Google's current Data safety definitions to each integration and verify whether a recipient is acting as a service provider / processor or whether the transfer qualifies as sharing under Play policy.
+## Final verification before Play Console submission
 
-## Important final verification
-
-Before pressing Submit in Play Console, verify the production AAB and live backend for:
-
-1. All permissions actually present in the manifest.
-2. All data sent off-device.
-3. All SDKs and third-party services.
-4. Whether analytics, crash reporting, push notification tokens or device identifiers are used.
-5. Exact retention and deletion behavior.
-6. Exact Google API scopes and data handling.
-7. Whether AI functionality is enabled in the production environment.
+1. Confirm the exact production AAB permissions and dependency set.
+2. Confirm all data transmitted off-device, including Google API data and AI requests.
+3. Confirm third-party SDK/service behavior.
+4. Confirm no analytics, crash-reporting, push-token or device-ID collection has been introduced.
+5. Confirm exact retention and deletion behavior in the live Supabase project.
+6. Confirm the live Privacy Policy matches these declarations.
+7. Confirm the external account-deletion URL loads without login and clearly provides a way to request deletion.
