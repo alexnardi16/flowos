@@ -49,39 +49,11 @@ jobs:
         with:
           node-version: 22.13
 
-      - name: Generate npm lockfile when missing
+      - name: Regenerate npm lockfile from package.json
         shell: bash
         run: |
-          if [ ! -f package-lock.json ]; then
-            echo "package-lock.json is missing; generating it from package.json"
-            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          else
-            echo "package-lock.json already exists"
-          fi
-
-      - name: Persist generated lockfile to main
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ ! -f package-lock.json ]; then
-            echo "package-lock.json was not generated"
-            exit 1
-          fi
-          git fetch origin main
-          if git ls-tree -r origin/main --name-only | grep -qx 'package-lock.json'; then
-            echo "package-lock.json already exists on main"
-            exit 0
-          fi
-          git clone --no-checkout --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/flowos-main
-          cd /tmp/flowos-main
-          git checkout main
-          cp "$GITHUB_WORKSPACE/package-lock.json" ./package-lock.json
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f package-lock.json
-          git commit -m "chore: add npm lockfile"
-          git push origin HEAD:main
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
