@@ -4,7 +4,7 @@ This document is a preparation aid. The final answers must be checked against th
 
 ## Data collected / processed by the app
 
-Google defines collection as transmitting data off the user's device, including transmission by libraries and SDKs. citeturn2search0
+Google defines collection as transmitting data off the user's device, including transmission by libraries and SDKs.
 
 | Play Console category | Data type | Collection | Purpose | Optional | Deletion |
 |---|---|---:|---|---:|---|
@@ -31,7 +31,7 @@ FlowOS currently integrates with:
 - OpenAI for optional AI interpretation/planning when the production AI service is available.
 - Open-Meteo for weather requests based on device location.
 
-Google Play requires disclosure of relevant data handling by third-party SDKs/services and consistency with the privacy policy. citeturn2search3turn2search4
+Google Play requires disclosure of relevant data handling by third-party SDKs/services and consistency with the privacy policy.
 
 ## Google API data
 
@@ -43,7 +43,7 @@ When AI interpretation/planning is used, user-entered commitment text is sent fr
 
 ## Location
 
-The app requests foreground device location for the weather feature and sends latitude/longitude to Open-Meteo. Because the runtime permission can provide either precise or approximate location, both Google Play location categories should be evaluated for the final declaration. Google Play distinguishes precise and approximate location in the Data safety form. citeturn2search0turn2search6
+The app requests foreground device location for the weather feature and sends latitude/longitude to Open-Meteo. Because the runtime permission can provide either precise or approximate location, both Google Play location categories should be evaluated for the final declaration.
 
 ## Security
 
@@ -51,7 +51,7 @@ Declare encryption in transit if all production network paths use HTTPS/TLS, whi
 
 ## Data deletion
 
-FlowOS provides an in-app deletion path and an external web resource where users can request account and associated data deletion. Google explicitly requires both for apps that enable account creation. citeturn2search8turn2search10
+FlowOS provides an in-app deletion path and an external web resource where users can request account and associated data deletion. Google requires both for apps that enable account creation.
 
 The deletion backend removes FlowOS commitments, Google connection records, Google OAuth tokens and the Supabase authentication account, subject to lawful retention requirements.
 
