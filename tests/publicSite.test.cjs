@@ -38,8 +38,6 @@ test('privacy policy discloses the data categories used by the app', () => {
     'Google Tasks',
     'OAuth',
     'OpenAI',
-    'Open-Meteo',
-    'location',
     'tasks',
     'commitments',
     'notifications',
@@ -48,6 +46,7 @@ test('privacy policy discloses the data categories used by the app', () => {
   ]) {
     assert.match(privacy, new RegExp(phrase, 'i'), `Privacy Policy should mention ${phrase}`);
   }
+  assert.doesNotMatch(privacy, /Open-Meteo|device location|location history/i);
 });
 
 test('optional live-site smoke test validates all legal URLs', async (t) => {
