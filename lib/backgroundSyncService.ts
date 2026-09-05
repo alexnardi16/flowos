@@ -6,14 +6,12 @@ import { loadCommitments } from './commitmentsRepository';
 import { syncGoogleWorkspace } from './googleWorkspace';
 import { runReminderEngine } from './reminderEngine';
 import { runIntelligentReplan } from './replanEngine';
-import { fetchTodayWeather } from './weather';
-import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
 import { DAILY_SUMMARY_HOUR, DAILY_SUMMARY_MINUTE, getLastRecoveryDateKey, hasRecoveredToday, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
 function isPastDailySummaryTime(now: Date): boolean { return now.getHours() > DAILY_SUMMARY_HOUR || (now.getHours() === DAILY_SUMMARY_HOUR && now.getMinutes() >= DAILY_SUMMARY_MINUTE); }
-async function hasAuthenticatedSession(): Promise<boolean> { if (!isSupabaseConfigured) return false; const { data } = await supabase.auth.getSession(); return Boolean(data.session); }
+async function hasAuthenticatedSession(): Promise<boolean> { if (!process.env.EXPO_PUBLIC_SUPABASE_URL || !process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return false; const { data } = await import('./supabase').then(({ supabase }) => supabase.auth.getSession()); return Boolean(data.session); }
 async function loadFreshData(now: Date) {
   const loaded = await loadCommitments();
   let commitments = loaded;
@@ -31,16 +29,14 @@ export async function runDailySummaryRefresh(now: Date = new Date()) {
 
   const { commitments, summary } = await loadFreshData(now);
   await safeRunReminderEngine(commitments, now);
-  const weather = await fetchTodayWeather();
-  const enrichedSummary = weather ? { ...summary, body: `${weather.text}. ${summary.body}`.trim() } : summary;
 
-  if (!(await isDailySummaryEnabledStored())) { await logNotificationEvent('daily-summary-refresh-skipped-disabled'); return enrichedSummary; }
-  await scheduleDailySummaryNotification(enrichedSummary);
+  if (!(await isDailySummaryEnabledStored())) { await logNotificationEvent('daily-summary-refresh-skipped-disabled'); return summary; }
+  await scheduleDailySummaryNotification(summary);
   const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowSummary = buildDailySummary(commitments, now, tomorrow);
   await scheduleTomorrowMorningSummary(tomorrowSummary, now);
   await logNotificationEvent('daily-summary-refresh-completed', { dateKey: summary.dateKey, tomorrowDateKey: tomorrowSummary.dateKey });
-  return enrichedSummary;
+  return summary;
 }
 
 export async function refreshReminders(now: Date = new Date()) { if (!(await hasAuthenticatedSession())) return null; const { commitments } = await loadFreshData(now); return safeRunReminderEngine(commitments, now); }
@@ -55,11 +51,9 @@ export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) 
   await logNotificationEvent('daily-summary-recovery-triggered', { dateKey });
   try { await syncGoogleWorkspace(); } catch (error) { await logNotificationEvent('daily-summary-recovery-google-sync-failed', error, 'warn'); }
   const { commitments, summary } = await loadFreshData(now);
-  const weather = await fetchTodayWeather();
-  const enrichedSummary = weather ? { ...summary, body: `${weather.text}. ${summary.body}`.trim() } : summary;
-  await sendImmediateSummaryNotification(enrichedSummary);
+  await sendImmediateSummaryNotification(summary);
   await markRecovered(dateKey);
-  await scheduleDailySummaryNotification(enrichedSummary);
+  await scheduleDailySummaryNotification(summary);
   const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
   await scheduleTomorrowMorningSummary(buildDailySummary(commitments, now, tomorrow), now);
   await logNotificationEvent('daily-summary-recovery-completed', { dateKey });
