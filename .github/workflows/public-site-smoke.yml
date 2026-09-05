@@ -1,0 +1,48 @@
+name: Public legal site smoke test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    name: Check public legal pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check public URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://getflowos.netlify.app'
+          for route in /privacy-policy/ /delete-account/ /terms/; do
+            echo "Checking ${base}${route}"
+            curl --fail --silent --show-error --location --retry 5 --retry-delay 3 \
+              --output /tmp/page.html --write-out '%{http_code}\n' \
+              "${base}${route}" | grep -qx '200'
+            grep -qi 'FlowOS' /tmp/page.html
+          done
+
+      - name: Check required legal content
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location 'https://getflowos.netlify.app/privacy-policy/' -o /tmp/privacy.html
+          grep -qi 'Privacy Policy' /tmp/privacy.html
+          grep -qi 'Google Calendar' /tmp/privacy.html
+          grep -qi 'Google Tasks' /tmp/privacy.html
+          grep -qi 'OpenAI' /tmp/privacy.html
+          grep -qi 'Open-Meteo' /tmp/privacy.html
+          grep -qi 'location' /tmp/privacy.html
+          grep -qi 'deletion' /tmp/privacy.html
+
+          curl --fail --silent --show-error --location 'https://getflowos.netlify.app/delete-account/' -o /tmp/delete.html
+          grep -qi 'Delete your FlowOS account' /tmp/delete.html
+          grep -qi 'mailto:alex16nardi@gmail.com' /tmp/delete.html
+          grep -qi 'without reinstalling the app' /tmp/delete.html
+
+          curl --fail --silent --show-error --location 'https://getflowos.netlify.app/terms/' -o /tmp/terms.html
+          grep -qi 'FlowOS Terms of Service' /tmp/terms.html
