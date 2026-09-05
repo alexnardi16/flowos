@@ -10,3 +10,7 @@ jobs:
     type: deploy
     params:
       prod: true
+    hooks:
+      before_install_node_modules:
+        - name: Regenerate npm lockfile from package.json
+          run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
