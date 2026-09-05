@@ -2,19 +2,21 @@ import { Linking, SafeAreaView, ScrollView, StyleSheet, Text } from 'react-nativ
 import { Button, Card, palette } from '@/components/ui';
 
 export default function PrivacyPolicy() {
-  const deleteUrl = 'https://getflowos.netlify.app/delete-account';
+  const deleteUrl = 'https://getflowos.netlify.app/delete-account/';
+  const webPolicyUrl = 'https://getflowos.netlify.app/privacy-policy/';
   return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.wrap}>
     <Text style={styles.eyebrow}>FLOWOS</Text>
     <Text style={styles.title}>Privacy Policy</Text>
-    <Text style={styles.date}>Ultimo aggiornamento: 29 agosto 2026</Text>
+    <Text style={styles.date}>Last updated: September 5, 2026</Text>
 
-    <Card><Text style={styles.heading}>Dati trattati</Text><Text style={styles.body}>FlowOS tratta i dati necessari per fornire il servizio: account e identificativi di autenticazione, attività create nell'app, dati sincronizzati con Google Calendar e Google Tasks, preferenze di sincronizzazione e, se autorizzata, la posizione approssimativa del dispositivo per mostrare il meteo di oggi.</Text></Card>
-    <Card><Text style={styles.heading}>Google</Text><Text style={styles.body}>Se colleghi Google, FlowOS accede ai calendari e alle liste Google Tasks che autorizzi, per sincronizzare eventi e attività. I token OAuth sono conservati lato server in un'area privata e non vengono esposti al client. Puoi scollegare Google dalle Impostazioni.</Text></Card>
-    <Card><Text style={styles.heading}>Meteo e posizione</Text><Text style={styles.body}>La posizione viene richiesta solo quando serve il meteo del riepilogo giornaliero. Le coordinate vengono utilizzate per richiedere la previsione a Open-Meteo e non sono memorizzate da FlowOS come profilo di localizzazione.</Text></Card>
-    <Card><Text style={styles.heading}>IA</Text><Text style={styles.body}>Quando la modalità IA è disponibile, il testo inserito per interpretare un'attività può essere inviato a OpenAI tramite un server FlowOS. La richiesta utilizza un modello configurato lato server e la funzione è configurata per non memorizzare la risposta presso OpenAI.</Text></Card>
-    <Card><Text style={styles.heading}>Conservazione e sicurezza</Text><Text style={styles.body}>I dati FlowOS sono associati al tuo account. L'accesso ai dati applicativi è protetto da Row Level Security. I token Google sono conservati in uno schema database privato e gestiti da Edge Functions autenticate.</Text></Card>
-    <Card><Text style={styles.heading}>Eliminazione dell'account</Text><Text style={styles.body}>Puoi richiedere l'eliminazione definitiva dell'account e dei dati associati dalla pagina dedicata. L'operazione elimina i dati FlowOS, i token Google e l'account di autenticazione. L'eliminazione è irreversibile.</Text><Button danger label="Elimina account" onPress={() => { void Linking.openURL(deleteUrl); }} /></Card>
-    <Text style={styles.footer}>Per richieste relative alla privacy o ai dati personali, utilizza i canali di contatto indicati nella scheda dello sviluppatore su Google Play.</Text>
+    <Card><Text style={styles.heading}>Developer and privacy contact</Text><Text style={styles.body}>FlowOS. For privacy questions or requests, contact alex16nardi@gmail.com. The complete current policy is available online.</Text><Button label="Open full Privacy Policy" onPress={() => { void Linking.openURL(webPolicyUrl); }} /></Card>
+    <Card><Text style={styles.heading}>Data handled</Text><Text style={styles.body}>FlowOS handles the data needed to provide the service: your Google account identity, FlowOS account identifier, tasks, events, reminders and other commitments you create, application preferences, and data synchronized with Google Calendar and Google Tasks when you connect Google.</Text></Card>
+    <Card><Text style={styles.heading}>Google</Text><Text style={styles.body}>If you connect Google, FlowOS accesses the Google Calendar and Google Tasks data covered by the permissions you authorize, to synchronize events and tasks. Google OAuth tokens are stored server-side in a private database area and are not exposed to the application client. Google data is used only for the FlowOS features you request and is not used for advertising.</Text></Card>
+    <Card><Text style={styles.heading}>Weather and location</Text><Text style={styles.body}>If you enable weather, FlowOS requests device location while the feature is being used to obtain today's forecast from Open-Meteo. FlowOS does not maintain a location history or build a location profile.</Text></Card>
+    <Card><Text style={styles.heading}>AI</Text><Text style={styles.body}>When you use an AI-powered feature, text needed to interpret or plan a commitment may be sent to OpenAI through a FlowOS server. The relevant API requests are configured not to store responses through the API storage option.</Text></Card>
+    <Card><Text style={styles.heading}>Security and retention</Text><Text style={styles.body}>Application data is protected by authentication and row-level access controls. Google OAuth tokens are stored in a private server-side area. FlowOS retains account and application data while needed to provide the service, unless deletion is requested or a longer retention period is required by law.</Text></Card>
+    <Card><Text style={styles.heading}>Account deletion</Text><Text style={styles.body}>You can request permanent deletion of your FlowOS account and associated data from the dedicated page. The deletion process removes FlowOS data, Google connection data and stored OAuth tokens, subject to data that must lawfully be retained.</Text><Button danger label="Delete account" onPress={() => { void Linking.openURL(deleteUrl); }} /></Card>
+    <Text style={styles.footer}>The complete Privacy Policy, including information about third-party services and your choices, is available online at getflowos.netlify.app/privacy-policy/.</Text>
   </ScrollView></SafeAreaView>;
 }
 
