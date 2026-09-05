@@ -6,12 +6,13 @@ import { loadCommitments } from './commitmentsRepository';
 import { syncGoogleWorkspace } from './googleWorkspace';
 import { runReminderEngine } from './reminderEngine';
 import { runIntelligentReplan } from './replanEngine';
+import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
 import { DAILY_SUMMARY_HOUR, DAILY_SUMMARY_MINUTE, getLastRecoveryDateKey, hasRecoveredToday, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
 function isPastDailySummaryTime(now: Date): boolean { return now.getHours() > DAILY_SUMMARY_HOUR || (now.getHours() === DAILY_SUMMARY_HOUR && now.getMinutes() >= DAILY_SUMMARY_MINUTE); }
-async function hasAuthenticatedSession(): Promise<boolean> { if (!process.env.EXPO_PUBLIC_SUPABASE_URL || !process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return false; const { data } = await import('./supabase').then(({ supabase }) => supabase.auth.getSession()); return Boolean(data.session); }
+async function hasAuthenticatedSession(): Promise<boolean> { if (!isSupabaseConfigured) return false; const { data } = await supabase.auth.getSession(); return Boolean(data.session); }
 async function loadFreshData(now: Date) {
   const loaded = await loadCommitments();
   let commitments = loaded;
