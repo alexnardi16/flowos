@@ -32,12 +32,15 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --location 'https://getflowos.netlify.app/privacy-policy/' -o /tmp/privacy.html
           grep -qi 'Privacy Policy' /tmp/privacy.html
+          grep -qi 'Google Sign-In' /tmp/privacy.html
           grep -qi 'Google Calendar' /tmp/privacy.html
           grep -qi 'Google Tasks' /tmp/privacy.html
+          grep -qi 'OAuth' /tmp/privacy.html
           grep -qi 'OpenAI' /tmp/privacy.html
-          grep -qi 'Open-Meteo' /tmp/privacy.html
-          grep -qi 'location' /tmp/privacy.html
+          grep -qi 'notifications' /tmp/privacy.html
+          grep -qi 'retention' /tmp/privacy.html
           grep -qi 'deletion' /tmp/privacy.html
+          ! grep -Eqi 'Open-Meteo|device location|location history' /tmp/privacy.html
 
           curl --fail --silent --show-error --location 'https://getflowos.netlify.app/delete-account/' -o /tmp/delete.html
           grep -qi 'Delete your FlowOS account' /tmp/delete.html
