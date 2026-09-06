@@ -18,11 +18,12 @@ jobs:
         run: |
           set -euo pipefail
           base='https://getflowos.netlify.app'
+          cache_bust="smoke=$(date +%s)"
           for route in /privacy-policy/ /delete-account/ /terms/; do
             echo "Checking ${base}${route}"
-            curl --fail --silent --show-error --location --retry 5 --retry-delay 3 \
+            curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
               --output /tmp/page.html --write-out '%{http_code}\n' \
-              "${base}${route}" | grep -qx '200'
+              "${base}${route}?${cache_bust}" | grep -qx '200'
             grep -qi 'FlowOS' /tmp/page.html
           done
 
@@ -30,7 +31,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location 'https://getflowos.netlify.app/privacy-policy/' -o /tmp/privacy.html
+          base='https://getflowos.netlify.app'
+          cache_bust="smoke=$(date +%s)"
+
+          echo 'Checking privacy policy content'
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
+            "${base}/privacy-policy/?${cache_bust}" -o /tmp/privacy.html
           grep -qi 'Privacy Policy' /tmp/privacy.html
           grep -qi 'Google Sign-In' /tmp/privacy.html
           grep -qi 'Google Calendar' /tmp/privacy.html
@@ -42,10 +48,14 @@ jobs:
           grep -qi 'deletion' /tmp/privacy.html
           ! grep -Eqi 'Open-Meteo|device location|location history' /tmp/privacy.html
 
-          curl --fail --silent --show-error --location 'https://getflowos.netlify.app/delete-account/' -o /tmp/delete.html
+          echo 'Checking account deletion page content'
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
+            "${base}/delete-account/?${cache_bust}" -o /tmp/delete.html
           grep -qi 'Delete your FlowOS account' /tmp/delete.html
           grep -qi 'mailto:alex16nardi@gmail.com' /tmp/delete.html
           grep -qi 'without reinstalling the app' /tmp/delete.html
 
-          curl --fail --silent --show-error --location 'https://getflowos.netlify.app/terms/' -o /tmp/terms.html
+          echo 'Checking terms page content'
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
+            "${base}/terms/?${cache_bust}" -o /tmp/terms.html
           grep -qi 'FlowOS Terms of Service' /tmp/terms.html
