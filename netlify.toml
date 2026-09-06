@@ -4,3 +4,9 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+[[redirects]]
+  from = "/privacy-policy/"
+  to = "/privacy-policy-static.html"
+  status = 200
+  force = true
