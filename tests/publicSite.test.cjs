@@ -47,8 +47,10 @@ test('privacy policy discloses the data categories used by the app', () => {
     assert.match(privacy, new RegExp(phrase, 'i'), `Privacy Policy should mention ${phrase}`);
   }
 
-  // Location/weather is no longer part of the shipped app or its privacy policy.
-  assert.doesNotMatch(privacy, /Open-Meteo|device location|location history/i);
+  // Location/weather is explicitly disclosed as retired, but stale provider/history
+  // disclosures must not return to the public policy.
+  assert.doesNotMatch(privacy, /Open-Meteo|location history/i);
+  assert.match(privacy, /does not request, collect, or transmit your phone's location/i);
 });
 
 test('optional live-site smoke test validates all legal URLs', async (t) => {
