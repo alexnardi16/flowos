@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'public/privacy-policy/**'
+      - 'public/privacy-policy-static.html'
       - 'public/delete-account/**'
       - 'public/terms/**'
       - 'public/_redirects'
@@ -53,8 +54,9 @@ jobs:
           grep -qi 'notifications' /tmp/privacy.html
           grep -qi 'retention' /tmp/privacy.html
           grep -qi 'deletion' /tmp/privacy.html
-          if grep -Ein -C 2 'Open-Meteo|device location|location history' /tmp/privacy.html; then
-            echo 'ERROR: stale location disclosure is still being served by the public privacy policy.'
+          grep -qi "does not request, collect, or transmit your phone's location" /tmp/privacy.html
+          if grep -Ein -C 2 'Open-Meteo|location history' /tmp/privacy.html; then
+            echo 'ERROR: stale location/weather disclosure is still being served by the public privacy policy.'
             echo 'The Netlify deploy currently serving this page is not the corrected legal build.'
             exit 1
           fi
