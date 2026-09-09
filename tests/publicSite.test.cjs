@@ -46,6 +46,8 @@ test('privacy policy discloses the data categories used by the app', () => {
   ]) {
     assert.match(privacy, new RegExp(phrase, 'i'), `Privacy Policy should mention ${phrase}`);
   }
+
+  // Location/weather is no longer part of the shipped app or its privacy policy.
   assert.doesNotMatch(privacy, /Open-Meteo|device location|location history/i);
 });
 
