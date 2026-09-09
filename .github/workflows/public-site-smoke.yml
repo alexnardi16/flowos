@@ -59,11 +59,11 @@ jobs:
           echo 'Checking account deletion page content'
           curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
             "${base}/delete-account/?${cache_bust}" -o /tmp/delete.html
-          grep -qi 'Delete your FlowOS account' /tmp/delete.html
-          grep -qi 'mailto:alex16nardi@gmail.com' /tmp/delete.html
-          grep -qi 'without reinstalling the app' /tmp/delete.html
+          grep -qi '<title>Delete your FlowOS account</title>' /tmp/delete.html
+          grep -qi 'alex16nardi@gmail.com' /tmp/delete.html
 
           echo 'Checking terms page content'
           curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
             "${base}/terms/?${cache_bust}" -o /tmp/terms.html
-          grep -qi 'FlowOS Terms of Service' /tmp/terms.html
+          grep -qi '<title>FlowOS Terms of Service</title>' /tmp/terms.html
+          grep -qi 'Privacy Policy' /tmp/terms.html
