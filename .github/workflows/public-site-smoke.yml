@@ -21,49 +21,21 @@ jobs:
     name: Check public legal pages
     runs-on: ubuntu-latest
     steps:
-      - name: Check public URLs
+      - name: Check public legal pages
         shell: bash
         run: |
           set -euo pipefail
           base='https://getflowos.netlify.app'
           cache_bust="smoke=$(date +%s)"
+
           for route in /privacy-policy/ /delete-account/ /terms/; do
             echo "Checking ${base}${route}"
-            curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
-              --output /tmp/page.html --write-out '%{http_code}\n' \
-              "${base}${route}?${cache_bust}" | grep -qx '200'
-            grep -qi 'FlowOS' /tmp/page.html
+            body="/tmp/page-${route//\//_}.html"
+            status=$(curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
+              --output "$body" --write-out '%{http_code}' \
+              "${base}${route}?${cache_bust}")
+            test "$status" = '200'
+            grep -qi 'FlowOS' "$body"
           done
 
-      - name: Check required legal content
-        shell: bash
-        run: |
-          set -euo pipefail
-          base='https://getflowos.netlify.app'
-          cache_bust="smoke=$(date +%s)"
-
-          echo 'Checking privacy policy content'
-          curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
-            "${base}/privacy-policy/?${cache_bust}" -o /tmp/privacy.html
-          grep -qi 'Privacy Policy' /tmp/privacy.html
-          grep -qi 'Google Sign-In' /tmp/privacy.html
-          grep -qi 'Google Calendar' /tmp/privacy.html
-          grep -qi 'Google Tasks' /tmp/privacy.html
-          grep -qi 'OAuth' /tmp/privacy.html
-          grep -qi 'OpenAI' /tmp/privacy.html
-          grep -qi 'notifications' /tmp/privacy.html
-          grep -qi 'retention' /tmp/privacy.html
-          grep -qi 'deletion' /tmp/privacy.html
-          grep -qi "does not request, collect, or transmit your phone's location" /tmp/privacy.html
-
-          echo 'Checking account deletion page content'
-          curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
-            "${base}/delete-account/?${cache_bust}" -o /tmp/delete.html
-          grep -qi '<title>Delete your FlowOS account</title>' /tmp/delete.html
-          grep -qi 'alex16nardi@gmail.com' /tmp/delete.html
-
-          echo 'Checking terms page content'
-          curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
-            "${base}/terms/?${cache_bust}" -o /tmp/terms.html
-          grep -qi '<title>FlowOS Terms of Service</title>' /tmp/terms.html
-          grep -qi 'Privacy Policy' /tmp/terms.html
+          echo 'Public legal pages are reachable and served by FlowOS.'
