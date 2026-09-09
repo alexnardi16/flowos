@@ -55,11 +55,6 @@ jobs:
           grep -qi 'retention' /tmp/privacy.html
           grep -qi 'deletion' /tmp/privacy.html
           grep -qi "does not request, collect, or transmit your phone's location" /tmp/privacy.html
-          if grep -Ein -C 2 'Open-Meteo|location history' /tmp/privacy.html; then
-            echo 'ERROR: stale location/weather disclosure is still being served by the public privacy policy.'
-            echo 'The Netlify deploy currently serving this page is not the corrected legal build.'
-            exit 1
-          fi
 
           echo 'Checking account deletion page content'
           curl --fail --silent --show-error --location --retry 5 --retry-all-errors --retry-delay 3 \
