@@ -44,22 +44,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       recordDiagnostic('auth-session-init-timeout', undefined, 'error');
       finishInitialization();
     }, SESSION_INIT_TIMEOUT_MS);
-    const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
-      if (!active) return;
-      if (next?.user.id) beginDiagnosticSession(next.user.id);
-      recordDiagnostic('auth-state-change', { event, hasSession: Boolean(next), userId: next?.user.id ?? null });
-      setSession(next);
+
+    let subscription: { unsubscribe: () => void } | null = null;
+    try {
+      const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
+        if (!active) return;
+        if (next?.user.id) beginDiagnosticSession(next.user.id);
+        recordDiagnostic('auth-state-change', { event, hasSession: Boolean(next), userId: next?.user.id ?? null });
+        setSession(next);
+        finishInitialization();
+      });
+      subscription = listener.subscription;
+    } catch (error) {
+      recordDiagnostic('auth-listener-registration-failed', error, 'error');
       finishInitialization();
-    });
+    }
+
     recordDiagnostic('auth-get-session-started');
-    void supabase.auth.getSession().then(({ data, error }) => {
-      if (!active) return;
-      if (data.session?.user.id) beginDiagnosticSession(data.session.user.id);
-      if (error) recordDiagnostic('auth-get-session-failed', error, 'error');
-      else recordDiagnostic('auth-get-session-succeeded', { hasSession: Boolean(data.session), userId: data.session?.user.id ?? null });
-      setSession(data.session ?? null);
-    }).catch((error: unknown) => recordDiagnostic('auth-get-session-rejected', error, 'error')).finally(finishInitialization);
-    return () => { active = false; clearTimeout(timeout); listener.subscription.unsubscribe(); recordDiagnostic('auth-provider-unmounted'); };
+    try {
+      const sessionPromise = supabase.auth.getSession();
+      void sessionPromise.then(({ data, error }) => {
+        if (!active) return;
+        if (data.session?.user.id) beginDiagnosticSession(data.session.user.id);
+        if (error) recordDiagnostic('auth-get-session-failed', error, 'error');
+        else recordDiagnostic('auth-get-session-succeeded', { hasSession: Boolean(data.session), userId: data.session?.user.id ?? null });
+        setSession(data.session ?? null);
+      }).catch((error: unknown) => {
+        recordDiagnostic('auth-get-session-rejected', error, 'error');
+      }).finally(finishInitialization);
+    } catch (error) {
+      recordDiagnostic('auth-get-session-threw', error, 'error');
+      finishInitialization();
+    }
+
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+      try { subscription?.unsubscribe(); } catch (error) { recordDiagnostic('auth-provider-unsubscribe-failed', error, 'warn'); }
+      recordDiagnostic('auth-provider-unmounted');
+    };
   }, []);
 
   useEffect(() => {
