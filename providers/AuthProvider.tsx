@@ -47,6 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let subscription: { unsubscribe: () => void } | null = null;
     try {
+      if (typeof supabase.auth?.onAuthStateChange !== 'function') {
+        throw new Error('Supabase auth.onAuthStateChange is unavailable in the Android bundle');
+      }
       const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
         if (!active) return;
         if (next?.user.id) beginDiagnosticSession(next.user.id);
@@ -61,7 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     recordDiagnostic('auth-get-session-started');
-    void Promise.resolve().then(() => supabase.auth.getSession()).then(({ data, error }) => {
+    void Promise.resolve().then(() => {
+      if (typeof supabase.auth?.getSession !== 'function') {
+        throw new Error('Supabase auth.getSession is unavailable in the Android bundle');
+      }
+      return supabase.auth.getSession();
+    }).then(({ data, error }) => {
       if (!active) return;
       if (data.session?.user.id) beginDiagnosticSession(data.session.user.id);
       if (error) recordDiagnostic('auth-get-session-failed', error, 'error');
@@ -87,10 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         recordDiagnostic('google-auto-sync-started', { userId: session.user.id, hasProviderToken: Boolean(session.provider_token) });
-        // A restored Supabase session normally no longer exposes provider_token.
-        // In that case the server-side refresh token is already stored and can
-        // perform the sync directly. When a fresh OAuth token is available, refresh
-        // the server-side connection first so the same code path works after login.
         if (session.provider_token) {
           await connectGoogleFromSession(session, true);
           recordDiagnostic('google-workspace-connection-refreshed', { userId: session.user.id });
