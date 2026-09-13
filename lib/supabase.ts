@@ -22,17 +22,16 @@ export const supabase = createClient(url ?? 'https://placeholder.supabase.co', k
 if (Platform.OS !== 'web') {
   AppState.addEventListener('change', (state) => {
     try {
-      if (state === 'active') {
-        void supabase.auth.startAutoRefresh().catch((error: unknown) => {
-          console.warn('[FlowOS] supabase-auto-refresh-start-failed', error);
-        });
-      } else {
-        void supabase.auth.stopAutoRefresh().catch((error: unknown) => {
-          console.warn('[FlowOS] supabase-auto-refresh-stop-failed', error);
-        });
-      }
+      const result = state === 'active'
+        ? supabase.auth.startAutoRefresh()
+        : supabase.auth.stopAutoRefresh();
+      // Normalize both Promise and non-Promise implementations so a missing
+      // .catch/.finally method can never crash the native app startup.
+      void Promise.resolve(result).catch((error: unknown) => {
+        console.warn('[FlowOS] supabase-auto-refresh-failed', error);
+      });
     } catch (error) {
-      console.warn('[FlowOS] supabase-auto-refresh-failed', error);
+      console.warn('[FlowOS] supabase-auto-refresh-threw', error);
     }
   });
 }
