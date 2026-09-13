@@ -23,8 +23,7 @@ permissions:
 
 env:
   EAS_NO_VCS: '1'
-
-jobs:
+\ njobs:
   build-aab:
     name: Build production AAB
     runs-on: ubuntu-latest
@@ -56,6 +55,15 @@ jobs:
         with:
           ref: ${{ steps.release.outputs.source_ref }}
           fetch-depth: 0
+
+      - name: Stamp build identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_COMMIT="$(git rev-parse HEAD)"
+          echo "EXPO_PUBLIC_FLOWOS_RELEASE_TAG=${{ steps.release.outputs.tag }}" >> "$GITHUB_ENV"
+          echo "EXPO_PUBLIC_FLOWOS_COMMIT_SHA=$SOURCE_COMMIT" >> "$GITHUB_ENV"
+          echo "Build identity: release=${{ steps.release.outputs.tag }} commit=$SOURCE_COMMIT"
 
       - uses: actions/setup-node@v4
         with:
