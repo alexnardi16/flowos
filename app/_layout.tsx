@@ -23,6 +23,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         <Text style={styles.errorEyebrow}>FLOWOS — ERRORE DI AVVIO</Text>
         <Text style={styles.errorTitle}>L’app non è riuscita a caricare la schermata.</Text>
         <Text style={styles.errorMessage}>{errorName}: {error.message}</Text>
+        <BuildInfo inline />
         <Text selectable style={styles.stackLabel}>JAVASCRIPT STACK</Text>
         <Text selectable style={styles.stack}>{stack}</Text>
         <Text selectable style={styles.diagnosticsLabel}>DIAGNOSTICA</Text>
@@ -31,7 +32,6 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
           <Text style={styles.retryText}>Riprova</Text>
         </Pressable>
       </ScrollView>
-      <BuildInfo />
     </View>
   );
 }
@@ -66,11 +66,11 @@ export default function Root() {
 const styles = StyleSheet.create({
   root: { flex: 1, minHeight: '100%' },
   errorRoot: { flex: 1, backgroundColor: '#F7F6F2' },
-  errorContainer: { flexGrow: 1, justifyContent: 'center', padding: 28, paddingBottom: 64 },
+  errorContainer: { flexGrow: 1, padding: 28, paddingBottom: 64 },
   errorEyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 1.5, color: '#A12626', marginBottom: 12 },
   errorTitle: { fontSize: 28, lineHeight: 34, fontWeight: '900', color: '#111' },
   errorMessage: { marginTop: 14, fontSize: 16, lineHeight: 23, color: '#A12626' },
-  stackLabel: { marginTop: 20, fontSize: 11, fontWeight: '900', letterSpacing: 1, color: '#A12626' },
+  stackLabel: { marginTop: 12, fontSize: 11, fontWeight: '900', letterSpacing: 1, color: '#A12626' },
   stack: { marginTop: 7, padding: 14, borderRadius: 12, backgroundColor: '#FFF', fontFamily: 'monospace', fontSize: 10, lineHeight: 15, color: '#222' },
   diagnosticsLabel: { marginTop: 16, fontSize: 11, fontWeight: '900', letterSpacing: 1, color: '#555' },
   diagnostics: { marginTop: 7, padding: 14, borderRadius: 12, backgroundColor: '#FFF', fontFamily: 'monospace', fontSize: 10, lineHeight: 15, color: '#333' },
