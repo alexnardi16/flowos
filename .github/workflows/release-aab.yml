@@ -65,6 +65,13 @@ jobs:
           echo "EXPO_PUBLIC_FLOWOS_RELEASE_TAG=${{ steps.release.outputs.tag }}" >> "$GITHUB_ENV"
           echo "EXPO_PUBLIC_FLOWOS_COMMIT_SHA=$SOURCE_COMMIT" >> "$GITHUB_ENV"
           echo "Build identity: release=${{ steps.release.outputs.tag }} commit=$SOURCE_COMMIT"
+          cat > lib/generatedBuildInfo.ts <<EOF
+          export const FLOWOS_BUILD = {
+            releaseTag: '${{ steps.release.outputs.tag }}',
+            commitSha: '$SOURCE_COMMIT',
+          } as const;
+          EOF
+          echo "Generated lib/generatedBuildInfo.ts for release=${{ steps.release.outputs.tag }} commit=$SOURCE_COMMIT"
 
       - uses: actions/setup-node@v4
         with:
