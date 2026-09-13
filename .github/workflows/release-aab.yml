@@ -23,7 +23,8 @@ permissions:
 
 env:
   EAS_NO_VCS: '1'
-\ njobs:
+
+jobs:
   build-aab:
     name: Build production AAB
     runs-on: ubuntu-latest
