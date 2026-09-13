@@ -61,21 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     recordDiagnostic('auth-get-session-started');
-    try {
-      const sessionPromise = supabase.auth.getSession();
-      void sessionPromise.then(({ data, error }) => {
-        if (!active) return;
-        if (data.session?.user.id) beginDiagnosticSession(data.session.user.id);
-        if (error) recordDiagnostic('auth-get-session-failed', error, 'error');
-        else recordDiagnostic('auth-get-session-succeeded', { hasSession: Boolean(data.session), userId: data.session?.user.id ?? null });
-        setSession(data.session ?? null);
-      }).catch((error: unknown) => {
-        recordDiagnostic('auth-get-session-rejected', error, 'error');
-      }).finally(finishInitialization);
-    } catch (error) {
-      recordDiagnostic('auth-get-session-threw', error, 'error');
+    void Promise.resolve().then(() => supabase.auth.getSession()).then(({ data, error }) => {
+      if (!active) return;
+      if (data.session?.user.id) beginDiagnosticSession(data.session.user.id);
+      if (error) recordDiagnostic('auth-get-session-failed', error, 'error');
+      else recordDiagnostic('auth-get-session-succeeded', { hasSession: Boolean(data.session), userId: data.session?.user.id ?? null });
+      setSession(data.session ?? null);
+    }).catch((error: unknown) => {
+      recordDiagnostic('auth-get-session-rejected', error, 'error');
+    }).then(() => {
       finishInitialization();
-    }
+    });
 
     return () => {
       active = false;
