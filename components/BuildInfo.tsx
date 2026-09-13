@@ -2,16 +2,18 @@ import Constants from 'expo-constants';
 import { StyleSheet, Text, View } from 'react-native';
 
 const appVersion = Constants.expoConfig?.version ?? 'unknown';
-const versionCode = Constants.expoConfig?.android?.versionCode;
+const versionCode = Constants.nativeBuildVersion ?? (Constants.expoConfig?.android?.versionCode != null ? String(Constants.expoConfig.android.versionCode) : 'unknown');
 const releaseTag = process.env.EXPO_PUBLIC_FLOWOS_RELEASE_TAG ?? 'local';
 const commitSha = process.env.EXPO_PUBLIC_FLOWOS_COMMIT_SHA ?? 'unknown';
-const commitShort = commitSha !== 'unknown' ? commitSha.slice(0, 12) : commitSha;
 
 export function BuildInfo() {
   return (
     <View pointerEvents="none" style={styles.container}>
       <Text selectable style={styles.text}>
-        FlowOS {appVersion}{versionCode != null ? ` (${versionCode})` : ''} · Release {releaseTag} · commit {commitShort}
+        FlowOS {appVersion} · versionCode {versionCode} · Release {releaseTag}
+      </Text>
+      <Text selectable style={styles.text}>
+        commit {commitSha}
       </Text>
     </View>
   );
@@ -20,7 +22,7 @@ export function BuildInfo() {
 export function getBuildInfo() {
   return {
     appVersion,
-    versionCode: versionCode ?? null,
+    versionCode,
     releaseTag,
     commitSha,
   };
@@ -41,7 +43,7 @@ const styles = StyleSheet.create({
     color: '#666',
     backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 5,
-    paddingVertical: 2,
+    paddingVertical: 1,
     borderRadius: 4,
   },
 });
