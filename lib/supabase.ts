@@ -1,6 +1,6 @@
 import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient, processLock } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import 'react-native-url-polyfill/auto';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -10,7 +10,7 @@ export const isSupabaseConfigured = Boolean(url && key);
 
 export const supabase = createClient(url ?? 'https://placeholder.supabase.co', key ?? 'placeholder', {
   auth: {
-    ...(Platform.OS !== 'web' ? { storage: AsyncStorage, lock: processLock } : {}),
+    ...(Platform.OS !== 'web' ? { storage: AsyncStorage } : {}),
     autoRefreshToken: true,
     persistSession: true,
     // Google OAuth returns the authenticated session in the browser URL.
@@ -21,7 +21,18 @@ export const supabase = createClient(url ?? 'https://placeholder.supabase.co', k
 
 if (Platform.OS !== 'web') {
   AppState.addEventListener('change', (state) => {
-    if (state === 'active') supabase.auth.startAutoRefresh();
-    else supabase.auth.stopAutoRefresh();
+    try {
+      if (state === 'active') {
+        void supabase.auth.startAutoRefresh().catch((error: unknown) => {
+          console.warn('[FlowOS] supabase-auto-refresh-start-failed', error);
+        });
+      } else {
+        void supabase.auth.stopAutoRefresh().catch((error: unknown) => {
+          console.warn('[FlowOS] supabase-auto-refresh-stop-failed', error);
+        });
+      }
+    } catch (error) {
+      console.warn('[FlowOS] supabase-auto-refresh-failed', error);
+    }
   });
 }
