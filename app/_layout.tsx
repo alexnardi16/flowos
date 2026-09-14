@@ -2,7 +2,7 @@ import type { ErrorBoundaryProps } from 'expo-router';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BuildInfo } from '../components/BuildInfo';
 import { formatDiagnostics, recordDiagnostic } from '../lib/diagnostics';
 import { AuthProvider } from '../providers/AuthProvider';
@@ -39,7 +39,11 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 export default function Root() {
   useEffect(() => {
     recordDiagnostic('root-layout-mounted');
-    if (typeof window === 'undefined') return;
+
+    // React Native exposes a global `window`, but it is not a browser Window
+    // and does not provide DOM event listeners. Only install these handlers
+    // on web, where the DOM APIs are guaranteed to exist.
+    if (Platform.OS !== 'web') return;
 
     const onError = (event: ErrorEvent) => recordDiagnostic('window-error', event.error ?? event.message, 'error');
     const onUnhandledRejection = (event: PromiseRejectionEvent) => recordDiagnostic('unhandled-promise-rejection', event.reason, 'error');
