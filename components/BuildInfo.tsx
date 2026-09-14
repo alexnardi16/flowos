@@ -1,9 +1,10 @@
 import Constants from 'expo-constants';
+import * as Application from 'expo-application';
 import { StyleSheet, Text, View } from 'react-native';
 import { FLOWOS_BUILD } from '../lib/generatedBuildInfo';
 
-const appVersion = Constants.expoConfig?.version ?? 'unknown';
-const versionCode = Constants.nativeBuildVersion ?? (Constants.expoConfig?.android?.versionCode != null ? String(Constants.expoConfig.android.versionCode) : 'unknown');
+const appVersion = Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? 'unknown';
+const versionCode = Application.nativeBuildVersion ?? (Constants.expoConfig?.android?.versionCode != null ? String(Constants.expoConfig.android.versionCode) : 'unknown');
 
 export function getBuildInfo() {
   return {
