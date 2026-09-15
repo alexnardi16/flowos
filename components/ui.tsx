@@ -1,5 +1,6 @@
 import { PropsWithChildren } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, StyleProp, Text, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewStyle } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
  * Alert.alert routinely shows nothing on web (react-native-web's support for
@@ -34,6 +35,19 @@ export const palette = {
   soft:'#ECE9FF', success:'#15866B', warning:'#B66A14', danger:'#A12626', border:'#E2E4EA',
 };
 
+export function ScreenShell({ title, subtitle, children, scrollProps }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps }>) {
+  const insets = useSafeAreaInsets();
+  const contentPaddingBottom = Math.max(118, insets.bottom + 112);
+  return <SafeAreaView edges={['top','bottom']} style={styles.screenSafe}>
+    <ScrollView {...scrollProps} contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
+      <Text style={styles.screenBrand}>FLOWOS</Text>
+      <Text style={styles.screenTitle}>{title}</Text>
+      {subtitle ? <Text style={styles.screenSubtitle}>{subtitle}</Text> : null}
+      {children}
+    </ScrollView>
+  </SafeAreaView>;
+}
+
 export function Card({ children, style }: PropsWithChildren<{style?: StyleProp<ViewStyle>}>) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
@@ -62,6 +76,11 @@ export function EmptyState({ title, message, actionLabel, onAction }: {title:str
 }
 
 const styles=StyleSheet.create({
+  screenSafe:{flex:1,backgroundColor:palette.bg},
+  screenContent:{paddingHorizontal:20,paddingTop:8,gap:14},
+  screenBrand:{fontSize:15,lineHeight:18,fontWeight:'900',letterSpacing:2.2,color:palette.primary,marginTop:2},
+  screenTitle:{fontSize:30,lineHeight:36,fontWeight:'900',color:palette.ink,marginTop:-2},
+  screenSubtitle:{fontSize:14,lineHeight:20,color:palette.muted,marginTop:-4},
   card:{backgroundColor:palette.card,borderRadius:22,padding:18,borderWidth:1,borderColor:'#EEF0F5',shadowColor:'#000',shadowOpacity:.045,shadowRadius:14,shadowOffset:{width:0,height:5},elevation:2},
   chip:{alignSelf:'flex-start',borderRadius:99,paddingHorizontal:10,paddingVertical:6},
   chip_primary:{backgroundColor:palette.soft},chip_success:{backgroundColor:'#E8F6F1'},chip_warning:{backgroundColor:'#FFF3E5'},chip_neutral:{backgroundColor:'#EEF0F4'},
