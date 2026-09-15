@@ -3,311 +3,39 @@ import type { Session } from '@supabase/supabase-js';
 import { recordDiagnostic } from './diagnostics';
 import { supabase } from './supabase';
 
-export const GOOGLE_SCOPES = [
-  'openid',
-  'email',
-  'profile',
-  'https://www.googleapis.com/auth/calendar.events',
-  'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
-  'https://www.googleapis.com/auth/tasks',
-].join(' ');
-
-export type GoogleSyncRange = {
-  startYear: number;
-  endYear: number;
-  labelStart: string;
-  labelEnd: string;
-  years: number[];
-};
-
-export type GoogleCalendar = {
-  id: string;
-  google_calendar_id: string;
-  summary: string;
-  description?: string | null;
-  background_color?: string | null;
-  foreground_color?: string | null;
-  access_role: string;
-  primary_calendar: boolean;
-  selected: boolean;
-  is_default: boolean;
-};
-
-export type GoogleTaskList = {
-  id: string;
-  google_task_list_id: string;
-  title: string;
-  selected: boolean;
-  is_default: boolean;
-};
-
-export type GoogleWorkspaceStatus = {
-  connection: null | {
-    google_email?: string | null;
-    last_sync_at?: string | null;
-    last_sync_status: 'pending' | 'syncing' | 'ok' | 'error' | 'disconnected';
-    last_sync_error?: string | null;
-    updated_at?: string | null;
-  };
-  calendars: GoogleCalendar[];
-  taskLists: GoogleTaskList[];
-  range: GoogleSyncRange;
-};
-
-export type SyncProgress = { percent: number; stage: string };
-
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
-const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/google-workspace`;
-const REQUEST_TIMEOUT_MS = 60_000;
-
-function currentRange(): GoogleSyncRange {
-  const startYear = new Date().getFullYear();
-  const endYear = startYear + 1;
-  return {
-    startYear,
-    endYear,
-    labelStart: `01/01/${startYear}`,
-    labelEnd: `31/12/${endYear}`,
-    years: [startYear, endYear],
-  };
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error || 'Errore sconosciuto');
-}
-
-async function updateSyncFailure(message: string) {
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) return;
-  const { error } = await supabase
-    .from('google_connections')
-    .update({ last_sync_status: 'error', last_sync_error: message })
-    .eq('user_id', data.user.id);
-  if (error) recordDiagnostic('google-sync-mark-error-failed', error, 'error');
-}
-
-export async function recoverStaleGoogleSyncState() {
-  const message = 'La precedente sincronizzazione è stata interrotta prima del completamento.';
-  recordDiagnostic('google-sync-stale-state-recovered', { message }, 'warn');
-  await updateSyncFailure(message);
-}
-
-const STALE_SYNC_THRESHOLD_MS = 3 * 60 * 1000;
-
-/** A "syncing" status only means something went wrong if it's been sitting there a while — a sync that started 5 seconds ago is not stuck, it's just running. */
-export function isSyncGenuinelyStale(connection: GoogleWorkspaceStatus['connection'], now: Date = new Date()): boolean {
-  if (!connection || connection.last_sync_status !== 'syncing') return false;
-  if (!connection.updated_at) return true; // no timestamp to trust — be conservative and treat as stale
-  return now.getTime() - new Date(connection.updated_at).getTime() > STALE_SYNC_THRESHOLD_MS;
-}
-
-async function invoke(body: Record<string, unknown>, retries = 1) {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) throw sessionError;
-  const accessToken = sessionData.session?.access_token;
-  if (!accessToken) throw new Error('Sessione FlowOS scaduta. Esci e accedi nuovamente.');
-
-  let lastError: unknown;
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-    recordDiagnostic('google-function-request-start', { action: body.action, attempt: attempt + 1 });
-    try {
-      const response = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          apikey: SUPABASE_KEY,
-          'Content-Type': 'application/json',
-          'x-client-info': 'flowos-google-sync/3.3',
-        },
-        body: JSON.stringify(body),
-      });
-      const raw = await response.text();
-      let payload: any = null;
-      try { payload = raw ? JSON.parse(raw) : null; }
-      catch { payload = raw ? { error: raw } : null; }
-      recordDiagnostic('google-function-response', { action: body.action, status: response.status, ok: response.ok });
-      if (!response.ok || payload?.error) {
-        throw new Error(String(payload?.error || `Google Workspace ha risposto con stato ${response.status}.`));
-      }
-      return payload;
-    } catch (error) {
-      lastError = error;
-      const namedError = error as { name?: string };
-      const message = namedError?.name === 'AbortError'
-        ? 'La richiesta di sincronizzazione ha superato il tempo massimo consentito.'
-        : errorMessage(error);
-      recordDiagnostic('google-function-request-failed', { action: body.action, attempt: attempt + 1, message }, 'error');
-      if (attempt >= retries || !/failed to fetch|network|send a request|timeout|tempo massimo|abort/i.test(message)) break;
-      await new Promise((resolve) => setTimeout(resolve, 900));
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error(errorMessage(lastError));
-}
-
-export async function signInWithGoogle() {
-  const redirectTo = Platform.OS === 'web' && typeof window !== 'undefined'
-    ? `${window.location.origin}/today`
-    : 'flowos://today';
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo,
-      scopes: GOOGLE_SCOPES,
-      queryParams: { access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true' },
-    },
-  });
-  if (error) throw error;
-  return data;
-}
-
-export async function connectGoogleFromSession(session: Session, force = false) {
-  if (!session.provider_token) return null;
-  const marker = `flowos-google-connected-${session.user.id}-${session.provider_token.slice(-12)}`;
-  if (!force && Platform.OS === 'web' && typeof sessionStorage !== 'undefined' && sessionStorage.getItem(marker)) return null;
-  const result = await invoke({
-    action: 'connect',
-    providerToken: session.provider_token,
-    providerRefreshToken: session.provider_refresh_token,
-    scopes: GOOGLE_SCOPES,
-    expiresIn: 3600,
-  });
-  if (Platform.OS === 'web' && typeof sessionStorage !== 'undefined') sessionStorage.setItem(marker, '1');
-  return result;
-}
-
-export async function getGoogleWorkspaceStatus(): Promise<GoogleWorkspaceStatus> {
-  const result = await invoke({ action: 'status' }, 0);
-  return { ...result, range: currentRange() };
-}
-
-/** Subscribes to progress from whatever sync is currently running (or the next one that starts), without triggering a sync itself. Returns an unsubscribe function. Lets the UI show a progress bar for syncs it didn't personally trigger — e.g. the automatic one that runs right after opening FlowOS. */
-export function subscribeToSyncProgress(onProgress: (progress: SyncProgress) => void): () => void {
-  activeProgressListeners.add(onProgress);
-  return () => { activeProgressListeners.delete(onProgress); };
-}
-
-export function isGoogleSyncInFlight(): boolean {
-  return syncInFlight !== null;
-}
-
-let syncInFlight: Promise<{ pushed: number; events: number; tasks: number }> | null = null;
-const activeProgressListeners = new Set<(progress: SyncProgress) => void>();
-
-/**
- * Every caller of syncGoogleWorkspace shares a single in-flight sync instead
- * of each starting its own. Without this, AuthProvider's two independent
- * effects (the connect/auto-sync effect and the daily-summary/reminder
- * refresh effect) both fire a full sync on the same app launch, doubling
- * every Google Calendar API call in the same time window — this is what was
- * tripping Google's "Queries per minute per user" quota. Every caller still
- * gets its own onProgress callback fed from whichever sync is actually
- * running.
- */
-export async function syncGoogleWorkspace(onProgress?: (progress: SyncProgress) => void) {
-  if (onProgress) activeProgressListeners.add(onProgress);
-  if (syncInFlight) {
-    recordDiagnostic('google-sync-coalesced-into-in-flight');
-    try { return await syncInFlight; }
-    finally { if (onProgress) activeProgressListeners.delete(onProgress); }
-  }
-  const broadcast = (progress: SyncProgress) => { activeProgressListeners.forEach((listener) => listener(progress)); };
-  syncInFlight = syncGoogleWorkspaceInternal(broadcast);
-  try {
-    return await syncInFlight;
-  } finally {
-    syncInFlight = null;
-    if (onProgress) activeProgressListeners.delete(onProgress);
-  }
-}
-
-async function syncGoogleWorkspaceInternal(onProgress?: (progress: SyncProgress) => void) {
-  recordDiagnostic('google-sync-started');
-  const totals = { pushed: 0, events: 0, tasks: 0 };
-  const range = currentRange();
-  try {
-    const plan = await invoke({ action: 'sync-start' });
-    const calendars = plan.calendars ?? [];
-    const taskLists = plan.taskLists ?? [];
-    const years = range.years;
-    const baseUnits = 2 + calendars.length * years.length + taskLists.length;
-    let completed = 0;
-    const report = (stage: string, forced?: number) => {
-      const percent = forced ?? Math.min(98, Math.max(1, Math.round((completed / Math.max(1, baseUnits)) * 94) + 3));
-      onProgress?.({ percent, stage });
-      recordDiagnostic('google-sync-progress', { percent, stage });
-    };
-
-    report('Preparazione della sincronizzazione', 3);
-    const pushed = await invoke({ action: 'sync-push' });
-    totals.pushed = pushed.pushed ?? 0;
-    completed += 1;
-    report('Modifiche FlowOS inviate a Google');
-
-    for (const calendar of calendars) {
-      for (const year of years) {
-        let pageToken: string | null = null;
-        do {
-          const page = await invoke({
-            action: 'sync-calendar-page',
-            calendarId: calendar.google_calendar_id,
-            year,
-            pageToken,
-          });
-          totals.events += page.imported ?? 0;
-          pageToken = page.nextPageToken ?? null;
-          report(`Calendario ${calendar.summary}: anno ${year}`);
-        } while (pageToken);
-        completed += 1;
-        report(`Calendario ${calendar.summary}: anno ${year} completato`);
-      }
-    }
-
-    for (const list of taskLists) {
-      let pageToken: string | null = null;
-      do {
-        const page = await invoke({ action: 'sync-task-page', listId: list.google_task_list_id, pageToken });
-        totals.tasks += page.imported ?? 0;
-        pageToken = page.nextPageToken ?? null;
-        report(`Google Tasks: ${list.title}`);
-      } while (pageToken);
-      completed += 1;
-      report(`Google Tasks: ${list.title} completata`);
-    }
-
-    onProgress?.({ percent: 97, stage: 'Finalizzazione della sincronizzazione' });
-    await invoke({ action: 'sync-finish' });
-    onProgress?.({ percent: 100, stage: 'Sincronizzazione completata' });
-    recordDiagnostic('google-sync-succeeded', totals);
-    return { ...totals, range };
-  } catch (error) {
-    const message = errorMessage(error);
-    try { await invoke({ action: 'sync-fail', message }, 0); }
-    catch (markError) { recordDiagnostic('google-sync-server-mark-error-failed', markError, 'error'); }
-    await updateSyncFailure(message);
-    recordDiagnostic('google-sync-failed', { message }, 'error');
-    throw new Error(message);
-  }
-}
-
-export async function disconnectGoogleWorkspace() { return invoke({ action: 'disconnect' }); }
-
-/** startDate/endDate as 'YYYY-MM-DD', or null to reset to the default (current year ± 3). */
-export async function setSyncRange(startDate: string | null, endDate: string | null) {
-  return invoke({ action: 'set-sync-range', startDate, endDate });
-}
-
-/** The connected account's own calendar is usually just named after its email — show a friendlier label instead. */
-export function friendlyCalendarName(name: string, ownEmail?: string | null) {
-  return ownEmail && name.trim().toLowerCase() === ownEmail.trim().toLowerCase() ? 'Alex' : name;
-}
-export async function setDefaultCalendar(id: string) { const { error } = await supabase.rpc('set_default_google_calendar', { p_calendar_id: id }); if (error) throw error; }
-export async function setDefaultTaskList(id: string) { const { error } = await supabase.rpc('set_default_google_task_list', { p_task_list_id: id }); if (error) throw error; }
-export async function setCalendarSelected(id: string, selected: boolean) { const { error } = await supabase.from('google_calendars').update({ selected }).eq('id', id); if (error) throw error; }
-export async function setTaskListSelected(id: string, selected: boolean) { const { error } = await supabase.from('google_task_lists').update({ selected }).eq('id', id); if (error) throw error; }
+export const GOOGLE_SCOPES = ['openid','email','profile','https://www.googleapis.com/auth/calendar.events','https://www.googleapis.com/auth/calendar.calendarlist.readonly','https://www.googleapis.com/auth/tasks'].join(' ');
+export type GoogleSyncRange={startYear:number;endYear:number;labelStart:string;labelEnd:string;years:number[]};
+export type GoogleCalendar={id:string;google_calendar_id:string;summary:string;description?:string|null;background_color?:string|null;foreground_color?:string|null;access_role:string;primary_calendar:boolean;selected:boolean;is_default:boolean};
+export type GoogleTaskList={id:string;google_task_list_id:string;title:string;selected:boolean;is_default:boolean};
+export type GoogleWorkspaceStatus={connection:null|{google_email?:string|null;last_sync_at?:string|null;last_sync_status:'pending'|'syncing'|'ok'|'error'|'disconnected';last_sync_error?:string|null;updated_at?:string|null};calendars:GoogleCalendar[];taskLists:GoogleTaskList[];range:GoogleSyncRange};
+export type SyncProgress={percent:number;stage:string};
+const SUPABASE_URL=process.env.EXPO_PUBLIC_SUPABASE_URL??'';const SUPABASE_KEY=process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY??'';const FUNCTION_URL=`${SUPABASE_URL}/functions/v1/google-workspace`;const REQUEST_TIMEOUT_MS=60_000;
+function currentRange():GoogleSyncRange{const startYear=new Date().getFullYear(),endYear=startYear+1;return{startYear,endYear,labelStart:`01/01/${startYear}`,labelEnd:`31/12/${endYear}`,years:[startYear,endYear]};}
+function errorMessage(error:unknown){return error instanceof Error?error.message:String(error||'Errore sconosciuto');}
+async function updateSyncFailure(message:string){const {data}=await supabase.auth.getUser();if(!data.user)return;const {error}=await supabase.from('google_connections').update({last_sync_status:'error',last_sync_error:message}).eq('user_id',data.user.id);if(error)recordDiagnostic('google-sync-mark-error-failed',error,'error');}
+export async function recoverStaleGoogleSyncState(){const message='La precedente sincronizzazione è stata interrotta prima del completamento.';recordDiagnostic('google-sync-stale-state-recovered',{message},'warn');await updateSyncFailure(message);}
+const STALE_SYNC_THRESHOLD_MS=3*60*1000;
+export function isSyncGenuinelyStale(connection:GoogleWorkspaceStatus['connection'],now:Date=new Date()){if(!connection||connection.last_sync_status!=='syncing')return false;if(!connection.updated_at)return true;return now.getTime()-new Date(connection.updated_at).getTime()>STALE_SYNC_THRESHOLD_MS;}
+async function invoke(body:Record<string,unknown>,retries=1){const {data:sessionData,error:sessionError}=await supabase.auth.getSession();if(sessionError)throw sessionError;const accessToken=sessionData.session?.access_token;if(!accessToken)throw new Error('Sessione FlowOS scaduta. Esci e accedi nuovamente.');let lastError:unknown;for(let attempt=0;attempt<=retries;attempt+=1){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),REQUEST_TIMEOUT_MS);recordDiagnostic('google-function-request-start',{action:body.action,attempt:attempt+1});try{const response=await fetch(FUNCTION_URL,{method:'POST',signal:controller.signal,headers:{Authorization:`Bearer ${accessToken}`,apikey:SUPABASE_KEY,'Content-Type':'application/json','x-client-info':'flowos-google-sync/3.4'},body:JSON.stringify(body)});const raw=await response.text();let payload:any=null;try{payload=raw?JSON.parse(raw):null}catch{payload=raw?{error:raw}:null}recordDiagnostic('google-function-response',{action:body.action,status:response.status,ok:response.ok});if(!response.ok||payload?.error)throw new Error(String(payload?.error||`Google Workspace ha risposto con stato ${response.status}.`));return payload;}catch(error){lastError=error;const namedError=error as{name?:string};const message=namedError?.name==='AbortError'?'La richiesta di sincronizzazione ha superato il tempo massimo consentito.':errorMessage(error);recordDiagnostic('google-function-request-failed',{action:body.action,attempt:attempt+1,message},'error');if(attempt>=retries||!/failed to fetch|network|send a request|timeout|tempo massimo|abort/i.test(message))break;await new Promise(resolve=>setTimeout(resolve,900));}finally{clearTimeout(timeout);}}throw lastError instanceof Error?lastError:new Error(errorMessage(lastError));}
+async function invokeSyncGuard(){const {data,error}=await supabase.functions.invoke('google-sync-guard',{body:{action:'guard'}});if(error)throw error;if(data?.error)throw new Error(String(data.error));recordDiagnostic('google-sync-guard-completed',data??{});return data;}
+export async function signInWithGoogle(){const redirectTo=Platform.OS==='web'&&typeof window!=='undefined'?`${window.location.origin}/today`:'flowos://today';const {data,error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo,scopes:GOOGLE_SCOPES,queryParams:{access_type:'offline',prompt:'consent',include_granted_scopes:'true'}}});if(error)throw error;return data;}
+export async function connectGoogleFromSession(session:Session,force=false){if(!session.provider_token)return null;const marker=`flowos-google-connected-${session.user.id}-${session.provider_token.slice(-12)}`;if(!force&&Platform.OS==='web'&&typeof sessionStorage!=='undefined'&&sessionStorage.getItem(marker))return null;const result=await invoke({action:'connect',providerToken:session.provider_token,providerRefreshToken:session.provider_refresh_token,scopes:GOOGLE_SCOPES,expiresIn:3600});if(Platform.OS==='web'&&typeof sessionStorage!=='undefined')sessionStorage.setItem(marker,'1');return result;}
+export async function getGoogleWorkspaceStatus():Promise<GoogleWorkspaceStatus>{const result=await invoke({action:'status'},0);return{...result,range:currentRange()};}
+export function subscribeToSyncProgress(onProgress:(progress:SyncProgress)=>void){activeProgressListeners.add(onProgress);return()=>{activeProgressListeners.delete(onProgress);};}
+export function isGoogleSyncInFlight(){return syncInFlight!==null;}
+let syncInFlight:Promise<{pushed:number;events:number;tasks:number}>|null=null;const activeProgressListeners=new Set<(progress:SyncProgress)=>void>();
+export async function syncGoogleWorkspace(onProgress?:(progress:SyncProgress)=>void){if(onProgress)activeProgressListeners.add(onProgress);if(syncInFlight){recordDiagnostic('google-sync-coalesced-into-in-flight');try{return await syncInFlight}finally{if(onProgress)activeProgressListeners.delete(onProgress)}}const broadcast=(progress:SyncProgress)=>{activeProgressListeners.forEach(listener=>listener(progress));};syncInFlight=syncGoogleWorkspaceInternal(broadcast);try{return await syncInFlight}finally{syncInFlight=null;if(onProgress)activeProgressListeners.delete(onProgress);}}
+async function syncGoogleWorkspaceInternal(onProgress?:(progress:SyncProgress)=>void){recordDiagnostic('google-sync-started');const totals={pushed:0,events:0,tasks:0};const range=currentRange();try{const plan=await invoke({action:'sync-start'});const calendars=plan.calendars??[],taskLists=plan.taskLists??[],years=range.years,baseUnits=2+calendars.length*years.length+taskLists.length;let completed=0;const report=(stage:string,forced?:number)=>{const percent=forced??Math.min(98,Math.max(1,Math.round((completed/Math.max(1,baseUnits))*94)+3));onProgress?.({percent,stage});recordDiagnostic('google-sync-progress',{percent,stage});};report('Preparazione della sincronizzazione',3);
+    await invokeSyncGuard();
+    const pushed=await invoke({action:'sync-push'});totals.pushed=pushed.pushed??0;completed+=1;report('Modifiche FlowOS inviate a Google');
+    for(const calendar of calendars){for(const year of years){let pageToken:string|null=null;do{const page=await invoke({action:'sync-calendar-page',calendarId:calendar.google_calendar_id,year,pageToken});totals.events+=page.imported??0;pageToken=page.nextPageToken??null;report(`Calendario ${calendar.summary}: anno ${year}`);}while(pageToken);completed+=1;report(`Calendario ${calendar.summary}: anno ${year} completato`);}}
+    for(const list of taskLists){let pageToken:string|null=null;do{const page=await invoke({action:'sync-task-page',listId:list.google_task_list_id,pageToken});totals.tasks+=page.imported??0;pageToken=page.nextPageToken??null;report(`Google Tasks: ${list.title}`);}while(pageToken);completed+=1;report(`Google Tasks: ${list.title} completata`);}
+    onProgress?.({percent:97,stage:'Finalizzazione della sincronizzazione'});await invoke({action:'sync-finish'});onProgress?.({percent:100,stage:'Sincronizzazione completata'});recordDiagnostic('google-sync-succeeded',totals);return{...totals,range};
+  }catch(error){const message=errorMessage(error);try{await invoke({action:'sync-fail',message},0)}catch(markError){recordDiagnostic('google-sync-server-mark-error-failed',markError,'error')}await updateSyncFailure(message);recordDiagnostic('google-sync-failed',{message},'error');throw new Error(message);}}
+export async function disconnectGoogleWorkspace(){return invoke({action:'disconnect'});}
+export async function setSyncRange(startDate:string|null,endDate:string|null){return invoke({action:'set-sync-range',startDate,endDate});}
+export function friendlyCalendarName(name:string,ownEmail?:string|null){return ownEmail&&name.trim().toLowerCase()===ownEmail.trim().toLowerCase()?'Alex':name;}
+export async function setDefaultCalendar(id:string){const{error}=await supabase.rpc('set_default_google_calendar',{p_calendar_id:id});if(error)throw error;}
+export async function setDefaultTaskList(id:string){const{error}=await supabase.rpc('set_default_google_task_list',{p_task_list_id:id});if(error)throw error;}
+export async function setCalendarSelected(id:string,selected:boolean){const{error}=await supabase.from('google_calendars').update({selected}).eq('id',id);if(error)throw error;}
+export async function setTaskListSelected(id:string,selected:boolean){const{error}=await supabase.from('google_task_lists').update({selected}).eq('id',id);if(error)throw error;}
