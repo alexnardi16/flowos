@@ -3,11 +3,12 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, Chip, EmptyState, palette } from '@/components/ui';
+import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';
 import { ManageSheet } from '@/components/ManageSheet';
 import { formatCommitmentTime } from '@/lib/allDayDate';
 import { isContactEvent } from '@/lib/contactEvents';
 import { recordDiagnostic } from '@/lib/diagnostics';
-import { subscribeToSyncProgress } from '@/lib/googleWorkspace';
+import { getGoogleWorkspaceStatus, subscribeToSyncProgress, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
@@ -34,7 +35,10 @@ export default function Today() {
   const [contactsFilter,setContactsFilter]=useState<ContactsFilter>('all');
   const [manageId,setManageId]=useState<string|null>(null);
   const [syncProgress,setSyncProgress]=useState<{percent:number;stage:string}|null>(null);
+  const [google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
+
   useEffect(()=>{
+    void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));
     const unsubscribe=subscribeToSyncProgress(({percent,stage})=>{
       setSyncProgress({percent,stage});
       if(percent>=100)setTimeout(()=>setSyncProgress(null),900);
@@ -51,8 +55,6 @@ export default function Today() {
     .sort((a,b) => { const av=when(a), bv=when(b); if(!av) return 1; if(!bv) return -1; return new Date(av).getTime()-new Date(bv).getTime(); }),
   [open,contactsFilter]);
   const plannedMinutes = todayItems.reduce((sum,item)=>sum+item.durationMinutes,0);
-  // Scoped to today's items only — counting isExpired() over the whole
-  // dataset would include years of historical Google-synced items.
   const overdueCount = todayItems.filter((item) => isExpired(item)).length;
   const manageItem = manageId ? commitments.find((item)=>item.id===manageId) ?? null : null;
 
@@ -76,13 +78,12 @@ export default function Today() {
       return <Card key={item.id} style={[s.itemCard,cardKindStyle(item.kind)]}>
         <View style={s.itemHeader}>
           <View style={{flex:1,gap:6}}>
-            <Chip tone={kindTone(item.kind)}>{kindLabel(item.kind)}</Chip>
+            <View style={s.chips}><Chip tone={kindTone(item.kind)}>{kindLabel(item.kind)}</Chip><CommitmentSourceTag item={item} google={google}/></View>
             <Text style={s.task}>{item.title}</Text>
             <Text style={s.meta}>{timeLabel} · {formatDurationLabel(item)}{expired?' · scaduta':''}</Text>
           </View>
           <Pressable onPress={()=>setManageId(item.id)} style={s.manageButton}><Text style={s.manageButtonText}>Gestisci</Text></Pressable>
         </View>
-        {!item.externalId?<View style={s.flowOnlyTag}><Text style={s.flowOnlyText}>Solo su FlowOS</Text></View>:null}
         {item.location?<Text style={s.meta}>📍 {item.location}</Text>:null}
         {item.description?<Text style={s.description}>{item.description}</Text>:null}
         <View style={s.actions}>
@@ -104,10 +105,8 @@ const s=StyleSheet.create({
   quick:{flexDirection:'row',gap:8,flexWrap:'wrap'},filter:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#ECEEF4'},filterActive:{backgroundColor:palette.primary},filterText:{fontSize:12,fontWeight:'800',color:palette.muted},filterTextActive:{color:'#FFF'},
   syncBar:{height:28,borderRadius:14,backgroundColor:'#ECEEF4',overflow:'hidden',justifyContent:'center'},syncBarFill:{position:'absolute',left:0,top:0,bottom:0,backgroundColor:palette.soft},syncBarText:{fontSize:11,fontWeight:'800',color:palette.primary,textAlign:'center'},
   itemCard:{gap:8},cardEvent:{backgroundColor:'#EEF1FE',borderColor:'#C7D0FB',borderWidth:1},cardTask:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1},cardReminder:{backgroundColor:'#EAFBF3',borderColor:'#B9EAD4',borderWidth:1},
-  itemHeader:{flexDirection:'row',alignItems:'flex-start',gap:8},task:{fontSize:19,lineHeight:24,fontWeight:'900',color:palette.ink},meta:{fontSize:13,lineHeight:18,color:palette.muted},description:{fontSize:14,lineHeight:20,color:palette.ink},
+  itemHeader:{flexDirection:'row',alignItems:'flex-start',gap:8},chips:{flexDirection:'row',gap:7,flexWrap:'wrap'},task:{fontSize:19,lineHeight:24,fontWeight:'900',color:palette.ink},meta:{fontSize:13,lineHeight:18,color:palette.muted},description:{fontSize:14,lineHeight:20,color:palette.ink},
   manageButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:12,paddingVertical:8},manageButtonText:{fontSize:12,fontWeight:'900',color:palette.ink},
-  flowOnlyTag:{alignSelf:'flex-start',backgroundColor:'#FDECEC',borderRadius:99,paddingHorizontal:10,paddingVertical:4},flowOnlyText:{fontSize:11,fontWeight:'900',color:'#A12626'},
-  actions:{flexDirection:'row',gap:6,flexWrap:'nowrap'},
-  secondaryAction:{flex:1,backgroundColor:'#ECEEF4',borderRadius:12,paddingVertical:10,alignItems:'center',justifyContent:'center'},secondaryActionText:{fontSize:12,fontWeight:'900',color:palette.ink,textAlign:'center'},
-  primaryAction:{flex:1,backgroundColor:palette.primary,borderRadius:12,paddingVertical:10,alignItems:'center',justifyContent:'center'},primaryActionText:{fontSize:12,fontWeight:'900',color:'#FFF',textAlign:'center'},
+  actions:{flexDirection:'row',gap:6,flexWrap:'nowrap'},secondaryAction:{flex:1,backgroundColor:'#ECEEF4',borderRadius:12,paddingVertical:10,alignItems:'center',justifyContent:'center'},secondaryActionText:{fontSize:12,fontWeight:'900',color:palette.ink},
+  primaryAction:{flex:1,backgroundColor:palette.primary,borderRadius:12,paddingVertical:10,alignItems:'center',justifyContent:'center'},primaryActionText:{fontSize:12,fontWeight:'900',color:'#FFF'},
 });
