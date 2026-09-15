@@ -8,15 +8,22 @@ import { hasRecoveredToday } from './notificationDedup';
 export { hasRecoveredToday };
 export const NOTIFICATIONS_SUPPORTED_HERE = Platform.OS !== 'web';
 export const DAILY_SUMMARY_CHANNEL = 'flowos-daily-summary';
-export const DAILY_SUMMARY_HOUR = 7;
-export const DAILY_SUMMARY_MINUTE = 30;
+export const DEFAULT_DAILY_SUMMARY_HOUR = 7;
+export const DEFAULT_DAILY_SUMMARY_MINUTE = 30;
+// Kept for compatibility with existing imports. The user-configured daily
+// summary time is now read from storage instead of these fixed values.
+export const DAILY_SUMMARY_HOUR = DEFAULT_DAILY_SUMMARY_HOUR;
+export const DAILY_SUMMARY_MINUTE = DEFAULT_DAILY_SUMMARY_MINUTE;
 export const TOMORROW_SUMMARY_HOUR = 8;
 export const TOMORROW_SUMMARY_MINUTE = 0;
+
+export type DailySummaryTime = { hour: number; minute: number };
 
 const SCHEDULED_ID_KEY = 'flowos:notifications:daily-summary-scheduled-id';
 const TOMORROW_SCHEDULED_ID_KEY = 'flowos:notifications:tomorrow-summary-scheduled-id';
 const LAST_RECOVERY_DATE_KEY = 'flowos:notifications:daily-summary-last-recovery-date';
 const ENABLED_KEY = 'flowos:notifications:daily-summary-enabled';
+const TIME_KEY = 'flowos:notifications:daily-summary-time';
 
 export async function ensureDailySummaryChannel() {
   if (Platform.OS !== 'android') return;
@@ -31,6 +38,24 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 export async function isDailySummaryEnabledStored(): Promise<boolean> { const raw = await AsyncStorage.getItem(ENABLED_KEY); return raw === null ? true : raw === '1'; }
 export async function setDailySummaryEnabledStored(enabled: boolean) { await AsyncStorage.setItem(ENABLED_KEY, enabled ? '1' : '0'); await logNotificationEvent('daily-summary-preference-changed', { enabled }); }
+export async function getDailySummaryTime(): Promise<DailySummaryTime> {
+  const raw = await AsyncStorage.getItem(TIME_KEY);
+  if (!raw) return { hour: DEFAULT_DAILY_SUMMARY_HOUR, minute: DEFAULT_DAILY_SUMMARY_MINUTE };
+  try {
+    const parsed = JSON.parse(raw) as Partial<DailySummaryTime>;
+    if (Number.isInteger(parsed.hour) && Number.isInteger(parsed.minute) && parsed.hour! >= 0 && parsed.hour! <= 23 && parsed.minute! >= 0 && parsed.minute! <= 59) {
+      return { hour: parsed.hour!, minute: parsed.minute! };
+    }
+  } catch {
+    // Fall through to the default.
+  }
+  return { hour: DEFAULT_DAILY_SUMMARY_HOUR, minute: DEFAULT_DAILY_SUMMARY_MINUTE };
+}
+export async function setDailySummaryTime(hour: number, minute: number) {
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23 || !Number.isInteger(minute) || minute < 0 || minute > 59) throw new Error('Orario non valido.');
+  await AsyncStorage.setItem(TIME_KEY, JSON.stringify({ hour, minute }));
+  await logNotificationEvent('daily-summary-time-changed', { hour, minute, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || null });
+}
 export async function getLastRecoveryDateKey(): Promise<string | null> { return AsyncStorage.getItem(LAST_RECOVERY_DATE_KEY); }
 export async function markRecovered(dateKey: string) { await AsyncStorage.setItem(LAST_RECOVERY_DATE_KEY, dateKey); }
 
@@ -50,12 +75,17 @@ export async function scheduleDailySummaryNotification(summary: DailySummary): P
   if (!allowed) { await logNotificationEvent(NOTIFICATIONS_SUPPORTED_HERE ? 'schedule-summary-permission-denied' : 'schedule-summary-skipped-web-unsupported', undefined, NOTIFICATIONS_SUPPORTED_HERE ? 'warn' : 'info'); return null; }
   await ensureDailySummaryChannel();
   await cancelPreviousScheduledSummary();
+  const { hour, minute } = await getDailySummaryTime();
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
   const identifier = await Notifications.scheduleNotificationAsync({
-    content: { title: summary.title, body: summary.body, data: { source: 'daily-summary', dateKey: summary.dateKey } },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.CALENDAR, hour: DAILY_SUMMARY_HOUR, minute: DAILY_SUMMARY_MINUTE, repeats: true, ...(Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null) },
+    content: { title: summary.title, body: summary.body, data: { source: 'daily-summary', dateKey: summary.dateKey, hour, minute, timeZone } },
+    // A calendar trigger uses the device's local calendar/time zone. We store
+    // only the wall-clock time so changing time zones does not leave the
+    // notification pinned to the old UTC offset.
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.CALENDAR, hour, minute, repeats: true, ...(Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null) },
   });
   await AsyncStorage.setItem(SCHEDULED_ID_KEY, identifier);
-  await logNotificationEvent('daily-summary-scheduled', { dateKey: summary.dateKey, identifier });
+  await logNotificationEvent('daily-summary-scheduled', { dateKey: summary.dateKey, identifier, hour, minute, timeZone });
   return identifier;
 }
 
