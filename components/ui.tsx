@@ -1,13 +1,8 @@
 import { PropsWithChildren } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BuildInfo } from './BuildInfo';
 
-/**
- * Alert.alert routinely shows nothing on web (react-native-web's support for
- * it is incomplete depending on setup) — buttons that call it there can
- * look like they "do nothing". Falls back to window.alert/window.confirm on
- * web so feedback is always visible, whatever platform this runs on.
- */
 export function showAlert(title: string, message?: string) {
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined') window.alert(message ? `${title}\n\n${message}` : title);
@@ -16,7 +11,6 @@ export function showAlert(title: string, message?: string) {
   Alert.alert(title, message);
 }
 
-/** Same web-fallback reasoning as showAlert, but for destructive confirm/cancel choices. */
 export function showConfirm(title: string, message: string, confirmLabel = 'Conferma'): Promise<boolean> {
   if (Platform.OS === 'web') {
     if (typeof window === 'undefined') return Promise.resolve(false);
@@ -40,7 +34,10 @@ export function ScreenShell({ title, subtitle, children, scrollProps }: PropsWit
   const contentPaddingBottom = Math.max(118, insets.bottom + 112);
   return <SafeAreaView edges={['top','bottom']} style={styles.screenSafe}>
     <ScrollView {...scrollProps} contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
-      <Text style={styles.screenBrand}>FLOWOS</Text>
+      <View style={styles.screenBrandRow}>
+        <Text style={styles.screenBrand}>FLOWOS</Text>
+        <BuildInfo inline />
+      </View>
       <Text style={styles.screenTitle}>{title}</Text>
       {subtitle ? <Text style={styles.screenSubtitle}>{subtitle}</Text> : null}
       {children}
@@ -78,6 +75,7 @@ export function EmptyState({ title, message, actionLabel, onAction }: {title:str
 const styles=StyleSheet.create({
   screenSafe:{flex:1,backgroundColor:palette.bg},
   screenContent:{paddingHorizontal:20,paddingTop:8,gap:14},
+  screenBrandRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:20},
   screenBrand:{fontSize:15,lineHeight:18,fontWeight:'900',letterSpacing:2.2,color:palette.primary,marginTop:2},
   screenTitle:{fontSize:30,lineHeight:36,fontWeight:'900',color:palette.ink,marginTop:-2},
   screenSubtitle:{fontSize:14,lineHeight:20,color:palette.muted,marginTop:-4},
