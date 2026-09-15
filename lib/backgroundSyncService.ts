@@ -8,10 +8,13 @@ import { runReminderEngine } from './reminderEngine';
 import { runIntelligentReplan } from './replanEngine';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
-import { DAILY_SUMMARY_HOUR, DAILY_SUMMARY_MINUTE, getLastRecoveryDateKey, hasRecoveredToday, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
+import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
-function isPastDailySummaryTime(now: Date): boolean { return now.getHours() > DAILY_SUMMARY_HOUR || (now.getHours() === DAILY_SUMMARY_HOUR && now.getMinutes() >= DAILY_SUMMARY_MINUTE); }
+async function isPastDailySummaryTime(now: Date): Promise<boolean> {
+  const { hour, minute } = await getDailySummaryTime();
+  return now.getHours() > hour || (now.getHours() === hour && now.getMinutes() >= minute);
+}
 async function hasAuthenticatedSession(): Promise<boolean> { if (!isSupabaseConfigured) return false; const { data } = await supabase.auth.getSession(); return Boolean(data.session); }
 async function loadFreshData(now: Date) {
   const loaded = await loadCommitments();
@@ -44,7 +47,7 @@ export async function refreshReminders(now: Date = new Date()) { if (!(await has
 
 export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) {
   if (!(await isDailySummaryEnabledStored())) return;
-  if (!isPastDailySummaryTime(now)) return;
+  if (!(await isPastDailySummaryTime(now))) return;
   if (!(await hasAuthenticatedSession())) return;
   const dateKey = toDateKey(now);
   const lastRecovery = await getLastRecoveryDateKey();
@@ -63,6 +66,10 @@ export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) 
 TaskManager.defineTask(DAILY_SUMMARY_TASK, async () => {
   try {
     const now = new Date();
+    // The OS decides when the background task actually runs. Keep the existing
+    // broad morning window to avoid turning a 15-minute background task into a
+    // continuous Google sync. The actual notification time is scheduled by the
+    // local calendar trigger using the user's configured wall-clock time.
     if (now.getHours() < 5 || now.getHours() > 11) { await logNotificationEvent('background-task-skipped-outside-window', { hour: now.getHours() }); return BackgroundTask.BackgroundTaskResult.Success; }
     await runDailySummaryRefresh(now);
     return BackgroundTask.BackgroundTaskResult.Success;
