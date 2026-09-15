@@ -20,6 +20,6 @@ export function BuildInfo({ inline = false }: { inline?: boolean }) {
 
 const styles = StyleSheet.create({
   container: { alignItems: 'center' },
-  inlineContainer: { alignItems: 'flex-start', marginTop: 12, marginBottom: 4 },
+  inlineContainer: { alignItems: 'flex-end', flexShrink: 1 },
   text: { fontSize: 9, lineHeight: 12, color: '#666', backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
 });
