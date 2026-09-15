@@ -24,7 +24,7 @@
     ],
     "experiments":{"typedRoutes":true},
     "web":{"bundler":"metro","output":"static"},
-    "android":{"package":"com.alexnardi.flowos","versionCode":2,"permissions":["POST_NOTIFICATIONS"]},
+    "android":{"package":"com.alexnardi.flowos","versionCode":2,"permissions":["POST_NOTIFICATIONS","SCHEDULE_EXACT_ALARM"]},
     "ios":{"bundleIdentifier":"com.alexnardi.flowos","buildNumber":"3","infoPlist":{"UIBackgroundModes":["processing"],"BGTaskSchedulerPermittedIdentifiers":["com.expo.modules.backgroundtask.processing"]}
     }
   }
