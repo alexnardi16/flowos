@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, View, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Button, Card, palette, showAlert } from '@/components/ui';
 import { buildDailySummary, DailySummary } from '@/lib/dailySummary';
@@ -7,19 +7,22 @@ import { buildReminderPlan } from '@/lib/reminderPlan';
 import { buildCustomReminders } from '@/lib/customReminders';
 import { checkAndRecoverMissedDailySummary, registerBackgroundSync, runDailySummaryRefresh, unregisterBackgroundSync } from '@/lib/backgroundSyncService';
 import {
-  DAILY_SUMMARY_HOUR,
-  DAILY_SUMMARY_MINUTE,
+  DEFAULT_DAILY_SUMMARY_HOUR,
+  DEFAULT_DAILY_SUMMARY_MINUTE,
   disableDailySummaryNotification,
+  getDailySummaryTime,
   getLastRecoveryDateKey,
   isDailySummaryEnabledStored,
   NOTIFICATIONS_SUPPORTED_HERE,
   sendImmediateSummaryNotification,
   setDailySummaryEnabledStored,
+  setDailySummaryTime,
 } from '@/lib/notificationService';
 import { clearNotificationLog, getNotificationLog, subscribeNotificationLog, type NotificationLogEntry } from '@/lib/notificationLog';
 import { useFlowStore } from '@/lib/store';
 
-const TIME_LABEL = `${String(DAILY_SUMMARY_HOUR).padStart(2, '0')}:${String(DAILY_SUMMARY_MINUTE).padStart(2, '0')}`;
+function timeLabel(hour: number, minute: number) { return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`; }
+function deviceTimeZone() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'fuso orario locale'; } catch { return 'fuso orario locale'; } }
 
 function logLine(entry: NotificationLogEntry) {
   const time = new Date(entry.at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -32,12 +35,18 @@ export default function NotificationsSettings() {
   const [lastRecovery, setLastRecovery] = useState<string | null>(null);
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
+  const [summaryHour, setSummaryHour] = useState(DEFAULT_DAILY_SUMMARY_HOUR);
+  const [summaryMinute, setSummaryMinute] = useState(DEFAULT_DAILY_SUMMARY_MINUTE);
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
+  const [timeSaving, setTimeSaving] = useState(false);
   const commitments = useFlowStore((state) => state.commitments);
   const reminderPlan = buildReminderPlan(commitments, new Date());
   const upcomingReminders = buildCustomReminders(commitments, new Date());
+  const timeZone = useMemo(() => deviceTimeZone(), []);
 
   useEffect(() => {
     void isDailySummaryEnabledStored().then(setEnabled);
+    void getDailySummaryTime().then(({ hour, minute }) => { setSummaryHour(hour); setSummaryMinute(minute); });
     void getLastRecoveryDateKey().then(setLastRecovery);
     const unsubscribe = subscribeNotificationLog(setLogs);
     void getNotificationLog().then(setLogs);
@@ -65,6 +74,20 @@ export default function NotificationsSettings() {
     }
   }
 
+  async function saveSummaryTime() {
+    setTimeSaving(true);
+    try {
+      await setDailySummaryTime(summaryHour, summaryMinute);
+      if (enabled) await runDailySummaryRefresh();
+      setTimePickerOpen(false);
+      showAlert('Riepilogo giornaliero', `Orario impostato alle ${timeLabel(summaryHour, summaryMinute)} (${timeZone}).`);
+    } catch (error) {
+      showAlert('Riepilogo giornaliero', error instanceof Error ? error.message : 'Salvataggio non riuscito.');
+    } finally {
+      setTimeSaving(false);
+    }
+  }
+
   async function sendTest() {
     if (!NOTIFICATIONS_SUPPORTED_HERE) {
       showAlert('Notifiche', "Le notifiche non sono supportate nel browser web. Prova dall'app installata su telefono.");
@@ -84,10 +107,7 @@ export default function NotificationsSettings() {
     }
   }
 
-  function clearLogs() {
-    void clearNotificationLog();
-    showAlert('Notifiche', 'Log ripulito.');
-  }
+  function clearLogs() { void clearNotificationLog(); showAlert('Notifiche', 'Log ripulito.'); }
 
   async function copyLogs() {
     const text = logs.map(logLine).join('\n');
@@ -96,9 +116,7 @@ export default function NotificationsSettings() {
       if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) throw new Error('Clipboard non disponibile');
       await navigator.clipboard.writeText(text);
       showAlert('Notifiche', 'Log copiato negli appunti.');
-    } catch {
-      showAlert('Notifiche', 'Non è stato possibile copiare automaticamente il log.');
-    }
+    } catch { showAlert('Notifiche', 'Non è stato possibile copiare automaticamente il log.'); }
   }
 
   return <SafeAreaView style={styles.safe}>
@@ -109,45 +127,53 @@ export default function NotificationsSettings() {
         <Text style={styles.label}>Riepilogo giornaliero</Text>
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.item}>Ricevi il riepilogo alle {TIME_LABEL}</Text>
-            <Text style={styles.meta}>FlowOS sincronizza Google Calendar e Google Tasks prima di inviarlo. Se il telefono era spento o offline alle {TIME_LABEL}, il riepilogo arriva comunque appena riapri l'app.</Text>
+            <Text style={styles.item}>Ricevi il riepilogo alle {timeLabel(summaryHour, summaryMinute)}</Text>
+            <Text style={styles.meta}>FlowOS sincronizza Google Calendar e Google Tasks prima di inviarlo. Se il telefono era spento o offline all'orario scelto, il riepilogo viene recuperato quando riapri l'app.</Text>
           </View>
           <Switch value={enabled} disabled={busy} onValueChange={(value) => { void toggle(value); }} />
         </View>
+
+        <View style={styles.timeBox}>
+          <View style={styles.timeHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.timeTitle}>Orario di invio</Text>
+              <Text style={styles.meta}>Fuso orario del dispositivo: {timeZone}</Text>
+            </View>
+            <Text style={styles.timeValue}>{timeLabel(summaryHour, summaryMinute)}</Text>
+          </View>
+          <Button secondary label={timePickerOpen ? 'Nascondi orari' : 'Scegli orario'} onPress={() => setTimePickerOpen((value) => !value)} disabled={busy || timeSaving} />
+          {timePickerOpen ? <View style={styles.picker}>
+            <Text style={styles.pickerLabel}>Ora</Text>
+            <View style={styles.optionGrid}>{Array.from({ length: 24 }, (_, hour) => <Pressable key={hour} onPress={() => setSummaryHour(hour)} style={[styles.option, summaryHour === hour && styles.optionActive]}><Text style={[styles.optionText, summaryHour === hour && styles.optionTextActive]}>{String(hour).padStart(2, '0')}</Text></Pressable>)}</View>
+            <Text style={styles.pickerLabel}>Minuti</Text>
+            <View style={styles.minuteRow}>{[0, 15, 30, 45].map((minute) => <Pressable key={minute} onPress={() => setSummaryMinute(minute)} style={[styles.option, summaryMinute === minute && styles.optionActive]}><Text style={[styles.optionText, summaryMinute === minute && styles.optionTextActive]}>{String(minute).padStart(2, '0')}</Text></Pressable>)}</View>
+            <Button label={timeSaving ? 'Salvataggio…' : `Salva ${timeLabel(summaryHour, summaryMinute)}`} onPress={() => { void saveSummaryTime(); }} disabled={timeSaving} />
+          </View> : null}
+        </View>
+
         {lastRecovery ? <Text style={styles.meta}>Ultimo recupero automatico: {lastRecovery}</Text> : null}
         <View style={styles.actions}>
           <Button secondary label="Invia adesso notifiche di prova" onPress={() => { void sendTest(); }} disabled={busy || !enabled} />
         </View>
-        <Text style={styles.note}>
-          Nota tecnica: iOS e Android decidono loro quando eseguire la sincronizzazione in background, per risparmiare batteria.
-          L'orario della notifica è garantito dal sistema operativo; il contenuto riflette l'ultima sincronizzazione riuscita prima di quell'orario.
-        </Text>
+        <Text style={styles.note}>L'orario scelto è un'ora locale, non UTC: se cambi fuso orario, il trigger segue l'ora locale del dispositivo.</Text>
       </Card>
 
       <Card>
         <Text style={styles.label}>Promemoria</Text>
         <Text style={styles.meta}>Un avviso per ogni promemoria configurato su un'attività, più una notifica raggruppata per i task in scadenza e per quelli scaduti. Il badge sull'icona conta {reminderPlan.badgeCount} task da guardare.</Text>
-        <View style={styles.row}>
-          <Text style={styles.item}>{upcomingReminders.length} promemoria in coda</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.item}>{reminderPlan.dueSoon.length} task in scadenza · {reminderPlan.overdue.length} scadute</Text>
-        </View>
+        <View style={styles.row}><Text style={styles.item}>{upcomingReminders.length} promemoria in coda</Text></View>
+        <View style={styles.row}><Text style={styles.item}>{reminderPlan.dueSoon.length} task in scadenza · {reminderPlan.overdue.length} scadute</Text></View>
       </Card>
 
       <Card>
         <Text style={styles.label}>Logger notifiche</Text>
         <Text style={styles.meta}>Registra ogni pianificazione, invio e sincronizzazione legata alle notifiche, su tutte le piattaforme.</Text>
         <View style={styles.logActions}>
-          <Button secondary label={showLogs ? 'Nascondi log' : 'Mostra log'} onPress={() => setShowLogs((value) => !value)} style={{flex:1}} />
-          <Button secondary label="Copia log" onPress={() => { void copyLogs(); }} style={{flex:1}} />
-          <Button secondary label="Pulisci log" onPress={clearLogs} style={{flex:1}} />
+          <Button secondary label={showLogs ? 'Nascondi log' : 'Mostra log'} onPress={() => setShowLogs((value) => !value)} style={{ flex: 1 }} />
+          <Button secondary label="Copia log" onPress={() => { void copyLogs(); }} style={{ flex: 1 }} />
+          <Button secondary label="Pulisci log" onPress={clearLogs} style={{ flex: 1 }} />
         </View>
-        {showLogs ? <View style={styles.logBox}>
-          {logs.length ? logs.map((entry, index) => (
-            <Text key={`${entry.at}-${index}`} selectable style={[styles.logLine, entry.level === 'error' && styles.logError]}>{logLine(entry)}</Text>
-          )) : <Text style={styles.meta}>Nessun evento registrato.</Text>}
-        </View> : null}
+        {showLogs ? <View style={styles.logBox}>{logs.length ? logs.map((entry, index) => <Text key={`${entry.at}-${index}`} selectable style={[styles.logLine, entry.level === 'error' && styles.logError]}>{logLine(entry)}</Text>) : <Text style={styles.meta}>Nessun evento registrato.</Text>}</View> : null}
       </Card>
 
       <Button secondary label="Indietro" onPress={() => router.back()} />
@@ -165,6 +191,18 @@ const styles = StyleSheet.create({
   meta: { fontSize: 13, lineHeight: 18, color: palette.muted, marginTop: 6 },
   note: { fontSize: 12, lineHeight: 17, color: palette.muted, marginTop: 14, fontStyle: 'italic' },
   actions: { flexDirection: 'row', gap: 10, marginTop: 14, flexWrap: 'wrap' },
+  timeBox: { marginTop: 16, padding: 14, borderRadius: 16, backgroundColor: '#F7F5FF', gap: 12 },
+  timeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  timeTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
+  timeValue: { fontSize: 26, fontWeight: '900', color: palette.primary },
+  picker: { gap: 10 },
+  pickerLabel: { fontSize: 12, fontWeight: '900', color: palette.muted, textTransform: 'uppercase' },
+  optionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  minuteRow: { flexDirection: 'row', gap: 8 },
+  option: { minWidth: 48, paddingHorizontal: 10, paddingVertical: 9, borderRadius: 11, backgroundColor: '#ECEEF4', alignItems: 'center' },
+  optionActive: { backgroundColor: palette.primary },
+  optionText: { fontSize: 13, fontWeight: '800', color: palette.muted },
+  optionTextActive: { color: '#FFF' },
   logActions: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'nowrap' },
   logBox: { marginTop: 14, padding: 12, borderRadius: 14, backgroundColor: '#111827', gap: 6 },
   logLine: { fontSize: 10, lineHeight: 14, color: '#D1D5DB', fontFamily: 'monospace' },
