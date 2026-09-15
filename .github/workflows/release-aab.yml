@@ -23,10 +23,11 @@ permissions:
 
 env:
   EAS_NO_VCS: '1'
+  EAS_LOCAL_BUILD_SKIP_CLEANUP: '1'
 
 jobs:
   build-aab:
-    name: Build production AAB
+    name: Build production AAB locally
     runs-on: ubuntu-latest
     steps:
       - name: Determine release tag and source ref
@@ -77,6 +78,12 @@ jobs:
         with:
           node-version: 22.13
 
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Regenerate npm lockfile from package.json
         shell: bash
         run: |
@@ -121,29 +128,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Production EAS environment is managed persistently in EAS; no env:create mutation is performed during every build."
-          echo "The Expo project must already contain EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY and EXPO_PUBLIC_AI_MODE in the production environment."
+          echo "Production EAS environment is managed persistently in EAS."
+          echo "The Expo project must contain EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY and EXPO_PUBLIC_AI_MODE in the production environment."
 
-      - name: Build production AAB
+      - name: Build production AAB locally
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform android --profile production --non-interactive --wait --json > eas-build.json
-
-      - name: Download AAB
         shell: bash
         run: |
           set -euo pipefail
-          BUILD_ID=$(jq -r 'if type == "array" then .[0].id else .id end' eas-build.json)
-          ARTIFACT_URL=$(jq -r 'if type == "array" then .[0].artifacts.applicationArchiveUrl else .artifacts.applicationArchiveUrl end' eas-build.json)
-          test -n "$BUILD_ID" && test "$BUILD_ID" != "null"
-          test -n "$ARTIFACT_URL" && test "$ARTIFACT_URL" != "null"
-          echo "EAS build: $BUILD_ID"
-          echo "Downloading application archive directly from EAS artifact URL"
-          curl --fail --location --retry 3 --retry-delay 2 --output "${{ steps.release.outputs.aab_name }}" "$ARTIFACT_URL"
-          test -s "${{ steps.release.outputs.aab_name }}"
-          file "${{ steps.release.outputs.aab_name }}"
-          if ! unzip -t "${{ steps.release.outputs.aab_name }}" >/dev/null 2>&1; then
-            echo "Downloaded artifact is not a valid ZIP/AAB archive"
+          AAB_PATH="${{ steps.release.outputs.aab_name }}"
+          echo "Starting local EAS production build: $AAB_PATH"
+          echo "This build runs on the GitHub Actions runner and does not consume the EAS cloud Android build quota."
+          eas build --platform android --profile production --local --non-interactive --freeze-credentials --output "$AAB_PATH"
+          test -s "$AAB_PATH"
+          file "$AAB_PATH"
+          if ! unzip -t "$AAB_PATH" >/dev/null 2>&1; then
+            echo "Local EAS build output is not a valid AAB/ZIP archive"
             exit 1
           fi
 
