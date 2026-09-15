@@ -1,57 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { TodayWidget, type AndroidTodayWidgetProps } from './widgets/android/TodayWidget';
+import { CalendarWidget, type AndroidCalendarWidgetProps } from './widgets/android/CalendarWidget';
 
-const STORAGE_KEY = 'flowos-store-v2';
+const STORAGE_KEY='flowos-store-v2';
+const MONTHS=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function dateKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
+function kindLabel(kind:string){return kind==='event'?'Evento':kind==='task'?'Task':'Reminder';}
+function readCommitments(raw:string|null){try{const parsed=raw?JSON.parse(raw):null;return Array.isArray(parsed?.state?.commitments)?parsed.state.commitments:[];}catch{return[];}}
+function todayData(raw:string|null):AndroidTodayWidgetProps{const commitments=readCommitments(raw),now=new Date();const items=commitments.filter((item:any)=>item&&item.status!=='done'&&!item.deletedAt).map((item:any)=>({item,date:item.scheduledAt??item.dueAt})).filter(({item,date}:any)=>{if(!date)return false;const d=new Date(date);return item.allDay?d.getUTCFullYear()===now.getFullYear()&&d.getUTCMonth()===now.getMonth()&&d.getUTCDate()===now.getDate():dateKey(d)===dateKey(now);}).sort((a:any,b:any)=>new Date(a.date).getTime()-new Date(b.date).getTime()).map(({item,date}:any)=>({id:item.id,title:item.title,time:item.allDay?'Tutto il giorno':new Date(date).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),kind:kindLabel(item.kind)}));const overdueCount=commitments.filter((item:any)=>item&&item.status!=='done'&&!item.deletedAt&&item.dueAt&&new Date(item.dueAt).getTime()<now.getTime()).length;return{items,overdueCount};}
+function calendarData(raw:string|null):AndroidCalendarWidgetProps{const commitments=readCommitments(raw).filter((item:any)=>item&&item.status!=='done'&&!item.deletedAt),now=new Date();const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());monday.setDate(monday.getDate()-((monday.getDay()+6)%7));const weeks=[];for(let w=0;w<4;w++){const start=new Date(monday);start.setDate(monday.getDate()+w*7);const end=new Date(start);end.setDate(start.getDate()+6);const title=`${MONTHS[start.getMonth()]} ${start.getFullYear()}${start.getMonth()!==end.getMonth()||start.getFullYear()!==end.getFullYear()?` - ${MONTHS[end.getMonth()]} ${end.getFullYear()}`:''}`;const days=[];for(let i=0;i<7;i++){const day=new Date(start);day.setDate(start.getDate()+i);const key=dateKey(day);const items=commitments.filter((item:any)=>{const value=item.scheduledAt??item.dueAt;if(!value)return false;const d=new Date(value);const itemKey=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dateKey(d);return itemKey===key;}).sort((a:any,b:any)=>new Date(a.scheduledAt??a.dueAt).getTime()-new Date(b.scheduledAt??b.dueAt).getTime()).map((item:any)=>({id:item.id,title:item.title,time:item.allDay?'Tutto il giorno':new Date(item.scheduledAt??item.dueAt).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),kind:kindLabel(item.kind)}));days.push({label:`${['Lun','Mar','Mer','Gio','Ven','Sab','Dom'][i]} ${day.getDate()}`,items});}weeks.push({title,days});}return{weeks};}
 
-function dateKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function todayItems(raw: string | null): AndroidTodayWidgetProps {
-  try {
-    const parsed = raw ? JSON.parse(raw) : null;
-    const commitments = Array.isArray(parsed?.state?.commitments) ? parsed.state.commitments : [];
-    const now = new Date();
-    const items = commitments
-      .filter((item: any) => item && item.status !== 'done' && !item.deletedAt)
-      .map((item: any) => ({ item, date: item.scheduledAt ?? item.dueAt }))
-      .filter(({ item, date }: any) => {
-        if (!date) return false;
-        const d = new Date(date);
-        return item.allDay
-          ? d.getUTCFullYear() === now.getFullYear() && d.getUTCMonth() === now.getMonth() && d.getUTCDate() === now.getDate()
-          : dateKey(d) === dateKey(now);
-      })
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map(({ item, date }: any) => ({
-        id: item.id,
-        title: item.title,
-        time: item.allDay ? 'Tutto il giorno' : new Date(date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-        kind: item.kind === 'event' ? 'Evento' : item.kind === 'task' ? 'Task' : 'Reminder',
-      }));
-    const overdueCount = commitments.filter((item: any) => item && item.status !== 'done' && item.dueAt && new Date(item.dueAt).getTime() < now.getTime()).length;
-    return { items, overdueCount };
-  } catch {
-    return { items: [], overdueCount: 0 };
-  }
-}
-
-export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
-  if (props.widgetInfo.widgetName !== 'TodayAndroidWidget') return;
-  const data = todayItems(await AsyncStorage.getItem(STORAGE_KEY));
-  switch (props.widgetAction) {
-    case 'WIDGET_ADDED':
-    case 'WIDGET_UPDATE':
-    case 'WIDGET_RESIZED':
-      props.renderWidget(<TodayWidget {...data} />);
-      break;
-    case 'WIDGET_CLICK':
-      // ✓ and Apri use OPEN_URI/OPEN_APP, so Android performs the navigation
-      // without requiring the JS process to stay alive.
-      props.renderWidget(<TodayWidget {...data} />);
-      break;
-    default:
-      break;
-  }
-}
+export async function widgetTaskHandler(props:WidgetTaskHandlerProps){const raw=await AsyncStorage.getItem(STORAGE_KEY);if(props.widgetInfo.widgetName==='TodayAndroidWidget'){const data=todayData(raw);switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data}/>);break;default:break;}}else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){const data=calendarData(raw);switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget {...data}/>);break;default:break;}}}
