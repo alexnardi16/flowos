@@ -14,14 +14,10 @@ create table if not exists public.sync_conflicts (
   created_at timestamptz not null default now(),
   resolved_at timestamptz
 );
-
 create index if not exists sync_conflicts_user_status_idx on public.sync_conflicts(user_id,status,created_at desc);
-create unique index if not exists sync_conflicts_open_identity_idx
-  on public.sync_conflicts(user_id, commitment_id, external_id, conflict_type)
-  where status='open';
-
+create unique index if not exists sync_conflicts_open_identity_idx on public.sync_conflicts(user_id,commitment_id,external_id,conflict_type) where status='open';
 alter table public.sync_conflicts enable row level security;
-
 drop policy if exists "sync conflicts own rows" on public.sync_conflicts;
-create policy "sync conflicts own rows" on public.sync_conflicts
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "sync conflicts own rows" on public.sync_conflicts for all using (auth.uid()=user_id) with check (auth.uid()=user_id);
+alter table public.commitments drop constraint if exists commitments_sync_status_check;
+alter table public.commitments add constraint commitments_sync_status_check check (sync_status = any (array['pending'::text,'syncing'::text,'synced'::text,'error'::text,'local_only'::text,'conflict'::text]));
