@@ -7,169 +7,24 @@ import { logNotificationEvent } from './notificationLog';
 import { materializeNextOccurrence } from './recurrence';
 import { createAutomaticPlan } from './scheduler';
 import { showSnackbar } from './snackbar';
+import { syncTodayWidget } from './widgetSync';
 
-/** Fire-and-forget: never let a push failure block the UI action that triggered it (Controlla already surfaces sync errors on the next full sync). */
-function pushGoogleSafely() {
-  void pushPendingToGoogle().catch((error) => { void logNotificationEvent('auto-push-failed', error, 'warn'); });
-}
+function pushGoogleSafely(){void pushPendingToGoogle().catch(error=>{void logNotificationEvent('auto-push-failed',error,'warn');});}
+function refreshWidget(commitments:Commitment[]){void syncTodayWidget(commitments).catch(()=>undefined);}
 
-type State = {
-  commitments: Commitment[];
-  focusId?: string;
-  syncing: boolean;
-  addCommitment: (commitment: Commitment) => Promise<void>;
-  hydrateFromCloud: () => Promise<void>;
-  complete: (id: string) => Promise<void>;
-  postpone: (id: string) => Promise<void>;
-  updateCommitment: (commitment: Commitment) => Promise<void>;
-  removeOnlyFromFlowOS: (id: string) => Promise<void>;
-  removeAlsoFromGoogle: (id: string) => Promise<void>;
-  removeSeriesFromGoogle: (id: string) => Promise<void>;
-  syncItemToGoogleNow: () => Promise<void>;
-  autoPlan: () => Promise<void>;
-  startFocus: (id: string) => void;
-  stopFocus: () => void;
-};
+type State={commitments:Commitment[];focusId?:string;syncing:boolean;addCommitment:(commitment:Commitment)=>Promise<void>;hydrateFromCloud:()=>Promise<void>;complete:(id:string)=>Promise<void>;postpone:(id:string)=>Promise<void>;updateCommitment:(commitment:Commitment)=>Promise<void>;removeOnlyFromFlowOS:(id:string)=>Promise<void>;removeAlsoFromGoogle:(id:string)=>Promise<void>;removeSeriesFromGoogle:(id:string)=>Promise<void>;syncItemToGoogleNow:()=>Promise<void>;autoPlan:()=>Promise<void>;startFocus:(id:string)=>void;stopFocus:()=>void;};
 
-export const useFlowStore = create<State>()(persist((set, get) => ({
-  commitments: [],
-  syncing: false,
-
-  addCommitment: async (commitment) => {
-    set((state) => ({ commitments: [commitment, ...state.commitments] }));
-    await saveCommitment(commitment);
-  },
-
-  hydrateFromCloud: async () => {
-    set({ syncing: true });
-    try {
-      await flushOfflineQueue();
-      const remote = await loadCommitments();
-      set({ commitments: remote });
-    } finally {
-      set({ syncing: false });
-    }
-  },
-
-  complete: async (id) => {
-    const item = get().commitments.find((commitment) => commitment.id === id);
-    if (!item) return;
-    const updated: Commitment = { ...item, status: 'done' };
-    const next = materializeNextOccurrence(updated);
-    set((state) => ({
-      commitments: next
-        ? [next, ...state.commitments.map((commitment) => commitment.id === id ? updated : commitment)]
-        : state.commitments.map((commitment) => commitment.id === id ? updated : commitment),
-    }));
-    await saveCommitment(updated);
-    if (next) await saveCommitment(next);
-    pushGoogleSafely();
-
-    showSnackbar('Attività completata', 'Annulla', () => {
-      void (async () => {
-        set((state) => ({
-          commitments: next
-            ? state.commitments.filter((c) => c.id !== next.id).map((c) => c.id === id ? item : c)
-            : state.commitments.map((c) => c.id === id ? item : c),
-        }));
-        await saveCommitment(item);
-        if (next) await removeCommitmentOnlyFromFlowOS(next.id);
-        pushGoogleSafely();
-      })();
-    });
-  },
-
-  postpone: async (id) => {
-    const item = get().commitments.find((commitment) => commitment.id === id);
-    if (!item) return;
-    const base = item.scheduledAt ?? item.dueAt ?? new Date().toISOString();
-    const nextDay = new Date(new Date(base).getTime() + 86400000).toISOString();
-    const updated: Commitment = {
-      ...item,
-      status: item.kind === 'event' ? 'scheduled' : item.status,
-      scheduledAt: item.scheduledAt ? nextDay : undefined,
-      dueAt: item.dueAt ? nextDay : undefined,
-    };
-    set((state) => ({ commitments: state.commitments.map((commitment) => commitment.id === id ? updated : commitment) }));
-    await saveCommitment(updated);
-    pushGoogleSafely();
-
-    showSnackbar('Attività rimandata di 1 giorno', 'Annulla', () => {
-      void (async () => {
-        set((state) => ({ commitments: state.commitments.map((c) => c.id === id ? item : c) }));
-        await saveCommitment(item);
-        pushGoogleSafely();
-      })();
-    });
-  },
-
-  updateCommitment: async (updated) => {
-    const previous = get().commitments.find((item) => item.id === updated.id);
-    set((state) => ({ commitments: state.commitments.map((item) => item.id === updated.id ? updated : item) }));
-    await saveCommitment(updated);
-    pushGoogleSafely();
-
-    if (previous) {
-      showSnackbar('Modifiche salvate', 'Annulla', () => {
-        void (async () => {
-          set((state) => ({ commitments: state.commitments.map((c) => c.id === updated.id ? previous : c) }));
-          await saveCommitment(previous);
-          pushGoogleSafely();
-        })();
-      });
-    }
-  },
-
-  removeOnlyFromFlowOS: async (id) => {
-    const item = get().commitments.find((commitment) => commitment.id === id);
-    await removeCommitmentOnlyFromFlowOS(id);
-    set((state) => ({ commitments: state.commitments.filter((commitment) => commitment.id !== id) }));
-
-    if (item) {
-      showSnackbar('Attività eliminata da FlowOS', 'Annulla', () => {
-        void (async () => {
-          set((state) => ({ commitments: [item, ...state.commitments] }));
-          await saveCommitment({ ...item, deletedAt: undefined });
-        })();
-      });
-    }
-  },
-
-  removeAlsoFromGoogle: async (id) => {
-    const item = get().commitments.find((commitment) => commitment.id === id);
-    if (!item) return;
-    await deleteCommitmentAlsoFromGoogle(item);
-    set((state) => ({ commitments: state.commitments.filter((commitment) => commitment.id !== id) }));
-    // No "Annulla" here: this also deletes the item on Google, and safely
-    // recreating it there (a genuine new event/task, new external id) isn't
-    // something a simple undo can do — showing an undo button that can't
-    // really undo the Google-side part would be misleading.
-    showSnackbar('Eliminata da FlowOS e da Google');
-  },
-
-  removeSeriesFromGoogle: async (id) => {
-    const item = get().commitments.find((commitment) => commitment.id === id);
-    if (!item) return;
-    await deleteRecurringSeries(item);
-    const seriesId = item.googleRecurringEventId;
-    set((state) => ({ commitments: state.commitments.filter((commitment) => commitment.googleRecurringEventId !== seriesId) }));
-  },
-
-  /** Manual "Sincronizza con Google" — unlike pushGoogleSafely, errors are surfaced to the caller since this is a deliberate user action. */
-  syncItemToGoogleNow: async () => {
-    await pushPendingToGoogle();
-  },
-
-  autoPlan: async () => {
-    const planned = createAutomaticPlan(get().commitments);
-    set({ commitments: planned });
-    await Promise.all(planned.map((commitment) => saveCommitment(commitment)));
-  },
-
-  startFocus: (id) => set({ focusId: id }),
-  stopFocus: () => set({ focusId: undefined }),
-}), {
-  name: 'flowos-store-v2',
-  storage: createJSONStorage(() => AsyncStorage),
-  partialize: (state) => ({ commitments: state.commitments, focusId: state.focusId }),
-}));
+export const useFlowStore=create<State>()(persist((set,get)=>({
+  commitments:[],syncing:false,
+  addCommitment:async commitment=>{set(state=>({commitments:[commitment,...state.commitments]}));await saveCommitment(commitment);refreshWidget(get().commitments);},
+  hydrateFromCloud:async()=>{set({syncing:true});try{await flushOfflineQueue();const remote=await loadCommitments();set({commitments:remote});refreshWidget(remote);}finally{set({syncing:false});}},
+  complete:async id=>{const item=get().commitments.find(c=>c.id===id);if(!item)return;const updated={...item,status:'done' as const};const next=materializeNextOccurrence(updated);const nextCommitments=next?[next,...get().commitments.map(c=>c.id===id?updated:c)]:get().commitments.map(c=>c.id===id?updated:c);set({commitments:nextCommitments});await saveCommitment(updated);if(next)await saveCommitment(next);pushGoogleSafely();refreshWidget(nextCommitments);showSnackbar('Attività completata','Annulla',()=>{void(async()=>{const restored=next?get().commitments.filter(c=>c.id!==next.id).map(c=>c.id===id?item:c):get().commitments.map(c=>c.id===id?item:c);set({commitments:restored});await saveCommitment(item);if(next)await removeCommitmentOnlyFromFlowOS(next.id);pushGoogleSafely();refreshWidget(restored);})();});},
+  postpone:async id=>{const item=get().commitments.find(c=>c.id===id);if(!item)return;const base=item.scheduledAt??item.dueAt??new Date().toISOString();const nextDay=new Date(new Date(base).getTime()+86400000).toISOString();const updated={...item,status:item.kind==='event'?'scheduled':item.status,scheduledAt:item.scheduledAt?nextDay:undefined,dueAt:item.dueAt?nextDay:undefined} as Commitment;const nextCommitments=get().commitments.map(c=>c.id===id?updated:c);set({commitments:nextCommitments});await saveCommitment(updated);pushGoogleSafely();refreshWidget(nextCommitments);showSnackbar('Attività rimandata di 1 giorno','Annulla',()=>{void(async()=>{const restored=get().commitments.map(c=>c.id===id?item:c);set({commitments:restored});await saveCommitment(item);pushGoogleSafely();refreshWidget(restored);})();});},
+  updateCommitment:async updated=>{const previous=get().commitments.find(item=>item.id===updated.id);const nextCommitments=get().commitments.map(item=>item.id===updated.id?updated:item);set({commitments:nextCommitments});await saveCommitment(updated);pushGoogleSafely();refreshWidget(nextCommitments);if(previous)showSnackbar('Modifiche salvate','Annulla',()=>{void(async()=>{const restored=get().commitments.map(c=>c.id===updated.id?previous:c);set({commitments:restored});await saveCommitment(previous);pushGoogleSafely();refreshWidget(restored);})();});},
+  removeOnlyFromFlowOS:async id=>{const item=get().commitments.find(c=>c.id===id);await removeCommitmentOnlyFromFlowOS(id);const next=get().commitments.filter(c=>c.id!==id);set({commitments:next});refreshWidget(next);if(item)showSnackbar('Attività eliminata da FlowOS','Annulla',()=>{void(async()=>{const restored=[item,...get().commitments];set({commitments:restored});await saveCommitment({...item,deletedAt:undefined});refreshWidget(restored);})();});},
+  removeAlsoFromGoogle:async id=>{const item=get().commitments.find(c=>c.id===id);if(!item)return;await deleteCommitmentAlsoFromGoogle(item);const next=get().commitments.filter(c=>c.id!==id);set({commitments:next});refreshWidget(next);showSnackbar('Eliminata da FlowOS e da Google');},
+  removeSeriesFromGoogle:async id=>{const item=get().commitments.find(c=>c.id===id);if(!item)return;await deleteRecurringSeries(item.id);const seriesId=item.googleRecurringEventId;const next=get().commitments.filter(c=>c.googleRecurringEventId!==seriesId);set({commitments:next});refreshWidget(next);},
+  syncItemToGoogleNow:async()=>{await pushPendingToGoogle();refreshWidget(get().commitments);},
+  autoPlan:async()=>{const planned=createAutomaticPlan(get().commitments);set({commitments:planned});await Promise.all(planned.map(saveCommitment));refreshWidget(planned);},
+  startFocus:id=>set({focusId:id}),stopFocus:()=>set({focusId:undefined}),
+}),{name:'flowos-store-v2',storage:createJSONStorage(()=>AsyncStorage),partialize:state=>({commitments:state.commitments,focusId:state.focusId})}));
