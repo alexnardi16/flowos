@@ -5,37 +5,9 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { AppChrome } from '@/components/AppChrome';
 import { palette } from '@/components/ui';
 import { recordDiagnostic, subscribeDiagnostics } from '@/lib/diagnostics';
+import { supabase } from '@/lib/supabase';
 import { useFlowStore } from '@/lib/store';
 import { useAuth } from '@/providers/AuthProvider';
-
-function isTodayItem(value: string | undefined, allDay?: boolean) {
-  if (!value) return false;
-  const date = new Date(value), now = new Date();
-  if (allDay) return date.getUTCFullYear()===now.getFullYear() && date.getUTCMonth()===now.getMonth() && date.getUTCDate()===now.getDate();
-  return date.getFullYear()===now.getFullYear() && date.getMonth()===now.getMonth() && date.getDate()===now.getDate();
-}
-
-export default function TabsLayout() {
-  const { configured, loading, session } = useAuth();
-  const commitments = useFlowStore((state) => state.commitments);
-  const [errorCount, setErrorCount] = useState(0);
-  useEffect(() => subscribeDiagnostics((entries) => setErrorCount(entries.filter((entry) => entry.level === 'error').length)), []);
-  const todayCount = useMemo(() => commitments.filter((item) => item.status !== 'done' && isTodayItem(item.scheduledAt ?? item.dueAt, item.allDay)).length, [commitments]);
-  const actionCount = useMemo(() => commitments.filter((item) => item.status !== 'done' && item.confidence < 0.85).length, [commitments]);
-  useEffect(() => { recordDiagnostic('tabs-layout-state', { configured, loading, hasSession: Boolean(session), userId: session?.user.id ?? null }); }, [configured, loading, session]);
-  if (loading) return <View style={styles.loading}><ActivityIndicator /></View>;
-  if (configured && !session) { recordDiagnostic('tabs-layout-redirect-login'); return <Redirect href="/login" />; }
-  return <View style={styles.root}>
-    <Tabs initialRouteName="today" screenOptions={{ headerShown:false, tabBarActiveTintColor:palette.primary, tabBarStyle:{height:92,paddingBottom:22,paddingTop:8,borderTopWidth:0,elevation:10}, tabBarLabelStyle:{fontWeight:'700',fontSize:11} }}>
-      <Tabs.Screen name="today" options={{title:'Oggi',tabBarBadge:todayCount>0?todayCount:undefined,tabBarIcon:({color,size})=><Ionicons name="sparkles" color={color} size={size}/>}}/>
-      <Tabs.Screen name="plan" options={{title:'Lista',tabBarIcon:({color,size})=><Ionicons name="calendar" color={color} size={size}/>}}/>
-      <Tabs.Screen name="calendar" options={{title:'Calendario',tabBarIcon:({color,size})=><Ionicons name="calendar-outline" color={color} size={size}/>}}/>
-      <Tabs.Screen name="capture" options={{title:'Aggiungi',tabBarIcon:({color,size})=><Ionicons name="add-circle" color={color} size={size+10}/>}}/>
-      <Tabs.Screen name="inbox" options={{title:'Controlla',tabBarBadge:actionCount>0?actionCount:undefined,tabBarIcon:({color,size})=><Ionicons name="layers" color={color} size={size}/>}}/>
-      <Tabs.Screen name="me" options={{title:'Impostazioni',tabBarBadge:errorCount>0?errorCount:undefined,tabBarIcon:({color,size})=><Ionicons name="person" color={color} size={size}/>}}/>
-    </Tabs>
-    <AppChrome />
-  </View>;
-}
-
+function isTodayItem(value:string|undefined,allDay?:boolean){if(!value)return false;const date=new Date(value),now=new Date();if(allDay)return date.getUTCFullYear()===now.getFullYear()&&date.getUTCMonth()===now.getMonth()&&date.getUTCDate()===now.getDate();return date.getFullYear()===now.getFullYear()&&date.getMonth()===now.getMonth()&&date.getDate()===now.getDate();}
+export default function TabsLayout(){const{configured,loading,session}=useAuth();const commitments=useFlowStore(state=>state.commitments);const[errorCount,setErrorCount]=useState(0);const[conflictCount,setConflictCount]=useState(0);useEffect(()=>subscribeDiagnostics(entries=>setErrorCount(entries.filter(entry=>entry.level==='error').length)),[]);useEffect(()=>{let active=true;const load=async()=>{const{count}=await supabase.from('sync_conflicts').select('id',{count:'exact',head:true}).eq('status','open');if(active)setConflictCount(count??0)};void load();const channel=supabase.channel('flowos-tab-conflicts').on('postgres_changes',{event:'*',schema:'public',table:'sync_conflicts'},()=>{void load();}).subscribe();return()=>{active=false;void supabase.removeChannel(channel);};},[]);const todayCount=useMemo(()=>commitments.filter(item=>item.status!=='done'&&isTodayItem(item.scheduledAt??item.dueAt,item.allDay)).length,[commitments]);const actionCount=useMemo(()=>commitments.filter(item=>item.status!=='done'&&item.confidence<0.85).length+conflictCount,[commitments,conflictCount]);useEffect(()=>{recordDiagnostic('tabs-layout-state',{configured,loading,hasSession:Boolean(session),userId:session?.user.id??null});},[configured,loading,session]);if(loading)return <View style={styles.loading}><ActivityIndicator/></View>;if(configured&&!session){recordDiagnostic('tabs-layout-redirect-login');return <Redirect href="/login"/>;}return <View style={styles.root}><Tabs initialRouteName="today" screenOptions={{headerShown:false,tabBarActiveTintColor:palette.primary,tabBarStyle:{height:92,paddingBottom:22,paddingTop:8,borderTopWidth:0,elevation:10},tabBarLabelStyle:{fontWeight:'700',fontSize:11}}}><Tabs.Screen name="today" options={{title:'Oggi',tabBarBadge:todayCount>0?todayCount:undefined,tabBarIcon:({color,size})=><Ionicons name="sparkles" color={color} size={size}/>}}/><Tabs.Screen name="plan" options={{title:'Lista',tabBarIcon:({color,size})=><Ionicons name="calendar" color={color} size={size}/>}}/><Tabs.Screen name="calendar" options={{title:'Calendario',tabBarIcon:({color,size})=><Ionicons name="calendar-outline" color={color} size={size}/>}}/><Tabs.Screen name="capture" options={{title:'Aggiungi',tabBarIcon:({color,size})=><Ionicons name="add-circle" color={color} size={size+10}/>}}/><Tabs.Screen name="inbox" options={{title:'Controlla',tabBarBadge:actionCount>0?actionCount:undefined,tabBarIcon:({color,size})=><Ionicons name="layers" color={color} size={size}/>}}/><Tabs.Screen name="me" options={{title:'Impostazioni',tabBarBadge:errorCount>0?errorCount:undefined,tabBarIcon:({color,size})=><Ionicons name="person" color={color} size={size}/>}}/></Tabs><AppChrome/></View>}
 const styles=StyleSheet.create({root:{flex:1},loading:{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:palette.bg}});
