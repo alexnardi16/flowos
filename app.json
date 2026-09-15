@@ -19,12 +19,12 @@
       ["expo-notifications", {"defaultChannel":"flowos-reminders"}],
       "expo-task-manager",
       "expo-background-task",
-      ["expo-widgets", {"widgets":[{"name":"TodayWidget","displayName":"FlowOS Oggi","description":"Prossimo evento e task in scadenza/scadute.","supportedFamilies":["systemSmall","systemMedium"]}] }],
-      ["react-native-android-widget", {"widgets":[{"name":"TodayAndroidWidget","label":"FlowOS Oggi","description":"Le prossime attività di oggi con azioni rapide.","minWidth":"320dp","minHeight":"180dp","targetCellWidth":4,"targetCellHeight":3,"resizeMode":"horizontal|vertical","updatePeriodMillis":1800000}]}]
+      ["expo-widgets", {"widgets":[{"name":"TodayWidget","displayName":"FlowOS Oggi","description":"Tutte le attività previste per oggi.","supportedFamilies":["systemSmall","systemMedium"]}] }],
+      ["react-native-android-widget", {"widgets":[{"name":"TodayAndroidWidget","label":"FlowOS Oggi","description":"Tutte le attività di oggi.","minWidth":"320dp","minHeight":"180dp","targetCellWidth":4,"targetCellHeight":3,"resizeMode":"horizontal|vertical","updatePeriodMillis":1800000},{"name":"CalendarAndroidWidget","label":"FlowOS Calendario","description":"Agenda FlowOS per le prossime settimane.","minWidth":"320dp","minHeight":"260dp","targetCellWidth":4,"targetCellHeight":5,"resizeMode":"horizontal|vertical","updatePeriodMillis":1800000}]}]
     ],
     "experiments":{"typedRoutes":true},
     "web":{"bundler":"metro","output":"static"},
-    "android":{"package":"com.alexnardi.flowos","versionCode":1,"permissions":["POST_NOTIFICATIONS"]},
+    "android":{"package":"com.alexnardi.flowos","versionCode":2,"permissions":["POST_NOTIFICATIONS"]},
     "ios":{"bundleIdentifier":"com.alexnardi.flowos","buildNumber":"3","infoPlist":{"UIBackgroundModes":["processing"],"BGTaskSchedulerPermittedIdentifiers":["com.expo.modules.backgroundtask.processing"]}
     }
   }
