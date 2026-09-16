@@ -2,22 +2,24 @@ import React from 'react';
 import { FlexWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 export type AndroidCalendarDay = { label: string; items: { id: string; title: string; time: string; kind: string }[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
-export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[] };
-function compact(text:string,max=18){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
-export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
-  const visibleWeeks=weeks.slice(0,2);
-  return <FlexWidget style={{ width:'match_parent',height:'match_parent',padding:12,backgroundColor:'#F1F4FF',borderRadius:22,flexDirection:'column' }} clickAction="OPEN_APP" accessibilityLabel="FlowOS: calendario">
-    <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingBottom:6 }}><TextWidget text="Calendario" style={{ fontSize:20,fontWeight:'bold',color:'#172033' }}/><TextWidget text="2 settimane" style={{ fontSize:10,fontWeight:'bold',color:'#4254C5' }}/></FlexWidget>
-    <ListWidget style={{ width:'match_parent',height:'match_parent',backgroundColor:'#F1F4FF' }}>
-      {visibleWeeks.map(week=><FlexWidget key={week.title} style={{ width:'match_parent',flexDirection:'column',marginVertical:3 }}>
-        <TextWidget text={week.title} style={{ fontSize:11,fontWeight:'bold',color:'#4254C5',marginBottom:4 }}/>
+export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; heightDp?: number };
+const BG='#F1F4FF'; const INK='#172033'; const MUTED='#697386'; const PRIMARY='#4254C5';
+function compact(text:string,max=15){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
+function visibleWeeks(heightDp=260){return Math.max(1,Math.min(6,Math.floor((heightDp-38)/74)));}
+export function CalendarWidget({ weeks, heightDp }: AndroidCalendarWidgetProps) {
+  const visibleWeeks=weeks.slice(0,visibleWeeks(heightDp));
+  return <FlexWidget style={{ width:'match_parent',height:'match_parent',padding:10,backgroundColor:BG,borderRadius:20,flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://calendar' }} accessibilityLabel="FlowOS: calendario">
+    <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingBottom:5 }}><TextWidget text="Calendario" style={{ fontSize:19,fontWeight:'bold',color:INK }}/><FlexWidget style={{ height:26,paddingHorizontal:9,borderRadius:13,backgroundColor:PRIMARY,justifyContent:'center',alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}><TextWidget text="Aggiungi" style={{ fontSize:10,fontWeight:'bold',color:'#FFFFFF' }}/></FlexWidget></FlexWidget>
+    <ListWidget style={{ width:'match_parent',height:'match_parent',backgroundColor:BG }}>
+      {visibleWeeks.map(week=><FlexWidget key={week.title} style={{ width:'match_parent',flexDirection:'column',marginVertical:2 }}>
+        <TextWidget text={week.title} style={{ fontSize:10,fontWeight:'bold',color:PRIMARY,marginBottom:3 }}/>
         <FlexWidget style={{ width:'match_parent',flexDirection:'row' }}>
-          {week.days.map((day,index)=><FlexWidget key={`${week.title}-${day.label}`} style={{ flex:1,height:72,marginHorizontal:index===0?0:2,padding:4,borderRadius:10,backgroundColor:index===0?'#E8ECFF':'#FFFFFF' }}>
-            <TextWidget text={day.label.split(' ')[0]} style={{ fontSize:9,fontWeight:'bold',color:'#697386' }}/>
-            <TextWidget text={day.label.split(' ').slice(1).join(' ')} style={{ fontSize:10,fontWeight:'bold',color:'#172033' }}/>
-            {day.items.slice(0,2).map(item=><TextWidget key={item.id} text={`${item.time} ${compact(item.title)}`} style={{ fontSize:8,color:'#4254C5',marginTop:3 }}/>) }
-            {!day.items.length?<TextWidget text="·" style={{ fontSize:11,color:'#B8BFCC',marginTop:4 }}/>:null}
-            {day.items.length>2?<TextWidget text={`+${day.items.length-2}`} style={{ fontSize:8,fontWeight:'bold',color:'#697386',marginTop:2 }}/>:null}
+          {week.days.slice(0,7).map((day,index)=><FlexWidget key={`${week.title}-${day.label}`} style={{ flex:1,height:68,marginHorizontal:index===0?0:1,padding:3,borderRadius:8,backgroundColor:index===0?'#E8ECFF':'#FFFFFF' }}>
+            <TextWidget text={day.label.split(' ')[0]} style={{ fontSize:8,fontWeight:'bold',color:MUTED }}/>
+            <TextWidget text={day.label.split(' ')[1]??''} style={{ fontSize:10,fontWeight:'bold',color:INK }}/>
+            {day.items.slice(0,2).map(item=><TextWidget key={item.id} text={`${item.time} ${compact(item.title)}`} style={{ fontSize:7,color:PRIMARY,marginTop:2 }}/>) }
+            {!day.items.length?<TextWidget text="·" style={{ fontSize:9,color:'#B8BFCC',marginTop:3 }}/>:null}
+            {day.items.length>2?<TextWidget text={`+${day.items.length-2}`} style={{ fontSize:7,fontWeight:'bold',color:MUTED,marginTop:1 }}/>:null}
           </FlexWidget>)}
         </FlexWidget>
       </FlexWidget>)}
