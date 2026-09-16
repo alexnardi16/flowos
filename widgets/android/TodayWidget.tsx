@@ -2,25 +2,25 @@ import React from 'react';
 import { FlexWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
 export type AndroidWidgetItem = { id: string; title: string; time: string; kind: string };
-export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; overdueCount: number };
+export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; heightDp?: number };
+const BG = '#F1F4FF'; const INK = '#172033'; const MUTED = '#697386'; const PRIMARY = '#4254C5';
 const uri=(action:string,id:string)=>`flowos://today?widgetAction=${action}&id=${encodeURIComponent(id)}`;
-export function TodayWidget({ items }: AndroidTodayWidgetProps) {
-  const visible = items.slice(0, 4);
-  return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:14, backgroundColor:'#F1F4FF', borderRadius:22, flexDirection:'column' }} clickAction="OPEN_APP" accessibilityLabel="FlowOS: attività di oggi">
-    <FlexWidget style={{ width:'match_parent', flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingBottom:6 }}>
-      <FlexWidget style={{ flexDirection:'row', alignItems:'center' }}><TextWidget text="Oggi" style={{ fontSize:20, fontWeight:'bold', color:'#172033' }}/><TextWidget text="  ·  FlowOS" style={{ fontSize:11, fontWeight:'bold', color:'#5B6475' }}/></FlexWidget>
-      <TextWidget text="Piano del giorno" style={{ fontSize:10, fontWeight:'bold', color:'#4254C5' }}/>
+function visibleCount(heightDp = 180) { if (heightDp < 190) return 2; if (heightDp < 260) return 3; if (heightDp < 340) return 4; if (heightDp < 430) return 6; return 8; }
+function compact(text:string,max=34){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
+export function TodayWidget({ items, heightDp }: AndroidTodayWidgetProps) {
+  const visible = items.slice(0, visibleCount(heightDp));
+  return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel="FlowOS: attività di oggi">
+    <FlexWidget style={{ width:'match_parent', flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingBottom:5 }}>
+      <TextWidget text="Oggi" style={{ fontSize:19, fontWeight:'bold', color:INK }}/>
+      <FlexWidget style={{ height:26, paddingHorizontal:9, borderRadius:13, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}><TextWidget text="Aggiungi" style={{ fontSize:10, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
     </FlexWidget>
-    <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:'#F1F4FF' }}>
-      {visible.length ? visible.map((item)=><FlexWidget key={item.id} style={{ width:'match_parent', height:74, marginVertical:4, padding:9, borderRadius:16, backgroundColor:item.kind==='Evento'?'#E8ECFF':item.kind==='Task'?'#FFF2D9':'#E6F8EF', flexDirection:'column' }}>
-        <FlexWidget style={{ width:'match_parent', flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
-          <FlexWidget style={{ flex:1, flexDirection:'column' }}><TextWidget text={item.title} style={{ fontSize:13, fontWeight:'bold', color:'#172033' }}/><TextWidget text={`${item.time} · ${item.kind}`} style={{ fontSize:10, color:'#697386' }}/></FlexWidget>
-        </FlexWidget>
-        <FlexWidget style={{ width:'match_parent', flexDirection:'row', marginTop:6 }}>
-          <FlexWidget style={{ flex:1, height:30, marginRight:5, borderRadius:9, justifyContent:'center', alignItems:'center', backgroundColor:'#E7E9F0' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('postpone',item.id) }}><TextWidget text="Rimanda di 1 giorno" style={{ fontSize:9, fontWeight:'bold', color:'#172033' }}/></FlexWidget>
-          <FlexWidget style={{ flex:1, height:30, borderRadius:9, justifyContent:'center', alignItems:'center', backgroundColor:'#4254C5' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('complete',item.id) }}><TextWidget text="Completa" style={{ fontSize:10, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
-        </FlexWidget>
-      </FlexWidget>) : <FlexWidget style={{ width:'match_parent', height:70, justifyContent:'center', alignItems:'center' }}><TextWidget text="Nessuna attività in programma" style={{ fontSize:13, color:'#697386' }}/></FlexWidget>}
+    <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:BG }}>
+      {visible.length ? visible.map((item)=><FlexWidget key={item.id} style={{ width:'match_parent', height:54, marginVertical:2, paddingHorizontal:8, paddingVertical:5, borderRadius:12, backgroundColor:'#FFFFFF', flexDirection:'row', alignItems:'center' }}>
+        <FlexWidget style={{ width:5, height:34, marginRight:7, borderRadius:3, backgroundColor:item.kind==='Evento'?'#6C7BE8':item.kind==='Task'?'#E5A73B':'#45B887' }}/>
+        <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}><TextWidget text={compact(item.title)} style={{ fontSize:12, fontWeight:'bold', color:INK }}/><TextWidget text={`${item.time} · ${item.kind}`} style={{ fontSize:9, color:MUTED }}/></FlexWidget>
+        <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:'#ECEEF4', justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('postpone',item.id) }}><TextWidget text="+1" style={{ fontSize:9, fontWeight:'bold', color:INK }}/></FlexWidget>
+        <FlexWidget style={{ width:28, height:28, marginLeft:4, borderRadius:9, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('complete',item.id) }}><TextWidget text="✓" style={{ fontSize:11, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
+      </FlexWidget>) : <FlexWidget style={{ width:'match_parent', height:50, justifyContent:'center', alignItems:'center' }}><TextWidget text="Nessuna attività oggi" style={{ fontSize:12, color:MUTED }}/></FlexWidget>}
     </ListWidget>
   </FlexWidget>;
 }
