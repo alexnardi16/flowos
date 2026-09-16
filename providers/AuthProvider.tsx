@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
 import { beginDiagnosticSession, clearDiagnostics, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
-import { connectGoogleFromSession, syncGoogleWorkspace } from '../lib/googleWorkspace';
+import { connectGoogleFromSession, getGoogleWorkspaceStatus, syncGoogleWorkspace } from '../lib/googleWorkspace';
 import { checkAndRecoverMissedDailySummary, refreshReminders, registerBackgroundSync } from '../lib/backgroundSyncService';
 import { clearNotificationLog } from '../lib/notificationLog';
 import { useFlowStore } from '../lib/store';
@@ -99,6 +99,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await connectGoogleFromSession(session, true);
           recordDiagnostic('google-workspace-connection-refreshed', { userId: session.user.id });
         }
+
+        const status = await getGoogleWorkspaceStatus();
+        const connection = status.connection;
+        recordDiagnostic('google-auto-sync-connection-status', {
+          connected: Boolean(connection),
+          lastSyncStatus: connection?.last_sync_status ?? 'none',
+        });
+
+        if (!connection || connection.last_sync_status === 'disconnected') {
+          recordDiagnostic('google-auto-sync-skipped-not-connected');
+          if (active) await hydrateFromCloud();
+          return;
+        }
+
         await syncGoogleWorkspace((progress) => recordDiagnostic('google-auto-sync-progress', progress));
         if (active) await hydrateFromCloud();
         recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
