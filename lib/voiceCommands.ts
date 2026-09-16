@@ -45,7 +45,7 @@ export function parseVoiceCommand(transcript: string): VoiceCommand | null {
   if (match) return { type: 'complete', query: match[1].trim() };
   match = lower.match(/^(?:rimanda|posticipa)\s+(?:l['’]?)?(?:attivita|task|evento)?\s*(.+)$/);
   if (match) return { type: 'postpone', query: match[1].trim() };
-  match = lower.match(/^(?:rinomina|cambia il nome di)\s+(.+?)\s+(?:in|a)\s+(.+)$/);
+  match = lower.match(/^(?:rinomina|cambia il nome di|modifica)\s+(.+?)\s+(?:in|a)\s+(.+)$/);
   if (match) return { type: 'rename', query: match[1].trim(), title: match[2].trim() };
   match = lower.match(/^(?:sposta|metti)\s+(.+?)\s+(?:a|per)\s+(.+)$/);
   if (match) {
