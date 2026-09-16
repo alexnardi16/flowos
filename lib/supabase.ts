@@ -21,8 +21,13 @@ export const supabase = createClient(url ?? 'https://placeholder.supabase.co', k
     ...(Platform.OS !== 'web' ? { storage: nativeStorage } : {}),
     autoRefreshToken: true,
     persistSession: true,
-    // Google OAuth returns the authenticated session in the browser URL.
-    // It must be detected on web or the user is sent back to the login screen.
+    // Native OAuth uses the authorization-code + PKCE flow. This is important
+    // for Android deep links because the callback returns a `code` query
+    // parameter instead of relying on a URL fragment that can be lost when the
+    // browser hands control back to the native app.
+    flowType: 'pkce',
+    // The native callback is handled explicitly by app/_layout.tsx. On web,
+    // Supabase can process the callback URL itself.
     detectSessionInUrl: Platform.OS === 'web',
   },
 });
