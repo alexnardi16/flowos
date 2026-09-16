@@ -8,25 +8,23 @@ La codebase è in fase di preparazione alla prima release Android **1.0.0**.
 
 ### Funzioni attualmente implementate
 
-- Home “Adesso” con suggerimento prioritario
+- Home “Oggi” con attività previste nella giornata
 - Commitment unificati: task, eventi e reminder
-- Inserimento in linguaggio naturale
-- Piano giornaliero con elementi fissi e blocchi IA
-- Inbox delle ambiguità
+- Inserimento in linguaggio naturale tramite regole deterministiche locali
+- Lista e calendario
+- Inbox dei conflitti di sincronizzazione
 - Focus mode
 - Riepilogo giornaliero automatico alle 07:30
 - Sincronizzazione Google Calendar e Google Tasks
 - Completamento e rinvio
-- Confidence score
-- Controllo assistito
-- Autenticazione Supabase
-- Persistenza PostgreSQL con Row Level Security
 - Notifiche e reminder locali
 - Background tasks
-- Widget Android
+- Widget Android Oggi e Calendario, responsive alla dimensione
 - Meteo basato sulla posizione, solo quando autorizzato
 - Eliminazione definitiva dell'account e dei dati associati
 - Privacy policy e pagina pubblica di eliminazione account
+
+FlowOS **non utilizza modelli di intelligenza artificiale**: interpretazione del linguaggio naturale e logica di pianificazione sono deterministiche e locali.
 
 ## Stack
 
@@ -58,6 +56,8 @@ npx expo export --platform web
 Il profilo EAS `production` genera un **Android App Bundle (AAB)** ed usa credenziali remote e auto-incremento del `versionCode`. Il workflow GitHub Actions dedicato alla release costruisce l'AAB quando viene pubblicato un tag/release di versione.
 
 Prima della pubblicazione su Google Play devono essere completati anche i controlli esterni al repository: test del binario su dispositivo Android, configurazione/verifica Google OAuth, Play Console Data Safety e store listing, privacy policy pubblicamente raggiungibile e, quando applicabile, closed testing richiesto da Google Play.
+
+Le release note devono descrivere FlowOS come app di organizzazione personale e sincronizzazione, senza riferimenti a IA, modelli o suggerimenti generati da IA. Una bozza per la 1.0.0 è in `docs/release-notes-1.0.0.md`.
 
 ## Privacy e account deletion
 
