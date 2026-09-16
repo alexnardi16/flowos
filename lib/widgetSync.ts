@@ -38,7 +38,6 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
         renderWidget: () =>
           React.createElement(TodayWidget, {
             items,
-            overdueCount: glance.overdueCount,
           }),
       });
 
