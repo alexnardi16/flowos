@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Application from 'expo-application';
 
 export type DiagnosticLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -100,7 +101,10 @@ export function endDiagnosticSession() {
 }
 
 export function formatDiagnostics(): string {
-  return readDiagnostics()
-    .map((entry) => `${entry.at} [${entry.level}] ${entry.event}${entry.details ? ` — ${entry.details}` : ''}`)
-    .join('\n');
+  const version = Application.nativeApplicationVersion ?? 'unknown';
+  const build = Application.nativeBuildVersion ?? 'unknown';
+  const header = `FlowOS ${version} · versionCode ${build}`;
+  const lines = readDiagnostics()
+    .map((entry) => `${entry.at} [${entry.level}] ${entry.event}${entry.details ? ` — ${entry.details}` : ''}`);
+  return [header, ...lines].join('\n');
 }
