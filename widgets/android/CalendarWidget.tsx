@@ -5,9 +5,9 @@ export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
 export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; heightDp?: number };
 const BG='#F1F4FF'; const INK='#172033'; const MUTED='#697386'; const PRIMARY='#4254C5';
 function compact(text:string,max=15){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
-function visibleWeeks(heightDp=260){return Math.max(1,Math.min(6,Math.floor((heightDp-38)/74)));}
+function weekCount(heightDp=260){return Math.max(1,Math.min(6,Math.floor((heightDp-38)/74)));}
 export function CalendarWidget({ weeks, heightDp }: AndroidCalendarWidgetProps) {
-  const visibleWeeks=weeks.slice(0,visibleWeeks(heightDp));
+  const visibleWeeks=weeks.slice(0,weekCount(heightDp));
   return <FlexWidget style={{ width:'match_parent',height:'match_parent',padding:10,backgroundColor:BG,borderRadius:20,flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://calendar' }} accessibilityLabel="FlowOS: calendario">
     <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingBottom:5 }}><TextWidget text="Calendario" style={{ fontSize:19,fontWeight:'bold',color:INK }}/><FlexWidget style={{ height:26,paddingHorizontal:9,borderRadius:13,backgroundColor:PRIMARY,justifyContent:'center',alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}><TextWidget text="Aggiungi" style={{ fontSize:10,fontWeight:'bold',color:'#FFFFFF' }}/></FlexWidget></FlexWidget>
     <ListWidget style={{ width:'match_parent',height:'match_parent',backgroundColor:BG }}>
