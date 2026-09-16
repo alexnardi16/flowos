@@ -12,7 +12,7 @@ export function TodayWidget({ items }: AndroidTodayWidgetProps) {
       <TextWidget text="Piano del giorno" style={{ fontSize:10, fontWeight:'bold', color:'#4254C5' }}/>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:'#F1F4FF' }}>
-      {visible.length ? visible.map((item)=><FlexWidget key={item.id} style={{ width:'match_parent', minHeight:74, marginVertical:4, padding:9, borderRadius:16, backgroundColor:item.kind==='Evento'?'#E8ECFF':item.kind==='Task'?'#FFF2D9':'#E6F8EF', flexDirection:'column' }}>
+      {visible.length ? visible.map((item)=><FlexWidget key={item.id} style={{ width:'match_parent', height:74, marginVertical:4, padding:9, borderRadius:16, backgroundColor:item.kind==='Evento'?'#E8ECFF':item.kind==='Task'?'#FFF2D9':'#E6F8EF', flexDirection:'column' }}>
         <FlexWidget style={{ width:'match_parent', flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           <FlexWidget style={{ flex:1, flexDirection:'column' }}><TextWidget text={item.title} style={{ fontSize:13, fontWeight:'bold', color:'#172033' }}/><TextWidget text={`${item.time} · ${item.kind}`} style={{ fontSize:10, color:'#697386' }}/></FlexWidget>
         </FlexWidget>
