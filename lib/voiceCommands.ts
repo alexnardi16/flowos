@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import * as IntentLauncher from 'expo-intent-launcher';
 import { recordDiagnostic } from './diagnostics';
 
 export type VoiceCommand =
@@ -38,7 +37,6 @@ export function parseVoiceCommand(transcript: string): VoiceCommand | null {
   const raw = transcript.trim();
   const lower = normalize(raw);
   if (!raw) return null;
-
   let match = lower.match(/^(?:elimina|cancella|rimuovi)\s+(?:l['’]?)?(?:attivita|evento|task|reminder)?\s*(.+)$/);
   if (match) return { type: 'delete', query: match[1].trim() };
   match = lower.match(/^(?:completa|termina|fatto|segna come completata?)\s+(?:l['’]?)?(?:attivita|task)?\s*(.+)$/);
@@ -48,55 +46,40 @@ export function parseVoiceCommand(transcript: string): VoiceCommand | null {
   match = lower.match(/^(?:rinomina|cambia il nome di|modifica)\s+(.+?)\s+(?:in|a)\s+(.+)$/);
   if (match) return { type: 'rename', query: match[1].trim(), title: match[2].trim() };
   match = lower.match(/^(?:sposta|metti)\s+(.+?)\s+(?:a|per)\s+(.+)$/);
-  if (match) {
-    const when = extractWhen(match[2]);
-    if (when) return { type: 'move', query: match[1].trim(), when };
-  }
-
+  if (match) { const when = extractWhen(match[2]); if (when) return { type: 'move', query: match[1].trim(), when }; }
   const addMatch = raw.match(/^(?:aggiungi|crea|inserisci|registra|devo)\s+(.+)$/i);
   if (addMatch) {
     const originalTitle = addMatch[1].trim();
     const when = extractWhen(originalTitle);
-    const title = removeWhen(originalTitle)
-      .replace(/\b(?:come|tipo)\s+(?:evento|appuntamento|task|attivita|reminder)\b/gi, '')
-      .trim();
+    const title = removeWhen(originalTitle).replace(/\b(?:come|tipo)\s+(?:evento|appuntamento|task|attivita|reminder)\b/gi, '').trim();
     const normalizedTitle = normalize(originalTitle);
-    const kind = /\b(?:evento|appuntamento|meeting|riunione|calendar)\b/.test(normalizedTitle) ? 'event'
-      : /\b(?:reminder|promemoria|ricordami)\b/.test(normalizedTitle) ? 'reminder'
-      : 'task';
+    const kind = /\b(?:evento|appuntamento|meeting|riunione|calendar)\b/.test(normalizedTitle) ? 'event' : /\b(?:reminder|promemoria|ricordami)\b/.test(normalizedTitle) ? 'reminder' : 'task';
     return { type: 'add', title: title || originalTitle, kind, when };
   }
   return null;
 }
 
 export async function listenForVoiceCommand(locale = 'it-IT'): Promise<string | null> {
-  if (Platform.OS !== 'android') {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) throw new Error('Il riconoscimento vocale non è disponibile su questo dispositivo.');
-      const recognition = new SpeechRecognition();
-      recognition.lang = locale;
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-      return await new Promise<string | null>((resolve, reject) => {
-        recognition.onresult = (event: any) => resolve(event.results?.[0]?.[0]?.transcript ?? null);
-        recognition.onerror = (event: any) => reject(new Error(`Riconoscimento vocale non riuscito: ${event?.error ?? 'errore sconosciuto'}.`));
-        recognition.onend = () => resolve(null);
-        recognition.start();
-      });
-    }
-    throw new Error('Il microfono dei comandi vocali è disponibile nell’app Android.');
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined') return null;
+    const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) throw new Error('Il riconoscimento vocale non è disponibile su questo dispositivo.');
+    const recognition = new SpeechRecognition();
+    recognition.lang = locale;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    return await new Promise<string | null>((resolve, reject) => {
+      let settled = false;
+      recognition.onresult = (event: any) => { if (!settled) { settled = true; resolve(event.results?.[0]?.[0]?.transcript ?? null); } };
+      recognition.onerror = (event: any) => { if (!settled) { settled = true; reject(new Error(`Riconoscimento vocale non riuscito: ${event?.error ?? 'errore sconosciuto'}.`)); } };
+      recognition.onend = () => { if (!settled) { settled = true; resolve(null); } };
+      recognition.start();
+    });
   }
-
+  if (Platform.OS !== 'android') throw new Error('Il microfono dei comandi vocali è disponibile nell’app Android.');
+  const IntentLauncher = await import('expo-intent-launcher');
   recordDiagnostic('voice-command-started', { locale });
-  const result = await IntentLauncher.startActivityAsync('android.speech.action.RECOGNIZE_SPEECH', {
-    extra: {
-      'android.speech.extra.LANGUAGE_MODEL': 'free_form',
-      'android.speech.extra.LANGUAGE': locale,
-      'android.speech.extra.MAX_RESULTS': 3,
-      'android.speech.extra.PROMPT': 'Cosa vuoi fare con FlowOS?',
-    },
-  });
+  const result = await IntentLauncher.startActivityAsync('android.speech.action.RECOGNIZE_SPEECH', { extra: { 'android.speech.extra.LANGUAGE_MODEL': 'free_form', 'android.speech.extra.LANGUAGE': locale, 'android.speech.extra.MAX_RESULTS': 3, 'android.speech.extra.PROMPT': 'Cosa vuoi fare con FlowOS?' } });
   const values = result.extra?.['android.speech.extra.RESULTS'];
   const transcript = Array.isArray(values) ? String(values[0] ?? '') : null;
   recordDiagnostic('voice-command-finished', { resultCode: result.resultCode, hasTranscript: Boolean(transcript) });
