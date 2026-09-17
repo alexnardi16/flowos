@@ -85,7 +85,7 @@ const styles=StyleSheet.create({
   chipText:{fontSize:11,fontWeight:'800',letterSpacing:.35},chipText_primary:{color:palette.primary},chipText_success:{color:palette.success},chipText_warning:{color:palette.warning},chipText_neutral:{color:palette.muted},
   button:{backgroundColor:palette.primary,borderRadius:15,paddingVertical:13,paddingHorizontal:17,alignItems:'center',justifyContent:'center',minWidth:96,minHeight:46},
   secondary:{backgroundColor:palette.soft},danger:{backgroundColor:palette.danger},disabled:{opacity:.5},pressed:{transform:[{scale:.985}]},
-  buttonText:{color:'#fff',fontWeight:'800',fontSize:15},secondaryText:{color:palette.primary},
+  buttonText:{color:'#fff',fontWeight:'800',fontSize:15,textAlign:'center'},secondaryText:{color:palette.primary,textAlign:'center'},
   sectionHeader:{gap:3,marginTop:8},sectionTitle:{fontSize:19,fontWeight:'900',color:palette.ink},sectionSubtitle:{fontSize:13,lineHeight:18,color:palette.muted},
   emptyCard:{gap:12},emptyTitle:{fontSize:20,fontWeight:'900',color:palette.ink},emptyMessage:{fontSize:14,lineHeight:20,color:palette.muted},
 });
