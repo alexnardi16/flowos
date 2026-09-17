@@ -1,0 +1,29 @@
+name: Temporary Typecheck Diagnostic
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.13
+      - run: npm install --no-audit --no-fund
+      - name: Run typecheck and save output
+        run: |
+          set +e
+          npm run typecheck > typecheck-error.txt 2>&1
+          status=$?
+          echo "EXIT_CODE=$status" >> typecheck-error.txt
+          exit 0
+      - name: Commit diagnostic output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add typecheck-error.txt
+          git commit -m "Add temporary typecheck diagnostic output" || exit 0
+          git push
