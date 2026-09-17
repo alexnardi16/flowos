@@ -12,7 +12,7 @@ export function TodayWidget({ items, heightDp }: AndroidTodayWidgetProps) {
   return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel="FlowOS: attività di oggi">
     <FlexWidget style={{ width:'match_parent', flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingBottom:5 }}>
       <TextWidget text="Oggi" style={{ fontSize:19, fontWeight:'bold', color:INK }}/>
-      <FlexWidget style={{ flexDirection:'row', alignItems:'center', gap:5 }}>
+      <FlexWidget style={{ flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:30, height:26, borderRadius:13, backgroundColor:'#DDE2FF', justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel="Comando vocale"><TextWidget text="🎙" style={{ fontSize:14 }}/></FlexWidget>
         <FlexWidget style={{ height:26, paddingHorizontal:9, borderRadius:13, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}><TextWidget text="Aggiungi" style={{ fontSize:10, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
       </FlexWidget>

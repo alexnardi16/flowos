@@ -80,7 +80,7 @@ export async function listenForVoiceCommand(locale = 'it-IT'): Promise<string | 
   const IntentLauncher = await import('expo-intent-launcher');
   recordDiagnostic('voice-command-started', { locale });
   const result = await IntentLauncher.startActivityAsync('android.speech.action.RECOGNIZE_SPEECH', { extra: { 'android.speech.extra.LANGUAGE_MODEL': 'free_form', 'android.speech.extra.LANGUAGE': locale, 'android.speech.extra.MAX_RESULTS': 3, 'android.speech.extra.PROMPT': 'Cosa vuoi fare con FlowOS?' } });
-  const values = result.extra?.['android.speech.extra.RESULTS'];
+  const values = (result.extra as Record<string, unknown> | undefined)?.['android.speech.extra.RESULTS'];
   const transcript = Array.isArray(values) ? String(values[0] ?? '') : null;
   recordDiagnostic('voice-command-finished', { resultCode: result.resultCode, hasTranscript: Boolean(transcript) });
   return transcript || null;

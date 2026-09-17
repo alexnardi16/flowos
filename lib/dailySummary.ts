@@ -52,6 +52,6 @@ export function buildDailySummary(commitments: Commitment[], now: Date = new Dat
     bodyParts.push(`Il primo è ${firstLabel}.`);
   }
   if (overdue.length) bodyParts.push(`${overdue.length} in ritardo da recuperare.`);
-  if (!scheduledToday.length && !overdue.length) bodyParts.push(isTomorrow ? 'Mattina libera: nessun impegno pianificato.' : 'Giornata libera: nessun impegno pianificato.');
+  if (!scheduledToday.length && !overdue.length) bodyParts.push(isTomorrow ? 'Mattina libera.' : 'Giornata libera.');
   return { dateKey, title, body: bodyParts.join(' '), scheduledCount: scheduledToday.length, overdueCount: overdue.length, items };
 }
