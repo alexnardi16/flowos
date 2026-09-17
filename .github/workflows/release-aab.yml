@@ -160,6 +160,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           TAG="${{ steps.release.outputs.tag }}"
           echo "Removing existing .aab assets from release $TAG"
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[] | select(.name | endswith(".aab")) | .name' | while IFS= read -r ASSET; do
@@ -170,9 +171,23 @@ jobs:
           done
 
       - name: Attach definitive AAB to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.release.outputs.tag }}
-          files: ${{ steps.release.outputs.aab_name }}
-          fail_on_unmatched_files: true
-          overwrite_files: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.release.outputs.tag }}"
+          AAB="${{ steps.release.outputs.aab_name }}"
+          for attempt in 1 2 3 4 5; do
+            echo "Uploading $AAB to GitHub Release $TAG (attempt $attempt/5)"
+            if gh release upload "$TAG" "$AAB" --repo "$GITHUB_REPOSITORY" --clobber; then
+              echo "Release asset upload succeeded"
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "Release asset upload failed; retrying in 15 seconds..."
+              sleep 15
+            fi
+          done
+          echo "Unable to upload the AAB to GitHub Release after 5 attempts"
+          exit 1
