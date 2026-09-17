@@ -15,7 +15,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
       {weeks.map(week=>{const height=Math.max(...week.days.map(dayHeight));return <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width:'match_parent',flexDirection:'column',marginVertical:2 }}>
         {week.title?<TextWidget text={week.title} style={{ fontSize:10,fontWeight:'bold',color:PRIMARY,marginBottom:3 }}/>:null}
         <FlexWidget style={{ width:'match_parent',flexDirection:'row' }}>
-          {week.days.slice(0,7).map(day=><FlexWidget key={day.dateKey} style={{ flex:1,height,marginHorizontal:1,padding:3,borderRadius:8,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column',minWidth:0,alignSelf:'stretch' }}>
+          {week.days.slice(0,7).map(day=><FlexWidget key={day.dateKey} style={{ flex:1,height,marginHorizontal:1,padding:3,borderRadius:8,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column',alignSelf:'stretch' }}>
             <TextWidget text={day.label} style={{ fontSize:8,fontWeight:'bold',color:day.isToday?PRIMARY:MUTED }}/>
             {day.items.map(item=><TextWidget key={item.id} text={`${item.time ? `${item.time} ` : ''}${item.title}`} style={{ fontSize:8,color:INK,marginTop:2 }}/>) }
             {!day.items.length?<TextWidget text="·" style={{ fontSize:9,color:'#B8BFCC',marginTop:3 }}/>:null}
