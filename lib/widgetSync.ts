@@ -20,6 +20,9 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
       const { requestWidgetUpdate } = await import('react-native-android-widget');
       const { TodayWidget } = await import('../widgets/android/TodayWidget');
       const { CalendarWidget } = await import('../widgets/android/CalendarWidget');
+      const { getGoogleWorkspaceStatus } = await import('./googleWorkspace');
+      let syncEndDate = new Date(now.getFullYear() + 1, 11, 31);
+      try { const googleStatus = await getGoogleWorkspaceStatus(); if (googleStatus.range?.endDate) syncEndDate = new Date(`${googleStatus.range.endDate}T23:59:59`); } catch (error) { await logNotificationEvent('calendar-widget-range-load-failed', error, 'warn'); }
       const items: AndroidCalendarItem[] = glance.items.map((item) => ({ id: item.id, title: item.title, time: item.time, kind: item.kind === 'event' ? 'Evento' : item.kind === 'task' ? 'Task' : 'Reminder' }));
       await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => React.createElement(TodayWidget, { items }) });
 
@@ -31,9 +34,10 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
       const active = commitments.filter((item) => item.status !== 'done' && !item.deletedAt);
       const weeks: AndroidCalendarWeek[] = [];
 
-      // Keep a full year of future weeks in the widget. ListWidget provides the scroll container.
-      for (let w = 0; w < 52; w += 1) {
+      // Render every week from the current week through the final week of the configured Google sync range.
+      for (let w = 0; ; w += 1) {
         const start = new Date(monday); start.setDate(monday.getDate() + w * 7);
+        if (start.getTime() > syncEndDate.getTime()) break;
         const days: AndroidCalendarDay[] = [];
         for (let i = 0; i < 7; i += 1) {
           const day = new Date(start); day.setDate(start.getDate() + i);
