@@ -32,7 +32,7 @@ export default function Calendar(){
       result.push(Array.from({length:7},(_,j)=>{const d=new Date(start);d.setDate(start.getDate()+j);return d;}));
     }
     return result;
-  },[google?.range?.endDate]);
+  },[google]);
 
   const byDay=useMemo(()=>{
     const map=new Map<string,Commitment[]>();
