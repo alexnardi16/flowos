@@ -6,6 +6,8 @@ FlowOS è un'app mobile-first che unifica task, eventi e reminder in un unico mo
 
 La codebase è in fase di preparazione alla prima release Android **1.0.0**.
 
+La sincronizzazione Google include retry automatici e mantiene le modifiche in sospeso durante errori transitori di rete o server, invece di trasformarli immediatamente in errori permanenti.
+
 ### Funzioni attualmente implementate
 
 - Home “Oggi” con attività previste nella giornata
