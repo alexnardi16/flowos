@@ -1,26 +1,103 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Card, Chip, ScreenShell, palette } from '@/components/ui';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Card, ScreenShell, palette } from '@/components/ui';
 import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';
 import { ManageSheet } from '@/components/ManageSheet';
-import { formatDurationLabel } from '@/lib/itemTiming';
 import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
+
 const DAY_NAMES=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 const MONTH_NAMES=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
-function kindLabel(kind:Commitment['kind']){return kind==='event'?'EVENTO':kind==='task'?'TASK':kind==='reminder'?'REMINDER':'ALTRO';}
-function tone(kind:Commitment['kind']):'primary'|'warning'|'success'{return kind==='event'?'primary':kind==='task'?'warning':'success';}
-function cardStyle(kind:Commitment['kind']){return kind==='event'?styles.event:kind==='task'?styles.task:styles.reminder;}
 function monthLabelForWeek(week:Date[]){const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${MONTH_NAMES[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
+
 export default function Calendar(){
-  const commitments=useFlowStore(state=>state.commitments);const[manageId,setManageId]=useState<string|null>(null);const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
+  const commitments=useFlowStore(state=>state.commitments);
+  const[manageId,setManageId]=useState<string|null>(null);
+  const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
+
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
-  const weeks=useMemo(()=>{const now=new Date();const start=new Date(now.getFullYear(),now.getMonth(),now.getDate());start.setDate(start.getDate()-((start.getDay()+6)%7));return Array.from({length:12},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i*7);return Array.from({length:7},(_,j)=>{const day=new Date(d);day.setDate(d.getDate()+j);return day;});});},[]);
-  const byDay=useMemo(()=>{const map=new Map<string,Commitment[]>();for(const item of commitments.filter(item=>!item.deletedAt&&item.status!=='done')){const value=itemDate(item);if(!value)continue;const d=new Date(value);const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dayKey(d);const list=map.get(key)??[];list.push(item);map.set(key,list);}for(const list of map.values())list.sort((a,b)=>new Date(itemDate(a)??0).getTime()-new Date(itemDate(b)??0).getTime());return map;},[commitments]);
+
+  const weeks=useMemo(()=>{
+    const now=new Date();
+    const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
+    const end=google?.range?.endDate?new Date(`${google.range.endDate}T23:59:59`):new Date(now.getFullYear()+1,11,31);
+    const result:Date[][]=[];
+    for(let i=0;;i+=1){
+      const start=new Date(monday);start.setDate(monday.getDate()+i*7);
+      if(start.getTime()>end.getTime())break;
+      result.push(Array.from({length:7},(_,j)=>{const d=new Date(start);d.setDate(start.getDate()+j);return d;}));
+    }
+    return result;
+  },[google?.range?.endDate]);
+
+  const byDay=useMemo(()=>{
+    const map=new Map<string,Commitment[]>();
+    for(const item of commitments.filter(item=>!item.deletedAt&&item.status!=='done')){
+      const value=itemDate(item);if(!value)continue;
+      const d=new Date(value);
+      const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dayKey(d);
+      const list=map.get(key)??[];list.push(item);map.set(key,list);
+    }
+    for(const list of map.values())list.sort((a,b)=>new Date(itemDate(a)??0).getTime()-new Date(itemDate(b)??0).getTime());
+    return map;
+  },[commitments]);
+
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
-  return <ScreenShell title="Calendario" subtitle="Vista settimanale. Ogni settimana mostra tutti i sette giorni e tutte le attività.">{weeks.map((week,index)=>{const monthTitle=monthLabelForWeek(week);return <Card key={index} style={styles.weekCard}>{monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}<View style={styles.weekHeader}><Text style={styles.weekLabel}>Settimana</Text><Text style={styles.weekRange}>{week[0].toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})} → {week[6].toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})}</Text></View><View style={styles.days}>{week.map((date,dayIndex)=>{const items=byDay.get(dayKey(date))??[];const today=dayKey(date)===dayKey(new Date());return <View key={date.toISOString()} style={[styles.dayRow,today&&styles.todayRow]}><View style={styles.dayHeader}><Text style={[styles.dayName,today&&styles.todayText]}>{DAY_NAMES[dayIndex]}</Text><Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text></View><View style={styles.dayActivities}>{items.length?items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,cardStyle(item.kind),pressed&&styles.itemPressed]}><View style={styles.itemTop}><Chip tone={tone(item.kind)}>{kindLabel(item.kind)}</Chip>{!item.allDay?<Text style={styles.itemTime}>{new Date(itemDate(item)!).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</Text>:<Text style={styles.itemTime}>Tutto il giorno</Text>}</View><Text style={styles.itemTitle}>{item.title}</Text><Text style={styles.itemMeta}>{formatDurationLabel(item)}{item.location?` · ${item.location}`:''}</Text><CommitmentSourceTag item={item} google={google}/></Pressable>):<Text style={styles.emptyDay}>Nessuna attività</Text>}</View></View>;})}</View></Card>;})}{manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}</ScreenShell>;
+
+  return <ScreenShell title="Calendario" subtitle="Vista mensile in stile Google Calendar. Scorri orizzontalmente per leggere i sette giorni.">
+    {weeks.map((week,index)=>{
+      const monthTitle=monthLabelForWeek(week);
+      return <Card key={index} style={styles.weekCard}>
+        {monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}
+        <Text style={styles.weekRange}>{week[0].toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})} → {week[6].toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.gridScroll}>
+          <View style={styles.grid}>
+            {week.map((date,dayIndex)=>{
+              const items=byDay.get(dayKey(date))??[];
+              const today=dayKey(date)===dayKey(new Date());
+              return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox]}>
+                <View style={styles.dayHeader}>
+                  <Text style={[styles.dayName,today&&styles.todayText]}>{DAY_NAMES[dayIndex]}</Text>
+                  <Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text>
+                </View>
+                <View style={styles.dayActivities}>
+                  {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,pressed&&styles.itemPressed]}>
+                    <Text style={styles.itemTime}>{item.allDay?'':new Date(itemDate(item)!).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</Text>
+                    <Text style={styles.itemTitle}>{item.title}</Text>
+                    {item.location?<Text style={styles.itemMeta}>{item.location}</Text>:null}
+                    <CommitmentSourceTag item={item} google={google}/>
+                  </Pressable>)}
+                </View>
+              </View>;
+            })}
+          </View>
+        </ScrollView>
+      </Card>;
+    })}
+    {manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}
+  </ScreenShell>;
 }
-const styles=StyleSheet.create({weekCard:{padding:10,gap:7},monthTitle:{fontSize:19,lineHeight:24,fontWeight:'900',color:palette.primary,textTransform:'capitalize',paddingHorizontal:4},weekHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingHorizontal:4,paddingBottom:2},weekLabel:{fontSize:11,fontWeight:'900',color:palette.muted,textTransform:'uppercase'},weekRange:{fontSize:11,fontWeight:'800',color:palette.muted},days:{gap:6},dayRow:{flexDirection:'row',alignItems:'stretch',backgroundColor:'#FFF',borderRadius:14,borderWidth:1,borderColor:'#EEF0F5',overflow:'hidden',minHeight:76},todayRow:{backgroundColor:'#F0EEFF',borderColor:'#D6D0FF'},dayHeader:{width:62,paddingVertical:10,paddingHorizontal:7,justifyContent:'flex-start',alignItems:'center',backgroundColor:'#F7F8FB',gap:1},dayName:{fontSize:11,fontWeight:'900',color:palette.ink},dayNumber:{fontSize:20,lineHeight:23,fontWeight:'900',color:palette.ink},todayText:{color:palette.primary},dayActivities:{flex:1,minWidth:0,padding:7,gap:6,justifyContent:'center'},emptyDay:{fontSize:12,color:palette.muted,fontStyle:'italic'},item:{borderRadius:10,borderWidth:1,padding:8,minWidth:0,gap:3},event:{backgroundColor:'#EEF1FE',borderColor:'#C7D0FB'},task:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8'},reminder:{backgroundColor:'#EAFBF3',borderColor:'#B9EAD4'},itemPressed:{opacity:.8},itemTop:{flexDirection:'row',alignItems:'center',gap:7},itemTime:{fontSize:11,fontWeight:'800',color:palette.muted},itemTitle:{fontSize:15,lineHeight:19,fontWeight:'900',color:palette.ink},itemMeta:{fontSize:11,lineHeight:15,color:palette.muted}});
+
+const styles=StyleSheet.create({
+  weekCard:{padding:10,gap:6},
+  monthTitle:{fontSize:19,lineHeight:24,fontWeight:'900',color:palette.primary,textTransform:'capitalize',paddingHorizontal:4},
+  weekRange:{fontSize:11,fontWeight:'800',color:palette.muted,paddingHorizontal:4},
+  gridScroll:{paddingBottom:3},
+  grid:{flexDirection:'row',gap:4,minWidth:1050},
+  dayBox:{width:145,minHeight:190,padding:7,borderRadius:10,borderWidth:1,borderColor:'#E7E9EF',backgroundColor:'#FFF'},
+  todayBox:{backgroundColor:'#F0EEFF',borderColor:'#D6D0FF'},
+  dayHeader:{flexDirection:'row',alignItems:'center',gap:5,paddingBottom:6,borderBottomWidth:1,borderBottomColor:'#EEF0F5'},
+  dayName:{fontSize:12,fontWeight:'900',color:palette.ink},
+  dayNumber:{fontSize:18,lineHeight:20,fontWeight:'900',color:palette.ink},
+  todayText:{color:palette.primary},
+  dayActivities:{gap:5,paddingTop:6},
+  item:{borderRadius:8,padding:6,backgroundColor:'#F4F5F8',borderWidth:1,borderColor:'#E4E6EC',gap:2},
+  itemPressed:{opacity:.8},
+  itemTime:{fontSize:10,fontWeight:'800',color:palette.muted,minHeight:12},
+  itemTitle:{fontSize:13,lineHeight:17,fontWeight:'900',color:palette.ink},
+  itemMeta:{fontSize:10,lineHeight:14,color:palette.muted}
+});
