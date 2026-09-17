@@ -1,0 +1,53 @@
+name: Repair FlowOS Google urgent
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.13
+      - name: Apply urgent fixes
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          p=Path('app/(tabs)/me.tsx')
+          s=p.read_text()
+          s=s.replace("import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';", "import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';")
+          s=s.replace("function missingAuth(status:GoogleWorkspaceStatus|null,error:string|null){return /google account is not connected|account google non.*collegato/i.test(`${status?.connection?.last_sync_error??''} ${error??''}`);}", "function missingAuth(status:GoogleWorkspaceStatus|null,error:string|null){return /google account is not connected|account google non.*collegato|google authorization expired|unable to refresh google token|autorizzazione google.*ripristinata/i.test(`${status?.connection?.last_sync_error??''} ${error??''}`);}")
+          old='<Card><View style={styles.diagnosticHeader}><View><Text style={styles.label}>Diagnostica</Text><Text style={styles.meta}>FlowOS {Application.nativeApplicationVersion??\'unknown\'} · versionCode {Application.nativeBuildVersion??\'unknown\'} · {logs.length} eventi</Text></View><Button secondary label="Mostra/nascondi log" onPress={()=>setShowLogs(v=>!v)}/></View><View style={styles.actions}><Button secondary label="Copia log" onPress={()=>{void copyLogs();}}/><Button secondary label="Cancella log" onPress={()=>{clearDiagnostics();setLogs([]);}}/></View>{showLogs?<View style={styles.logBox}><Text selectable style={styles.logText}>{`FlowOS {Application.nativeApplicationVersion??\'unknown\'} · versionCode {Application.nativeBuildVersion??\'unknown\'}\\n${logs.length?logs.map(logLine).join(\'\\n\'):\'Nessun evento registrato.\'}`}</Text></View>:null}</Card>'
+          if old not in s:
+              raise SystemExit('diagnostics block not found')
+          new='<Card><View style={styles.diagnosticHeader}><Text style={styles.label}>Diagnostica</Text><Text style={styles.meta}>FlowOS {Application.nativeApplicationVersion??\'unknown\'} · versionCode {Application.nativeBuildVersion??\'unknown\'} · {logs.length} eventi</Text></View><View style={styles.actions}><Button secondary label={showLogs?"Nascondi log":"Mostra log"} onPress={()=>setShowLogs(v=>!v)}/><Button secondary label="Copia log" onPress={()=>{void copyLogs();}}/><Button secondary label="Pulisci log" onPress={()=>{clearDiagnostics();setLogs([]);}}/></View>{showLogs?<ScrollView style={styles.logBox} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar><Text selectable style={styles.logText}>{`FlowOS {Application.nativeApplicationVersion??\'unknown\'} · versionCode {Application.nativeBuildVersion??\'unknown\'}\\n${logs.length?logs.map(logLine).join(\'\\n\'):\'Nessun evento registrato.\'}`}</Text></ScrollView>:null}</Card>'
+          p.write_text(s.replace(old,new))
+
+          for name in ['supabase/functions/google-workspace/index.ts','supabase/functions/google-sync-guard/index.ts']:
+              p=Path(name); s=p.read_text()
+              s=s.replace('if(!row.refresh_token||!CLIENT_ID||!CLIENT_SECRET)throw new Error("Google authorization expired. Reconnect Google to continue.");', 'if(!row.refresh_token||!CLIENT_ID||!CLIENT_SECRET)throw new Error("Google authorization expired. Reconnect Google to continue.");')
+              s=s.replace('const next={...row,access_token:payload.access_token,expires_at:expiresAt(payload.expires_in),token_type:payload.token_type??row.token_type};await admin.schema("private").from("google_oauth_tokens").update({access_token:next.access_token,expires_at:next.expires_at,token_type:next.token_type,updated_at:now()}).eq("user_id",userId);return next;', 'const next={...row,access_token:payload.access_token,refresh_token:payload.refresh_token??row.refresh_token,expires_at:expiresAt(payload.expires_in),token_type:payload.token_type??row.token_type};await admin.schema("private").from("google_oauth_tokens").update({access_token:next.access_token,refresh_token:next.refresh_token,expires_at:next.expires_at,token_type:next.token_type,updated_at:now()}).eq("user_id",userId);return next;')
+              s=s.replace('const next={access_token:p.access_token,expires_at:new Date(Date.now()+Math.max(60,p.expires_in??3600)*1000).toISOString(),token_type:p.token_type??"Bearer"};await admin.schema("private").from("google_oauth_tokens").update({...next,updated_at:new Date().toISOString()}).eq("user_id",userId);return {...data,...next};', 'const next={access_token:p.access_token,refresh_token:p.refresh_token??data.refresh_token,expires_at:new Date(Date.now()+Math.max(60,p.expires_in??3600)*1000).toISOString(),token_type:p.token_type??"Bearer"};await admin.schema("private").from("google_oauth_tokens").update({...next,updated_at:new Date().toISOString()}).eq("user_id",userId);return {...data,...next};')
+              p.write_text(s)
+
+          p=Path('lib/googleWorkspace.ts'); s=p.read_text()
+          s=s.replace("queryParams:{access_type:'offline',include_granted_scopes:'true'}", "queryParams:{access_type:'offline',prompt:'consent',include_granted_scopes:'true'}")
+          p.write_text(s)
+          PY
+      - name: Typecheck
+        run: npm install --no-audit --no-fund && npm run typecheck
+      - name: Remove repair workflow and commit
+        run: |
+          rm .github/workflows/repair-flowos-google-urgent.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/(tabs)/me.tsx lib/googleWorkspace.ts supabase/functions/google-workspace/index.ts supabase/functions/google-sync-guard/index.ts .github/workflows/repair-flowos-google-urgent.yml
+          git commit -m 'fix: recover Google OAuth and improve diagnostics controls'
+          git push
