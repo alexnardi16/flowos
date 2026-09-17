@@ -44,21 +44,15 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
       const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
 
-      const months = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+      const months = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
       const dayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const active = commitments.filter((item) => item.status !== 'done' && !item.deletedAt);
       const weeks: AndroidCalendarWeek[] = [];
 
-      for (let w = 0; w < 4; w += 1) {
+      for (let w = 0; w < 12; w += 1) {
         const start = new Date(monday);
         start.setDate(monday.getDate() + w * 7);
-        const end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        const title = `${months[start.getMonth()]} ${start.getFullYear()}${
-          start.getMonth() !== end.getMonth() || start.getFullYear() !== end.getFullYear()
-            ? ` - ${months[end.getMonth()]} ${end.getFullYear()}`
-            : ''
-        }`;
         const days: AndroidCalendarDay[] = [];
 
         for (let i = 0; i < 7; i += 1) {
@@ -80,7 +74,7 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
               id: item.id,
               title: item.title,
               time: item.allDay
-                ? 'Tutto il giorno'
+                ? ''
                 : new Date(item.scheduledAt ?? item.dueAt!).toLocaleTimeString('it-IT', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -88,10 +82,12 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
               kind: item.kind === 'event' ? 'Evento' : item.kind === 'task' ? 'Task' : 'Reminder',
             }));
 
-          days.push({ label: `${dayNames[i]} ${day.getDate()}`, items: dayItems });
+          days.push({ dateKey: key, label: `${dayNames[i]} ${day.getDate()}`, isToday: key === todayKey, items: dayItems });
         }
 
-        weeks.push({ title, days });
+        const monthStart = days.find(day => Number(day.dateKey.slice(-2)) === 1);
+        const monthTitle = monthStart ? `${months[Number(monthStart.dateKey.slice(5, 7)) - 1]} ${monthStart.dateKey.slice(0, 4)}` : '';
+        weeks.push({ title: monthTitle, days });
       }
 
       await requestWidgetUpdate({
