@@ -1,0 +1,74 @@
+name: Final FlowOS repair
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor == 'alexnardi16'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.13
+          cache: npm
+      - name: Apply final sync repair
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('lib/googleWorkspace.ts')
+          s = p.read_text()
+
+          old = "let lastError:unknown;for(let attempt=0;attempt<=retries;attempt++){"
+          new = "let lastError:unknown;let responseStatus:number|null=null;for(let attempt=0;attempt<=retries;attempt++){"
+          if old in s:
+              s = s.replace(old, new, 1)
+          old = "const response=await fetch(FUNCTION_URL,{"
+          new = "const response=await fetch(FUNCTION_URL,{"
+          # Set the status immediately after the response is received.
+          s = s.replace("const response=await fetch(FUNCTION_URL,{method:'POST'", "const response=await fetch(FUNCTION_URL,{method:'POST'", 1)
+          s = s.replace("});const raw=await response.text();let payload:any=null;", "});responseStatus=response.status;const raw=await response.text();let payload:any=null;", 1)
+          s = s.replace("const transient=isTransientNetworkError(message);", "const transient=(responseStatus!==null&&responseStatus>=500)||isTransientNetworkError(message);", 1)
+
+          # Guard has its own response status and must also retry transient 5xx failures.
+          marker = "async function invokeSyncGuard()"
+          start = s.index(marker)
+          tail = s[start:]
+          tail = tail.replace("let lastError:unknown;for(let attempt=0;attempt<=MAX_NETWORK_RETRIES;attempt++){", "let lastError:unknown;let guardResponseStatus:number|null=null;for(let attempt=0;attempt<=MAX_NETWORK_RETRIES;attempt++){", 1)
+          tail = tail.replace("});const raw=await response.text();let payload:any=null;", "});guardResponseStatus=response.status;const raw=await response.text();let payload:any=null;", 1)
+          tail = tail.replace("recordDiagnostic('google-sync-guard-request-failed',{attempt:attempt+1,message,transient:isTransientNetworkError(message)},'error');if(attempt>=MAX_NETWORK_RETRIES||!isTransientNetworkError(message))break;", "const transient=(guardResponseStatus!==null&&guardResponseStatus>=500)||isTransientNetworkError(message);recordDiagnostic('google-sync-guard-request-failed',{attempt:attempt+1,message,transient},'error');if(attempt>=MAX_NETWORK_RETRIES||!transient)break;", 1)
+          s = s[:start] + tail
+          p.write_text(s)
+
+          # Keep the diagnostic header in the visible log and simplify free-day notification text.
+          me = Path('app/(tabs)/me.tsx')
+          ms = me.read_text()
+          old = "{logs.length?logs.map(logLine).join('\\n'):'Nessun evento registrato.'}"
+          new = "{`FlowOS ${Application.nativeApplicationVersion??'unknown'} · versionCode ${Application.nativeBuildVersion??'unknown'}\\n${logs.length?logs.map(logLine).join('\\n'):'Nessun evento registrato.'}`}"
+          ms = ms.replace(old, new, 1)
+          me.write_text(ms)
+
+          ds = Path('lib/dailySummary.ts')
+          d = ds.read_text().replace("isTomorrow ? 'Mattina libera: nessun impegno pianificato.' : 'Giornata libera: nessun impegno pianificato.'", "isTomorrow ? 'Mattina libera.' : 'Giornata libera.'", 1)
+          ds.write_text(d)
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Typecheck before commit
+        run: npm run typecheck
+      - name: Remove repair workflow and commit
+        shell: bash
+        run: |
+          rm -f .github/workflows/repair-flowos-once.yml .github/workflows/repair-flowos-final.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: harden Google sync and diagnostics"
+          git push origin HEAD:main
