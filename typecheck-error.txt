@@ -1,6 +1,0 @@
-
-> flowos@1.0.0 typecheck
-> tsc --noEmit
-
-widgets/android/CalendarWidget.tsx(17,71): error TS2322: Type '"stretch"' is not assignable to type '"center" | "flex-start" | "flex-end" | undefined'.
-EXIT_CODE=2
