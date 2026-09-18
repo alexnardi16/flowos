@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, RefObject } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BuildInfo } from './BuildInfo';
@@ -29,11 +29,11 @@ export const palette = {
   soft:'#ECE9FF', success:'#15866B', warning:'#B66A14', danger:'#A12626', border:'#E2E4EA',
 };
 
-export function ScreenShell({ title, subtitle, children, scrollProps }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps }>) {
+export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps; scrollRef?:RefObject<ScrollView|null> }>) {
   const insets = useSafeAreaInsets();
   const contentPaddingBottom = Math.max(118, insets.bottom + 112);
   return <SafeAreaView edges={['top','bottom']} style={styles.screenSafe}>
-    <ScrollView {...scrollProps} contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
+    <ScrollView ref={scrollRef} {...scrollProps} contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
       <View style={styles.screenBrandRow}>
         <Text style={styles.screenBrand}>FLOWOS</Text>
         <BuildInfo inline />
