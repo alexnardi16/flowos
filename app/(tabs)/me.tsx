@@ -10,7 +10,7 @@ import { connectGoogleFromSession, disconnectGoogleWorkspace, getGoogleWorkspace
 import { buildDailySummary, type DailySummary } from '@/lib/dailySummary';
 import { registerBackgroundSync, runDailySummaryRefresh, unregisterBackgroundSync, checkAndRecoverMissedDailySummary } from '@/lib/notificationSettingsBridge';
 import { clearNotificationLog, getNotificationLog, subscribeNotificationLog, type NotificationLogEntry } from '@/lib/notificationLog';
-import { DEFAULT_DAILY_SUMMARY_HOUR, DEFAULT_DAILY_SUMMARY_MINUTE, disableDailySummaryNotification, getDailySummaryTime, getLastRecoveryDateKey, isDailySummaryEnabledStored, NOTIFICATIONS_SUPPORTED_HERE, sendImmediateSummaryNotification, setDailySummaryEnabledStored, setDailySummaryTime } from '@/lib/notificationService';
+import { DEFAULT_DAILY_SUMMARY_HOUR, DEFAULT_DAILY_SUMMARY_MINUTE, disableDailySummaryNotification, getDailySummaryTime, getLastRecoveryDateKey, isDailySummaryEnabledStored, NOTIFICATIONS_SUPPORTED_HERE, sendImmediateSummaryNotification, setDailySummaryEnabledStored, setDailySummaryTime } from '@/lib/notificationServiceBridge';
 import { useFlowStore } from '@/lib/store';
 import { useAuth } from '@/providers/AuthProvider';
 import * as Application from 'expo-application';
