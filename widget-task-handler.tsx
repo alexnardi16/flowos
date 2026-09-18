@@ -74,7 +74,7 @@ async function executeVoice(command:VoiceCommand,items:Commitment[]){
     const calendar=writable.find(c=>c.is_default)||writable[0];
     const list=lists.find(l=>l.is_default)||lists[0];
     if((command.kind==='event'&&!calendar)||(command.kind!=='event'&&!list))throw new Error('Nessuna destinazione Google scrivibile configurata.');
-    const id=crypto.randomUUID();
+    const id=`widget-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
     const item:Commitment={id,title:command.title,kind:command.kind,status:command.kind==='event'?'scheduled':'active',durationMinutes:30,allDay:false,energy:'medium',context:command.kind==='event'?'Calendario':command.kind==='task'?'Google Tasks':'Reminder',scheduledAt:command.kind==='event'&&when?when.toISOString():undefined,dueAt:command.kind!=='event'&&when?when.toISOString():undefined,fixed:command.kind==='event',confidence:1,googleCalendarId:command.kind==='event'?calendar?.google_calendar_id:undefined,googleTaskListId:command.kind!=='event'?list?.google_task_list_id:undefined,syncStatus:'pending'};
     await saveCommitment(item);await refreshFromGoogle();return;
   }
