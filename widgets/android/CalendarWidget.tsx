@@ -22,11 +22,11 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
       {weeks.map(week=>{const height=Math.max(...week.days.map(dayHeight));return <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width:'match_parent',flexDirection:'column',marginVertical:2 }}>
         {week.title?<TextWidget text={week.title} style={{ fontSize:10,fontWeight:'bold',color:PRIMARY,marginBottom:3 }}/>:null}
         <FlexWidget style={{ width:'match_parent',flexDirection:'row' }}>
-          {week.days.slice(0,7).map(day=><FlexWidget key={day.dateKey} style={{ flex:1,height,marginHorizontal:1,padding:3,borderRadius:8,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column' }}>
+          {week.days.slice(0,7).map(day=><FlexWidget key={day.dateKey} style={{ width:44,height,marginHorizontal:1,padding:2,borderRadius:8,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column' }}>
             <FlexWidget style={{ width:'match_parent',flexDirection:'row',alignItems:'center' }}>
-              <TextWidget text={day.label} style={{ fontSize:8,fontWeight:'bold',color:day.isToday?PRIMARY:MUTED }}/>
+              <TextWidget text={day.label} style={{ fontSize:7,fontWeight:'bold',color:day.isToday?PRIMARY:MUTED }}/>
             </FlexWidget>
-            {day.items.map(item=><FlexWidget key={item.id} style={{ width:'match_parent',marginTop:2 }}><TextWidget text={`${item.time ? `${item.time} ` : ''}${item.title}`} style={{ width:'match_parent',fontSize:7,color:INK }}/></FlexWidget>)}
+            {day.items.map(item=><FlexWidget key={item.id} style={{ width:'match_parent',marginTop:2 }}><TextWidget text={`${item.time ? `${item.time} ` : ''}${item.title}`} style={{ width:'match_parent',fontSize:6,color:INK }}/></FlexWidget>)}
             {!day.items.length?<TextWidget text="·" style={{ fontSize:9,color:'#B8BFCC',marginTop:3 }}/>:null}
           </FlexWidget>)}
         </FlexWidget>
