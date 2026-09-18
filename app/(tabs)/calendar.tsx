@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
 import { ManageSheet } from '@/components/ManageSheet';
@@ -21,11 +22,13 @@ function sourceStyle(item:Commitment,sourceColors:Map<string,string>){
 }
 
 export default function Calendar(){
-  const commitments=useFlowStore(state=>state.commitments);
+  const commitments=useFlowStore(state=>state.commitments); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
   const[manageId,setManageId]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
+  const params=useLocalSearchParams<{widgetAction?:string}>();
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
+  useEffect(()=>{const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;if(action==='sync')void syncWithGoogle();},[params.widgetAction,syncWithGoogle]);
 
   const weeks=useMemo(()=>{
     const now=new Date();
