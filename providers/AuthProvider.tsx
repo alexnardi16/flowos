@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
 import { beginDiagnosticSession, clearDiagnostics, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
 import { connectGoogleFromSession, getGoogleWorkspaceStatus, syncGoogleWorkspace } from '../lib/googleWorkspace';
-import { checkAndRecoverMissedDailySummary, refreshReminders, registerBackgroundSync } from '../lib/backgroundSyncService';
+import { checkAndRecoverMissedDailySummary, refreshReminders, registerBackgroundSync } from '../lib/notificationSettingsBridge';
 import { clearNotificationLog } from '../lib/notificationLog';
 import { useFlowStore } from '../lib/store';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
