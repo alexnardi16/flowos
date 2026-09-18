@@ -29,6 +29,7 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
       const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
       const months = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+      const monthTitle = (month:number, year:number) => { const name = months[month] ?? ''; return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${year}`; };
       const dayNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
       const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
       const active = commitments.filter((item) => item.status !== 'done' && !item.deletedAt);
@@ -55,8 +56,8 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
           days.push({dateKey:key,label:`${dayNames[i]} ${day.getDate()}`,isToday:key===todayKey,items:dayItems});
         }
         const monthStart = days.find(day => Number(day.dateKey.slice(-2)) === 1);
-        const monthTitle = w === 0 ? `${months[start.getMonth()]} ${start.getFullYear()}` : monthStart ? `${months[Number(monthStart.dateKey.slice(5,7))-1]} ${monthStart.dateKey.slice(0,4)}` : '';
-        weeks.push({title:monthTitle,days});
+        const title = w === 0 ? monthTitle(start.getMonth(), start.getFullYear()) : monthStart ? monthTitle(Number(monthStart.dateKey.slice(5,7))-1, Number(monthStart.dateKey.slice(0,4))) : '';
+        weeks.push({title,days});
       }
       await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks}) });
       await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:weeks.length,calendarDays:weeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
