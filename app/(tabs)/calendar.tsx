@@ -14,7 +14,7 @@ function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth(
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
 function monthLabelForWeek(week:Date[]){const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${MONTH_NAMES[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
 function sourceKey(item:Commitment){if(item.kind==='task'&&item.googleTaskListId)return `task:${item.googleTaskListId}`;if(item.googleCalendarId)return `calendar:${item.googleCalendarId}`;return 'flowos';}
-function sourceStyle(item:Commitment,google:GoogleWorkspaceStatus|null){
+function sourceStyle(item:Commitment){
   const key=sourceKey(item);
   if(key==='flowos')return styles.flowosItem;
   let hash=0;for(let i=0;i<key.length;i+=1)hash=(hash*31+key.charCodeAt(i))%SOURCE_COLORS.length;
@@ -71,7 +71,7 @@ export default function Calendar(){
                 <Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text>
               </View>
               <View style={styles.dayActivities}>
-                {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,google),pressed&&styles.itemPressed]}>
+                {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item),pressed&&styles.itemPressed]}>
                   <Text style={styles.itemTime}>{item.allDay?'':new Date(itemDate(item)!).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</Text>
                   <Text style={styles.itemTitle}>{item.title}</Text>
                   {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
