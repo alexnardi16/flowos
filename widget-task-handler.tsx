@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { TodayWidget, type AndroidTodayWidgetProps } from './widgets/android/TodayWidget';
-import { CalendarWidget, type AndroidCalendarWidgetProps } from './widgets/android/CalendarWidget';
+import { CalendarWidget, type AndroidCalendarDay, type AndroidCalendarWidgetProps } from './widgets/android/CalendarWidget';
 import { syncGoogleWorkspace } from './lib/googleWorkspace';
 import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment, deleteCommitmentAlsoFromGoogle, removeCommitmentOnlyFromFlowOS } from './lib/commitmentsRepository';
 import { parseVoiceCommand, listenForVoiceCommand, findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
