@@ -59,7 +59,7 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
         weeks.push({title:monthTitle,days});
       }
       await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks}) });
-      await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:weeks.length});
+      await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:weeks.length,calendarDays:weeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
     }
   } catch (error) { await logNotificationEvent('today-widget-update-failed', error, 'warn'); }
 }
