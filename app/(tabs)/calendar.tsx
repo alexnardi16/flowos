@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
-import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';
 import { ManageSheet } from '@/components/ManageSheet';
 import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
@@ -9,9 +8,18 @@ import type { Commitment } from '@/types';
 
 const DAY_NAMES=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 const MONTH_NAMES=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+const SOURCE_COLORS=['#E8F0FF','#E9F8EF','#FFF0D9','#F3E9FF','#FFE8EE','#E7F6F5','#F1F1E8','#EDEAFF'];
+
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
 function monthLabelForWeek(week:Date[]){const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${MONTH_NAMES[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
+function sourceKey(item:Commitment){if(item.kind==='task'&&item.googleTaskListId)return `task:${item.googleTaskListId}`;if(item.googleCalendarId)return `calendar:${item.googleCalendarId}`;return 'flowos';}
+function sourceStyle(item:Commitment,google:GoogleWorkspaceStatus|null){
+  const key=sourceKey(item);
+  if(key==='flowos')return styles.flowosItem;
+  let hash=0;for(let i=0;i<key.length;i+=1)hash=(hash*31+key.charCodeAt(i))%SOURCE_COLORS.length;
+  return {backgroundColor:SOURCE_COLORS[hash],borderColor:'#D9DDE7'};
+}
 
 export default function Calendar(){
   const commitments=useFlowStore(state=>state.commitments);
@@ -48,34 +56,30 @@ export default function Calendar(){
 
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
 
-  return <ScreenShell title="Calendario" subtitle="Vista mensile in stile Google Calendar. Scorri orizzontalmente per leggere i sette giorni.">
+  return <ScreenShell title="Calendario" subtitle="Vista mensile in stile Google Calendar. Ogni settimana mostra sempre tutti e sette i giorni.">
     {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week);
       return <Card key={index} style={styles.weekCard}>
         {monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}
-        <Text style={styles.weekRange}>{week[0].toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})} → {week[6].toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.gridScroll}>
-          <View style={styles.grid}>
-            {week.map((date,dayIndex)=>{
-              const items=byDay.get(dayKey(date))??[];
-              const today=dayKey(date)===dayKey(new Date());
-              return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox]}>
-                <View style={styles.dayHeader}>
-                  <Text style={[styles.dayName,today&&styles.todayText]}>{DAY_NAMES[dayIndex]}</Text>
-                  <Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text>
-                </View>
-                <View style={styles.dayActivities}>
-                  {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,pressed&&styles.itemPressed]}>
-                    <Text style={styles.itemTime}>{item.allDay?'':new Date(itemDate(item)!).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</Text>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                    {item.location?<Text style={styles.itemMeta}>{item.location}</Text>:null}
-                    <CommitmentSourceTag item={item} google={google}/>
-                  </Pressable>)}
-                </View>
-              </View>;
-            })}
-          </View>
-        </ScrollView>
+        <View style={styles.grid}>
+          {week.map((date,dayIndex)=>{
+            const items=byDay.get(dayKey(date))??[];
+            const today=dayKey(date)===dayKey(new Date());
+            return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox]}>
+              <View style={styles.dayHeader}>
+                <Text style={[styles.dayName,today&&styles.todayText]}>{DAY_NAMES[dayIndex]}</Text>
+                <Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text>
+              </View>
+              <View style={styles.dayActivities}>
+                {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,google),pressed&&styles.itemPressed]}>
+                  <Text style={styles.itemTime}>{item.allDay?'':new Date(itemDate(item)!).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</Text>
+                  <Text style={styles.itemTitle}>{item.title}</Text>
+                  {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
+                </Pressable>)}
+              </View>
+            </View>;
+          })}
+        </View>
       </Card>;
     })}
     {manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}
@@ -83,21 +87,20 @@ export default function Calendar(){
 }
 
 const styles=StyleSheet.create({
-  weekCard:{padding:10,gap:6},
-  monthTitle:{fontSize:19,lineHeight:24,fontWeight:'900',color:palette.primary,textTransform:'capitalize',paddingHorizontal:4},
-  weekRange:{fontSize:11,fontWeight:'800',color:palette.muted,paddingHorizontal:4},
-  gridScroll:{paddingBottom:3},
-  grid:{flexDirection:'row',gap:4,minWidth:1050},
-  dayBox:{width:145,minHeight:190,padding:7,borderRadius:10,borderWidth:1,borderColor:'#E7E9EF',backgroundColor:'#FFF'},
+  weekCard:{padding:9,gap:4},
+  monthTitle:{fontSize:18,lineHeight:22,fontWeight:'900',color:palette.primary,textTransform:'capitalize',paddingHorizontal:2},
+  grid:{flexDirection:'row',gap:2,width:'100%'},
+  dayBox:{flex:1,minWidth:0,minHeight:175,padding:4,borderRadius:7,borderWidth:1,borderColor:'#E1E4EC',backgroundColor:'#FFF'},
   todayBox:{backgroundColor:'#F0EEFF',borderColor:'#D6D0FF'},
-  dayHeader:{flexDirection:'row',alignItems:'center',gap:5,paddingBottom:6,borderBottomWidth:1,borderBottomColor:'#EEF0F5'},
-  dayName:{fontSize:12,fontWeight:'900',color:palette.ink},
-  dayNumber:{fontSize:18,lineHeight:20,fontWeight:'900',color:palette.ink},
+  dayHeader:{flexDirection:'row',alignItems:'center',gap:3,paddingBottom:4,borderBottomWidth:1,borderBottomColor:'#EEF0F5'},
+  dayName:{fontSize:10,fontWeight:'900',color:palette.ink},
+  dayNumber:{fontSize:15,lineHeight:17,fontWeight:'900',color:palette.ink},
   todayText:{color:palette.primary},
-  dayActivities:{gap:5,paddingTop:6},
-  item:{borderRadius:8,padding:6,backgroundColor:'#F4F5F8',borderWidth:1,borderColor:'#E4E6EC',gap:2},
-  itemPressed:{opacity:.8},
-  itemTime:{fontSize:10,fontWeight:'800',color:palette.muted,minHeight:12},
-  itemTitle:{fontSize:13,lineHeight:17,fontWeight:'900',color:palette.ink},
-  itemMeta:{fontSize:10,lineHeight:14,color:palette.muted}
+  dayActivities:{gap:3,paddingTop:4},
+  item:{borderRadius:6,padding:4,borderWidth:1,gap:1},
+  flowosItem:{backgroundColor:'#F3F4F7',borderColor:'#E0E2E8'},
+  itemTime:{fontSize:8,lineHeight:10,fontWeight:'800',color:palette.muted},
+  itemTitle:{fontSize:10,lineHeight:13,fontWeight:'900',color:palette.ink},
+  itemMeta:{fontSize:8,lineHeight:10,color:palette.muted},
+  itemPressed:{opacity:.78}
 });
