@@ -4,7 +4,7 @@ import { TodayWidget, type AndroidTodayWidgetProps } from './widgets/android/Tod
 import { CalendarWidget, type AndroidCalendarWidgetProps } from './widgets/android/CalendarWidget';
 import { syncGoogleWorkspace } from './lib/googleWorkspace';
 import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment, deleteCommitmentAlsoFromGoogle, removeCommitmentOnlyFromFlowOS } from './lib/commitmentsRepository';
-import { parseVoiceCommand, listenForVoiceCommand, type VoiceCommand } from './lib/voiceCommands';
+import { parseVoiceCommand, listenForVoiceCommand, findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
 import type { Commitment } from './types';
 
 const STORAGE_KEY='flowos-store-v2';
@@ -58,12 +58,7 @@ async function refreshFromGoogle(){
   await writeCommitments(remote);
   return remote;
 }
-function findVoiceItem(items:Commitment[],query:string){
-  const normalize=(v:string)=>v.toLocaleLowerCase('it-IT').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-  const q=normalize(query);
-  const active=items.filter(item=>item.status!=='done'&&!item.deletedAt);
-  return active.find(item=>normalize(item.title)===q)||active.find(item=>normalize(item.title).includes(q)||q.includes(normalize(item.title)))||null;
-}
+function findVoiceItem(items:Commitment[],query:string){return findBestVoiceMatch(items,query);}
 function localWhen(value?:string){return value?new Date(value):undefined;}
 async function executeVoice(command:VoiceCommand,items:Commitment[]){
   const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus());
