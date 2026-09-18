@@ -25,3 +25,9 @@ export async function checkAndRecoverMissedDailySummary() {
   const service = await nativeBackgroundService();
   if (service) await service.checkAndRecoverMissedDailySummary();
 }
+
+export async function refreshReminders() {
+  const service = await nativeBackgroundService();
+  if (service) return service.refreshReminders();
+  return null;
+}
