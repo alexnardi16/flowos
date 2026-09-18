@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
@@ -25,7 +25,9 @@ export default function Calendar(){
   const commitments=useFlowStore(state=>state.commitments); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
   const[manageId,setManageId]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
-  const params=useLocalSearchParams<{widgetAction?:string}>();
+  const params=useLocalSearchParams<{widgetAction?:string;date?:string}>();
+  const scrollRef=useRef<import('react-native').ScrollView|null>(null);
+  const weekOffsets=useRef(new Map<number,number>());
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
   useEffect(()=>{const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;if(action==='sync')void syncWithGoogle();},[params.widgetAction,syncWithGoogle]);
@@ -66,17 +68,23 @@ export default function Calendar(){
   },[commitments]);
 
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
+  const requestedDate=typeof params.date==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(params.date)?params.date:null;
+  const selectedDateKey=requestedDate??dayKey(new Date());
+  const selectedWeekIndex=weeks.findIndex(week=>week.some(date=>dayKey(date)===selectedDateKey));
+  const scrollToSelectedWeek=()=>{if(selectedWeekIndex<0)return;const offset=weekOffsets.current.get(selectedWeekIndex);if(offset===undefined)return;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));};
+  useEffect(()=>{scrollToSelectedWeek();},[selectedWeekIndex,selectedDateKey]);
 
-  return <ScreenShell title="Calendario" subtitle="Vista mensile in stile Google Calendar. Ogni settimana mostra sempre tutti e sette i giorni.">
+  return <ScreenShell title="Calendario" subtitle="Vista mensile in stile Google Calendar. Ogni settimana mostra sempre tutti e sette i giorni." scrollRef={scrollRef}>
     {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week,index);
-      return <Card key={index} style={styles.weekCard}>
+      return <Card key={index} style={styles.weekCard} onLayout={(event)=>{weekOffsets.current.set(index,event.nativeEvent.layout.y);if(index===selectedWeekIndex)scrollToSelectedWeek();}}>
         {monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}
         <View style={styles.grid}>
           {week.map((date,dayIndex)=>{
             const items=byDay.get(dayKey(date))??[];
             const today=dayKey(date)===dayKey(new Date());
-            return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox]}>
+            const selected=dayKey(date)===selectedDateKey;
+            return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox,selected&&styles.selectedBox]}>
               <View style={styles.dayHeader}>
                 <Text style={[styles.dayName,today&&styles.todayText]}>{DAY_NAMES[dayIndex]}</Text>
                 <Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text>
@@ -103,6 +111,7 @@ const styles=StyleSheet.create({
   grid:{flexDirection:'row',gap:2,width:'100%'},
   dayBox:{flex:1,minWidth:0,minHeight:175,padding:2,borderRadius:7,borderWidth:1,borderColor:'#E1E4EC',backgroundColor:'#FFF'},
   todayBox:{backgroundColor:'#F0EEFF',borderColor:'#D6D0FF'},
+  selectedBox:{borderColor:palette.primary,borderWidth:2,backgroundColor:'#F7F5FF'},
   dayHeader:{flexDirection:'row',alignItems:'center',gap:2,paddingBottom:3,borderBottomWidth:1,borderBottomColor:'#EEF0F5'},
   dayName:{fontSize:10,fontWeight:'900',color:palette.ink},
   dayNumber:{fontSize:15,lineHeight:17,fontWeight:'900',color:palette.ink},
