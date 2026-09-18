@@ -126,6 +126,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
     let data=await loadCalendarCache();
     if(!data) {
+      props.renderWidget(<CalendarWidget weeks={[]} heightDp={heightDp}/>);
       data=await calendarData(raw);
       await saveCalendarCache(data);
     }
