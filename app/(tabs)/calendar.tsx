@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
 import { ManageSheet } from '@/components/ManageSheet';
+import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 
@@ -23,6 +24,9 @@ function sourceStyle(item:Commitment){
 export default function Calendar(){
   const commitments=useFlowStore(state=>state.commitments);
   const[manageId,setManageId]=useState<string|null>(null);
+  const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
+
+  useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
 
   const weeks=useMemo(()=>{
     const now=new Date();
