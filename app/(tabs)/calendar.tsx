@@ -14,11 +14,10 @@ function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth(
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
 function monthLabelForWeek(week:Date[]){const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${MONTH_NAMES[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
 function sourceKey(item:Commitment){if(item.kind==='task'&&item.googleTaskListId)return `task:${item.googleTaskListId}`;if(item.googleCalendarId)return `calendar:${item.googleCalendarId}`;return 'flowos';}
-function sourceStyle(item:Commitment){
+function sourceStyle(item:Commitment,sourceColors:Map<string,string>){
   const key=sourceKey(item);
   if(key==='flowos')return styles.flowosItem;
-  let hash=0;for(let i=0;i<key.length;i+=1)hash=(hash*31+key.charCodeAt(i))%SOURCE_COLORS.length;
-  return {backgroundColor:SOURCE_COLORS[hash],borderColor:'#D9DDE7'};
+  return {backgroundColor:sourceColors.get(key)??SOURCE_COLORS[0],borderColor:'#D9DDE7'};
 }
 
 export default function Calendar(){
@@ -41,6 +40,15 @@ export default function Calendar(){
     }
     return result;
   },[google]);
+
+  const sourceColors=useMemo(()=>{
+    const map=new Map<string,string>();let next=0;
+    for(const item of commitments){
+      const key=sourceKey(item);if(key==='flowos'||map.has(key))continue;
+      map.set(key,SOURCE_COLORS[next%SOURCE_COLORS.length]);next+=1;
+    }
+    return map;
+  },[commitments]);
 
   const byDay=useMemo(()=>{
     const map=new Map<string,Commitment[]>();
@@ -71,7 +79,7 @@ export default function Calendar(){
                 <Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text>
               </View>
               <View style={styles.dayActivities}>
-                {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item),pressed&&styles.itemPressed]}>
+                {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),pressed&&styles.itemPressed]}>
                   <Text style={styles.itemTime}>{item.allDay?'':new Date(itemDate(item)!).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</Text>
                   <Text style={styles.itemTitle}>{item.title}</Text>
                   {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
