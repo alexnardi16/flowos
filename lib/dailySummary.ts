@@ -29,29 +29,44 @@ export function buildDailySummary(commitments: Commitment[], now: Date = new Dat
   const dateKey = toDateKey(targetDate);
   const active = commitments.filter((item) => item.status !== 'done' && !item.deletedAt);
   const scheduledToday = active
-    .filter((item) => item.scheduledAt && isSameCalendarDay(item, item.scheduledAt, targetDate))
-    .sort((a, b) => new Date(a.scheduledAt as string).getTime() - new Date(b.scheduledAt as string).getTime());
+    .filter((item) => {
+      const value = item.scheduledAt ?? item.dueAt;
+      return Boolean(value && isSameCalendarDay(item, value, targetDate));
+    })
+    .sort((a, b) => {
+      const av = a.scheduledAt ?? a.dueAt;
+      const bv = b.scheduledAt ?? b.dueAt;
+      if (!av) return 1;
+      if (!bv) return -1;
+      return new Date(av).getTime() - new Date(bv).getTime();
+    });
+
   const overdue = targetDate.getTime() <= now.getTime()
     ? active.filter((item) => item.dueAt && isExpired(item, now))
     : [];
-  const items: DailySummaryItem[] = scheduledToday.map((item) => ({
-    id: item.id,
-    title: item.title,
-    time: item.scheduledAt ? formatCommitmentTime(item, item.scheduledAt) : undefined,
-    kind: item.kind,
-  }));
+
+  const items: DailySummaryItem[] = scheduledToday.map((item) => {
+    const value = item.scheduledAt ?? item.dueAt;
+    return {
+      id: item.id,
+      title: item.title,
+      time: value ? formatCommitmentTime(item, value) : undefined,
+      kind: item.kind,
+    };
+  });
+
   const isTomorrow = dateKey !== toDateKey(now) && targetDate.getTime() > now.getTime();
   const prefix = isTomorrow ? 'Domani' : 'Oggi';
   const title = scheduledToday.length
     ? `${prefix} hai ${scheduledToday.length} impegn${scheduledToday.length === 1 ? 'o' : 'i'}`
     : `Nessun impegno pianificato per ${isTomorrow ? 'domani' : 'oggi'}`;
+
   const bodyParts: string[] = [];
-  if (scheduledToday.length) {
-    const first = scheduledToday[0];
-    const firstLabel = first.scheduledAt ? `${formatCommitmentTime(first, first.scheduledAt)} · ${first.title}` : first.title;
-    bodyParts.push(`Il primo è ${firstLabel}.`);
+  if (items.length) {
+    bodyParts.push(items.map((item, index) => `${index + 1}. ${item.time ? `${item.time} · ` : ''}${item.title}`).join('\n'));
   }
   if (overdue.length) bodyParts.push(`${overdue.length} in ritardo da recuperare.`);
-  if (!scheduledToday.length && !overdue.length) bodyParts.push(isTomorrow ? 'Mattina libera.' : 'Giornata libera.');
-  return { dateKey, title, body: bodyParts.join(' '), scheduledCount: scheduledToday.length, overdueCount: overdue.length, items };
+  if (!items.length && !overdue.length) bodyParts.push(isTomorrow ? 'Mattina libera.' : 'Giornata libera.');
+
+  return { dateKey, title, body: bodyParts.join('\n'), scheduledCount: scheduledToday.length, overdueCount: overdue.length, items };
 }
