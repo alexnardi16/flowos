@@ -100,6 +100,9 @@ async function runWidgetVoice(){
   }catch{}
 }
 export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
+  if(props.widgetAction==='WIDGET_UPDATE'){
+    try{await refreshFromGoogle();}catch{}
+  }
   if(props.widgetAction==='WIDGET_CLICK'&&(props.clickAction==='SYNC_GOOGLE'||props.clickAction==='VOICE_COMMAND')){
     if(props.clickAction==='SYNC_GOOGLE')await runWidgetSync();
     else await runWidgetVoice();
