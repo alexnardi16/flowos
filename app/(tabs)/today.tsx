@@ -21,13 +21,13 @@ type ContactsFilter='all'|'onlyContacts'|'excludeContacts';
 const CONTACTS_FILTER_KEY='flowos-today-contacts-filter-v1';
 function isGoogleTask(item:Commitment){return item.kind==='task'&&Boolean(item.googleTaskListId);}
 export default function Today() {
-  const commitments = useFlowStore((state) => state.commitments); const complete=useFlowStore(state=>state.complete); const postpone=useFlowStore(state=>state.postpone);
+  const commitments = useFlowStore((state) => state.commitments); const complete=useFlowStore(state=>state.complete); const postpone=useFlowStore(state=>state.postpone); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
   const params=useLocalSearchParams<{widgetAction?:string;id?:string}>();
   const [contactsFilter,setContactsFilter]=useState<ContactsFilter>('all'); const [manageId,setManageId]=useState<string|null>(null); const [google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
   useEffect(()=>{void AsyncStorage.getItem(CONTACTS_FILTER_KEY).then(raw=>{if(raw==='onlyContacts'||raw==='excludeContacts'||raw==='all')setContactsFilter(raw);}).catch(()=>undefined);},[]);
   useEffect(()=>{void AsyncStorage.setItem(CONTACTS_FILTER_KEY,contactsFilter);},[contactsFilter]);
-  useEffect(()=>{const id=typeof params.id==='string'?params.id:undefined;const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;if(!id||!action)return;const item=commitments.find(value=>value.id===id);if(!item)return;if(action==='manage'){setManageId(id);return;}if(action==='complete'){void complete(id);return;}if(action==='postpone'){void postpone(id);}},[params.widgetAction,params.id,commitments,complete,postpone]);
+  useEffect(()=>{const id=typeof params.id==='string'?params.id:undefined;const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;if(action==='sync'){void syncWithGoogle();return;}if(!id||!action)return;const item=commitments.find(value=>value.id===id);if(!item)return;if(action==='manage'){setManageId(id);return;}if(action==='complete'){void complete(id);return;}if(action==='postpone'){void postpone(id);}},[params.widgetAction,params.id,commitments,complete,postpone,syncWithGoogle]);
   const open=useMemo(()=>commitments.filter(item=>item.status!=='done'),[commitments]);
   const todayItems=useMemo(()=>open.filter(isToday).filter(item=>contactsFilter==='onlyContacts'?isContactEvent(item)&&!isGoogleTask(item):contactsFilter==='excludeContacts'?!isContactEvent(item)||isGoogleTask(item):true).sort((a,b)=>{const av=when(a),bv=when(b);if(!av)return 1;if(!bv)return -1;return new Date(av).getTime()-new Date(bv).getTime();}),[open,contactsFilter]);
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
