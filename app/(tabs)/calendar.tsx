@@ -13,7 +13,7 @@ const SOURCE_COLORS=['#E8F0FF','#E9F8EF','#FFF0D9','#F3E9FF','#FFE8EE','#E7F6F5'
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
-function monthLabelForWeek(week:Date[]){const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${MONTH_NAMES[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
+function monthLabelForWeek(week:Date[],weekIndex:number){if(weekIndex===0)return `${MONTH_NAMES[week[0].getMonth()]} ${week[0].getFullYear()}`;const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${MONTH_NAMES[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
 function sourceKey(item:Commitment){if(item.kind==='task'&&item.googleTaskListId)return `task:${item.googleTaskListId}`;if(item.googleCalendarId)return `calendar:${item.googleCalendarId}`;return 'flowos';}
 function sourceStyle(item:Commitment,sourceColors:Map<string,string>){
   const key=sourceKey(item);
@@ -69,7 +69,7 @@ export default function Calendar(){
 
   return <ScreenShell title="Calendario" subtitle="Vista mensile in stile Google Calendar. Ogni settimana mostra sempre tutti e sette i giorni.">
     {weeks.map((week,index)=>{
-      const monthTitle=monthLabelForWeek(week);
+      const monthTitle=monthLabelForWeek(week,index);
       return <Card key={index} style={styles.weekCard}>
         {monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}
         <View style={styles.grid}>
@@ -98,20 +98,20 @@ export default function Calendar(){
 }
 
 const styles=StyleSheet.create({
-  weekCard:{padding:9,gap:4},
+  weekCard:{padding:5,gap:3},
   monthTitle:{fontSize:18,lineHeight:22,fontWeight:'900',color:palette.primary,textTransform:'capitalize',paddingHorizontal:2},
   grid:{flexDirection:'row',gap:2,width:'100%'},
-  dayBox:{flex:1,minWidth:0,minHeight:175,padding:4,borderRadius:7,borderWidth:1,borderColor:'#E1E4EC',backgroundColor:'#FFF'},
+  dayBox:{flex:1,minWidth:0,minHeight:175,padding:2,borderRadius:7,borderWidth:1,borderColor:'#E1E4EC',backgroundColor:'#FFF'},
   todayBox:{backgroundColor:'#F0EEFF',borderColor:'#D6D0FF'},
-  dayHeader:{flexDirection:'row',alignItems:'center',gap:3,paddingBottom:4,borderBottomWidth:1,borderBottomColor:'#EEF0F5'},
+  dayHeader:{flexDirection:'row',alignItems:'center',gap:2,paddingBottom:3,borderBottomWidth:1,borderBottomColor:'#EEF0F5'},
   dayName:{fontSize:10,fontWeight:'900',color:palette.ink},
   dayNumber:{fontSize:15,lineHeight:17,fontWeight:'900',color:palette.ink},
   todayText:{color:palette.primary},
-  dayActivities:{gap:3,paddingTop:4},
-  item:{borderRadius:6,padding:4,borderWidth:1,gap:1},
+  dayActivities:{gap:2,paddingTop:3},
+  item:{borderRadius:5,padding:2,borderWidth:1,gap:0},
   flowosItem:{backgroundColor:'#F3F4F7',borderColor:'#E0E2E8'},
-  itemTime:{fontSize:8,lineHeight:10,fontWeight:'800',color:palette.muted},
-  itemTitle:{fontSize:10,lineHeight:13,fontWeight:'900',color:palette.ink},
-  itemMeta:{fontSize:8,lineHeight:10,color:palette.muted},
+  itemTime:{fontSize:7,lineHeight:9,fontWeight:'800',color:palette.muted},
+  itemTitle:{fontSize:9,lineHeight:11,fontWeight:'900',color:palette.ink},
+  itemMeta:{fontSize:7,lineHeight:9,color:palette.muted},
   itemPressed:{opacity:.78}
 });
