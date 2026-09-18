@@ -68,7 +68,7 @@ export default function Calendar(){
   },[commitments]);
 
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
-  const requestedDate=typeof params.date==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(params.date)?params.date:null;
+  const requestedDate=typeof params.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(params.date)?params.date:null;
   const selectedDateKey=requestedDate??dayKey(new Date());
   const selectedWeekIndex=weeks.findIndex(week=>week.some(date=>dayKey(date)===selectedDateKey));
   const scrollToSelectedWeek=()=>{if(selectedWeekIndex<0)return;const offset=weekOffsets.current.get(selectedWeekIndex);if(offset===undefined)return;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));};
