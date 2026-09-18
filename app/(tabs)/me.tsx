@@ -8,7 +8,7 @@ import { deleteAllFlowOSOnlyData } from '@/lib/commitmentsRepository';
 import { deleteFlowOSAccount } from '@/lib/account';
 import { connectGoogleFromSession, disconnectGoogleWorkspace, getGoogleWorkspaceStatus, isSyncGenuinelyStale, recoverStaleGoogleSyncState, setCalendarSelected, setDefaultCalendar, setDefaultTaskList, setTaskListSelected, friendlyCalendarName, setSyncRange, signInWithGoogle, subscribeToSyncProgress, syncGoogleWorkspace, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { buildDailySummary, type DailySummary } from '@/lib/dailySummary';
-import { registerBackgroundSync, runDailySummaryRefresh, unregisterBackgroundSync, checkAndRecoverMissedDailySummary } from '@/lib/backgroundSyncService';
+import { registerBackgroundSync, runDailySummaryRefresh, unregisterBackgroundSync, checkAndRecoverMissedDailySummary } from '@/lib/notificationSettingsBridge';
 import { clearNotificationLog, getNotificationLog, subscribeNotificationLog, type NotificationLogEntry } from '@/lib/notificationLog';
 import { DEFAULT_DAILY_SUMMARY_HOUR, DEFAULT_DAILY_SUMMARY_MINUTE, disableDailySummaryNotification, getDailySummaryTime, getLastRecoveryDateKey, isDailySummaryEnabledStored, NOTIFICATIONS_SUPPORTED_HERE, sendImmediateSummaryNotification, setDailySummaryEnabledStored, setDailySummaryTime } from '@/lib/notificationService';
 import { useFlowStore } from '@/lib/store';
