@@ -1,5 +1,5 @@
 import { PropsWithChildren, RefObject } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BuildInfo } from './BuildInfo';
 
@@ -45,8 +45,8 @@ export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef 
   </SafeAreaView>;
 }
 
-export function Card({ children, style }: PropsWithChildren<{style?: StyleProp<ViewStyle>}>) {
-  return <View style={[styles.card, style]}>{children}</View>;
+export function Card({ children, style, onLayout }: PropsWithChildren<{style?: StyleProp<ViewStyle>; onLayout?: ViewProps['onLayout']}>) {
+  return <View style={[styles.card, style]} onLayout={onLayout}>{children}</View>;
 }
 
 export function Chip({ children, tone='primary' }: PropsWithChildren<{tone?:'primary'|'success'|'warning'|'neutral'}>) {
