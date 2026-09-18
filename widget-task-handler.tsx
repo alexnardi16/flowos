@@ -6,6 +6,7 @@ import { syncGoogleWorkspace } from './lib/googleWorkspace';
 import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment, deleteCommitmentAlsoFromGoogle, removeCommitmentOnlyFromFlowOS } from './lib/commitmentsRepository';
 import { parseVoiceCommand, listenForVoiceCommand, findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
 import type { Commitment } from './types';
+import { recordDiagnostic } from './lib/diagnostics';
 
 const STORAGE_KEY='flowos-store-v2';
 
@@ -82,17 +83,20 @@ async function executeVoice(command:VoiceCommand,items:Commitment[]){
   if(command.type==='delete'){if(item.externalId)await deleteCommitmentAlsoFromGoogle(item);else await removeCommitmentOnlyFromFlowOS(item.id);await refreshFromGoogle();}
 }
 async function runWidgetSync(){
-  try{await refreshFromGoogle();}catch{}
+  try{await refreshFromGoogle();recordDiagnostic('widget-google-sync-completed');}
+  catch(error){recordDiagnostic('widget-google-sync-failed',error,'error');}
 }
 async function runWidgetVoice(){
   try{
     const transcript=await listenForVoiceCommand();
-    if(!transcript)return;
+    if(!transcript){recordDiagnostic('widget-voice-command-empty',undefined,'warn');return;}
     const command=parseVoiceCommand(transcript);
+    recordDiagnostic('widget-voice-command-parsed',{transcript,type:command?.type??null});
     if(!command)throw new Error('Comando vocale non riconosciuto.');
     const items=await loadCommitments();
     await executeVoice(command,items);
-  }catch{}
+    recordDiagnostic('widget-voice-command-completed',{type:command.type});
+  }catch(error){recordDiagnostic('widget-voice-command-failed',error,'error');}
 }
 export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
   if(props.widgetAction==='WIDGET_UPDATE'){
