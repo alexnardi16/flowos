@@ -4,6 +4,7 @@ import * as BackgroundTask from 'expo-background-task';
 import { buildDailySummary, toDateKey } from './dailySummary';
 import { loadCommitments } from './commitmentsRepository';
 import { syncGoogleWorkspace } from './googleWorkspace';
+import { syncTodayWidget } from './widgetSync';
 import { runReminderEngine } from './reminderEngine';
 import { runIntelligentReplan } from './replanEngine';
 import { isSupabaseConfigured, supabase } from './supabase';
@@ -32,6 +33,7 @@ export async function runDailySummaryRefresh(now: Date = new Date()) {
   catch (error) { await logNotificationEvent('daily-summary-google-sync-failed', error, 'warn'); }
 
   const { commitments, summary } = await loadFreshData(now);
+  try { await syncTodayWidget(commitments, now); } catch (error) { await logNotificationEvent('background-widget-refresh-failed', error, 'warn'); }
   await safeRunReminderEngine(commitments, now);
 
   if (!(await isDailySummaryEnabledStored())) { await logNotificationEvent('daily-summary-refresh-skipped-disabled'); return summary; }
@@ -55,6 +57,7 @@ export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) 
   await logNotificationEvent('daily-summary-recovery-triggered', { dateKey });
   try { await syncGoogleWorkspace(); } catch (error) { await logNotificationEvent('daily-summary-recovery-google-sync-failed', error, 'warn'); }
   const { commitments, summary } = await loadFreshData(now);
+  try { await syncTodayWidget(commitments, now); } catch (error) { await logNotificationEvent('recovery-widget-refresh-failed', error, 'warn'); }
   await sendImmediateSummaryNotification(summary);
   await markRecovered(dateKey);
   await scheduleDailySummaryNotification(summary);
