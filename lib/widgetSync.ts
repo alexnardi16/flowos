@@ -55,7 +55,7 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
           days.push({dateKey:key,label:`${dayNames[i]} ${day.getDate()}`,isToday:key===todayKey,items:dayItems});
         }
         const monthStart = days.find(day => Number(day.dateKey.slice(-2)) === 1);
-        const monthTitle = monthStart ? `${months[Number(monthStart.dateKey.slice(5,7))-1]} ${monthStart.dateKey.slice(0,4)}` : '';
+        const monthTitle = w === 0 ? `${months[start.getMonth()]} ${start.getFullYear()}` : monthStart ? `${months[Number(monthStart.dateKey.slice(5,7))-1]} ${monthStart.dateKey.slice(0,4)}` : '';
         weeks.push({title:monthTitle,days});
       }
       await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks}) });
