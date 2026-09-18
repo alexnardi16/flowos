@@ -125,7 +125,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} heightDp={heightDp}/>);break;default:break;}
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
     let data=await loadCalendarCache();
-    if(!data||props.widgetAction==='WIDGET_ADDED') {
+    if(!data) {
       data=await calendarData(raw);
       await saveCalendarCache(data);
     }
