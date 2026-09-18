@@ -9,3 +9,5 @@ jobs:
     name: Deploy web (preview)
     type: deploy
     environment: preview
+    params:
+      alias: flowos-private
