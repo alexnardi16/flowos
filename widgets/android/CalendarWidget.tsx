@@ -19,7 +19,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
       </FlexWidget>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent',height:'match_parent',backgroundColor:BG }}>
-      {weeks.map(week=>{const height=weekHeight(week);return <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width:'match_parent',flexDirection:'column',marginVertical:2 }}>
+      {weeks.slice(0,16).map(week=>{const height=weekHeight(week);return <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width:'match_parent',flexDirection:'column',marginVertical:2 }}>
         {week.title?<TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize:10,fontWeight:'bold',color:PRIMARY,marginBottom:3 }}/>:null}
         <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'space-between' }}>
           {Array.from({length:7},(_,index)=>week.days[index] ?? {dateKey:`${week.title}-${index}`,label:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'][index],isToday:false,items:[]}).map(day=><FlexWidget key={day.dateKey} clickAction="OPEN_URI" clickActionData={{ uri:`flowos://calendar?date=${day.dateKey}` }} accessibilityLabel={`Apri ${day.label}`} style={{ width:DAY_WIDTH,height,marginHorizontal:0,padding:2,borderRadius:8,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column' }}>
