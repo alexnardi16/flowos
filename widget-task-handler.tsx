@@ -64,8 +64,8 @@ async function calendarData(raw:string|null):Promise<Omit<AndroidCalendarWidgetP
   }
   return{weeks};
 }
-async function loadCalendarCache(){try{const raw=await AsyncStorage.getItem(CALENDAR_CACHE_KEY);if(!raw)return null;const parsed=JSON.parse(raw);return Array.isArray(parsed?.weeks)?{weeks:parsed.weeks as AndroidCalendarWidgetProps['weeks']}:null;}catch{return null;}}
-async function saveCalendarCache(data:Omit<AndroidCalendarWidgetProps,'heightDp'>){try{await AsyncStorage.setItem(CALENDAR_CACHE_KEY,JSON.stringify(data));}catch{}}
+async function loadCalendarCache(){try{const raw=await AsyncStorage.getItem(CALENDAR_CACHE_KEY);if(!raw)return null;const parsed=JSON.parse(raw);return parsed?.dateKey===dateKey(new Date())&&Array.isArray(parsed?.weeks)?{weeks:parsed.weeks as AndroidCalendarWidgetProps['weeks']}:null;}catch{return null;}}
+async function saveCalendarCache(data:Omit<AndroidCalendarWidgetProps,'heightDp'>){try{await AsyncStorage.setItem(CALENDAR_CACHE_KEY,JSON.stringify({dateKey:dateKey(new Date()),...data}));}catch{}}
 
 async function refreshFromGoogle(){
   await flushOfflineQueue();
