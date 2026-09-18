@@ -5,6 +5,8 @@ export const NOTIFICATIONS_SUPPORTED_HERE=Platform.OS!=='web';
 export const DEFAULT_DAILY_SUMMARY_HOUR=7;
 export const DEFAULT_DAILY_SUMMARY_MINUTE=30;
 
+// Keep native notification APIs behind a dynamic import so the web bundle never evaluates expo-notifications.
+
 async function nativeService(){
   if(Platform.OS==='web')return null;
   return import('./notificationService');
