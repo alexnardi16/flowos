@@ -1,4 +1,4 @@
-name: Deploy web
+name: Deploy web preview
 
 on:
   push:
@@ -6,10 +6,9 @@ on:
 
 jobs:
   deploy_web:
-    name: Deploy web
+    name: Deploy web (preview)
     type: deploy
-    params:
-      prod: true
+    environment: preview
     hooks:
       before_install_node_modules:
         - name: Regenerate npm lockfile from package.json
