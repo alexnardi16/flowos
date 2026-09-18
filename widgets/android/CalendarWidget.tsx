@@ -22,7 +22,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
       {weeks.map(week=>{const height=weekHeight(week);return <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width:'match_parent',flexDirection:'column',marginVertical:2 }}>
         {week.title?<TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize:10,fontWeight:'bold',color:PRIMARY,marginBottom:3 }}/>:null}
         <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'space-between' }}>
-          {week.days.map(day=><FlexWidget key={day.dateKey} style={{ width:DAY_WIDTH,height,marginHorizontal:0,padding:2,borderRadius:8,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column' }}>
+          {Array.from({length:7},(_,index)=>week.days[index] ?? {dateKey:`${week.title}-${index}`,label:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'][index],isToday:false,items:[]}).map(day=><FlexWidget key={day.dateKey} style={{ width:DAY_WIDTH,height,marginHorizontal:0,padding:2,borderRadius:8,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column' }}>
             <FlexWidget style={{ width:'match_parent',flexDirection:'row',alignItems:'center' }}>
               <TextWidget text={day.label} style={{ fontSize:7,fontWeight:'bold',color:day.isToday?PRIMARY:MUTED }}/>
             </FlexWidget>
