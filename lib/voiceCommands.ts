@@ -53,11 +53,11 @@ export function parseVoiceCommand(transcript:string):VoiceCommand|null{
   if(match)return{type:'rename',query:match[1].trim(),title:match[2].trim()};
   match=lower.match(/^(?:sposta|rimetti|metti|fissa)\s+(.+?)\s+(?:a|per|su)\s+(.+)$/);
   if(match){const when=extractWhen(match[2]);if(when)return{type:'move',query:match[1].trim(),when};}
-  const addMatch=raw.match(/^(?:aggiungi|crea|inserisci|registra|programma|pianifica|ricordami(?:\s+di)?|devo)\s+(.+)$/i);
+  const addMatch=raw.match(/^(aggiungi|crea|inserisci|registra|programma|pianifica|ricordami(?:\s+di)?|devo)\s+(.+)$/i);
   if(addMatch){
-    const original=addMatch[1].trim(),normalizedOriginal=normalize(original);
+    const prefix=normalize(addMatch[1]),original=addMatch[2].trim(),normalizedOriginal=normalize(original);
     const when=extractWhen(original),title=stripKind(removeWhen(original));
-    const kind=/\b(?:evento|appuntamento|meeting|riunione|calendar|calendario)\b/.test(normalizedOriginal)?'event':/\b(?:reminder|promemoria|ricordami)\b/.test(normalizedOriginal)?'reminder':'task';
+    const kind=/\b(?:evento|appuntamento|meeting|riunione|calendar|calendario)\b/.test(normalizedOriginal)?'event':(prefix.includes('ricordami')||/\b(?:reminder|promemoria)\b/.test(normalizedOriginal))?'reminder':'task';
     return{type:'add',title:title||original,kind,when};
   }
   return null;
