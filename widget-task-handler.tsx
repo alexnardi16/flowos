@@ -29,13 +29,17 @@ function todayData(raw:string|null):Omit<AndroidTodayWidgetProps,'heightDp'>{
     .map(({item,date}:any)=>({id:item.id,title:item.title,time:item.allDay?'Tutto il giorno':new Date(date).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),kind:kindLabel(item.kind)}));
   return{items};
 }
-function calendarData(raw:string|null):Omit<AndroidCalendarWidgetProps,'heightDp'>{
+async function calendarData(raw:string|null):Promise<Omit<AndroidCalendarWidgetProps,'heightDp'>>{
   const commitments=readCommitments(raw).filter((item:any)=>item&&item.status!=='done'&&!item.deletedAt),now=new Date();
   const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
   const weeks:any[]=[];
   const months=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
   const dayNames=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
-  const syncEnd=new Date(now.getFullYear()+1,11,31);
+  let syncEnd=new Date(now.getFullYear()+1,11,31);
+  try {
+    const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus());
+    if(status.range?.endDate) syncEnd=new Date(`${status.range.endDate}T23:59:59`);
+  } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
   for(let w=0;w<60;w++){
     const start=new Date(monday);start.setDate(monday.getDate()+w*7);
     if(start.getTime()>syncEnd.getTime())break;
@@ -112,7 +116,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     const data=todayData(raw);
     switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} heightDp={heightDp}/>);break;default:break;}
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
-    const data=calendarData(raw);
+    const data=await calendarData(raw);
     switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget {...data} heightDp={heightDp}/>);break;default:break;}
   }
 }
