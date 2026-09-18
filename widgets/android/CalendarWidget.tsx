@@ -5,7 +5,7 @@ export type AndroidCalendarDay = { dateKey: string; label: string; isToday: bool
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
 export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; heightDp?: number };
 const BG='#F1F4FF'; const INK='#172033'; const MUTED='#697386'; const PRIMARY='#4254C5'; const DAY_WIDTH=41;
-function monthTitle(month:number,year:number){const names=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];const name=names[month]??'';return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${year}`;}
+function capitalizeMonthTitle(value:string){const [month,...year]=value.split(' ');return month?`${month.charAt(0).toUpperCase()}${month.slice(1)} ${year.join(' ')}`:value;}
 function compact(text:string,max=18){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
 function weekHeight(week:AndroidCalendarWeek){const maxItems=Math.max(0,...week.days.map(day=>day.items.length));return Math.max(92,Math.min(170,38+maxItems*14));}
 export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
@@ -20,7 +20,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
     </FlexWidget>
     <ListWidget style={{ width:'match_parent',height:'match_parent',backgroundColor:BG }}>
       {weeks.map(week=>{const height=weekHeight(week);return <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width:'match_parent',flexDirection:'column',marginVertical:2 }}>
-        {week.title?<TextWidget text={week.title ? (() => { const parts=week.title.split(' '); return `${parts[0].charAt(0).toUpperCase()}${parts[0].slice(1)} ${parts.slice(1).join(' ')}`; })() : ''} style={{ fontSize:10,fontWeight:'bold',color:PRIMARY,marginBottom:3 }}/>:null}
+        {week.title?<TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize:10,fontWeight:'bold',color:PRIMARY,marginBottom:3 }}/>:null}
         <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'space-between' }}>
           {week.days.map(day=><FlexWidget key={day.dateKey} style={{ width:DAY_WIDTH,height,marginHorizontal:0,padding:2,borderRadius:8,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column' }}>
             <FlexWidget style={{ width:'match_parent',flexDirection:'row',alignItems:'center' }}>
