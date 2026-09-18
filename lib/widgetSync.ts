@@ -1,4 +1,5 @@
 import React from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { buildTodayGlance } from './widgetData';
 import { logNotificationEvent } from './notificationLog';
@@ -59,6 +60,7 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
         const title = w === 0 ? monthTitle(start.getMonth(), start.getFullYear()) : monthStart ? monthTitle(Number(monthStart.dateKey.slice(5,7))-1, Number(monthStart.dateKey.slice(0,4))) : '';
         weeks.push({title,days});
       }
+      await AsyncStorage.setItem('flowos-calendar-widget-v1',JSON.stringify({weeks}));
       await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks}) });
       await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:weeks.length,calendarDays:weeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
     }
