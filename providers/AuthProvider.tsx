@@ -114,12 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        await syncGoogleWorkspace((progress) => recordDiagnostic('google-auto-sync-progress', progress));
-        if (active) await hydrateFromCloud();
+        void syncGoogleWorkspace((progress) => recordDiagnostic('google-auto-sync-progress', progress)).then(async () => {
+          if (active) await hydrateFromCloud();
+          recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
+        }).catch((error) => { if (active) recordDiagnostic('google-auto-sync-failed', error, 'error'); });
         recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
-      } catch (error) {
-        if (active) recordDiagnostic('google-auto-sync-failed', error, 'error');
-      }
+      } catch (error) { if (active) recordDiagnostic('google-auto-sync-failed', error, 'error'); }
     })();
     return () => { active = false; };
   }, [session?.provider_token, session?.user.id, session?.access_token, hydrateFromCloud]);
