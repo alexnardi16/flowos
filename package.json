@@ -16,10 +16,11 @@
     "test:selectors": "node --test tests/zustandSelectors.test.cjs",
     "test:notifications": "rm -rf .test-dist-notifications && tsc -p tests/tsconfig.notifications.json && node --test tests/dailySummary.test.cjs tests/notificationDedup.test.cjs tests/reminderPlan.test.cjs tests/widgetData.test.cjs tests/scheduler.test.cjs tests/replanTriggers.test.cjs tests/planningSuggestions.test.cjs tests/weatherSummary.test.cjs tests/allDayDate.test.cjs tests/recurrence.test.cjs tests/itemTiming.test.cjs tests/customReminders.test.cjs",
     "test:public-site": "node tests/publicSite.test.cjs",
-    "test": "npm run test:auth && npm run test:selectors && npm run test:notifications && npm run test:public-site",
+    "test": "npm run test:auth && npm run test:selectors && npm run test:voice && npm run test:notifications && npm run test:public-site",
     "validate:web": "npm run typecheck && npm test && npx expo export --platform web",
     "eas:preview": "eas update --channel preview --message \"FlowOS preview\" --environment preview",
-    "eas:build:preview": "npx eas-cli build --profile preview --platform android"
+    "eas:build:preview": "npx eas-cli build --profile preview --platform android",
+    "test:voice": "rm -rf .test-dist-voice && tsc -p tests/tsconfig.voice.json && node --test tests/voiceCommands.test.cjs"
   },
   "dependencies": {
     "@expo/ui": "~57.0.19",
