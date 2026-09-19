@@ -23,9 +23,8 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
       const { requestWidgetUpdate } = await import('react-native-android-widget');
       const { TodayWidget } = await import('../widgets/android/TodayWidget');
       const { CalendarWidget } = await import('../widgets/android/CalendarWidget');
-      const { getGoogleWorkspaceStatus } = await import('./googleWorkspace');
       let syncEndDate = new Date(now.getFullYear() + 1, 11, 31);
-      try { const googleStatus = await getGoogleWorkspaceStatus(); if (googleStatus.range?.endDate) syncEndDate = new Date(`${googleStatus.range.endDate}T23:59:59`); } catch (error) { await logNotificationEvent('calendar-widget-range-load-failed', error, 'warn'); }
+      try { const cachedRange=await AsyncStorage.getItem('flowos-calendar-widget-range-v1'); if(cachedRange){const parsed=JSON.parse(cachedRange);if(parsed?.endDate)syncEndDate=new Date(`${parsed.endDate}T23:59:59`);} } catch {}
       await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => React.createElement(TodayWidget, { items }) });
 
       const { weeks } = buildCalendarWidgetData(commitments, syncEndDate, now);
