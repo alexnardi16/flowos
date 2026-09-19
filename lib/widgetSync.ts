@@ -7,7 +7,7 @@ import { recordDiagnostic } from './diagnostics';
 import type { Commitment } from '../types';
 import { buildCalendarWidgetData } from './calendarWidgetData';
 
-export async function syncTodayWidget(commitments: Commitment[], now: Date = new Date()) {
+async function performWidgetSync(commitments: Commitment[], now: Date = new Date()) {
   const startedAt=Date.now();
   try {
     const glance = buildTodayGlance(commitments, now);
@@ -37,4 +37,43 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
     recordDiagnostic('widget-sync-failed',{durationMs:Date.now()-startedAt,error},'warn');
     await logNotificationEvent('today-widget-update-failed', error, 'warn');
   }
+}
+
+
+let widgetSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let widgetSyncRunning = false;
+let widgetSyncPending = false;
+let latestWidgetCommitments: Commitment[] | null = null;
+let latestWidgetNow = new Date();
+let widgetSyncWaiters: Array<() => void> = [];
+
+async function flushWidgetSyncQueue() {
+  if (widgetSyncRunning) return;
+  widgetSyncRunning = true;
+  try {
+    do {
+      widgetSyncPending = false;
+      const commitments = latestWidgetCommitments ?? [];
+      const now = latestWidgetNow;
+      latestWidgetCommitments = null;
+      await performWidgetSync(commitments, now);
+    } while (widgetSyncPending || latestWidgetCommitments);
+  } finally {
+    widgetSyncRunning = false;
+    const waiters = widgetSyncWaiters.splice(0);
+    waiters.forEach(resolve => resolve());
+  }
+}
+
+export function syncTodayWidget(commitments: Commitment[], now: Date = new Date()): Promise<void> {
+  latestWidgetCommitments = commitments;
+  latestWidgetNow = now;
+  widgetSyncPending = true;
+  if (widgetSyncTimer) clearTimeout(widgetSyncTimer);
+  const promise = new Promise<void>(resolve => widgetSyncWaiters.push(resolve));
+  widgetSyncTimer = setTimeout(() => {
+    widgetSyncTimer = null;
+    void flushWidgetSyncQueue();
+  }, 150);
+  return promise;
 }
