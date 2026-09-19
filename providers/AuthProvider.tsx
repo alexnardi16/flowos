@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { beginDiagnosticSession, clearDiagnostics, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
 import { connectGoogleFromSession, getGoogleWorkspaceStatus, syncGoogleWorkspace } from '../lib/googleWorkspace';
@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const hydrateFromCloud = useFlowStore((state) => state.hydrateFromCloud);
+  const googleSyncInProgressRef = useRef(false);
 
   useEffect(() => {
     clearDiagnostics();
@@ -114,11 +115,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        googleSyncInProgressRef.current = true;
         void syncGoogleWorkspace((progress) => recordDiagnostic('google-auto-sync-progress', progress)).then(async () => {
           if (active) await hydrateFromCloud();
           recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
-        }).catch((error) => { if (active) recordDiagnostic('google-auto-sync-failed', error, 'error'); });
-        recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
+        }).catch((error) => { if (active) recordDiagnostic('google-auto-sync-failed', error, 'error'); })
+          .finally(() => { googleSyncInProgressRef.current = false; });
       } catch (error) { if (active) recordDiagnostic('google-auto-sync-failed', error, 'error'); }
     })();
     return () => { active = false; };
@@ -126,19 +128,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!session?.user.id) return;
-    const channel=supabase.channel(`flowos-commitments-${session.user.id}`)
-      .on('postgres_changes',{event:'*',schema:'public',table:'commitments',filter:`user_id=eq.${session.user.id}`},async()=>{
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let active = true;
+    let refreshPending = false;
+    const scheduleRefresh = () => {
+      refreshPending = true;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => {
+        timer = null;
+        if (!active || googleSyncInProgressRef.current || !refreshPending) return;
+        refreshPending = false;
         try {
           await hydrateFromCloud();
-          const { syncTodayWidget } = await import('../lib/widgetSync');
-          await syncTodayWidget(useFlowStore.getState().commitments,new Date());
           recordDiagnostic('google-realtime-commitments-refresh-completed');
         } catch(error) {
           recordDiagnostic('google-realtime-commitments-refresh-failed',error,'warn');
         }
-      })
+      }, 500);
+    };
+    const channel=supabase.channel(`flowos-commitments-${session.user.id}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'commitments',filter:`user_id=eq.${session.user.id}`},scheduleRefresh)
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => { active = false; if (timer) clearTimeout(timer); void supabase.removeChannel(channel); };
   }, [session?.user.id, hydrateFromCloud]);
 
   useEffect(() => {
