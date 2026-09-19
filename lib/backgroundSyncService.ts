@@ -97,9 +97,9 @@ TaskManager.defineTask(DAILY_SUMMARY_TASK, async () => {
 export async function registerBackgroundSync() {
   if (Platform.OS === 'web') { await logNotificationEvent('background-task-skipped-web-unsupported'); return; }
   try {
-    const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK);
-    if (already) return;
-    await BackgroundTask.registerTaskAsync(DAILY_SUMMARY_TASK, { minimumInterval: 15 });
+    if (!(await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK))) {
+      await BackgroundTask.registerTaskAsync(DAILY_SUMMARY_TASK, { minimumInterval: 15 });
+    }
     if (!(await TaskManager.isTaskRegisteredAsync(GOOGLE_TASKS_BACKGROUND_TASK))) {
       await BackgroundTask.registerTaskAsync(GOOGLE_TASKS_BACKGROUND_TASK, { minimumInterval: 15 });
     }
