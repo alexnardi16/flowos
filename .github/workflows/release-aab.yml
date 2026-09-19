@@ -129,7 +129,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "Production EAS environment is managed persistently in EAS."
-          echo "The Expo project must contain EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY and EXPO_PUBLIC_AI_MODE in the production environment."
+          echo "The Expo project must contain EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY in the production environment."
 
       - name: Build production AAB locally
         env:
