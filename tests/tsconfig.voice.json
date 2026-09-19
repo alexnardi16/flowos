@@ -11,5 +11,5 @@
     "ignoreDeprecations": "6.0",
     "types": []
   },
-  "include": ["../lib/voiceCommands.ts", "../lib/diagnostics.ts", "../types/index.ts"]
+  "include": ["../lib/voiceParser.ts", "../types/index.ts"]
 }
