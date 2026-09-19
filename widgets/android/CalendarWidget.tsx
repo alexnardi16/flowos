@@ -11,7 +11,7 @@ function weekHeight(week:AndroidCalendarWeek){const maxItems=Math.max(0,...week.
 export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
   return <FlexWidget style={{ width:'match_parent',height:'match_parent',padding:8,backgroundColor:BG,borderRadius:20,flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://calendar' }} accessibilityLabel="FlowOS: calendario">
     <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingBottom:5 }}>
-      <FlexWidget style={{ flexDirection:'row',alignItems:'baseline',gap:5 }}><TextWidget text="Calendario" style={{ fontSize:19,fontWeight:'bold',color:INK }}/><TextWidget text={`${weeks.length} sett.`} style={{ fontSize:9,fontWeight:'bold',color:MUTED }}/></FlexWidget>
+      <FlexWidget style={{ flexDirection:'row',alignItems:'center',gap:5 }}><TextWidget text="Calendario" style={{ fontSize:19,fontWeight:'bold',color:INK }}/><TextWidget text={`${weeks.length} sett.`} style={{ fontSize:9,fontWeight:'bold',color:MUTED }}/></FlexWidget>
       <FlexWidget style={{ flexDirection:'row',alignItems:'center' }}>
         <FlexWidget style={{ width:30,height:26,marginRight:4,borderRadius:13,backgroundColor:'#DDE2FF',justifyContent:'center',alignItems:'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel="Sincronizza FlowOS e Google"><TextWidget text="↻" style={{ fontSize:16,fontWeight:'bold',color:INK }}/></FlexWidget>
         <FlexWidget style={{ width:30,height:26,borderRadius:13,backgroundColor:'#DDE2FF',justifyContent:'center',alignItems:'center' }} clickAction="VOICE_COMMAND" accessibilityLabel="Comando vocale"><TextWidget text="🎙" style={{ fontSize:14 }}/></FlexWidget>
