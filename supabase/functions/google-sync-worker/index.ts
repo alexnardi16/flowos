@@ -21,8 +21,10 @@ async function ensureCalendarWatches(userId:string){
     if(state?.channel_id&&state?.channel_expires_at&&new Date(state.channel_expires_at).getTime()>Date.now()+24*60*60*1000)continue;
     if(state?.channel_id&&state?.resource_id){try{await fetch("https://www.googleapis.com/calendar/v3/channels/stop",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({id:state.channel_id,resourceId:state.resource_id})});}catch{}}
     const channelId=crypto.randomUUID();const channelToken=crypto.randomUUID();const expiration=Date.now()+6*24*60*60*1000;
-    const response=await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.google_calendar_id)}/events/watch`,token,{method:"POST",body:JSON.stringify({id:channelId,type:"web_hook",address:webhook,token:channelToken,expiration})});
-    await admin.schema("private").from("google_calendar_sync_state").upsert({user_id:userId,google_calendar_id:calendar.google_calendar_id,channel_id:channelId,channel_token:channelToken,resource_id:response.resourceId??null,channel_expires_at:response.expiration?new Date(Number(response.expiration)).toISOString():new Date(expiration).toISOString(),updated_at:now()},{onConflict:"user_id,google_calendar_id"});
+    try {
+      const response=await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.google_calendar_id)}/events/watch`,token,{method:"POST",body:JSON.stringify({id:channelId,type:"web_hook",address:webhook,token:channelToken,expiration})});
+      await admin.schema("private").from("google_calendar_sync_state").upsert({user_id:userId,google_calendar_id:calendar.google_calendar_id,channel_id:channelId,channel_token:channelToken,resource_id:response.resourceId??null,channel_expires_at:response.expiration?new Date(Number(response.expiration)).toISOString():new Date(expiration).toISOString(),updated_at:now()},{onConflict:"user_id,google_calendar_id"});
+    } catch(error) { console.warn("calendar-watch-create-failed",calendar.google_calendar_id,error); }
   }
 }
 async function sendPush(userId:string){const {data:tokens}=await admin.from("device_push_tokens").select("expo_push_token").eq("user_id",userId);if(!tokens?.length)return;const messages=tokens.map((t:any)=>({to:t.expo_push_token,data:{source:"google-sync",timestamp:Date.now()}}));await fetch("https://exp.host/--/api/v2/push/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(messages)});}
