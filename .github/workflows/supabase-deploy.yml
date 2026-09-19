@@ -40,6 +40,8 @@ jobs:
           supabase functions deploy interpret-commitment --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
           supabase functions deploy google-workspace --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
           supabase functions deploy google-sync-guard --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
+          supabase functions deploy google-sync-worker --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api --no-verify-jwt
+          supabase functions deploy google-push-webhook --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api --no-verify-jwt
           supabase functions deploy google-delete-item --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
           supabase functions deploy delete-account --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
 
