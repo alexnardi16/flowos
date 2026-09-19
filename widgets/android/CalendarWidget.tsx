@@ -1,6 +1,6 @@
 import React from 'react';
 import { FlexWidget, ListWidget, TextWidget } from 'react-native-android-widget';
-export type AndroidCalendarItem={id:string;title:string;time:string;sourceColor:string};
+export type AndroidCalendarItem={id:string;title:string;time:string;sourceColor:any};
 export type AndroidCalendarDay={dateKey:string;label:string;isToday:boolean;items:AndroidCalendarItem[]};
 export type AndroidCalendarWeek={title:string;days:AndroidCalendarDay[]};
 export type AndroidCalendarWidgetProps={weeks:AndroidCalendarWeek[];heightDp?:number};
