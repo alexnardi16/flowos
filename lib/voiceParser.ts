@@ -6,7 +6,7 @@ export type VoiceCommand =
   | { type:'complete'; query:string }
   | { type:'postpone'; query:string }
   | { type:'rename'; query:string; title:string }
-  | { type:'move'; query:string; when:string };
+  | { type:'move'; query:string; when:string }\n  | { type:'remind'; query:string; minutesBefore:number };
 
 const MONTHS:Record<string,number>={gennaio:0,febbraio:1,marzo:2,aprile:3,maggio:4,giugno:5,luglio:6,agosto:7,settembre:8,ottobre:9,novembre:10,dicembre:11};
 const WEEKDAYS:Record<string,number>={lunedi:1,martedi:2,mercoledi:3,giovedi:4,venerdi:5,sabato:6,domenica:0};
@@ -108,7 +108,7 @@ function semanticParse(transcript:string):VoiceCommand|null{
   return null;
 }
 
-export function parseVoiceCommand(transcript:string):VoiceCommand|null{
+export function parseVoiceCommands(transcript:string):VoiceCommand[] {\n  const parts=transcript.trim().split(/\\s+(?:e\\s+poi|e\\s+quindi|poi|e)\\s+(?=(?:aggiungi|crea|inserisci|registra|programma|pianifica|ricordami|devo|elimina|cancella|rimuovi|togli|completa|termina|chiudi|finisci|fatto|segna|posticipa|rimanda|sposta|metti|fissa|rinomina|ribattezza|cambia)\\b)/i).map(part=>part.trim()).filter(Boolean);\n  if(parts.length<=1){const single=parseVoiceCommand(transcript);return single?[single]:[];}\n  return parts.flatMap(part=>{const command=parseVoiceCommand(part);return command?[command]:[];});\n}\n\nexport function parseVoiceCommand(transcript:string):VoiceCommand|null{
   const raw=transcript.trim(),lower=normalizeVoiceText(raw);
   if(!raw)return null;
   let match=lower.match(/^(?:elimina|cancella|rimuovi|togli)\s+(?:l\s+|il |lo |la |un |uno |una )?(?:attivita|evento|task|reminder|appuntamento)?\s*(.+)$/);

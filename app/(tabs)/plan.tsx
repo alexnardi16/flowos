@@ -131,14 +131,14 @@ const styles=StyleSheet.create({
   overdueItem:{paddingTop:6,borderTopWidth:1,borderTopColor:'#F3DCA8'},
   overdueItemTitle:{fontSize:15,fontWeight:'900',color:palette.ink},
   overdueItemMeta:{fontSize:12,lineHeight:16,color:palette.muted,marginTop:1},
-  itemCard:{padding:12,gap:5},
+  itemCard:{padding:9,gap:4},
   cardEvent:{backgroundColor:'#EEF1FE',borderColor:'#C7D0FB',borderWidth:1},
   cardTask:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1},
   cardReminder:{backgroundColor:'#EAFBF3',borderColor:'#B9EAD4',borderWidth:1},
   tagRow:{alignItems:'center',gap:6,paddingRight:4},
-  item:{fontSize:18,lineHeight:22,fontWeight:'900',color:palette.ink},
+  item:{fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
   date:{fontSize:13,lineHeight:17,fontWeight:'800',color:palette.primary},
   meta:{fontSize:12,lineHeight:16,color:palette.muted},
-  description:{fontSize:13,lineHeight:18,color:palette.ink,marginTop:1},
+  description:{fontSize:12,lineHeight:16,color:palette.ink,marginTop:1},
   cardPressed:{opacity:.96,transform:[{scale:.995}]}
 });

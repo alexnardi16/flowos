@@ -1,7 +1,7 @@
 import type { Commitment } from '../types';
 import { toRRuleString } from './recurrence';
 import { enqueueMutation, readQueue, replaceQueue } from './offlineQueue';
-import { logNotificationEvent } from './notificationLog';
+import { logNotificationEvent } from './notificationLog';\nimport { recordDiagnostic } from './diagnostics';
 import { isSupabaseConfigured, supabase } from './supabase';
 
 function googleDescription(item: Commitment) {
