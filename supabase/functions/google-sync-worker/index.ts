@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.57.4";
 const URL=Deno.env.get("SUPABASE_URL")!;
 const SERVICE=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-async function internalKey(){if(Deno.env.get("FLOWOS_SYNC_INTERNAL_KEY"))return Deno.env.get("FLOWOS_SYNC_INTERNAL_KEY")!;const {data}=await admin.schema("vault").from("decrypted_secrets").select("decrypted_secret").eq("name","flowos_sync_internal_key").maybeSingle();return data?.decrypted_secret??"";}
+async function internalKey(){if(Deno.env.get("FLOWOS_SYNC_INTERNAL_KEY"))return Deno.env.get("FLOWOS_SYNC_INTERNAL_KEY")!;const {data}=await admin.rpc("get_flowos_sync_internal_key");return data??"";}
 const admin=createClient(URL,SERVICE,{auth:{persistSession:false}});
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json"}});
 const now=()=>new Date().toISOString();
