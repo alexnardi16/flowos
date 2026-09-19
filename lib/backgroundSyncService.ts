@@ -3,7 +3,7 @@ import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
 import { buildDailySummary, toDateKey } from './dailySummary';
 import { loadCommitments } from './commitmentsRepository';
-import { syncGoogleWorkspace } from './googleWorkspace';
+import { syncGoogleTasksIncremental, syncGoogleWorkspace } from './googleWorkspace';
 import { syncTodayWidget } from './widgetSync';
 import { runReminderEngine } from './reminderEngine';
 import { runIntelligentReplan } from './replanEngine';
@@ -12,6 +12,7 @@ import { logNotificationEvent } from './notificationLog';
 import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
+export const GOOGLE_TASKS_BACKGROUND_TASK = 'flowos-google-tasks-sync';
 async function isPastDailySummaryTime(now: Date): Promise<boolean> {
   const { hour, minute } = await getDailySummaryTime();
   return now.getHours() > hour || (now.getHours() === hour && now.getMinutes() >= minute);
@@ -66,6 +67,20 @@ export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) 
   await logNotificationEvent('daily-summary-recovery-completed', { dateKey });
 }
 
+TaskManager.defineTask(GOOGLE_TASKS_BACKGROUND_TASK, async () => {
+  try {
+    if (!(await hasAuthenticatedSession())) return BackgroundTask.BackgroundTaskResult.Success;
+    await syncGoogleTasksIncremental();
+    const commitments = await loadCommitments();
+    await syncTodayWidget(commitments, new Date());
+    await logNotificationEvent('google-tasks-background-sync-completed');
+    return BackgroundTask.BackgroundTaskResult.Success;
+  } catch (error) {
+    await logNotificationEvent('google-tasks-background-sync-failed', error, 'warn');
+    return BackgroundTask.BackgroundTaskResult.Failed;
+  }
+});
+
 TaskManager.defineTask(DAILY_SUMMARY_TASK, async () => {
   try {
     const now = new Date();
@@ -85,11 +100,14 @@ export async function registerBackgroundSync() {
     const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK);
     if (already) return;
     await BackgroundTask.registerTaskAsync(DAILY_SUMMARY_TASK, { minimumInterval: 15 });
+    if (!(await TaskManager.isTaskRegisteredAsync(GOOGLE_TASKS_BACKGROUND_TASK))) {
+      await BackgroundTask.registerTaskAsync(GOOGLE_TASKS_BACKGROUND_TASK, { minimumInterval: 15 });
+    }
     await logNotificationEvent('background-task-registered');
   } catch (error) { await logNotificationEvent('background-task-register-failed', error, 'error'); }
 }
 export async function unregisterBackgroundSync() {
   if (Platform.OS === 'web') return;
-  try { const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK); if (!already) return; await BackgroundTask.unregisterTaskAsync(DAILY_SUMMARY_TASK); await logNotificationEvent('background-task-unregistered'); }
+  try { const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK); if (already) await BackgroundTask.unregisterTaskAsync(DAILY_SUMMARY_TASK); const tasksAlready = await TaskManager.isTaskRegisteredAsync(GOOGLE_TASKS_BACKGROUND_TASK); if (tasksAlready) await BackgroundTask.unregisterTaskAsync(GOOGLE_TASKS_BACKGROUND_TASK); await logNotificationEvent('background-task-unregistered'); }
   catch (error) { await logNotificationEvent('background-task-unregister-failed', error, 'warn'); }
 }
