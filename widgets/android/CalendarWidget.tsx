@@ -11,7 +11,7 @@ function weekHeight(week:AndroidCalendarWeek){const maxItems=Math.max(0,...week.
 export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
   return <FlexWidget style={{ width:'match_parent',height:'match_parent',padding:8,backgroundColor:BG,borderRadius:20,flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://calendar' }} accessibilityLabel="FlowOS: calendario">
     <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingBottom:5 }}>
-      <FlexWidget style={{ flexDirection:'row',alignItems:'center' }}><TextWidget text="Calendario" style={{ fontSize:19,fontWeight:'bold',color:INK,marginRight:5 }}/><TextWidget text={`${weeks.length} sett.`} style={{ fontSize:9,fontWeight:'bold',color:MUTED }}/></FlexWidget>
+      <FlexWidget style={{ flexDirection:'row',alignItems:'center' }}><TextWidget text="Calendario" style={{ fontSize:19,fontWeight:'bold',color:INK }}/></FlexWidget>
       <FlexWidget style={{ flexDirection:'row',alignItems:'center' }}>
         <FlexWidget style={{ width:30,height:26,marginRight:4,borderRadius:13,backgroundColor:'#DDE2FF',justifyContent:'center',alignItems:'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel="Sincronizza FlowOS e Google"><TextWidget text="↻" style={{ fontSize:16,fontWeight:'bold',color:INK }}/></FlexWidget>
         <FlexWidget style={{ width:30,height:26,borderRadius:13,backgroundColor:'#DDE2FF',justifyContent:'center',alignItems:'center' }} clickAction="VOICE_COMMAND" accessibilityLabel="Comando vocale"><TextWidget text="🎙" style={{ fontSize:14 }}/></FlexWidget>
@@ -22,7 +22,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
       {weeks.slice(0,16).map(week=>{const height=weekHeight(week);return <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width:'match_parent',flexDirection:'column',marginVertical:2 }}>
         {week.title?<TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize:10,fontWeight:'bold',color:PRIMARY,marginBottom:3 }}/>:null}
         <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'flex-start' }}>
-          {Array.from({length:7},(_,index)=>week.days[index] ?? {dateKey:`${week.title}-${index}`,label:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'][index],isToday:false,items:[]}).map(day=><FlexWidget key={day.dateKey} clickAction="OPEN_URI" clickActionData={{ uri:`flowos://calendar?date=${day.dateKey}` }} accessibilityLabel={`Apri ${day.label}`} style={{ flex:1,height,marginHorizontal:1,padding:2,borderRadius:7,borderWidth:1,borderColor:BORDER,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column' }}>
+          {Array.from({length:7},(_,index)=>week.days[index] ?? {dateKey:`${week.title}-${index}`,label:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'][index],isToday:false,items:[]}).map(day=><FlexWidget key={day.dateKey} clickAction="OPEN_URI" clickActionData={{ uri:`flowos://calendar?date=${day.dateKey}` }} accessibilityLabel={`Apri ${day.label}`} style={{ flex:1,minWidth:0,height,marginHorizontal:1,padding:2,borderRadius:7,borderWidth:1,borderColor:BORDER,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column' }}>
             <FlexWidget style={{ width:'match_parent',flexDirection:'row',alignItems:'center' }}>
               <TextWidget text={day.label} style={{ fontSize:8,fontWeight:'bold',color:day.isToday?PRIMARY:MUTED }}/>
             </FlexWidget>
@@ -31,7 +31,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
           </FlexWidget>)}
         </FlexWidget>
       </FlexWidget>})}
-      <FlexWidget style={{ width:'match_parent',height:18 }}/>
+      <FlexWidget style={{ width:'match_parent',height:40 }}/>
     </ListWidget>
   </FlexWidget>;
 }
