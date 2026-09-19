@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseVoiceCommand, findBestVoiceMatch } = require('../.test-dist-voice/lib/voiceCommands.js');
+const { parseVoiceCommand, findBestVoiceMatch } = require('../.test-dist-voice/lib/voiceParser.js');
 
 test('parses natural add command with date and time', () => {
   const command = parseVoiceCommand('Aggiungi visita pediatra domani alle 15');
