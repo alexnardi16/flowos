@@ -56,17 +56,32 @@ async function writeReminderMap(map: ReminderMap) {
  */
 async function syncEventReminders(commitments: Commitment[], now: Date) {
   const previous = await readReminderMap();
-  await Promise.all(
-    Object.values(previous).map((entry) =>
-      Notifications.cancelScheduledNotificationAsync(entry.notificationId).catch((error) =>
-        logNotificationEvent('cancel-event-reminder-failed', error, 'warn'),
-      ),
-    ),
-  );
-
   const reminders = buildCustomReminders(commitments, now);
+  const desired = new Map(reminders.map(reminder => [reminder.id, reminder]));
   const next: ReminderMap = {};
-  for (const reminder of reminders) {
+
+  // Reuse unchanged scheduled notifications. This avoids a cancel/recreate window
+  // on every foreground refresh and prevents duplicate/missing reminders if the
+  // process is interrupted during reconciliation.
+  for (const [id, entry] of Object.entries(previous)) {
+    const desiredReminder = desired.get(id);
+    if (!desiredReminder) {
+      await Notifications.cancelScheduledNotificationAsync(entry.notificationId).catch(error =>
+        logNotificationEvent('cancel-event-reminder-failed', error, 'warn'),
+      );
+      continue;
+    }
+    if (entry.triggerAt === desiredReminder.triggerAt) {
+      next[id] = entry;
+      desired.delete(id);
+    } else {
+      await Notifications.cancelScheduledNotificationAsync(entry.notificationId).catch(error =>
+        logNotificationEvent('cancel-event-reminder-failed', error, 'warn'),
+      );
+    }
+  }
+
+  for (const reminder of desired.values()) {
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
         title: reminder.title,
@@ -82,7 +97,7 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     next[reminder.id] = { notificationId: identifier, triggerAt: reminder.triggerAt };
   }
   await writeReminderMap(next);
-  await logNotificationEvent('event-reminders-synced', { count: reminders.length });
+  await logNotificationEvent('event-reminders-synced', { count: reminders.length, reused: Object.keys(previous).length - Object.keys(next).length < 0 ? 0 : Object.keys(previous).length - Object.keys(next).length });
 }
 
 /**

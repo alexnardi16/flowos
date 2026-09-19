@@ -26,8 +26,8 @@ export async function checkAndRecoverMissedDailySummary() {
   if (service) await service.checkAndRecoverMissedDailySummary();
 }
 
-export async function refreshReminders() {
+export async function refreshReminders(commitments?: import('@/types').Commitment[]) {
   const service = await nativeBackgroundService();
-  if (service) return service.refreshReminders();
+  if (service) return commitments ? (await import('./reminderEngine')).runReminderEngine(commitments) : service.refreshReminders();
   return null;
 }

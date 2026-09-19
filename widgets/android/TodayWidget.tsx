@@ -5,11 +5,11 @@ export type AndroidWidgetItem = { id: string; title: string; time: string; kind:
 export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; heightDp?: number };
 const BG = '#F1F4FF'; const INK = '#172033'; const MUTED = '#697386'; const PRIMARY = '#4254C5'; const BORDER = '#C8CEDA';
 const uri=(action:string,id:string)=>`flowos://today?widgetAction=${action}&id=${encodeURIComponent(id)}`;
-function compact(text:string,max=34){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
+function compact(text:string,max=42){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
 export function TodayWidget({ items }: AndroidTodayWidgetProps) {
-  return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel="FlowOS: attività di oggi">
+  return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel={`FlowOS: attività di oggi, ${items.length} attività`}>
     <FlexWidget style={{ width:'match_parent', flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingBottom:5 }}>
-      <TextWidget text="Oggi" style={{ fontSize:19, fontWeight:'bold', color:INK }}/>
+      <FlexWidget style={{ flexDirection:'row',alignItems:'baseline',gap:5 }}><TextWidget text="Oggi" style={{ fontSize:19, fontWeight:'bold', color:INK }}/><TextWidget text={`${items.length}`} style={{ fontSize:10,fontWeight:'bold',color:MUTED }}/></FlexWidget>
       <FlexWidget style={{ flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:30, height:26, marginRight:4, borderRadius:13, backgroundColor:'#DDE2FF', justifyContent:'center', alignItems:'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel="Sincronizza FlowOS e Google"><TextWidget text="↻" style={{ fontSize:16, fontWeight:'bold', color:INK }}/></FlexWidget>
         <FlexWidget style={{ width:30, height:26, borderRadius:13, backgroundColor:'#DDE2FF', justifyContent:'center', alignItems:'center' }} clickAction="VOICE_COMMAND" accessibilityLabel="Comando vocale"><TextWidget text="🎙" style={{ fontSize:14 }}/></FlexWidget>

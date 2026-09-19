@@ -1,0 +1,4 @@
+{
+  "compilerOptions":{"target":"ES2020","module":"CommonJS","moduleResolution":"Node","rootDir":"..","outDir":"../.test-dist-widget","strict":true,"esModuleInterop":true,"skipLibCheck":true,"ignoreDeprecations":"6.0","types":[]},
+  "include":["../lib/calendarWidgetData.ts","../widgets/android/CalendarWidget.tsx","../types/index.ts"]
+}

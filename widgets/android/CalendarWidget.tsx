@@ -6,12 +6,12 @@ export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
 export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; heightDp?: number };
 const BG='#F1F4FF'; const INK='#172033'; const MUTED='#697386'; const PRIMARY='#4254C5'; const DAY_WIDTH=40; const BORDER='#C8CEDA';
 function capitalizeMonthTitle(value:string){const [month,...year]=value.split(' ');return month?`${month.charAt(0).toUpperCase()}${month.slice(1)} ${year.join(' ')}`:value;}
-function compact(text:string,max=18){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
+function compact(text:string,max=22){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
 function weekHeight(week:AndroidCalendarWeek){const maxItems=Math.max(0,...week.days.map(day=>day.items.length));return Math.max(92,Math.min(170,38+maxItems*14));}
 export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
   return <FlexWidget style={{ width:'match_parent',height:'match_parent',padding:8,backgroundColor:BG,borderRadius:20,flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://calendar' }} accessibilityLabel="FlowOS: calendario">
     <FlexWidget style={{ width:'match_parent',flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingBottom:5 }}>
-      <TextWidget text="Calendario" style={{ fontSize:19,fontWeight:'bold',color:INK }}/>
+      <FlexWidget style={{ flexDirection:'row',alignItems:'baseline',gap:5 }}><TextWidget text="Calendario" style={{ fontSize:19,fontWeight:'bold',color:INK }}/><TextWidget text={`${weeks.length} sett.`} style={{ fontSize:9,fontWeight:'bold',color:MUTED }}/></FlexWidget>
       <FlexWidget style={{ flexDirection:'row',alignItems:'center' }}>
         <FlexWidget style={{ width:30,height:26,marginRight:4,borderRadius:13,backgroundColor:'#DDE2FF',justifyContent:'center',alignItems:'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel="Sincronizza FlowOS e Google"><TextWidget text="↻" style={{ fontSize:16,fontWeight:'bold',color:INK }}/></FlexWidget>
         <FlexWidget style={{ width:30,height:26,borderRadius:13,backgroundColor:'#DDE2FF',justifyContent:'center',alignItems:'center' }} clickAction="VOICE_COMMAND" accessibilityLabel="Comando vocale"><TextWidget text="🎙" style={{ fontSize:14 }}/></FlexWidget>
