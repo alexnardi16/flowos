@@ -8,6 +8,7 @@ import { checkAndRecoverMissedDailySummary, refreshReminders, registerBackground
 import { clearNotificationLog } from '../lib/notificationLog';
 import { useFlowStore } from '../lib/store';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { registerGooglePushToken } from '../lib/googlePushSync';
 
 type AuthContextValue = {
   session: Session | null;
@@ -126,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!session?.user.id) return;
     void registerBackgroundSync();
+    void registerGooglePushToken(session.user.id);
     void checkAndRecoverMissedDailySummary();
     void refreshReminders();
 
