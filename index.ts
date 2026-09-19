@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import './lib/googlePushSync';
 
 declare const require: (moduleName: string) => any;
 
