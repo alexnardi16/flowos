@@ -25,7 +25,16 @@ let connectInFlight:Promise<unknown>|null=null;
 export async function connectGoogleFromSession(session:Session,force=false){if(!session.provider_token)return null;if(connectInFlight){recordDiagnostic('google-connect-coalesced');return connectInFlight;}const marker=`flowos-google-connected-${session.user.id}-${session.provider_token.slice(-12)}`;if(!force&&Platform.OS==='web'&&typeof sessionStorage!=='undefined'&&sessionStorage.getItem(marker))return null;connectInFlight=invoke({action:'connect',providerToken:session.provider_token,providerRefreshToken:session.provider_refresh_token,scopes:GOOGLE_SCOPES,expiresIn:3600}).then(result=>{if(Platform.OS==='web'&&typeof sessionStorage!=='undefined')sessionStorage.setItem(marker,'1');return result;}).finally(()=>{connectInFlight=null;});return connectInFlight;}
 let statusCache:GoogleWorkspaceStatus|null=null;let statusCacheAt=0;let statusInFlight:Promise<GoogleWorkspaceStatus>|null=null;const STATUS_CACHE_MS=5000;
 export function friendlyTaskListName(name:string){return name.trim()==='Elenco di Alex Nardi'?'Alex':name;}
-function normalizeWorkspaceStatus(result:any):GoogleWorkspaceStatus{const serverRange=result?.range;if(serverRange?.start&&serverRange?.endExclusive){const end=new Date(serverRange.endExclusive);end.setUTCDate(end.getUTCDate()-1);return{...result,taskLists:(result?.taskLists??[]).map((list:any)=>({...list,title:friendlyTaskListName(String(list.title??'')))),range:{...serverRange,startDate:String(serverRange.start).slice(0,10),endDate:end.toISOString().slice(0,10)}};}return{...result,taskLists:(result?.taskLists??[]).map((list:any)=>({...list,title:friendlyTaskListName(String(list.title??'')))),range:currentRange()};}
+function normalizeWorkspaceStatus(result:any):GoogleWorkspaceStatus {
+  const serverRange=result?.range;
+  const taskLists=(result?.taskLists??[]).map((list:any)=>({...list,title:friendlyTaskListName(String(list.title??''))}));
+  if(serverRange?.start&&serverRange?.endExclusive){
+    const end=new Date(serverRange.endExclusive);
+    end.setUTCDate(end.getUTCDate()-1);
+    return {...result,taskLists,range:{...serverRange,startDate:String(serverRange.start).slice(0,10),endDate:end.toISOString().slice(0,10)}};
+  }
+  return {...result,taskLists,range:currentRange()};
+}
 export function invalidateGoogleWorkspaceStatusCache(){statusCache=null;statusCacheAt=0;}
 export async function getGoogleWorkspaceStatus():Promise<GoogleWorkspaceStatus>{const now=Date.now();if(statusCache&&now-statusCacheAt<STATUS_CACHE_MS)return statusCache;if(statusInFlight)return statusInFlight;statusInFlight=invoke({action:'status'},1).then(normalizeWorkspaceStatus).then(result=>{statusCache=result;statusCacheAt=Date.now();return result;}).finally(()=>{statusInFlight=null;});return statusInFlight;}
 const activeProgressListeners=new Set<(progress:SyncProgress)=>void>();let syncInFlight:Promise<{pushed:number;events:number;tasks:number;range?:GoogleSyncRange}>|null=null;
