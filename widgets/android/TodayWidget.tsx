@@ -9,7 +9,7 @@ function compact(text:string,max=42){return text.length<=max?text:`${text.slice(
 export function TodayWidget({ items }: AndroidTodayWidgetProps) {
   return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel={`FlowOS: attività di oggi, ${items.length} attività`}>
     <FlexWidget style={{ width:'match_parent', flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingBottom:5 }}>
-      <FlexWidget style={{ flexDirection:'row',alignItems:'center' }}><TextWidget text="Oggi" style={{ fontSize:19, fontWeight:'bold', color:INK }}/><TextWidget text={`${items.length}`} style={{ fontSize:10,fontWeight:'bold',color:MUTED }}/></FlexWidget>
+      <FlexWidget style={{ flexDirection:'row',alignItems:'center' }}><TextWidget text="Oggi" style={{ fontSize:19, fontWeight:'bold', color:INK,marginRight:5 }}/><TextWidget text={`${items.length}`} style={{ fontSize:10,fontWeight:'bold',color:MUTED }}/></FlexWidget>
       <FlexWidget style={{ flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:30, height:26, marginRight:4, borderRadius:13, backgroundColor:'#DDE2FF', justifyContent:'center', alignItems:'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel="Sincronizza FlowOS e Google"><TextWidget text="↻" style={{ fontSize:16, fontWeight:'bold', color:INK }}/></FlexWidget>
         <FlexWidget style={{ width:30, height:26, borderRadius:13, backgroundColor:'#DDE2FF', justifyContent:'center', alignItems:'center' }} clickAction="VOICE_COMMAND" accessibilityLabel="Comando vocale"><TextWidget text="🎙" style={{ fontSize:14 }}/></FlexWidget>
@@ -23,6 +23,7 @@ export function TodayWidget({ items }: AndroidTodayWidgetProps) {
         <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:'#ECEEF4', justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('postpone',item.id) }}><TextWidget text="+1g" style={{ fontSize:9, fontWeight:'bold', color:INK }}/></FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:4, borderRadius:9, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('complete',item.id) }}><TextWidget text="✓" style={{ fontSize:11, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
       </FlexWidget>) : <FlexWidget style={{ width:'match_parent', height:50, justifyContent:'center', alignItems:'center' }}><TextWidget text="Nessuna attività oggi" style={{ fontSize:12, color:MUTED }}/></FlexWidget>}
+      <FlexWidget style={{ width:'match_parent',height:18 }}/>
     </ListWidget>
   </FlexWidget>;
 }

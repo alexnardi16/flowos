@@ -3,16 +3,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { buildTodayGlance } from './widgetData';
 import { logNotificationEvent } from './notificationLog';
+import { recordDiagnostic } from './diagnostics';
 import type { Commitment } from '../types';
 import { buildCalendarWidgetData } from './calendarWidgetData';
 
 export async function syncTodayWidget(commitments: Commitment[], now: Date = new Date()) {
+  const startedAt=Date.now();
   try {
     const glance = buildTodayGlance(commitments, now);
+    const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? 'Evento' : item.kind === 'task' ? 'Task' : 'Reminder' }));
     if (Platform.OS === 'ios') {
       const { default: TodayWidget } = await import('../widgets/TodayWidget');
       TodayWidget.updateSnapshot(glance);
       await logNotificationEvent('today-widget-updated', { platform: 'ios', dateKey: glance.dateKey, count: glance.items.length });
+      recordDiagnostic('widget-sync-completed',{platform:'ios',durationMs:Date.now()-startedAt,count:glance.items.length});
       return;
     }
     if (Platform.OS === 'android') {
@@ -25,10 +29,13 @@ export async function syncTodayWidget(commitments: Commitment[], now: Date = new
       await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => React.createElement(TodayWidget, { items }) });
 
       const { weeks } = buildCalendarWidgetData(commitments, syncEndDate, now);
-      const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? 'Evento' : item.kind === 'task' ? 'Task' : 'Reminder' }));
       await AsyncStorage.setItem('flowos-calendar-widget-v1',JSON.stringify({dateKey:glance.dateKey,weeks}));
       await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks}) });
       await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:weeks.length,calendarDays:weeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
+      recordDiagnostic('widget-sync-completed',{platform:'android',durationMs:Date.now()-startedAt,count:items.length,calendarWeeks:weeks.length});
     }
-  } catch (error) { await logNotificationEvent('today-widget-update-failed', error, 'warn'); }
+  } catch (error) {
+    recordDiagnostic('widget-sync-failed',{durationMs:Date.now()-startedAt,error},'warn');
+    await logNotificationEvent('today-widget-update-failed', error, 'warn');
+  }
 }
