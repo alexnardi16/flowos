@@ -1,7 +1,8 @@
 import type { Commitment } from '../types';
 import { toRRuleString } from './recurrence';
 import { enqueueMutation, readQueue, replaceQueue } from './offlineQueue';
-import { logNotificationEvent } from './notificationLog';\nimport { recordDiagnostic } from './diagnostics';
+import { logNotificationEvent } from './notificationLog';
+import { recordDiagnostic } from './diagnostics';
 import { isSupabaseConfigured, supabase } from './supabase';
 
 function googleDescription(item: Commitment) {
@@ -11,7 +12,9 @@ function googleDescription(item: Commitment) {
     item.location ? `Luogo: ${item.location}` : undefined,
     item.link ? `Link: ${item.link}` : undefined,
   ].filter(Boolean);
-  return parts.join('\n\n') || undefined;
+  return parts.join('
+
+') || undefined;
 }
 
 function toRow(item: Commitment, userId: string) {
