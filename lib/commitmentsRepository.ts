@@ -12,9 +12,7 @@ function googleDescription(item: Commitment) {
     item.location ? `Luogo: ${item.location}` : undefined,
     item.link ? `Link: ${item.link}` : undefined,
   ].filter(Boolean);
-  return parts.join('
-
-') || undefined;
+  return parts.join('\\n\\n') || undefined;
 }
 
 function toRow(item: Commitment, userId: string) {
