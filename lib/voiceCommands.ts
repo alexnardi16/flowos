@@ -77,6 +77,39 @@ function cleanQuery(text:string){
     .replace(/\s+/g,' ').trim();
 }
 
+function semanticParse(transcript:string):VoiceCommand|null{
+  const raw=transcript.trim(), lower=normalizeVoiceText(raw);
+  if(!raw)return null;
+  const action=(patterns:RegExp[])=>patterns.some(pattern=>pattern.test(lower));
+  const extractAfterAction=(patterns:RegExp[])=>{
+    for(const pattern of patterns){const match=lower.match(pattern);if(match?.[1])return match[1].trim();}
+    return '';
+  };
+  if(action([/\\b(?:elimina|cancella|rimuovi|togli)\\b/])){
+    const query=cleanQuery(extractAfterAction([/(?:elimina|cancella|rimuovi|togli)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+)$/]));
+    return query?{type:'delete',query}:null;
+  }
+  if(action([/\\b(?:completa|termina|chiudi|finisci|fai|segna)\\b.*\\b(?:fatto|complet[ao])\\b/,/^fatto\\b/])){
+    const query=cleanQuery(extractAfterAction([/(?:completa|termina|chiudi|finisci|segna(?:\\s+come)?\\s+fatto|fatto)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+)$/]));
+    return query?{type:'complete',query}:null;
+  }
+  if(action([/\\b(?:posticipa|rimanda|sposta)\\b/])){
+    const match=lower.match(/(?:posticipa|rimanda|sposta)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+?)\\s+(?:a|per|su|in)\\s+(.+)$/);
+    if(match){const when=extractWhen(match[2]);const query=cleanQuery(match[1]);if(when&&query)return{type:'move',query,when};}
+    const query=cleanQuery(extractAfterAction([/(?:posticipa|rimanda)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+)$/]));
+    return query?{type:'postpone',query}:null;
+  }
+  const rename=lower.match(/(?:rinomina|ribattezza|cambia\\s+(?:il\\s+)?nome(?:\\s+di|\\s+a)?)\\s+(.+?)\\s+(?:in|come|con\\s+il\\s+nome)\\s+(.+)$/);
+  if(rename){const query=cleanQuery(rename[1]),title=stripKind(rename[2]);return query&&title?{type:'rename',query,title}:null;}
+  if(action([/\\b(?:sposta|metti|mettila|mettilo|fissa|programma)\\b/])){
+    const match=lower.match(/(?:sposta|metti|mettila|mettilo|fissa|programma)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+?)\\s+(?:a|per|su|in)\\s+(.+)$/);
+    if(match){const when=extractWhen(match[2]);const query=cleanQuery(match[1]);if(when&&query)return{type:'move',query,when};}
+  }
+  const add=lower.match(/^(?:aggiungi|crea|inserisci|registra|programma|pianifica|ricordami(?:\\s+di)?|devo|devo\\s+ricordarmi\\s+di)\\s+(.+)$/);
+  if(add){const original=raw.slice(raw.toLowerCase().indexOf(add[1])).trim();const when=extractWhen(original);const title=stripKind(removeWhen(original));const kind=/\\b(?:evento|appuntamento|meeting|riunione|calendar|calendario)\\b/.test(add[1])?'event':/\\b(?:reminder|promemoria|ricordami|ricorda)\\b/.test(add[1])?'reminder':'task';return{type:'add',title:title||original,kind,when};}
+  return null;
+}
+
 export function parseVoiceCommand(transcript:string):VoiceCommand|null{
   const raw=transcript.trim(),lower=normalizeVoiceText(raw);
   if(!raw)return null;
@@ -109,45 +142,35 @@ export function findBestVoiceMatch(items:Commitment[],query:string){
   if(!q)return null;
   const exact=active.find(item=>normalizeVoiceText(item.title)===q);
   if(exact)return exact;
-  const contains=active.filter(item=>{const t=normalizeVoiceText(item.title);return t.includes(q)||q.includes(t);});
-  if(contains.length===1)return contains[0];
-  if(contains.length>1){
-    const ranked=contains.map(item=>({item,score:normalizeVoiceText(item.title)===q?100:normalizeVoiceText(item.title).startsWith(q)?80:60})).sort((a,b)=>b.score-a.score);
-    if(ranked[0].score>ranked[1].score)return ranked[0].item;
-    return null;
-  }
-  const qTokens=q.split(' ').filter(token=>token.length>2);
-  let best:Commitment|null=null,bestScore=0,second=0;
-  for(const item of active){
-    const tokens=new Set(normalizeVoiceText(item.title).split(' ').filter(token=>token.length>2));
-    const score=qTokens.filter(token=>tokens.has(token)).length;
-    if(score>bestScore){second=bestScore;bestScore=score;best=item;}
-    else if(score>second)second=score;
-  }
-  return best&&bestScore>=Math.max(1,Math.ceil(qTokens.length*0.5))&&bestScore>second?best:null;
+  const qTokens=q.split(' ').filter(token=>token.length>1);
+  const scoreItem=(item:Commitment)=>{
+    const title=normalizeVoiceText(item.title);
+    const titleTokens=title.split(' ').filter(token=>token.length>1);
+    let score=0;
+    if(title.includes(q))score+=60;
+    if(q.includes(title))score+=45;
+    for(const qt of qTokens){
+      if(titleTokens.includes(qt))score+=20;
+      else if(titleTokens.some(tt=>tt.startsWith(qt)||qt.startsWith(tt)))score+=12;
+      else if(titleTokens.some(tt=>editDistance(qt,tt)<=1))score+=8;
+    }
+    return score;
+  };
+  const ranked=active.map(item=>({item,score:scoreItem(item)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+  if(!ranked.length)return null;
+  if(ranked.length===1)return ranked[0].item;
+  return ranked[0].score>=Math.max(35,ranked[1].score+8)?ranked[0].item:null;
 }
 
-export async function listenForVoiceCommand(locale='it-IT'):Promise<string|null>{
-  if(Platform.OS==='web'){
-    if(typeof window==='undefined')return null;
-    const SpeechRecognition=(window as any).SpeechRecognition??(window as any).webkitSpeechRecognition;
-    if(!SpeechRecognition)throw new Error('Il riconoscimento vocale non è disponibile su questo dispositivo.');
-    const recognition=new SpeechRecognition();
-    recognition.lang=locale;recognition.interimResults=false;recognition.maxAlternatives=5;
-    return await new Promise<string|null>((resolve,reject)=>{
-      let settled=false;
-      recognition.onresult=(event:any)=>{if(!settled){settled=true;resolve(event.results?.[0]?.[0]?.transcript??null);}};
-      recognition.onerror=(event:any)=>{if(!settled){settled=true;reject(new Error(`Riconoscimento vocale non riuscito: ${event?.error??'errore sconosciuto'}.`));}};
-      recognition.onend=()=>{if(!settled){settled=true;resolve(null);}};
-      recognition.start();
-    });
+function editDistance(a:string,b:string){
+  const row=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    let prev=row[0];row[0]=i;
+    for(let j=1;j<=b.length;j++){
+      const current=row[j];
+      row[j]=Math.min(row[j]+1,row[j-1]+1,prev+(a[i-1]===b[j-1]?0:1));
+      prev=current;
+    }
   }
-  if(Platform.OS!=='android')throw new Error('Il microfono dei comandi vocali è disponibile nell’app Android.');
-  const IntentLauncher=await import('expo-intent-launcher');
-  recordDiagnostic('voice-command-started',{locale});
-  const result=await IntentLauncher.startActivityAsync('android.speech.action.RECOGNIZE_SPEECH',{extra:{'android.speech.extra.LANGUAGE_MODEL':'free_form','android.speech.extra.LANGUAGE':locale,'android.speech.extra.MAX_RESULTS':5,'android.speech.extra.PROMPT':'Cosa vuoi fare con FlowOS?'}});
-  const values=(result.extra as Record<string,unknown>|undefined)?.['android.speech.extra.RESULTS'];
-  const transcript=Array.isArray(values)?String(values[0]??''):null;
-  recordDiagnostic('voice-command-finished',{resultCode:result.resultCode,hasTranscript:Boolean(transcript)});
-  return transcript||null;
+  return row[b.length];
 }
