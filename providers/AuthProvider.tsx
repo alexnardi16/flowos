@@ -126,6 +126,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!session?.user.id) return;
+    const channel=supabase.channel(`flowos-commitments-${session.user.id}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'commitments',filter:`user_id=eq.${session.user.id}`},async()=>{
+        try {
+          await hydrateFromCloud();
+          const { syncTodayWidget } = await import('../lib/widgetSync');
+          await syncTodayWidget(useFlowStore.getState().commitments,new Date());
+          recordDiagnostic('google-realtime-commitments-refresh-completed');
+        } catch(error) {
+          recordDiagnostic('google-realtime-commitments-refresh-failed',error,'warn');
+        }
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [session?.user.id, hydrateFromCloud]);
+
+  useEffect(() => {
+    if (!session?.user.id) return;
     void registerBackgroundSync();
     void registerGooglePushToken(session.user.id);
     void checkAndRecoverMissedDailySummary();
