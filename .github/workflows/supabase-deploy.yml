@@ -41,7 +41,6 @@ jobs:
           supabase functions deploy google-workspace --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
           supabase functions deploy google-sync-guard --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
           supabase functions deploy google-delete-item --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
-          supabase functions deploy ai-planner --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
           supabase functions deploy delete-account --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --use-api
 
       - name: Apply database migrations
@@ -49,6 +48,3 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: supabase db push --password "${{ secrets.SUPABASE_DB_PASSWORD }}" --include-all
-
-      - name: Confirm AI planner fallback
-        run: echo "The AI planner uses OPENAI_API_KEY when configured server-side and falls back to deterministic suggestions otherwise."
