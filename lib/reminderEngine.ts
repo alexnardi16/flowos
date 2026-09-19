@@ -56,8 +56,8 @@ async function writeReminderMap(map: ReminderMap) {
  */
 async function syncEventReminders(commitments: Commitment[], now: Date) {
   const previous = await readReminderMap();
-  const previousCount = Object.keys(previous).length;
   const reminders = buildCustomReminders(commitments, now);
+  let reused = 0;
   const desired = new Map(reminders.map(reminder => [reminder.id, reminder]));
   const next: ReminderMap = {};
 
@@ -75,6 +75,7 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     if (entry.triggerAt === desiredReminder.triggerAt) {
       next[id] = entry;
       desired.delete(id);
+      reused += 1;
     } else {
       await Notifications.cancelScheduledNotificationAsync(entry.notificationId).catch(error =>
         logNotificationEvent('cancel-event-reminder-failed', error, 'warn'),
@@ -98,8 +99,7 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     next[reminder.id] = { notificationId: identifier, triggerAt: reminder.triggerAt };
   }
   await writeReminderMap(next);
-  const reused = reminders.length - Object.keys(next).length + Object.keys(previous).length;
-  await logNotificationEvent('event-reminders-synced', { count: reminders.length, reused: Math.max(0, Math.min(previousCount, reused)) });
+  await logNotificationEvent('event-reminders-synced', { count: reminders.length, reused });
 }
 
 /**
