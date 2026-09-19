@@ -85,28 +85,28 @@ function semanticParse(transcript:string):VoiceCommand|null{
     for(const pattern of patterns){const match=lower.match(pattern);if(match?.[1])return match[1].trim();}
     return '';
   };
-  if(action([/\\b(?:elimina|cancella|rimuovi|togli)\\b/])){
-    const query=cleanQuery(extractAfterAction([/(?:elimina|cancella|rimuovi|togli)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+)$/]));
+  if(action([/\b(?:elimina|cancella|rimuovi|togli)\b/])){
+    const query=cleanQuery(extractAfterAction([/(?:elimina|cancella|rimuovi|togli)\s+(?:la|il|lo|l['’])?\s*(?:attivita|evento|task|reminder|appuntamento)?\s*(.+)$/]));
     return query?{type:'delete',query}:null;
   }
-  if(action([/\\b(?:completa|termina|chiudi|finisci|fai|segna)\\b.*\\b(?:fatto|complet[ao])\\b/,/^fatto\\b/])){
-    const query=cleanQuery(extractAfterAction([/(?:completa|termina|chiudi|finisci|segna(?:\\s+come)?\\s+fatto|fatto)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+)$/]));
+  if(action([/\b(?:completa|termina|chiudi|finisci|fai|segna)\b.*\b(?:fatto|complet[ao])\b/,/^fatto\b/])){
+    const query=cleanQuery(extractAfterAction([/(?:completa|termina|chiudi|finisci|segna(?:\s+come)?\s+fatto|fatto)\s+(?:la|il|lo|l['’])?\s*(?:attivita|evento|task|reminder|appuntamento)?\s*(.+)$/]));
     return query?{type:'complete',query}:null;
   }
-  if(action([/\\b(?:posticipa|rimanda|sposta)\\b/])){
-    const match=lower.match(/(?:posticipa|rimanda|sposta)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+?)\\s+(?:a|per|su|in)\\s+(.+)$/);
+  if(action([/\b(?:posticipa|rimanda|sposta)\b/])){
+    const match=lower.match(/(?:posticipa|rimanda|sposta)\s+(?:la|il|lo|l['’])?\s*(?:attivita|evento|task|reminder|appuntamento)?\s*(.+?)\s+(?:a|per|su|in)\s+(.+)$/);
     if(match){const when=extractWhen(match[2]);const query=cleanQuery(match[1]);if(when&&query)return{type:'move',query,when};}
-    const query=cleanQuery(extractAfterAction([/(?:posticipa|rimanda)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+)$/]));
+    const query=cleanQuery(extractAfterAction([/(?:posticipa|rimanda)\s+(?:la|il|lo|l['’])?\s*(?:attivita|evento|task|reminder|appuntamento)?\s*(.+)$/]));
     return query?{type:'postpone',query}:null;
   }
-  const rename=lower.match(/(?:rinomina|ribattezza|cambia\\s+(?:il\\s+)?nome(?:\\s+di|\\s+a)?)\\s+(.+?)\\s+(?:in|come|con\\s+il\\s+nome)\\s+(.+)$/);
+  const rename=lower.match(/(?:rinomina|ribattezza|cambia\s+(?:il\s+)?nome(?:\s+di|\s+a)?)\s+(.+?)\s+(?:in|come|con\s+il\s+nome)\s+(.+)$/);
   if(rename){const query=cleanQuery(rename[1]),title=stripKind(rename[2]);return query&&title?{type:'rename',query,title}:null;}
-  if(action([/\\b(?:sposta|metti|mettila|mettilo|fissa|programma)\\b/])){
-    const match=lower.match(/(?:sposta|metti|mettila|mettilo|fissa|programma)\\s+(?:la|il|lo|l['’])?\\s*(?:attivita|evento|task|reminder|appuntamento)?\\s*(.+?)\\s+(?:a|per|su|in)\\s+(.+)$/);
+  if(action([/\b(?:sposta|metti|mettila|mettilo|fissa|programma)\b/])){
+    const match=lower.match(/(?:sposta|metti|mettila|mettilo|fissa|programma)\s+(?:la|il|lo|l['’])?\s*(?:attivita|evento|task|reminder|appuntamento)?\s*(.+?)\s+(?:a|per|su|in)\s+(.+)$/);
     if(match){const when=extractWhen(match[2]);const query=cleanQuery(match[1]);if(when&&query)return{type:'move',query,when};}
   }
-  const add=lower.match(/^(?:aggiungi|crea|inserisci|registra|programma|pianifica|ricordami(?:\\s+di)?|devo|devo\\s+ricordarmi\\s+di)\\s+(.+)$/);
-  if(add){const original=raw.slice(raw.toLowerCase().indexOf(add[1])).trim();const when=extractWhen(original);const title=stripKind(removeWhen(original));const kind=/\\b(?:evento|appuntamento|meeting|riunione|calendar|calendario)\\b/.test(add[1])?'event':/\\b(?:reminder|promemoria|ricordami|ricorda)\\b/.test(add[1])?'reminder':'task';return{type:'add',title:title||original,kind,when};}
+  const add=lower.match(/^(?:aggiungi|crea|inserisci|registra|programma|pianifica|ricordami(?:\s+di)?|devo|devo\s+ricordarmi\s+di)\s+(.+)$/);
+  if(add){const original=raw.slice(raw.toLowerCase().indexOf(add[1])).trim();const when=extractWhen(original);const title=stripKind(removeWhen(original));const kind=/\b(?:evento|appuntamento|meeting|riunione|calendar|calendario)\b/.test(add[1])?'event':/\b(?:reminder|promemoria|ricordami|ricorda)\b/.test(add[1])?'reminder':'task';return{type:'add',title:title||original,kind,when};}
   return null;
 }
 
