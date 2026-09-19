@@ -16,7 +16,7 @@
       "expo-web-browser",
       "./plugins/withNativeAccessJvmArgs.js",
       "./plugins/withSingleTaskMainActivity.js",
-      ["expo-notifications", {"defaultChannel":"flowos-reminders"}],
+      ["expo-notifications", {"defaultChannel":"flowos-reminders","enableBackgroundRemoteNotifications":true}],
       "expo-task-manager",
       "expo-background-task",
       ["expo-widgets", {"widgets":[{"name":"TodayWidget","displayName":"FlowOS Oggi","description":"Tutte le attività previste per oggi.","supportedFamilies":["systemSmall","systemMedium"]}] }],
