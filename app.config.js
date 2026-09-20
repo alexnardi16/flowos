@@ -1,5 +1,4 @@
 const fs = require('fs');
-const base = require('./app.json');
 
 function resolveGoogleServicesFile() {
   const easFile = process.env.GOOGLE_SERVICES_JSON;
@@ -18,9 +17,49 @@ function resolveGoogleServicesFile() {
 const googleServicesFile = resolveGoogleServicesFile();
 
 module.exports = {
-  ...base.expo,
+  name: 'FlowOS',
+  slug: 'flowos',
+  owner: 'alex16nardi',
+  version: '1.0.0',
+  description: 'Unifica task, eventi e reminder in un unico modello di Commitment.',
+  orientation: 'portrait',
+  scheme: 'flowos',
+  userInterfaceStyle: 'automatic',
+  runtimeVersion: { policy: 'appVersion' },
+  updates: {
+    url: 'https://u.expo.dev/95803fab-e55e-48a0-8e48-f8b504f6aeac',
+    checkAutomatically: 'ON_LOAD',
+    fallbackToCacheTimeout: 0,
+  },
+  extra: { eas: { projectId: '95803fab-e55e-48a0-8e48-f8b504f6aeac' } },
+  plugins: [
+    'expo-router',
+    'expo-web-browser',
+    './plugins/withNativeAccessJvmArgs.js',
+    './plugins/withSingleTaskMainActivity.js',
+    ['expo-notifications', { defaultChannel: 'flowos-reminders', enableBackgroundRemoteNotifications: true }],
+    'expo-task-manager',
+    'expo-background-task',
+    ['expo-widgets', { widgets: [{ name: 'TodayWidget', displayName: 'FlowOS Oggi', description: 'Tutte le attività previste per oggi.', supportedFamilies: ['systemSmall', 'systemMedium'] }] }],
+    ['react-native-android-widget', { widgets: [
+      { name: 'TodayAndroidWidget', label: 'FlowOS Oggi', description: 'Tutte le attività di oggi.', minWidth: '320dp', minHeight: '180dp', targetCellWidth: 4, targetCellHeight: 3, resizeMode: 'horizontal|vertical', updatePeriodMillis: 1800000 },
+      { name: 'CalendarAndroidWidget', label: 'FlowOS Calendario', description: 'Agenda FlowOS per le prossime settimane.', minWidth: '320dp', minHeight: '260dp', targetCellWidth: 4, targetCellHeight: 5, resizeMode: 'horizontal|vertical', updatePeriodMillis: 1800000 }
+    ] }],
+  ],
+  experiments: { typedRoutes: true },
+  web: { bundler: 'metro', output: 'static' },
   android: {
-    ...base.expo.android,
+    package: 'com.alexnardi.flowos',
+    versionCode: 2,
+    permissions: ['POST_NOTIFICATIONS', 'SCHEDULE_EXACT_ALARM'],
     ...(googleServicesFile ? { googleServicesFile } : {}),
+  },
+  ios: {
+    bundleIdentifier: 'com.alexnardi.flowos',
+    buildNumber: '3',
+    infoPlist: {
+      UIBackgroundModes: ['processing'],
+      BGTaskSchedulerPermittedIdentifiers: ['com.expo.modules.backgroundtask.processing'],
+    },
   },
 };
