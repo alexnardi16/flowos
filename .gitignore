@@ -13,3 +13,4 @@ package-lock.json
 *.apk
 *.aab
 supabase/.temp/
+google-services.json
