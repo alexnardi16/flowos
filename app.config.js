@@ -8,6 +8,10 @@ function resolveGoogleServicesFile() {
   const localFile = './google-services.json';
   if (fs.existsSync(localFile)) return localFile;
 
+  if (process.env.EAS_BUILD === '1') {
+    throw new Error('GOOGLE_SERVICES_JSON is required for EAS Android builds. Upload google-services.json as an EAS file environment variable.');
+  }
+
   return undefined;
 }
 
