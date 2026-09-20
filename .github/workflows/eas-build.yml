@@ -1,4 +1,4 @@
-name: EAS Android Preview Build
+name: Android Preview Build
 
 on:
   workflow_dispatch:
@@ -9,6 +9,7 @@ on:
       - "eas.json"
       - "app.config.js"
       - "package.json"
+      - "package-lock.json"
       - "app/**"
       - "components/**"
       - "lib/**"
@@ -18,50 +19,49 @@ on:
 
 jobs:
   build:
-    name: Build installable Android APK (EAS cloud build)
+    name: Build installable Android APK (GitHub Actions + Gradle)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
-      - name: Check required secrets
+      - name: Check required secret
         run: |
-          test -n "${{ secrets.EXPO_TOKEN }}" || (echo "Missing EXPO_TOKEN" && exit 1)
-          test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_URL" && exit 1)
-          test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" && exit 1)
+          test -n "${{ secrets.GOOGLE_SERVICES_JSON }}" || (echo "Missing GitHub secret GOOGLE_SERVICES_JSON" && exit 1)
 
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
 
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22.13
-
-      - name: Setup Expo and EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          cache: npm
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
-      - name: Build preview APK in EAS cloud
+      - name: Restore Firebase Android configuration
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          NODE_ENV: production
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          mkdir -p artifacts
-          eas build --platform android --profile preview --non-interactive --wait --json > eas-build.json
-          BUILD_ID=$(jq -r 'if type == "array" then .[0].id else .id end' eas-build.json)
-          test -n "$BUILD_ID" && test "$BUILD_ID" != "null"
-          eas build:download --id "$BUILD_ID" --non-interactive --output "$GITHUB_WORKSPACE/artifacts/FlowOS-preview.apk"
-          test -s "$GITHUB_WORKSPACE/artifacts/FlowOS-preview.apk"
+          printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+          test -s google-services.json
+
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --non-interactive
+
+      - name: Build preview APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload preview APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: FlowOS-preview-APK
-          path: artifacts/FlowOS-preview.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
