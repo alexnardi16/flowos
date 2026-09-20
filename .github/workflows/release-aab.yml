@@ -17,19 +17,22 @@ on:
         required: true
         default: 'main'
         type: string
+      version_code:
+        description: 'Android versionCode for this production build'
+        required: true
+        default: '78'
+        type: string
 
 permissions:
   contents: write
 
-env:
-  EAS_NO_VCS: '1'
-
 jobs:
   build-aab:
-    name: Build production AAB with EAS
+    name: Build production AAB with GitHub Actions + Gradle
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - name: Determine release tag and source ref
+      - name: Determine release inputs
         id: release
         shell: bash
         run: |
@@ -37,109 +40,146 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.release_tag }}"
             SOURCE_REF="${{ inputs.source_ref }}"
+            VERSION_CODE="${{ inputs.version_code }}"
           elif [ "${{ github.event_name }}" = "release" ]; then
             TAG="${{ github.event.release.tag_name }}"
             SOURCE_REF="$TAG"
+            VERSION_CODE="78"
           else
             TAG="${GITHUB_REF_NAME}"
             SOURCE_REF="$TAG"
+            VERSION_CODE="78"
           fi
           test -n "$TAG"
           test -n "$SOURCE_REF"
+          test "$VERSION_CODE" -ge 1
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "source_ref=$SOURCE_REF" >> "$GITHUB_OUTPUT"
-          echo "aab_name=FlowOS-${TAG}.aab" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "aab_name=FlowOS-$TAG.aab" >> "$GITHUB_OUTPUT"
           echo "Release tag: $TAG"
           echo "Source ref: $SOURCE_REF"
+          echo "Android versionCode: $VERSION_CODE"
 
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.release.outputs.source_ref }}
           fetch-depth: 0
 
-      - name: Stamp build identity
+      - name: Check required production secrets
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$GOOGLE_SERVICES_JSON" || (echo "Missing GitHub secret GOOGLE_SERVICES_JSON" && exit 1)
+          test -n "$ANDROID_KEYSTORE_BASE64" || (echo "Missing GitHub secret ANDROID_KEYSTORE_BASE64" && exit 1)
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || (echo "Missing GitHub secret ANDROID_KEYSTORE_PASSWORD" && exit 1)
+          test -n "$ANDROID_KEY_ALIAS" || (echo "Missing GitHub secret ANDROID_KEY_ALIAS" && exit 1)
+          test -n "$ANDROID_KEY_PASSWORD" || (echo "Missing GitHub secret ANDROID_KEY_PASSWORD" && exit 1)
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.13
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Restore Firebase Android configuration
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+          test -s google-services.json
+
+      - name: Stamp build identity and Android versionCode
         shell: bash
         run: |
           set -euo pipefail
           SOURCE_COMMIT="$(git rev-parse HEAD)"
           echo "EXPO_PUBLIC_FLOWOS_RELEASE_TAG=${{ steps.release.outputs.tag }}" >> "$GITHUB_ENV"
           echo "EXPO_PUBLIC_FLOWOS_COMMIT_SHA=$SOURCE_COMMIT" >> "$GITHUB_ENV"
-          echo "Build identity: release=${{ steps.release.outputs.tag }} commit=$SOURCE_COMMIT"
+          echo "FLOWOS_ANDROID_VERSION_CODE=${{ steps.release.outputs.version_code }}" >> "$GITHUB_ENV"
           cat > lib/generatedBuildInfo.ts <<EOF
           export const FLOWOS_BUILD = {
             releaseTag: '${{ steps.release.outputs.tag }}',
             commitSha: '$SOURCE_COMMIT',
           } as const;
           EOF
-          echo "Generated lib/generatedBuildInfo.ts for release=${{ steps.release.outputs.tag }} commit=$SOURCE_COMMIT"
+          echo "Build identity: release=${{ steps.release.outputs.tag }} commit=$SOURCE_COMMIT versionCode=${{ steps.release.outputs.version_code }}"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.13
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --non-interactive
 
-      - name: Install project dependencies
-        shell: bash
-        run: npm install --no-audit --no-fund
-
-      - name: Install EAS CLI
-        shell: bash
-        run: npm install --global eas-cli@latest
-
-      - name: Check EAS token
-        run: |
-          test -n "${{ secrets.EXPO_TOKEN }}" || (echo "Missing EXPO_TOKEN" && exit 1)
-
-      - name: Validate EAS authentication
-        shell: bash
+      - name: Restore production signing keystore
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
-          for attempt in 1 2 3 4 5; do
-            echo "Validating EAS authentication (attempt $attempt/5)"
-            if eas whoami; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 5 ]; then
-              echo "EAS authentication check failed; retrying in 15 seconds..."
-              sleep 15
-            fi
-          done
-          echo "EAS authentication could not be validated after 5 attempts"
-          exit 1
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/flowos-production.keystore
+          test -s android/flowos-production.keystore
+          chmod 600 android/flowos-production.keystore
 
-      - name: Build production AAB on EAS
-        id: eas-build
+      - name: Inject production signing configuration
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        shell: bash
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          echo "Starting cloud EAS production build."
-          echo "EAS cloud build is required because GOOGLE_SERVICES_JSON is a Secret File environment variable and is only materialized on EAS build workers."
-          eas build --platform android --profile production --non-interactive --freeze-credentials --wait --json > eas-build.json
-          cat eas-build.json
-          BUILD_ID="$(jq -r 'if type == "array" then .[0].id else .id end' eas-build.json)"
-          test -n "$BUILD_ID"
-          test "$BUILD_ID" != "null"
-          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
-          echo "EAS build ID: $BUILD_ID"
+          cat > android/ci-signing.gradle <<'EOF'
+          android {
+            signingConfigs {
+              release {
+                storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+              }
+            }
+            buildTypes {
+              release {
+                signingConfig signingConfigs.release
+              }
+            }
+          }
+          EOF
+          cat >> android/app/build.gradle <<'EOF'
 
-      - name: Download completed AAB
+          // Production signing is injected by GitHub Actions from encrypted secrets.
+          apply from: "../ci-signing.gradle"
+          EOF
+          echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/android/flowos-production.keystore" >> "$GITHUB_ENV"
+
+      - name: Build production AAB
+        working-directory: android
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon --stacktrace
+
+      - name: Verify production AAB
         shell: bash
         run: |
           set -euo pipefail
+          AAB_SOURCE="android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$AAB_SOURCE"
           mkdir -p artifacts
-          eas build:download --id "${{ steps.eas-build.outputs.build_id }}" --non-interactive
-          AAB_SOURCE="$(find . -maxdepth 3 -type f -name '*.aab' -print -quit)"
-          test -n "$AAB_SOURCE"
           cp "$AAB_SOURCE" "artifacts/${{ steps.release.outputs.aab_name }}"
-          test -s "artifacts/${{ steps.release.outputs.aab_name }}"
-          file "artifacts/${{ steps.release.outputs.aab_name }}"
           unzip -t "artifacts/${{ steps.release.outputs.aab_name }}" >/dev/null
-          echo "Downloaded AAB: $AAB_SOURCE"
+          echo "Production AAB created successfully:"
+          ls -lh "artifacts/${{ steps.release.outputs.aab_name }}"
 
       - name: Upload AAB as workflow artifact
         uses: actions/upload-artifact@v4
@@ -184,3 +224,9 @@ jobs:
           done
           echo "Unable to upload the AAB to GitHub Release after 5 attempts"
           exit 1
+
+      - name: Clean signing material
+        if: always()
+        shell: bash
+        run: |
+          rm -f android/flowos-production.keystore android/ci-signing.gradle google-services.json
