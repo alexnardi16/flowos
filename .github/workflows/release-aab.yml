@@ -23,11 +23,10 @@ permissions:
 
 env:
   EAS_NO_VCS: '1'
-  EAS_LOCAL_BUILD_SKIP_CLEANUP: '1'
 
 jobs:
   build-aab:
-    name: Build production AAB locally
+    name: Build production AAB with EAS
     runs-on: ubuntu-latest
     steps:
       - name: Determine release tag and source ref
@@ -78,30 +77,13 @@ jobs:
         with:
           node-version: 22.13
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Regenerate npm lockfile from package.json
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Check EAS secrets
-        run: |
-          test -n "${{ secrets.EXPO_TOKEN }}" || (echo "Missing EXPO_TOKEN" && exit 1)
-          test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_URL" && exit 1)
-          test -n "${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" || (echo "Missing EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" && exit 1)
-
       - name: Install EAS CLI
         shell: bash
         run: npm install --global eas-cli@latest
+
+      - name: Check EAS token
+        run: |
+          test -n "${{ secrets.EXPO_TOKEN }}" || (echo "Missing EXPO_TOKEN" && exit 1)
 
       - name: Validate EAS authentication
         shell: bash
@@ -122,37 +104,44 @@ jobs:
           echo "EAS authentication could not be validated after 5 attempts"
           exit 1
 
-      - name: Verify EAS production environment configuration
+      - name: Build production AAB on EAS
+        id: eas-build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          echo "Production EAS environment is managed persistently in EAS."
-          echo "The Expo project must contain EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY in the production environment."
+          echo "Starting cloud EAS production build."
+          echo "EAS cloud build is required because GOOGLE_SERVICES_JSON is a Secret File environment variable and is only materialized on EAS build workers."
+          eas build --platform android --profile production --non-interactive --freeze-credentials --wait --json > eas-build.json
+          cat eas-build.json
+          BUILD_ID="$(jq -r 'if type == "array" then .[0].id else .id end' eas-build.json)"
+          test -n "$BUILD_ID"
+          test "$BUILD_ID" != "null"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          echo "EAS build ID: $BUILD_ID"
 
-      - name: Build production AAB locally
+      - name: Download completed AAB
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          AAB_PATH="${{ steps.release.outputs.aab_name }}"
-          echo "Starting local EAS production build: $AAB_PATH"
-          echo "This build runs on the GitHub Actions runner and does not consume the EAS cloud Android build quota."
-          eas build --platform android --profile production --local --non-interactive --freeze-credentials --output "$AAB_PATH"
-          test -s "$AAB_PATH"
-          file "$AAB_PATH"
-          if ! unzip -t "$AAB_PATH" >/dev/null 2>&1; then
-            echo "Local EAS build output is not a valid AAB/ZIP archive"
-            exit 1
-          fi
+          mkdir -p artifacts
+          eas build:download --id "${{ steps.eas-build.outputs.build_id }}" --non-interactive
+          AAB_SOURCE="$(find . -maxdepth 3 -type f -name '*.aab' -print -quit)"
+          test -n "$AAB_SOURCE"
+          cp "$AAB_SOURCE" "artifacts/${{ steps.release.outputs.aab_name }}"
+          test -s "artifacts/${{ steps.release.outputs.aab_name }}"
+          file "artifacts/${{ steps.release.outputs.aab_name }}"
+          unzip -t "artifacts/${{ steps.release.outputs.aab_name }}" >/dev/null
+          echo "Downloaded AAB: $AAB_SOURCE"
 
       - name: Upload AAB as workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: FlowOS-AAB-${{ steps.release.outputs.tag }}
-          path: ${{ steps.release.outputs.aab_name }}
+          path: artifacts/${{ steps.release.outputs.aab_name }}
           if-no-files-found: error
 
       - name: Remove existing AAB assets from GitHub Release
@@ -177,9 +166,9 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ steps.release.outputs.tag }}"
-          AAB="${{ steps.release.outputs.aab_name }}"
+          AAB="artifacts/${{ steps.release.outputs.aab_name }}"
           for attempt in 1 2 3 4 5; do
-            echo "Uploading $AAB to GitHub Release $TAG (attempt $attempt/5)"
+            echo "Uploading $(basename "$AAB") to GitHub Release $TAG (attempt $attempt/5)"
             if gh release upload "$TAG" "$AAB" --repo "$GITHUB_REPOSITORY" --clobber; then
               echo "Release asset upload succeeded"
               exit 0
