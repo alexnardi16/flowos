@@ -77,6 +77,10 @@ jobs:
         with:
           node-version: 22.13
 
+      - name: Install project dependencies
+        shell: bash
+        run: npm install --no-audit --no-fund
+
       - name: Install EAS CLI
         shell: bash
         run: npm install --global eas-cli@latest
