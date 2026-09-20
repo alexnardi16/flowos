@@ -13,7 +13,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test:auth": "rm -rf .test-dist && tsc -p tests/tsconfig.auth.json && node --test tests/authFlow.test.cjs",
-    "test:selectors": "node --test tests/zustandSelectors.test.cjs",
+    "test:selectors": "node tests/zustandSelectors.test.cjs",
     "test:notifications": "rm -rf .test-dist-notifications && tsc -p tests/tsconfig.notifications.json && node --test tests/dailySummary.test.cjs tests/notificationDedup.test.cjs tests/reminderPlan.test.cjs tests/widgetData.test.cjs tests/scheduler.test.cjs tests/replanTriggers.test.cjs tests/planningSuggestions.test.cjs tests/weatherSummary.test.cjs tests/allDayDate.test.cjs tests/recurrence.test.cjs tests/itemTiming.test.cjs tests/customReminders.test.cjs",
     "test:public-site": "node tests/publicSite.test.cjs",
     "test": "npm run test:auth && npm run test:selectors && npm run test:voice && npm run test:widget && npm run test:notifications && npm run test:public-site",
@@ -42,6 +42,8 @@
     "expo-router": "~57.0.22",
     "expo-status-bar": "~57.0.1",
     "expo-task-manager": "~57.0.19",
+    "expo-background-task": "~57.0.19",
+    "expo-task-manager": "~57.0.19",
     "expo-updates": "~57.0.23",
     "expo-web-browser": "~57.0.3",
     "expo-widgets": "~57.0.20",
@@ -69,5 +71,13 @@
     "react-native-screens": "~4.26.0",
     "react-native-worklets": "0.12.2",
     "react-native-reanimated": "4.6.0"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "react-native-worklets",
+        "react-native-reanimated"
+      ]
+    }
   }
 }
