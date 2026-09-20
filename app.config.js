@@ -15,6 +15,7 @@ function resolveGoogleServicesFile() {
 }
 
 const googleServicesFile = resolveGoogleServicesFile();
+const androidVersionCode = Number(process.env.FLOWOS_ANDROID_VERSION_CODE || 2);
 
 module.exports = {
   name: 'FlowOS',
@@ -43,14 +44,14 @@ module.exports = {
     ['expo-widgets', { widgets: [{ name: 'TodayWidget', displayName: 'FlowOS Oggi', description: 'Tutte le attività previste per oggi.', supportedFamilies: ['systemSmall', 'systemMedium'] }] }],
     ['react-native-android-widget', { widgets: [
       { name: 'TodayAndroidWidget', label: 'FlowOS Oggi', description: 'Tutte le attività di oggi.', minWidth: '320dp', minHeight: '180dp', targetCellWidth: 4, targetCellHeight: 3, resizeMode: 'horizontal|vertical', updatePeriodMillis: 1800000 },
-      { name: 'CalendarAndroidWidget', label: 'FlowOS Calendario', description: 'Agenda FlowOS per le prossime settimane.', minWidth: '320dp', minHeight: '260dp', targetCellWidth: 4, targetCellHeight: 5, resizeMode: 'horizontal|vertical', updatePeriodMillis: 1800000 }
+      { name: 'CalendarAndroidWidget', label: 'FlowOS Calendario', description: 'Agenda FlowOS per le prossime settimane.', minWidth: '320dp', minHeight: '260dp', targetCellWidth: 4, targetCellHeight: 5, resizeMode: 'horizontal|vertical' }
     ] }],
   ],
   experiments: { typedRoutes: true },
   web: { bundler: 'metro', output: 'static' },
   android: {
     package: 'com.alexnardi.flowos',
-    versionCode: 2,
+    versionCode: androidVersionCode,
     permissions: ['POST_NOTIFICATIONS', 'SCHEDULE_EXACT_ALARM'],
     ...(googleServicesFile ? { googleServicesFile } : {}),
   },
