@@ -56,7 +56,9 @@ async function writeReminderMap(map: ReminderMap) {
  * since it always starts from a clean slate — it can never leave a
  * duplicate pending for the same reminder.
  */
-async function syncEventReminders(commitments: Commitment[], now: Date) {{
+async function syncEventReminders(commitments: Commitment[], now: Date) {
+  // Reconcile against the OS queue itself so duplicate reminders from older
+  // racing runs are removed before the current desired set is scheduled.
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const notification of scheduled) {
     if (notification.content.data?.source === 'reminder') {
@@ -66,53 +68,23 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {{
     }
   }
 
-  const previous = await readReminderMap();
   const reminders = buildCustomReminders(commitments, now);
-  let reused = 0;
-  const desired = new Map(reminders.map(reminder => [reminder.id, reminder]));
   const next: ReminderMap = {};
 
-  // Reuse unchanged scheduled notifications. This avoids a cancel/recreate window
-  // on every foreground refresh and prevents duplicate/missing reminders if the
-  // process is interrupted during reconciliation.
-  for (const [id, entry] of Object.entries(previous)) {
-    const desiredReminder = desired.get(id);
-    if (!desiredReminder) {
-      await Notifications.cancelScheduledNotificationAsync(entry.notificationId).catch(error =>
-        logNotificationEvent('cancel-event-reminder-failed', error, 'warn'),
-      );
-      continue;
-    }
-    if (entry.triggerAt === desiredReminder.triggerAt) {
-      next[id] = entry;
-      desired.delete(id);
-      reused += 1;
-    } else {
-      await Notifications.cancelScheduledNotificationAsync(entry.notificationId).catch(error =>
-        logNotificationEvent('cancel-event-reminder-failed', error, 'warn'),
-      );
-    }
-  }
-
-  for (const reminder of desired.values()) {
+  for (const reminder of reminders) {
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
         title: reminder.title,
         body: `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
         data: { source: 'reminder', commitmentId: reminder.commitmentId, reminderId: reminder.id },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: new Date(reminder.triggerAt),
-        ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
+        trigger: undefined,
       },
     });
     next[reminder.id] = { notificationId: identifier, triggerAt: reminder.triggerAt };
   }
   await writeReminderMap(next);
-  await logNotificationEvent('event-reminders-synced', { count: reminders.length, reused });
+  await logNotificationEvent('event-reminders-synced', { count: reminders.length, reused: 0 });
 }
-
 /**
  * One grouped notification instead of one per task. Re-fires only when the
  * actual set of task ids changes since last time (content-hash dedup) — the
