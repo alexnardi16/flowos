@@ -7,6 +7,7 @@ import { syncGoogleTasksIncremental, syncGoogleWorkspace } from './googleWorkspa
 import { syncTodayWidget } from './widgetSync';
 import { runReminderEngine } from './reminderEngine';
 import { runIntelligentReplan } from './replanEngine';
+import { autoCompleteExpiredEvents } from './autoCompleteEvents';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
 import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
@@ -20,7 +21,8 @@ async function isPastDailySummaryTime(now: Date): Promise<boolean> {
 async function hasAuthenticatedSession(): Promise<boolean> { if (!isSupabaseConfigured) return false; const { data } = await supabase.auth.getSession(); return Boolean(data.session); }
 async function loadFreshData(now: Date) {
   const loaded = await loadCommitments();
-  let commitments = loaded;
+  const completed = await autoCompleteExpiredEvents(loaded, now);
+  let commitments = completed.commitments;
   try { const replanned = await runIntelligentReplan(loaded, undefined, now); if (replanned) commitments = replanned; }
   catch (error) { await logNotificationEvent('intelligent-replan-failed', error, 'warn'); }
   return { commitments, summary: buildDailySummary(commitments, now) };
