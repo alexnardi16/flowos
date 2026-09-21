@@ -16,14 +16,14 @@ function commitment(overrides) {
   };
 }
 
-test('a task due within 24h is due-soon, one due in 30h is not', () => {
+test('a task due later today is due-soon, but a task due tomorrow is not', () => {
   const now = new Date(2026, 6, 23, 9, 0);
   const commitments = [
-    commitment({ id: 'soon', dueAt: new Date(2026, 6, 24, 8, 0).toISOString() }),
-    commitment({ id: 'later', dueAt: new Date(2026, 6, 24, 15, 0).toISOString() }),
+    commitment({ id: 'today', dueAt: new Date(2026, 6, 23, 18, 0).toISOString() }),
+    commitment({ id: 'tomorrow', dueAt: new Date(2026, 6, 24, 8, 0).toISOString() }),
   ];
   const plan = buildReminderPlan(commitments, now);
-  assert.deepEqual(plan.dueSoon.map((t) => t.id), ['soon']);
+  assert.deepEqual(plan.dueSoon.map((t) => t.id), ['today']);
 });
 
 test('a task whose due date already passed is overdue, not due-soon', () => {
