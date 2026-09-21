@@ -10,11 +10,12 @@ import { createAutomaticPlan } from './scheduler';
 import { showSnackbar } from './snackbar';
 import { syncTodayWidget } from './widgetSync';
 import { syncGoogleWorkspace } from './googleWorkspace';
+import { autoCompleteExpiredEvents } from './autoCompleteEvents';
 
 function refreshWidget(commitments:Commitment[]){void syncTodayWidget(commitments).catch(()=>undefined);}
 function refreshNotifications(commitments:Commitment[]){if(Platform.OS==='web')return;void import('./reminderEngine').then(({runReminderEngine})=>runReminderEngine(commitments)).catch(()=>undefined);}
 
-type State={commitments:Commitment[];focusId?:string;syncing:boolean;addCommitment:(commitment:Commitment)=>Promise<void>;hydrateFromCloud:()=>Promise<void>;complete:(id:string)=>Promise<void>;postpone:(id:string)=>Promise<void>;updateCommitment:(commitment:Commitment)=>Promise<void>;removeOnlyFromFlowOS:(id:string)=>Promise<void>;removeAlsoFromGoogle:(id:string)=>Promise<void>;removeSeriesFromGoogle:(id:string)=>Promise<void>;syncItemToGoogleNow:()=>Promise<void>;syncWithGoogle:()=>Promise<void>;autoPlan:()=>Promise<void>;startFocus:(id:string)=>void;stopFocus:()=>void;};
+type State={commitments:Commitment[];focusId?:string;syncing:boolean;addCommitment:(commitment:Commitment)=>Promise<void>;hydrateFromCloud:()=>Promise<void>;complete:(id:string)=>Promise<void>;postpone:(id:string)=>Promise<void>;updateCommitment:(commitment:Commitment)=>Promise<void>;removeOnlyFromFlowOS:(id:string)=>Promise<void>;removeAlsoFromGoogle:(id:string)=>Promise<void>;removeSeriesFromGoogle:(id:string)=>Promise<void>;syncItemToGoogleNow:()=>Promise<void>;syncWithGoogle:()=>Promise<void>;autoCompleteExpiredEvents:()=>Promise<void>;autoPlan:()=>Promise<void>;startFocus:(id:string)=>void;stopFocus:()=>void;};
 
 export const useFlowStore=create<State>()(persist((set,get)=>{
   const pushGoogleAndRefresh=async()=>{try{await pushPendingToGoogle();const remote=await loadCommitments();set({commitments:remote});refreshWidget(remote);refreshNotifications(remote);}catch(error){void logNotificationEvent('auto-push-failed',error,'warn');}};
@@ -30,6 +31,15 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
   removeSeriesFromGoogle:async id=>{const item=get().commitments.find(c=>c.id===id);if(!item)return;await deleteRecurringSeries(item);const seriesId=item.googleRecurringEventId;const next=get().commitments.filter(c=>c.googleRecurringEventId!==seriesId);set({commitments:next});refreshWidget(next);refreshNotifications(next);},
   syncItemToGoogleNow:async()=>{await pushPendingToGoogle();refreshWidget(get().commitments);refreshNotifications(get().commitments);},
   syncWithGoogle:async()=>{await syncGoogleWorkspace();await get().hydrateFromCloud();},
+  autoCompleteExpiredEvents:async()=>{
+    const current=get().commitments;
+    const result=await autoCompleteExpiredEvents(current,new Date());
+    if(result.completedCount===0)return;
+    set({commitments:result.commitments});
+    refreshWidget(result.commitments);
+    refreshNotifications(result.commitments);
+    await pushGoogleAndRefresh();
+  },
   autoPlan:async()=>{const planned=createAutomaticPlan(get().commitments);set({commitments:planned});await Promise.all(planned.map(item=>saveCommitment(item)));refreshWidget(planned);refreshNotifications(planned);},
   startFocus:id=>set({focusId:id}),stopFocus:()=>set({focusId:undefined}),
 });},{name:'flowos-store-v2',storage:createJSONStorage(()=>AsyncStorage),partialize:state=>({commitments:state.commitments,focusId:state.focusId})}));
