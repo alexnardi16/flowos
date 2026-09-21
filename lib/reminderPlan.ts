@@ -2,8 +2,6 @@ import type { Commitment } from '../types';
 import { toDateKey } from './dailySummary';
 import { isExpired } from './itemTiming';
 
-export const DUE_SOON_WINDOW_HOURS = 24;
-
 export type DueTask = { id: string; title: string; dueAt: string };
 
 export type ReminderPlan = {
@@ -19,7 +17,7 @@ function isActive(item: Commitment): boolean {
 
 /**
  * Pure function: given the current commitments and a reference instant,
- * decides which tasks count as "in scadenza" (due within the next 24h) and
+ * decides which tasks count as "in scadenza" (due later today) and
  * which as "scadute" (past their end time). No I/O, no Expo/RN imports —
  * same testing approach as lib/dailySummary.ts. Per-item reminder
  * notifications (configurable, possibly several per item) are handled
