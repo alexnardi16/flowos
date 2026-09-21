@@ -167,7 +167,23 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew bundleRelease --no-daemon --stacktrace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Gradle's distribution server can occasionally return a transient 5xx/504.
+          # Retry the wrapper so a temporary download outage does not fail the release.
+          for attempt in 1 2 3 4 5; do
+            echo "Gradle bundleRelease attempt $attempt/5"
+            if ./gradlew bundleRelease --no-daemon --stacktrace; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "Gradle build failed; retrying in 20 seconds..."
+              sleep 20
+            fi
+          done
+          echo "Gradle bundleRelease failed after 5 attempts"
+          exit 1
 
       - name: Verify production AAB
         shell: bash
