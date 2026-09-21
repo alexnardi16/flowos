@@ -32,7 +32,14 @@ module.exports = {
     checkAutomatically: 'ON_LOAD',
     fallbackToCacheTimeout: 0,
   },
-  extra: { eas: { projectId: '95803fab-e55e-48a0-8e48-f8b504f6aeac' } },
+  extra: {
+    eas: { projectId: '95803fab-e55e-48a0-8e48-f8b504f6aeac' },
+    // Supabase publishable client configuration is safe to ship in the app binary.
+    // Keeping it in Expo config also makes production GitHub/Gradle builds independent
+    // of shell-only EXPO_PUBLIC_* environment variables.
+    supabaseUrl: 'https://inifmdkbefwynupqspfr.supabase.co',
+    supabasePublishableKey: 'sb_publishable_NVhKrBvwGti3noXCXUP6SQ_8ulIzVhf',
+  },
   plugins: [
     'expo-router',
     'expo-web-browser',
