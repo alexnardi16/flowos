@@ -56,7 +56,16 @@ async function writeReminderMap(map: ReminderMap) {
  * since it always starts from a clean slate — it can never leave a
  * duplicate pending for the same reminder.
  */
-async function syncEventReminders(commitments: Commitment[], now: Date) {
+async function syncEventReminders(commitments: Commitment[], now: Date) {{
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  for (const notification of scheduled) {
+    if (notification.content.data?.source === 'reminder') {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+        logNotificationEvent('cancel-event-reminder-failed', error, 'warn'),
+      );
+    }
+  }
+
   const previous = await readReminderMap();
   const reminders = buildCustomReminders(commitments, now);
   let reused = 0;
