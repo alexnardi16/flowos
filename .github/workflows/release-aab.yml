@@ -61,47 +61,14 @@ jobs:
           echo "Source ref: $SOURCE_REF"
           echo "Android versionCode: $VERSION_CODE"
 
-      - name: Advance next manual production Android versionCode
-        if: github.event_name == 'workflow_dispatch'
+      # GitHub's built-in GITHUB_TOKEN cannot modify workflow files, so the
+      # Run workflow input default is maintained in this workflow manually.
+      # The build itself must not fail because automatic default maintenance is unavailable.
+      - name: Show next production Android versionCode
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
           NEXT_VERSION_CODE=$(( ${{ steps.release.outputs.version_code }} + 1 ))
-          WORKFLOW_PATH=".github/workflows/release-aab.yml"
-          API_PATH="repos/$GITHUB_REPOSITORY/contents/$WORKFLOW_PATH"
-
-          echo "Setting the next Run workflow default versionCode to $NEXT_VERSION_CODE"
-          for attempt in 1 2 3; do
-            RESPONSE="$(gh api "$API_PATH" --method GET)"
-            CURRENT_SHA="$(jq -r '.sha' <<<"$RESPONSE")"
-            CONTENT="$(jq -r '.content' <<<"$RESPONSE" | tr -d '\n' | base64 --decode)"
-            UPDATED_CONTENT="$(printf '%s' "$CONTENT" | sed -E "s/(default: ')[0-9]+(')/\\1$NEXT_VERSION_CODE\\2/")"
-
-            if [ "$CONTENT" = "$UPDATED_CONTENT" ]; then
-              echo "Workflow default already set to $NEXT_VERSION_CODE"
-              exit 0
-            fi
-
-            ENCODED_CONTENT="$(printf '%s' "$UPDATED_CONTENT" | base64 -w 0)"
-            if gh api "$API_PATH" --method PUT \
-              -f message="chore: advance production Android versionCode to $NEXT_VERSION_CODE" \
-              -f content="$ENCODED_CONTENT" \
-              -f sha="$CURRENT_SHA" \
-              -f branch="main" >/dev/null; then
-              echo "Next production versionCode default is now $NEXT_VERSION_CODE"
-              exit 0
-            fi
-
-            if [ "$attempt" -lt 3 ]; then
-              echo "Workflow file changed concurrently; retrying..."
-              sleep 2
-            fi
-          done
-          echo "Could not advance the next versionCode default after 3 attempts"
-          exit 1
-
+          echo "Next recommended production Android versionCode: $NEXT_VERSION_CODE"
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.release.outputs.source_ref }}
