@@ -16,6 +16,8 @@ const EVENT_REMINDER_MAP_KEY = 'flowos:notifications:event-reminder-map';
 const DUE_SOON_ID_KEY = 'flowos:notifications:due-soon-scheduled-id';
 const OVERDUE_ID_KEY = 'flowos:notifications:overdue-scheduled-id';
 
+let reminderEngineInFlight: Promise<ReminderPlan | null> | null = null;
+
 type ReminderMap = Record<string, { notificationId: string; triggerAt: string }>;
 
 async function ensureReminderChannels() {
@@ -116,29 +118,18 @@ async function syncGroupedNotification(
   body: string,
   source: string,
 ) {
-  const hash = tasks.map((task) => task.id).sort().join(',');
-  const raw = await AsyncStorage.getItem(storageKey);
-  const stored = raw ? (JSON.parse(raw) as { notificationId: string; hash: string }) : null;
-
-  if (tasks.length === 0) {
-    if (stored) {
-      await Notifications.cancelScheduledNotificationAsync(stored.notificationId).catch((error) =>
+  // Reconcile against the OS queue itself. This removes duplicates left by
+  // older/racing runs instead of trusting only the last stored identifier.
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  for (const notification of scheduled) {
+    if (notification.content.data?.source === source) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
         logNotificationEvent(`cancel-${source}-failed`, error, 'warn'),
       );
-      await AsyncStorage.removeItem(storageKey);
     }
-    return;
   }
-
-  if (stored && stored.hash === hash) {
-    // Same set of tasks as last time — nothing new to tell the person.
-    return;
-  }
-  if (stored) {
-    await Notifications.cancelScheduledNotificationAsync(stored.notificationId).catch((error) =>
-      logNotificationEvent(`cancel-${source}-failed`, error, 'warn'),
-    );
-  }
+  await AsyncStorage.removeItem(storageKey);
+  if (tasks.length === 0) return;
 
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
@@ -147,12 +138,16 @@ async function syncGroupedNotification(
       data: { source },
       ...(Platform.OS === 'ios' ? { threadIdentifier: source } : null),
     },
-    trigger: Platform.OS === 'android' ? { channelId: channel, seconds: 1, type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, repeats: false } : null,
+    trigger: Platform.OS === 'android'
+      ? { channelId: channel, seconds: 1, type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, repeats: false }
+      : null,
   });
-  await AsyncStorage.setItem(storageKey, JSON.stringify({ notificationId: identifier, hash }));
+  await AsyncStorage.setItem(storageKey, JSON.stringify({
+    notificationId: identifier,
+    hash: tasks.map((task) => task.id).sort().join(','),
+  }));
   await logNotificationEvent(`${source}-scheduled`, { count: tasks.length, identifier });
 }
-
 async function syncBadge(count: number) {
   try {
     await Notifications.setBadgeCountAsync(count);
@@ -168,7 +163,7 @@ async function syncBadge(count: number) {
  * (foreground, after sync, after local edits) — every step is a
  * cancel-then-reschedule, so re-running never produces duplicates.
  */
-export async function runReminderEngine(commitments: Commitment[], now: Date = new Date()): Promise<ReminderPlan | null> {
+async function runReminderEngineInternal(commitments: Commitment[], now: Date = new Date()): Promise<ReminderPlan | null> {
   const allowed = await requestNotificationPermission();
   if (!allowed) {
     await logNotificationEvent(
@@ -209,4 +204,12 @@ export async function runReminderEngine(commitments: Commitment[], now: Date = n
     overdue: plan.overdue.length,
   });
   return plan;
+}
+
+export async function runReminderEngine(commitments: Commitment[], now: Date = new Date()): Promise<ReminderPlan | null> {
+  if (reminderEngineInFlight) return reminderEngineInFlight;
+  reminderEngineInFlight = runReminderEngineInternal(commitments, now).finally(() => {
+    reminderEngineInFlight = null;
+  });
+  return reminderEngineInFlight;
 }
