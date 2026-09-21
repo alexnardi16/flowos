@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import type { Session } from '@supabase/supabase-js';
 import { recordDiagnostic } from './diagnostics';
@@ -11,7 +12,7 @@ export type GoogleCalendar={id:string;google_calendar_id:string;summary:string;d
 export type GoogleTaskList={id:string;google_task_list_id:string;title:string;selected:boolean;is_default:boolean};
 export type GoogleWorkspaceStatus={connection:null|{google_email?:string|null;last_sync_at?:string|null;last_sync_status:'pending'|'syncing'|'ok'|'error'|'disconnected';last_sync_error?:string|null;updated_at?:string|null};calendars:GoogleCalendar[];taskLists:GoogleTaskList[];range:GoogleSyncRange};
 export type SyncProgress={percent:number;stage:string};
-const SUPABASE_URL=process.env.EXPO_PUBLIC_SUPABASE_URL??'';const SUPABASE_KEY=process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY??'';const FUNCTION_URL=`${SUPABASE_URL}/functions/v1/google-workspace`;const GUARD_FUNCTION_URL=`${SUPABASE_URL}/functions/v1/google-sync-guard`;const REQUEST_TIMEOUT_MS=60000;const STALE_SYNC_THRESHOLD_MS=3*60*1000;const MAX_NETWORK_RETRIES=3;
+const SUPABASE_URL=process.env.EXPO_PUBLIC_SUPABASE_URL??Constants.expoConfig?.extra?.supabaseUrl??'';const SUPABASE_KEY=process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY??Constants.expoConfig?.extra?.supabasePublishableKey??'';const FUNCTION_URL=`${SUPABASE_URL}/functions/v1/google-workspace`;const GUARD_FUNCTION_URL=`${SUPABASE_URL}/functions/v1/google-sync-guard`;const REQUEST_TIMEOUT_MS=60000;const STALE_SYNC_THRESHOLD_MS=3*60*1000;const MAX_NETWORK_RETRIES=3;
 function currentRange():GoogleSyncRange{const startYear=new Date().getFullYear(),endYear=startYear+1;return{startYear,endYear,labelStart:`01/01/${startYear}`,labelEnd:`31/12/${endYear}`,years:[startYear,endYear],startDate:`${startYear}-01-01`,endDate:`${endYear}-12-31`};}
 function errorMessage(error:unknown){return error instanceof Error?error.message:String(error||'Errore sconosciuto');}
 function isTransientNetworkError(message:string){return /failed to fetch|network|send a request|timeout|tempo massimo|abort|unknownhost|unable to resolve host|dns|no address associated/i.test(message)||/\b(?:408|425|429|502|503|504|520|521|522|523|524)\b/.test(message);}
