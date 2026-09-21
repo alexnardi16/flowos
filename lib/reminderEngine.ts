@@ -77,7 +77,11 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
         title: reminder.title,
         body: `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
         data: { source: 'reminder', commitmentId: reminder.commitmentId, reminderId: reminder.id },
-        trigger: undefined,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(reminder.triggerAt),
+        ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
       },
     });
     next[reminder.id] = { notificationId: identifier, triggerAt: reminder.triggerAt };
