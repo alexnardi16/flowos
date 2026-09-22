@@ -110,13 +110,30 @@ export async function setDailySummaryTime(hour: number, minute: number) {
   });
 }
 
+function looksLikeLegacyDailySummaryTitle(title: string): boolean {
+  return (
+    /^Oggi hai \\d+ impegn/.test(title) ||
+    /^Domani hai \\d+ impegn/.test(title) ||
+    /^Nessun impegno pianificato per (oggi|domani)$/.test(title) ||
+    /^Domani mattina · /.test(title)
+  );
+}
+
 async function cancelScheduledNotificationsBySource(sources: string[]) {
   if (!NOTIFICATIONS_SUPPORTED_HERE) return;
   const sourceSet = new Set(sources);
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const notification of scheduled) {
     const source = notificationSource(notification);
-    if (!source || !sourceSet.has(source)) continue;
+    const title = notification.request.content.title ?? '';
+    const matchesKnownSource = Boolean(source && sourceSet.has(source));
+    const matchesLegacySummary =
+      sources.includes('daily-summary') &&
+      looksLikeLegacyDailySummaryTitle(title);
+    const matchesLegacyTomorrow =
+      sources.includes('tomorrow-morning') &&
+      looksLikeLegacyDailySummaryTitle(title);
+    if (!matchesKnownSource && !matchesLegacySummary && !matchesLegacyTomorrow) continue;
     await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
       logNotificationEvent('cancel-summary-scheduled-notification-failed', error, 'warn'),
     );
