@@ -20,7 +20,7 @@ on:
       version_code:
         description: 'Android versionCode for this production build (auto-incremented after each successful production AAB)'
         required: true
-        default: '81'
+        default: '82'
         type: string
 
 permissions:
@@ -40,18 +40,33 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.release_tag }}"
             SOURCE_REF="${{ inputs.source_ref }}"
-            VERSION_CODE="${{ inputs.version_code }}"
+            REQUESTED_VERSION_CODE="${{ inputs.version_code }}"
           elif [ "${{ github.event_name }}" = "release" ]; then
             TAG="${{ github.event.release.tag_name }}"
             SOURCE_REF="$TAG"
-            VERSION_CODE="78"
+            REQUESTED_VERSION_CODE=""
           else
             TAG="${GITHUB_REF_NAME}"
             SOURCE_REF="$TAG"
-            VERSION_CODE="78"
+            REQUESTED_VERSION_CODE=""
           fi
           test -n "$TAG"
           test -n "$SOURCE_REF"
+
+          LAST_VERSION_CODE="$(git show origin/main:.github/production-version-code 2>/dev/null || printf '81')"
+          test "$LAST_VERSION_CODE" -ge 1
+
+          if [ -n "$REQUESTED_VERSION_CODE" ] && [ "$REQUESTED_VERSION_CODE" -gt "$LAST_VERSION_CODE" ]; then
+            VERSION_CODE="$REQUESTED_VERSION_CODE"
+          else
+            VERSION_CODE=$((LAST_VERSION_CODE + 1))
+            if [ -n "$REQUESTED_VERSION_CODE" ]; then
+              echo "Requested versionCode $REQUESTED_VERSION_CODE is not above the latest successful production versionCode $LAST_VERSION_CODE; using $VERSION_CODE instead."
+            else
+              echo "Auto-incrementing from latest successful production versionCode $LAST_VERSION_CODE to $VERSION_CODE."
+            fi
+          fi
+
           test "$VERSION_CODE" -ge 1
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "source_ref=$SOURCE_REF" >> "$GITHUB_OUTPUT"
@@ -61,14 +76,11 @@ jobs:
           echo "Source ref: $SOURCE_REF"
           echo "Android versionCode: $VERSION_CODE"
 
-      # GitHub's built-in GITHUB_TOKEN cannot modify workflow files, so the
-      # Run workflow input default is maintained in this workflow manually.
-      # The build itself must not fail because automatic default maintenance is unavailable.
       - name: Show next production Android versionCode
         shell: bash
         run: |
           NEXT_VERSION_CODE=$(( ${{ steps.release.outputs.version_code }} + 1 ))
-          echo "Next recommended production Android versionCode: $NEXT_VERSION_CODE"
+          echo "Next production Android versionCode after this build: $NEXT_VERSION_CODE"
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.release.outputs.source_ref }}
@@ -249,6 +261,57 @@ jobs:
           echo "Unable to upload the AAB to GitHub Release after 5 attempts"
           exit 1
 
+      - name: Persist production versionCode and update workflow default
+        if: success()
+        env:
+          FLOWOS_WORKFLOW_TOKEN: ${{ secrets.FLOWOS_WORKFLOW_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$FLOWOS_WORKFLOW_TOKEN" || (echo "Missing GitHub secret FLOWOS_WORKFLOW_TOKEN" && exit 1)
+
+          NEXT_VERSION_CODE=$(( ${{ steps.release.outputs.version_code }} + 1 ))
+          git config user.name "FlowOS Release Automation"
+          git config user.email "flowos-release-automation@users.noreply.github.com"
+
+          GH_TOKEN="$FLOWOS_WORKFLOW_TOKEN" gh auth setup-git
+          git fetch origin main
+          git checkout main
+
+          printf '%s\n' "${{ steps.release.outputs.version_code }}" > .github/production-version-code
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+
+          path = Path(".github/workflows/release-aab.yml")
+          lines = path.read_text().splitlines()
+          in_target = False
+          replaced = False
+          output = []
+          for line in lines:
+              if line.startswith("      version_code:"):
+                  in_target = True
+              elif in_target and line.startswith("        default:"):
+                  output.append("        default: '" + os.environ["NEXT_VERSION_CODE"] + "'")
+                  replaced = True
+                  in_target = False
+                  continue
+              elif in_target and line.startswith("      ") and not line.startswith("        "):
+                  in_target = False
+              output.append(line)
+          if not replaced:
+              raise SystemExit("Could not locate workflow_dispatch version_code default")
+          path.write_text("\n".join(output) + "\n")
+          PY
+
+          git add .github/production-version-code .github/workflows/release-aab.yml
+          if git diff --cached --quiet; then
+            echo "Production version state is already current."
+            exit 0
+          fi
+          git commit -m "Advance production Android versionCode to $NEXT_VERSION_CODE"
+          git push origin main
       - name: Clean signing material
         if: always()
         shell: bash
