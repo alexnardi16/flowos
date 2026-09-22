@@ -1,7 +1,7 @@
 import type { Commitment } from '../types';
 
 export type VoiceCommand =
-  | { type:'add'; title:string; kind:'task'|'event'|'reminder'; when?:string }
+  | { type:'add'; title:string; kind:'task'|'event'; when?:string }
   | { type:'delete'; query:string }
   | { type:'complete'; query:string }
   | { type:'postpone'; query:string }
