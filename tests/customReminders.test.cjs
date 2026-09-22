@@ -10,13 +10,10 @@ function commitment(overrides) {
   };
 }
 
-test('an event with no configured reminders falls back to the historical single 10-minutes-before default', () => {
+test('an event without configured reminders produces no notification', () => {
   const now = new Date(2026, 6, 23, 9, 0);
   const commitments = [commitment({ id: 'ev1', scheduledAt: new Date(2026, 6, 23, 9, 10).toISOString() })];
-  const reminders = buildCustomReminders(commitments, now);
-  assert.equal(reminders.length, 1);
-  assert.equal(reminders[0].minutesBefore, 10);
-  assert.equal(reminders[0].triggerAt, now.toISOString());
+  assert.equal(buildCustomReminders(commitments, now).length, 0);
 });
 
 test('duplicate commitment rows produce only one logical reminder', () => {
@@ -24,13 +21,14 @@ test('duplicate commitment rows produce only one logical reminder', () => {
   const event = commitment({
     id: 'ev-duplicate',
     scheduledAt: new Date(2026, 6, 23, 10, 0).toISOString(),
+    reminders: [{ id: 'a', minutesBefore: 10 }],
   });
   const reminders = buildCustomReminders([event, { ...event }], now);
   assert.equal(reminders.length, 1);
-  assert.equal(reminders[0].id, 'ev-duplicate:default');
+  assert.equal(reminders[0].id, 'ev-duplicate:a');
 });
 
-test('a task with no configured reminders gets none by default (unlike events)', () => {
+test('a task with no configured reminders gets none by default', () => {
   const now = new Date(2026, 6, 23, 9, 0);
   const commitments = [commitment({ id: 't1', kind: 'task', dueAt: new Date(2026, 6, 23, 9, 10).toISOString() })];
   assert.equal(buildCustomReminders(commitments, now).length, 0);
@@ -58,6 +56,17 @@ test('all-day items never produce reminders (a "minutes before midnight" reminde
   const now = new Date(2026, 6, 23, 8, 0);
   const commitments = [commitment({ id: 'ev1', allDay: true, scheduledAt: '2026-07-25T00:00:00.000Z', reminders: [{ id: 'a', minutesBefore: 60 }] })];
   assert.equal(buildCustomReminders(commitments, now).length, 0);
+});
+
+test('dismissed reminders suppress existing offsets but allow newly added reminders', () => {
+  const now = new Date(2026, 6, 23, 8, 0);
+  const dismissedAt = new Date(2026, 6, 23, 8, 30).toISOString();
+  const commitments = [commitment({ id: 'ev1', scheduledAt: new Date(2026, 6, 24, 9, 0).toISOString(), reminderDismissedAt: dismissedAt, reminders: [
+    { id: 'old', minutesBefore: 60, createdAt: new Date(2026, 6, 23, 8, 0).toISOString() },
+    { id: 'new', minutesBefore: 30, createdAt: new Date(2026, 6, 23, 8, 31).toISOString() },
+  ] })];
+  const reminders = buildCustomReminders(commitments, now);
+  assert.deepEqual(reminders.map((r) => r.id), ['ev1:new']);
 });
 
 test('done and deleted items never produce reminders', () => {
