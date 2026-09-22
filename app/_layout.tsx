@@ -10,6 +10,7 @@ import * as Linking from 'expo-linking';
 import { BuildInfo } from '../components/BuildInfo';
 import { formatDiagnostics, recordDiagnostic } from '../lib/diagnostics';
 import { finishNativeGoogleOAuth } from '../lib/googleLogin';
+import { handleReminderNotificationResponse } from '../lib/reminderActions';
 import { AuthProvider } from '../providers/AuthProvider';
 import { SnackbarHost } from '../components/SnackbarHost';
 
@@ -19,11 +20,7 @@ export default function Root(){
   useEffect(()=>{
     recordDiagnostic('root-layout-mounted');
     if(Platform.OS!=='web'){
-      const handleNotificationResponse=(response:Notifications.NotificationResponse)=>{
-        const data=response.notification.request.content.data as Record<string,unknown>|undefined;
-        const commitmentId=typeof data?.commitmentId==='string'?data.commitmentId:undefined;
-        if(commitmentId){recordDiagnostic('notification-manage-navigation',{commitmentId});router.replace({pathname:'/today',params:{widgetAction:'manage',id:commitmentId}});}
-      };
+      const handleNotificationResponse=(response:Notifications.NotificationResponse)=>{void handleReminderNotificationResponse(response).then(handled=>{if(handled)return;const data=response.notification.request.content.data as Record<string,unknown>|undefined;const commitmentId=typeof data?.commitmentId==='string'?data.commitmentId:undefined;if(commitmentId){recordDiagnostic('notification-manage-navigation',{commitmentId});router.replace({pathname:'/today',params:{widgetAction:'manage',id:commitmentId}});}}).catch(error=>recordDiagnostic('notification-response-handling-failed',error,'warn'));};
       const notificationSubscription=Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
       void Notifications.getLastNotificationResponseAsync().then(response=>{if(response)handleNotificationResponse(response);}).catch(error=>recordDiagnostic('notification-response-read-failed',error,'warn'));
       const handleNativeUrl=(url:string)=>{if(!url.startsWith('flowos://'))return;const parsed=Linking.parse(url);const params=parsed.queryParams??{};const action=Array.isArray(params.widgetAction)?params.widgetAction[0]:params.widgetAction;const id=Array.isArray(params.id)?params.id[0]:params.id;const date=Array.isArray(params.date)?params.date[0]:params.date;const path=(parsed.path??'').replace(/^\//,'');if(typeof action==='string'&&typeof id==='string'&&(action==='manage'||action==='complete'||action==='postpone')){recordDiagnostic('widget-action-received',{action,hasId:Boolean(id)});router.replace({pathname:'/today',params:{widgetAction:action,id}});return;}if(path==='today'||path==='calendar'||path==='capture'){recordDiagnostic('widget-navigation-received',{path,hasDate:Boolean(date)});if(path==='calendar')router.replace({pathname:'/calendar',params:{...(typeof action==='string'?{widgetAction:action}:{}),...(typeof date==='string'?{date}: {})}});else router.replace(path==='today'?'/today':'/capture');return;}const hasOAuthPayload=/[?&#](code|error|access_token|refresh_token)=/.test(url);if(!hasOAuthPayload)return;recordDiagnostic('global-google-oauth-link-received',{hasCode:url.includes('code='),hasError:url.includes('error=')});void finishNativeGoogleOAuth(url).then(()=>{recordDiagnostic('global-google-oauth-completed');router.replace('/today');}).catch(error=>recordDiagnostic('global-google-oauth-failed',error,'error'));};
