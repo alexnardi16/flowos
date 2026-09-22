@@ -14,9 +14,9 @@ import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 function when(item: Commitment) { return item.scheduledAt ?? item.dueAt; }
 function isToday(item: Commitment) { const value=when(item); if(!value)return false; const date=new Date(value),now=new Date(); if(item.allDay)return date.getUTCFullYear()===now.getFullYear()&&date.getUTCMonth()===now.getMonth()&&date.getUTCDate()===now.getDate(); return date.getFullYear()===now.getFullYear()&&date.getMonth()===now.getMonth()&&date.getDate()===now.getDate(); }
-function kindLabel(kind:Commitment['kind']){return kind==='event'?'EVENTO':kind==='reminder'?'REMINDER':kind==='task'?'TASK':kind==='routine'?'ROUTINE':'IDEA';}
-function kindTone(kind:Commitment['kind']):'primary'|'success'|'warning'|'neutral'{return kind==='event'?'primary':kind==='task'?'warning':kind==='reminder'?'success':'neutral';}
-function cardKindStyle(kind:Commitment['kind']){return kind==='event'?s.cardEvent:kind==='task'?s.cardTask:kind==='reminder'?s.cardReminder:undefined;}
+function kindLabel(kind:Commitment['kind']){return kind==='event'?'EVENTO':'TASK';}
+function kindTone(kind:Commitment['kind']):'primary'|'warning'{return kind==='event'?'primary':'warning';}
+function cardKindStyle(kind:Commitment['kind']){return kind==='event'?s.cardEvent:s.cardTask;}
 type ContactsFilter='all'|'onlyContacts'|'excludeContacts';
 const CONTACTS_FILTER_KEY='flowos-today-contacts-filter-v1';
 function isGoogleTask(item:Commitment){return item.kind==='task'&&Boolean(item.googleTaskListId);}
