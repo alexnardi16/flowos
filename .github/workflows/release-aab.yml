@@ -17,14 +17,13 @@ on:
         required: true
         default: 'main'
         type: string
-      version_code:
-        description: 'Android versionCode for this production build (auto-incremented after each successful production AAB)'
-        required: true
-        default: '82'
-        type: string
 
 permissions:
   contents: write
+
+concurrency:
+  group: flowos-production-aab
+  cancel-in-progress: false
 
 jobs:
   build-aab:
@@ -46,41 +45,34 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.release_tag }}"
             SOURCE_REF="${{ inputs.source_ref }}"
-            REQUESTED_VERSION_CODE="${{ inputs.version_code }}"
           elif [ "${{ github.event_name }}" = "release" ]; then
             TAG="${{ github.event.release.tag_name }}"
             SOURCE_REF="$TAG"
-            REQUESTED_VERSION_CODE=""
           else
             TAG="${GITHUB_REF_NAME}"
             SOURCE_REF="$TAG"
-            REQUESTED_VERSION_CODE=""
           fi
           test -n "$TAG"
           test -n "$SOURCE_REF"
 
-          LAST_VERSION_CODE="$(git show origin/main:.github/production-version-code 2>/dev/null || printf '81')"
-          test "$LAST_VERSION_CODE" -ge 1
-
-          if [ -n "$REQUESTED_VERSION_CODE" ] && [ "$REQUESTED_VERSION_CODE" -gt "$LAST_VERSION_CODE" ]; then
-            VERSION_CODE="$REQUESTED_VERSION_CODE"
-          else
-            VERSION_CODE=$((LAST_VERSION_CODE + 1))
-            if [ -n "$REQUESTED_VERSION_CODE" ]; then
-              echo "Requested versionCode $REQUESTED_VERSION_CODE is not above the latest successful production versionCode $LAST_VERSION_CODE; using $VERSION_CODE instead."
-            else
-              echo "Auto-incrementing from latest successful production versionCode $LAST_VERSION_CODE to $VERSION_CODE."
-            fi
+          VERSION_STATE_FILE=".github/production-version-code"
+          if [ ! -s "$VERSION_STATE_FILE" ]; then
+            printf '81\n' > "$VERSION_STATE_FILE"
           fi
 
+          LAST_VERSION_CODE="$(tr -d '[:space:]' < "$VERSION_STATE_FILE")"
+          [[ "$LAST_VERSION_CODE" =~ ^[0-9]+$ ]]
+          test "$LAST_VERSION_CODE" -ge 1
+
+          VERSION_CODE=$((LAST_VERSION_CODE + 1))
           test "$VERSION_CODE" -ge 1
+
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "source_ref=$SOURCE_REF" >> "$GITHUB_OUTPUT"
           echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
           echo "aab_name=FlowOS-$TAG.aab" >> "$GITHUB_OUTPUT"
-          echo "Release tag: $TAG"
-          echo "Source ref: $SOURCE_REF"
-          echo "Android versionCode: $VERSION_CODE"
+          echo "Last successful production Android versionCode: $LAST_VERSION_CODE"
+          echo "This production build Android versionCode: $VERSION_CODE"
 
       - name: Ensure GitHub Release exists for the AAB
         shell: bash
@@ -102,6 +94,7 @@ jobs:
         run: |
           NEXT_VERSION_CODE=$(( ${{ steps.release.outputs.version_code }} + 1 ))
           echo "Next production Android versionCode after this build: $NEXT_VERSION_CODE"
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.release.outputs.source_ref }}
@@ -162,6 +155,19 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
 
+      - name: Verify generated Android versionCode
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="${{ steps.release.outputs.version_code }}"
+          ACTUAL="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync("android/app/build.gradle","utf8").match(/versionCode (\\d+)/)?.[1] ? "{}" : "{}")' 2>/dev/null || true)"
+          if ! grep -Eq "versionCode[[:space:]]+$EXPECTED" android/app/build.gradle; then
+            echo "ERROR: generated Android project does not contain versionCode $EXPECTED"
+            grep -n "versionCode" android/app/build.gradle || true
+            exit 1
+          fi
+          echo "Verified generated Android versionCode: $EXPECTED"
+
       - name: Restore production signing keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -211,8 +217,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Gradle's distribution server can occasionally return a transient 5xx/504.
-          # Retry the wrapper so a temporary download outage does not fail the release.
           for attempt in 1 2 3 4 5; do
             echo "Gradle bundleRelease attempt $attempt/5"
             if ./gradlew bundleRelease --no-daemon --stacktrace; then
@@ -282,7 +286,7 @@ jobs:
           echo "Unable to upload the AAB to GitHub Release after 5 attempts"
           exit 1
 
-      - name: Persist production versionCode and update workflow default
+      - name: Persist production versionCode
         if: success()
         env:
           FLOWOS_WORKFLOW_TOKEN: ${{ secrets.FLOWOS_WORKFLOW_TOKEN }}
@@ -291,8 +295,6 @@ jobs:
           set -euo pipefail
           test -n "$FLOWOS_WORKFLOW_TOKEN" || (echo "Missing GitHub secret FLOWOS_WORKFLOW_TOKEN" && exit 1)
 
-          NEXT_VERSION_CODE=$(( ${{ steps.release.outputs.version_code }} + 1 ))
-          export NEXT_VERSION_CODE
           git config user.name "FlowOS Release Automation"
           git config user.email "flowos-release-automation@users.noreply.github.com"
 
@@ -307,8 +309,9 @@ jobs:
             echo "Production version state is already current."
             exit 0
           fi
-          git commit -m "Advance production Android versionCode to $NEXT_VERSION_CODE"
+          git commit -m "Record production Android versionCode ${{ steps.release.outputs.version_code }}"
           git push origin main
+
       - name: Clean signing material
         if: always()
         shell: bash
