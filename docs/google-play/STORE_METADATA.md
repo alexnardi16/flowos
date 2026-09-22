@@ -7,7 +7,7 @@ FlowOS
 Organize tasks, events and reminders around what you commit to do.
 
 ## Full description
-FlowOS brings tasks, calendar events and reminders together in one simple planning system.
+FlowOS brings tasks and calendar events together with local reminders in one simple planning system.
 
 Capture what you need to do, turn it into clear commitments, plan your day and keep your schedule under control.
 
