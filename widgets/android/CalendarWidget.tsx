@@ -5,9 +5,9 @@ export type AndroidCalendarDay={dateKey:string;label:string;isToday:boolean;item
 export type AndroidCalendarWeek={title:string;days:AndroidCalendarDay[]};
 export type AndroidCalendarWidgetProps={weeks:AndroidCalendarWeek[];heightDp?:number};
 const BG='#F1F4FF';const INK='#172033';const MUTED='#697386';const PRIMARY='#4254C5';const BORDER='#C8CEDA';
-function capitalizeMonthTitle(value:string){const [month,...year]=value.split(' ');return month?`${month.charAt(0).toUpperCase()}${month.slice(1)} ${year.join(' ')}`:value;}
-function compact(text:string,max=22){return text.length<=max?text:`${text.slice(0,max-1)}…`;}
-function weekHeight(week:AndroidCalendarWeek){const maxItems=Math.max(0,...week.days.map(day=>day.items.length));return Math.max(92,Math.min(170,38+maxItems*18));}
+function capitalizeMonthTitle(value:string){const [month,...year]=value.split(' ');return month?\`${month.charAt(0).toUpperCase()}${month.slice(1)} ${year.join(' ')}\`:value;}
+function titleLines(text:string,maxChars=14){const clean=text.trim();if(!clean)return [''];if(clean.length<=maxChars)return [clean];const first=clean.slice(0,maxChars);const split=first.lastIndexOf(' ');const cut=split>7?split:maxChars;const line1=clean.slice(0,cut).trim();const rest=clean.slice(cut).trim();return [line1,rest.length>maxChars?\`${rest.slice(0,maxChars-1)}…\`:rest];}
+function weekHeight(week:AndroidCalendarWeek){const maxItems=Math.max(0,...week.days.map(day=>day.items.length));return Math.max(92,20+maxItems*34);}
 export function CalendarWidget({weeks}:AndroidCalendarWidgetProps){return <FlexWidget style={{width:'match_parent',height:'match_parent',padding:8,backgroundColor:BG,borderRadius:20,flexDirection:'column'}} clickAction="OPEN_URI" clickActionData={{uri:'flowos://calendar'}} accessibilityLabel="FlowOS: calendario">
   <FlexWidget style={{width:'match_parent',flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingBottom:5}}>
     <FlexWidget style={{flexDirection:'row',alignItems:'center'}}><TextWidget text="Calendario" style={{fontSize:19,fontWeight:'bold',color:INK}}/></FlexWidget>
@@ -23,9 +23,11 @@ export function CalendarWidget({weeks}:AndroidCalendarWidgetProps){return <FlexW
       <FlexWidget style={{width:'match_parent',flexDirection:'row',justifyContent:'flex-start'}}>
         {Array.from({length:7},(_,index)=>week.days[index]??{dateKey:`${week.title}-${index}`,label:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'][index],isToday:false,items:[]}).map(day=><FlexWidget key={day.dateKey} clickAction="OPEN_URI" clickActionData={{uri:`flowos://calendar?date=${day.dateKey}`}} accessibilityLabel={`Apri ${day.label}`} style={{width:0,flex:1,height,marginHorizontal:1,padding:2,borderRadius:7,borderWidth:1,borderColor:BORDER,backgroundColor:day.isToday?'#E8ECFF':'#FFFFFF',flexDirection:'column'}}>
           <FlexWidget style={{width:'match_parent',flexDirection:'row',alignItems:'center'}}><TextWidget text={day.label} style={{fontSize:8,fontWeight:'bold',color:day.isToday?PRIMARY:MUTED}}/></FlexWidget>
-          {day.items.map(item=><FlexWidget key={item.id} style={{width:'match_parent',marginTop:2,padding:2,borderRadius:5,borderWidth:1,borderColor:'#D9DDE7',backgroundColor:item.sourceColor,flexDirection:'column'}}>
-            <TextWidget text={compact(item.time)} style={{fontSize:6,lineHeight:8,fontWeight:'bold',color:MUTED}}/><TextWidget text={compact(item.title)} style={{fontSize:8,lineHeight:10,fontWeight:'bold',color:INK}}/>
-          </FlexWidget>)}
+          {day.items.map(item=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{width:'match_parent',height:31,marginTop:2,padding:2,borderRadius:5,borderWidth:1,borderColor:'#D9DDE7',backgroundColor:item.sourceColor,flexDirection:'column'}}>
+            <TextWidget text={item.time} style={{fontSize:6,lineHeight:8,fontWeight:'bold',color:MUTED}}/>
+            <TextWidget text={lines[0]} style={{fontSize:8,lineHeight:10,fontWeight:'bold',color:INK}}/>
+            {lines[1]?<TextWidget text={lines[1]} style={{fontSize:8,lineHeight:10,fontWeight:'bold',color:INK}}/>:null}
+          </FlexWidget>})}
           {!day.items.length?<TextWidget text="·" style={{fontSize:9,color:'#B8BFCC',marginTop:3}}/>:null}
         </FlexWidget>)}
       </FlexWidget>
