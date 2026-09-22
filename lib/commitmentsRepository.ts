@@ -18,9 +18,9 @@ function googleDescription(item: Commitment) {
 }
 
 function toRow(item: Commitment, userId: string) {
-  const kindMap: Record<Commitment['kind'], string> = { task: 'task', event: 'event', reminder: 'reminder', routine: 'habit', idea: 'note' };
+  const kindMap: Record<Commitment['kind'], string> = { task: 'task', event: 'event' };
   const statusMap: Record<Commitment['status'], string> = { active: 'active', waiting: 'waiting', scheduled: 'scheduled', blocked: 'blocked', someday: 'someday', done: 'completed' };
-  const resourceType = item.kind === 'event' ? 'calendar_event' : ['task', 'reminder'].includes(item.kind) ? 'task' : null;
+  const resourceType = item.kind === 'event' ? 'calendar_event' : 'task';
   const normalizedAllDayTask = item.kind === 'task' && item.allDay;
   return {
     id: item.id,
