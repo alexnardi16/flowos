@@ -1,6 +1,6 @@
 # FlowOS
 
-FlowOS è un'app mobile-first che unifica task, eventi e reminder in un unico modello di **Commitment**.
+FlowOS è un'app mobile-first che unifica task ed eventi, con reminder locali associabili a ciascuna attività.
 
 ## Stato del progetto
 
