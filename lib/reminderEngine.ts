@@ -9,6 +9,9 @@ import { logNotificationEvent } from './notificationLog';
 import type { Commitment } from '../types';
 
 export const EVENT_REMINDER_CHANNEL = 'flowos-event-reminders';
+export const REMINDER_ACTION_CATEGORY = 'flowos_reminder_actions';
+export const REMINDER_ACTION_POSTPONE = 'reminder_postpone';
+export const REMINDER_ACTION_COMPLETE = 'reminder_complete';
 export const DUE_SOON_CHANNEL = 'flowos-due-soon';
 export const OVERDUE_CHANNEL = 'flowos-overdue';
 
@@ -34,6 +37,21 @@ async function ensureReminderChannels() {
     name: 'Task scadute',
     importance: Notifications.AndroidImportance.DEFAULT,
   });
+}
+
+export async function ensureReminderNotificationCategory() {
+  await Notifications.setNotificationCategoryAsync(REMINDER_ACTION_CATEGORY, [
+    {
+      identifier: REMINDER_ACTION_POSTPONE,
+      buttonTitle: 'Rimanda',
+      options: { opensAppToForeground: true },
+    },
+    {
+      identifier: REMINDER_ACTION_COMPLETE,
+      buttonTitle: 'Completa',
+      options: { isDestructive: false, opensAppToForeground: false },
+    },
+  ]);
 }
 
 async function readReminderMap(): Promise<ReminderMap> {
@@ -136,8 +154,10 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
         data: {
           source: 'reminder',
           commitmentId: reminder.commitmentId,
+          reminderKey: reminder.id,
           reminderId: reminder.id.split(':').slice(1).join(':'),
         },
+        categoryIdentifier: REMINDER_ACTION_CATEGORY,
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -284,6 +304,7 @@ async function runReminderEngineInternal(commitments: Commitment[], now: Date = 
   }
   await ensureDailySummaryChannel();
   await ensureReminderChannels();
+  await ensureReminderNotificationCategory();
 
   const plan = buildReminderPlan(commitments, now);
 
