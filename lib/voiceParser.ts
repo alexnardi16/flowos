@@ -105,7 +105,7 @@ function semanticParse(transcript:string):VoiceCommand|null{
     if(match){const when=extractWhen(match[2]);const query=cleanQuery(match[1]);if(when&&query)return{type:'move',query,when};}
   }
   const add=lower.match(/^(?:aggiungi|crea|inserisci|registra|programma|pianifica|ricordami(?:\s+di)?|devo|devo\s+ricordarmi\s+di)\s+(.+)$/);
-  if(add){const original=raw.slice(raw.toLowerCase().indexOf(add[1])).trim();const when=extractWhen(original);const title=stripKind(removeWhen(original));const kind=/\b(?:evento|appuntamento|meeting|riunione|calendar|calendario)\b/.test(add[1])?'event':/\b(?:reminder|promemoria|ricordami|ricorda)\b/.test(add[1])?'reminder':'task';return{type:'add',title:title||original,kind,when};}
+  if(add){const original=raw.slice(raw.toLowerCase().indexOf(add[1])).trim();const when=extractWhen(original);const title=stripKind(removeWhen(original));const kind=/\b(?:evento|appuntamento|meeting|riunione|calendar|calendario)\b/.test(add[1])?'event':'task';return{type:'add',title:title||original,kind,when};}
   return null;
 }
 
@@ -135,7 +135,7 @@ export function parseVoiceCommand(transcript:string):VoiceCommand|null{
   if(addMatch){
     const prefix=normalizeVoiceText(addMatch[1]),original=addMatch[2].trim(),normalizedOriginal=normalizeVoiceText(original);
     const when=extractWhen(original),title=stripKind(removeWhen(original));
-    const kind=/\b(?:evento|appuntamento|meeting|riunione|calendar|calendario)\b/.test(normalizedOriginal)?'event':(prefix.includes('ricordami')||/\b(?:reminder|promemoria)\b/.test(normalizedOriginal))?'reminder':'task';
+    const kind=/\b(?:evento|appuntamento|meeting|riunione|calendar|calendario)\b/.test(normalizedOriginal)?'event':'task';
     return{type:'add',title:title||original,kind,when};
   }
   return null;
