@@ -123,20 +123,37 @@ async function cancelScheduledNotificationsBySource(sources: string[]) {
   }
 }
 
-export async function hasPresentedDailySummaryForDate(dateKey: string): Promise<boolean> {
+export async function reconcilePresentedDailySummary(summary: DailySummary): Promise<boolean> {
   if (!NOTIFICATIONS_SUPPORTED_HERE) return false;
   try {
     const presented = await Notifications.getPresentedNotificationsAsync();
-    return presented.some((notification) => {
+    const matching = presented.filter((notification) => {
       const source = notificationSource(notification);
       const data = notification.request.content.data as NotificationData | null | undefined;
       return (
         (source === 'daily-summary' || source === 'daily-summary-recovered') &&
-        data?.dateKey === dateKey
+        data?.dateKey === summary.dateKey
       );
     });
+
+    if (
+      matching.length === 1 &&
+      matching[0].request.content.title === summary.title &&
+      matching[0].request.content.body === summary.body
+    ) {
+      return true;
+    }
+
+    // Remove stale/duplicate FlowOS summaries so an upgrade cannot leave
+    // several old versions of today's notification in the shade.
+    for (const notification of matching) {
+      await Notifications.dismissNotificationAsync(notification.request.identifier).catch((error) =>
+        logNotificationEvent('dismiss-stale-summary-failed', error, 'warn'),
+      );
+    }
+    return false;
   } catch (error) {
-    await logNotificationEvent('presented-summary-check-failed', error, 'warn');
+    await logNotificationEvent('presented-summary-reconcile-failed', error, 'warn');
     return false;
   }
 }
