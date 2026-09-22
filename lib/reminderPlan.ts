@@ -30,8 +30,12 @@ export function buildReminderPlan(commitments: Commitment[], now: Date = new Dat
 
   const dueSoon: DueTask[] = dueTasks
     .filter((item) => {
-      const diffHours = (new Date(item.dueAt as string).getTime() - now.getTime()) / 3600000;
-      return diffHours > 0 && diffHours <= DUE_SOON_WINDOW_HOURS;
+      const dueAt = new Date(item.dueAt as string);
+      return (
+        !Number.isNaN(dueAt.getTime()) &&
+        toDateKey(dueAt) === toDateKey(now) &&
+        dueAt.getTime() > now.getTime()
+      );
     })
     .map((item) => ({ id: item.id, title: item.title, dueAt: item.dueAt as string }))
     .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
