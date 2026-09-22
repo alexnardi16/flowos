@@ -103,18 +103,46 @@ async function syncGroupedNotification(
   body: string,
   source: string,
 ) {
-  // Reconcile against the OS queue itself. This removes duplicates left by
-  // older/racing runs instead of trusting only the last stored identifier.
+  const hash = tasks.map((task) => task.id).sort().join(',');
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  for (const notification of scheduled) {
-    if (notification.content.data?.source === source) {
+  const matching = scheduled.filter((notification) => notification.content.data?.source === source);
+
+  let previousHash: string | null = null;
+  try {
+    const raw = await AsyncStorage.getItem(storageKey);
+    if (raw) previousHash = (JSON.parse(raw) as { hash?: string }).hash ?? null;
+  } catch {
+    previousHash = null;
+  }
+
+  if (tasks.length === 0) {
+    for (const notification of matching) {
       await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
         logNotificationEvent(`cancel-${source}-failed`, error, 'warn'),
       );
     }
+    await AsyncStorage.removeItem(storageKey);
+    return;
   }
-  await AsyncStorage.removeItem(storageKey);
-  if (tasks.length === 0) return;
+
+  // The grouped notification is intentionally one-shot. Once the same set of
+  // task IDs has already been notified, running the engine again must not
+  // schedule the same alert again — even if the previous one has already fired.
+  if (previousHash === hash) {
+    // If an old version left multiple pending copies, keep at most one.
+    for (const notification of matching.slice(1)) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+        logNotificationEvent(`cancel-${source}-duplicate-failed`, error, 'warn'),
+      );
+    }
+    return;
+  }
+
+  for (const notification of matching) {
+    await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+      logNotificationEvent(`cancel-${source}-failed`, error, 'warn'),
+    );
+  }
 
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
@@ -127,10 +155,7 @@ async function syncGroupedNotification(
       ? { channelId: channel, seconds: 1, type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, repeats: false }
       : null,
   });
-  await AsyncStorage.setItem(storageKey, JSON.stringify({
-    notificationId: identifier,
-    hash: tasks.map((task) => task.id).sort().join(','),
-  }));
+  await AsyncStorage.setItem(storageKey, JSON.stringify({ notificationId: identifier, hash }));
   await logNotificationEvent(`${source}-scheduled`, { count: tasks.length, identifier });
 }
 async function syncBadge(count: number) {
