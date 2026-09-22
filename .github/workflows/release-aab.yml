@@ -271,6 +271,7 @@ jobs:
           test -n "$FLOWOS_WORKFLOW_TOKEN" || (echo "Missing GitHub secret FLOWOS_WORKFLOW_TOKEN" && exit 1)
 
           NEXT_VERSION_CODE=$(( ${{ steps.release.outputs.version_code }} + 1 ))
+          export NEXT_VERSION_CODE
           git config user.name "FlowOS Release Automation"
           git config user.email "flowos-release-automation@users.noreply.github.com"
 
