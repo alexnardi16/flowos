@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildReminderPlan, summarizeTaskList, type ReminderPlan } from './reminderPlan';
-import { buildCustomReminders, formatReminderOffsetLabel } from './customReminders';
+import { buildCustomReminders, dedupeScheduledReminders, formatReminderOffsetLabel } from './customReminders';
 import { ensureDailySummaryChannel, NOTIFICATIONS_SUPPORTED_HERE, requestNotificationPermission } from './notificationService';
 import { syncTodayWidget } from './widgetSync';
 import { logNotificationEvent } from './notificationLog';
@@ -56,27 +56,87 @@ async function writeReminderMap(map: ReminderMap) {
  * since it always starts from a clean slate — it can never leave a
  * duplicate pending for the same reminder.
  */
+/**
+ * Reconciles event reminders idempotently against the OS queue.
+ *
+ * The old implementation cancelled every reminder and then recreated every
+ * reminder. That is vulnerable to concurrent foreground/background passes:
+ * two passes can both observe an empty queue and both schedule the same event.
+ *
+ * This implementation instead:
+ * 1. derives one desired reminder per logical reminder key;
+ * 2. keeps an existing notification when it already represents that key/time;
+ * 3. cancels stale and duplicate OS entries;
+ * 4. schedules only missing reminders;
+ * 5. performs a final OS-level reconciliation, so concurrent passes converge
+ *    to one notification per logical reminder.
+ */
 async function syncEventReminders(commitments: Commitment[], now: Date) {
-  // Reconcile against the OS queue itself so duplicate reminders from older
-  // racing runs are removed before the current desired set is scheduled.
+  const reminders = dedupeScheduledReminders(buildCustomReminders(commitments, now));
+  const desiredByKey = new Map(reminders.map((reminder) => [reminder.id, reminder]));
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const kept = new Set<string>();
+
+  const getReminderKey = (notification: Notifications.NotificationRequest) => {
+    const data = notification.content.data as Record<string, unknown> | null | undefined;
+    if (data?.source !== 'reminder') return null;
+    const commitmentId = typeof data.commitmentId === 'string' ? data.commitmentId : null;
+    const reminderId = typeof data.reminderId === 'string' ? data.reminderId : null;
+    return commitmentId && reminderId ? `${commitmentId}:${reminderId}` : null;
+  };
+
+  const getTriggerAt = (notification: Notifications.NotificationRequest): number | null => {
+    const trigger = notification.trigger as { date?: Date | string | number } | null;
+    if (!trigger || trigger.date === undefined) return null;
+    const time = new Date(trigger.date).getTime();
+    return Number.isFinite(time) ? time : null;
+  };
+
   for (const notification of scheduled) {
-    if (notification.content.data?.source === 'reminder') {
-      await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
-        logNotificationEvent('cancel-event-reminder-failed', error, 'warn'),
-      );
+    const key = getReminderKey(notification);
+    if (!key) {
+      if (notification.content.data?.source === 'reminder') {
+        await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+          logNotificationEvent('cancel-event-reminder-invalid-failed', error, 'warn'),
+        );
+      }
+      continue;
     }
+
+    const desired = desiredByKey.get(key);
+    if (!desired) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+        logNotificationEvent('cancel-event-reminder-stale-failed', error, 'warn'),
+      );
+      continue;
+    }
+
+    const desiredTime = new Date(desired.triggerAt).getTime();
+    const actualTime = getTriggerAt(notification);
+    const sameTrigger = actualTime !== null && Math.abs(actualTime - desiredTime) < 1000;
+
+    if (kept.has(key) || !sameTrigger) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+        logNotificationEvent('cancel-event-reminder-duplicate-failed', error, 'warn'),
+      );
+      continue;
+    }
+
+    kept.add(key);
   }
 
-  const reminders = buildCustomReminders(commitments, now);
-  const next: ReminderMap = {};
-
   for (const reminder of reminders) {
+    if (kept.has(reminder.id)) continue;
+
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
         title: reminder.title,
         body: `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
-        data: { source: 'reminder', commitmentId: reminder.commitmentId, reminderId: reminder.id },
+        data: {
+          source: 'reminder',
+          commitmentId: reminder.commitmentId,
+          reminderId: reminder.id.split(':').slice(1).join(':'),
+        },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -84,10 +144,48 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
         ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
       },
     });
-    next[reminder.id] = { notificationId: identifier, triggerAt: reminder.triggerAt };
+    kept.add(reminder.id);
   }
+
+  // Final reconciliation closes the race window between two independent
+  // foreground/background executions. Whichever pass runs last leaves exactly
+  // one notification for every desired logical reminder.
+  const finalScheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const finalKept = new Set<string>();
+  const next: ReminderMap = {};
+
+  for (const notification of finalScheduled) {
+    const key = getReminderKey(notification);
+    if (!key) continue;
+
+    const desired = desiredByKey.get(key);
+    if (!desired) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+        logNotificationEvent('cancel-event-reminder-final-stale-failed', error, 'warn'),
+      );
+      continue;
+    }
+
+    if (finalKept.has(key)) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+        logNotificationEvent('cancel-event-reminder-final-duplicate-failed', error, 'warn'),
+      );
+      continue;
+    }
+
+    finalKept.add(key);
+    next[key] = {
+      notificationId: notification.identifier,
+      triggerAt: desired.triggerAt,
+    };
+  }
+
   await writeReminderMap(next);
-  await logNotificationEvent('event-reminders-synced', { count: reminders.length, reused: 0 });
+  await logNotificationEvent('event-reminders-synced', {
+    count: reminders.length,
+    scheduled: finalKept.size,
+    removed: Math.max(0, finalScheduled.filter((notification) => getReminderKey(notification)).length - finalKept.size),
+  });
 }
 /**
  * One grouped notification instead of one per task. Re-fires only when the
