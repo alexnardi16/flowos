@@ -160,7 +160,6 @@ jobs:
         run: |
           set -euo pipefail
           EXPECTED="${{ steps.release.outputs.version_code }}"
-          ACTUAL="$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync("android/app/build.gradle","utf8").match(/versionCode (\\d+)/)?.[1] ? "{}" : "{}")' 2>/dev/null || true)"
           if ! grep -Eq "versionCode[[:space:]]+$EXPECTED" android/app/build.gradle; then
             echo "ERROR: generated Android project does not contain versionCode $EXPECTED"
             grep -n "versionCode" android/app/build.gradle || true
