@@ -1,6 +1,6 @@
 export type CommitmentStatus = 'active' | 'waiting' | 'scheduled' | 'blocked' | 'someday' | 'done';
 export type Energy = 'low' | 'medium' | 'high';
-export type CommitmentKind = 'task' | 'event' | 'routine' | 'idea';
+export type CommitmentKind = 'task' | 'event';
 
 export interface Commitment {
   id: string;
