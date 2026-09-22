@@ -112,8 +112,8 @@ export async function setDailySummaryTime(hour: number, minute: number) {
 
 function looksLikeLegacyDailySummaryTitle(title: string): boolean {
   return (
-    /^Oggi hai \\d+ impegn/.test(title) ||
-    /^Domani hai \\d+ impegn/.test(title) ||
+    /^Oggi hai [0-9]+ impegn/.test(title) ||
+    /^Domani hai [0-9]+ impegn/.test(title) ||
     /^Nessun impegno pianificato per (oggi|domani)$/.test(title) ||
     /^Domani mattina · /.test(title)
   );
@@ -149,8 +149,8 @@ function isFlowOSDailySummary(notification: Notifications.Notification): boolean
   // clean up stale/duplicate summaries already shown by the previous build.
   const title = notification.request.content.title ?? '';
   return (
-    /^Oggi hai \\d+ impegn/.test(title) ||
-    /^Domani hai \\d+ impegn/.test(title) ||
+    /^Oggi hai [0-9]+ impegn/.test(title) ||
+    /^Domani hai [0-9]+ impegn/.test(title) ||
     /^Nessun impegno pianificato per (oggi|domani)$/.test(title) ||
     /^Domani mattina · /.test(title)
   );
