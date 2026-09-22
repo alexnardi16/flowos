@@ -123,18 +123,27 @@ async function cancelScheduledNotificationsBySource(sources: string[]) {
   }
 }
 
+function isFlowOSDailySummary(notification: Notifications.Notification): boolean {
+  const source = notificationSource(notification);
+  if (source === 'daily-summary' || source === 'daily-summary-recovered' || source === 'tomorrow-morning') return true;
+
+  // Older FlowOS builds did not always attach a source to the notification.
+  // Recognize their stable Italian summary titles so an app upgrade can
+  // clean up stale/duplicate summaries already shown by the previous build.
+  const title = notification.request.content.title ?? '';
+  return (
+    /^Oggi hai \\d+ impegn/.test(title) ||
+    /^Domani hai \\d+ impegn/.test(title) ||
+    /^Nessun impegno pianificato per (oggi|domani)$/.test(title) ||
+    /^Domani mattina · /.test(title)
+  );
+}
+
 export async function reconcilePresentedDailySummary(summary: DailySummary): Promise<boolean> {
   if (!NOTIFICATIONS_SUPPORTED_HERE) return false;
   try {
     const presented = await Notifications.getPresentedNotificationsAsync();
-    const matching = presented.filter((notification) => {
-      const source = notificationSource(notification);
-      const data = notification.request.content.data as NotificationData | null | undefined;
-      return (
-        (source === 'daily-summary' || source === 'daily-summary-recovered') &&
-        data?.dateKey === summary.dateKey
-      );
-    });
+    const matching = presented.filter(isFlowOSDailySummary);
 
     if (
       matching.length === 1 &&
@@ -144,8 +153,9 @@ export async function reconcilePresentedDailySummary(summary: DailySummary): Pro
       return true;
     }
 
-    // Remove stale/duplicate FlowOS summaries so an upgrade cannot leave
-    // several old versions of today's notification in the shade.
+    // Remove every stale/duplicate FlowOS summary, regardless of dateKey.
+    // This is important after upgrades: old scheduled notifications may have
+    // been created before the current source/dateKey metadata existed.
     for (const notification of matching) {
       await Notifications.dismissNotificationAsync(notification.request.identifier).catch((error) =>
         logNotificationEvent('dismiss-stale-summary-failed', error, 'warn'),
