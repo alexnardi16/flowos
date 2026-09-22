@@ -76,7 +76,7 @@ export async function scheduleSnoozedReminder(commitmentId: string, notification
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: triggerAt,
       ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
-    } as Notifications.DateTriggerInput,
+    },
   });
 
   await AsyncStorage.removeItem(PENDING_REMINDER_SNOOZE_KEY);
