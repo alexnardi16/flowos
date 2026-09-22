@@ -24,6 +24,7 @@ module.exports = {
   version: '1.0.0',
   description: 'Unifica task, eventi e reminder in un unico modello di Commitment.',
   icon: './assets/flowos-app-icon-512-store.png',
+  icon: './assets/flowos-app-icon-512-store.png',
   orientation: 'portrait',
   scheme: 'flowos',
   userInterfaceStyle: 'automatic',
