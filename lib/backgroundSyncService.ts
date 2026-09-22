@@ -10,7 +10,7 @@ import { runIntelligentReplan } from './replanEngine';
 import { autoCompleteExpiredEvents } from './autoCompleteEvents';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
-import { getDailySummaryTime, getLastRecoveryDateKey, hasPresentedDailySummaryForDate, hasRecoveredToday, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
+import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, reconcilePresentedDailySummary, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
 export const GOOGLE_TASKS_BACKGROUND_TASK = 'flowos-google-tasks-sync';
@@ -96,15 +96,6 @@ async function checkAndRecoverMissedDailySummaryInternal(now: Date): Promise<voi
   const lastRecovery = await getLastRecoveryDateKey();
   if (hasRecoveredToday(lastRecovery, dateKey)) return;
 
-  // If the scheduled notification is already visible in the notification
-  // shade, recovery is unnecessary. This prevents the normal 07:30 trigger
-  // plus a second recovery notification when the app opens at 07:38.
-  if (await hasPresentedDailySummaryForDate(dateKey)) {
-    await markRecovered(dateKey);
-    await logNotificationEvent('daily-summary-recovery-skipped-already-presented', { dateKey });
-    return;
-  }
-
   await logNotificationEvent('daily-summary-recovery-triggered', { dateKey });
   try {
     await syncGoogleWorkspace();
@@ -117,6 +108,15 @@ async function checkAndRecoverMissedDailySummaryInternal(now: Date): Promise<voi
     await syncTodayWidget(commitments, now);
   } catch (error) {
     await logNotificationEvent('recovery-widget-refresh-failed', error, 'warn');
+  }
+
+  // Compare any already-presented summary with the freshly synchronized
+  // FlowOS state. Keep one only when it is exactly current; otherwise remove
+  // stale/duplicate summaries and send one corrected notification.
+  if (await reconcilePresentedDailySummary(summary)) {
+    await markRecovered(dateKey);
+    await logNotificationEvent('daily-summary-recovery-skipped-already-current', { dateKey });
+    return;
   }
 
   await sendImmediateSummaryNotification(summary);
