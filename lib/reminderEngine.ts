@@ -49,7 +49,7 @@ export async function ensureReminderNotificationCategory() {
     {
       identifier: REMINDER_ACTION_COMPLETE,
       buttonTitle: 'Completa',
-      options: { isDestructive: false, opensAppToForeground: false },
+      options: { isDestructive: false, opensAppToForeground: true },
     },
   ]);
 }
