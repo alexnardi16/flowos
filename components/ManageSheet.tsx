@@ -53,7 +53,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
 
   function addReminder(minutesBefore: number) {
     if (reminders.some((r) => r.minutesBefore === minutesBefore)) return;
-    setReminders((current) => [...current, { id: `${Date.now()}-${minutesBefore}`, minutesBefore }].sort((a, b) => a.minutesBefore - b.minutesBefore));
+    setReminders((current) => [...current, { id: `${Date.now()}-${minutesBefore}`, minutesBefore, createdAt: new Date().toISOString() }].sort((a, b) => a.minutesBefore - b.minutesBefore));
   }
   function removeReminder(id: string) {
     setReminders((current) => current.filter((r) => r.id !== id));
@@ -126,7 +126,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       <TextInput value={title} onChangeText={setTitle} style={styles.input} />
 
       <Text style={styles.label}>Tipo</Text>
-      <View style={styles.row}>{(['event', 'task', 'reminder'] as const).map((k) => <Pressable key={k} onPress={() => setKind(k)} style={[styles.choice, kind === k && styles.choiceActive]}><Text style={[styles.choiceText, kind === k && styles.choiceTextActive]}>{k === 'event' ? 'Evento' : k === 'task' ? 'Task' : 'Reminder'}</Text></Pressable>)}</View>
+      <View style={styles.row}>{(['event', 'task'] as const).map((k) => <Pressable key={k} onPress={() => setKind(k)} style={[styles.choice, kind === k && styles.choiceActive]}><Text style={[styles.choiceText, kind === k && styles.choiceTextActive]}>{k === 'event' ? 'Evento' : 'Task'}</Text></Pressable>)}</View>
 
       <View style={styles.rowBetween}><Text style={styles.label}>Giornata intera</Text><Switch value={allDay} onValueChange={setAllDay} /></View>
 
