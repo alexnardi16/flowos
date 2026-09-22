@@ -87,14 +87,14 @@ export default function Plan(){
       <Filter label="Solo contatti" active={contactsFilter==='onlyContacts'} onPress={()=>setContactsFilter('onlyContacts')}/>
       <Filter label="Escludi contatti" active={contactsFilter==='excludeContacts'} onPress={()=>setContactsFilter('excludeContacts')}/>
     </View>
-    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>Attività in ritardo</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><Text style={styles.overdueItemTitle}>{item.title}</Text><Text style={styles.overdueItemMeta}>{formatDateTime(item)} · {item.kind==='event'?'Evento':item.kind==='reminder'?'Reminder':'Task'}</Text></Pressable>)}</Card>:null}
+    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>Attività in ritardo</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><Text style={styles.overdueItemTitle}>{item.title}</Text><Text style={styles.overdueItemMeta}>{formatDateTime(item)} · {item.kind==='event'?'Evento':false?'Reminder':'Task'}</Text></Pressable>)}</Card>:null}
     <SectionTitle title="Elementi" subtitle="Tocca una scheda per aprirla."/>
     {items.length?items.map(item=>{
       const overdue=item.status!=='done'&&isExpired(item);
       return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
         <Card style={[styles.itemCard,cardKindStyle(item.kind)]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
-            <Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':item.kind==='reminder'?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
+            <Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':false?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
             <CommitmentSourceTag item={item} google={google}/>
           </ScrollView>
           <Text style={styles.item}>{item.title}</Text>
