@@ -26,7 +26,7 @@ type ReminderMap = Record<string, { notificationId: string; triggerAt: string }>
 async function ensureReminderChannels() {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(EVENT_REMINDER_CHANNEL, {
-    name: 'Promemoria eventi',
+    name: 'Promemoria FlowOS',
     importance: Notifications.AndroidImportance.HIGH,
   });
   await Notifications.setNotificationChannelAsync(DUE_SOON_CHANNEL, {
@@ -75,7 +75,7 @@ async function writeReminderMap(map: ReminderMap) {
  * duplicate pending for the same reminder.
  */
 /**
- * Reconciles event reminders idempotently against the OS queue.
+ * Reconciles FlowOS reminders idempotently against the OS queue.
  *
  * The old implementation cancelled every reminder and then recreated every
  * reminder. That is vulnerable to concurrent foreground/background passes:
