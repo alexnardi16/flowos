@@ -82,6 +82,21 @@ jobs:
           echo "Source ref: $SOURCE_REF"
           echo "Android versionCode: $VERSION_CODE"
 
+      - name: Ensure GitHub Release exists for the AAB
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.release.outputs.tag }}"
+          SOURCE_REF="${{ steps.release.outputs.source_ref }}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "GitHub Release $TAG already exists."
+          else
+            echo "GitHub Release $TAG does not exist; creating it before uploading the AAB."
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "FlowOS $TAG" --generate-notes --target "$SOURCE_REF"
+          fi
+
       - name: Show next production Android versionCode
         shell: bash
         run: |
