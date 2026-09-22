@@ -36,8 +36,11 @@ const TIME_KEY = 'flowos:notifications:daily-summary-time';
 type NotificationData = Record<string, unknown>;
 
 function notificationSource(notification: Notifications.NotificationRequest | Notifications.Notification): string | null {
-  const data = notification.content.data as NotificationData | null | undefined;
-  return typeof data?.source === 'string' ? data.source : null;
+  const data = 'request' in notification
+    ? notification.request.content.data
+    : notification.content.data;
+  const record = data as NotificationData | null | undefined;
+  return typeof record?.source === 'string' ? record.source : null;
 }
 
 export async function ensureDailySummaryChannel() {
@@ -126,7 +129,7 @@ export async function hasPresentedDailySummaryForDate(dateKey: string): Promise<
     const presented = await Notifications.getPresentedNotificationsAsync();
     return presented.some((notification) => {
       const source = notificationSource(notification);
-      const data = notification.content.data as NotificationData | null | undefined;
+      const data = notification.request.content.data as NotificationData | null | undefined;
       return (
         (source === 'daily-summary' || source === 'daily-summary-recovered') &&
         data?.dateKey === dateKey
