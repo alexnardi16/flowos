@@ -7,6 +7,7 @@ import { logNotificationEvent } from './notificationLog';
 import { ensureReminderNotificationCategory, EVENT_REMINDER_CHANNEL, REMINDER_ACTION_COMPLETE, REMINDER_ACTION_POSTPONE, REMINDER_ACTION_CATEGORY } from './reminderEngine';
 
 export const PENDING_REMINDER_SNOOZE_KEY = 'flowos:notifications:pending-snooze';
+const handledResponseKeys = new Set<string>();
 
 export type PendingReminderSnooze = {
   commitmentId: string;
@@ -15,6 +16,9 @@ export type PendingReminderSnooze = {
 };
 
 export async function handleReminderNotificationResponse(response: Notifications.NotificationResponse) {
+  const responseKey = `${response.notification.request.identifier}:${response.actionIdentifier}`;
+  if (handledResponseKeys.has(responseKey)) return true;
+  handledResponseKeys.add(responseKey);
   const data = response.notification.request.content.data as Record<string, unknown> | undefined;
   if (data?.source !== 'reminder' && data?.source !== 'reminder-snoozed') return false;
 
