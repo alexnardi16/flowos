@@ -125,7 +125,7 @@ async function cancelScheduledNotificationsBySource(sources: string[]) {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const notification of scheduled) {
     const source = notificationSource(notification);
-    const title = notification.request.content.title ?? '';
+    const title = notification.content.title ?? '';
     const matchesKnownSource = Boolean(source && sourceSet.has(source));
     const matchesLegacySummary =
       sources.includes('daily-summary') &&
