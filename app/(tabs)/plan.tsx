@@ -28,7 +28,7 @@ function formatDateTime(item:Commitment){
   return new Date(value).toLocaleString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 function cardKindStyle(kind:Commitment['kind']){
-  return kind==='event'?styles.cardEvent:kind==='task'?styles.cardTask:kind==='reminder'?styles.cardReminder:undefined;
+  return kind==='event'?styles.cardEvent:styles.cardTask;
 }
 function searchable(item:Commitment){
   return[item.title,item.description,item.notes,item.location,item.context,item.outcome,item.kind].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
