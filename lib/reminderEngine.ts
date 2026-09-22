@@ -82,7 +82,8 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     if (data?.source !== 'reminder') return null;
     const commitmentId = typeof data.commitmentId === 'string' ? data.commitmentId : null;
     const reminderId = typeof data.reminderId === 'string' ? data.reminderId : null;
-    return commitmentId && reminderId ? `${commitmentId}:${reminderId}` : null;
+    if (!commitmentId || !reminderId) return null;
+    return reminderId.startsWith(`${commitmentId}:`) ? reminderId : `${commitmentId}:${reminderId}`;
   };
 
   const getTriggerAt = (notification: Notifications.NotificationRequest): number | null => {
