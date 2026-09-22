@@ -35,7 +35,7 @@ function toRow(item: Commitment, userId: string) {
     energy: item.energy,
     context: item.context,
     confidence_score: item.confidence,
-    ai_metadata: { fixed: item.fixed, outcome: item.outcome, originalDescription: item.description, notes: item.notes, location: item.location, link: item.link, allDay: item.allDay, recurrenceRule: item.recurrenceRule ? (item.kind === 'event' ? toRRuleString(item.recurrenceRule) : item.recurrenceRule) : undefined, recurrenceSeriesId: item.recurrenceSeriesId, reminders: item.reminders },
+    ai_metadata: { fixed: item.fixed, outcome: item.outcome, originalDescription: item.description, notes: item.notes, location: item.location, link: item.link, allDay: item.allDay, recurrenceRule: item.recurrenceRule ? (item.kind === 'event' ? toRRuleString(item.recurrenceRule) : item.recurrenceRule) : undefined, recurrenceSeriesId: item.recurrenceSeriesId, reminders: item.reminders, reminderDismissedAt: item.reminderDismissedAt },
     external_provider: resourceType ? 'google' : null,
     external_resource_type: resourceType,
     google_calendar_id: item.googleCalendarId ?? null,
@@ -56,7 +56,7 @@ function toRow(item: Commitment, userId: string) {
 }
 
 function fromRow(row: any): Commitment {
-  const kindMap: Record<string, Commitment['kind']> = { task: 'task', event: 'event', reminder: 'reminder', habit: 'routine', project: 'task', note: 'idea' };
+  const kindMap: Record<string, Commitment['kind']> = { task: 'task', event: 'event', reminder: 'task', habit: 'task', project: 'task', note: 'task' };
   const kind = kindMap[row.kind] ?? 'task';
   const allDay = row.ai_metadata?.allDay ?? false;
   const isGoogleAllDayTask = kind === 'task' && allDay && Boolean(row.deadline_at);
@@ -87,6 +87,7 @@ function fromRow(row: any): Commitment {
     recurrenceRule: row.kind === 'event' ? undefined : row.ai_metadata?.recurrenceRule ?? undefined,
     recurrenceSeriesId: row.ai_metadata?.recurrenceSeriesId ?? undefined,
     reminders: row.ai_metadata?.reminders ?? undefined,
+    reminderDismissedAt: row.ai_metadata?.reminderDismissedAt ?? undefined,
     externalId: row.external_id ?? undefined,
     externalEtag: row.external_etag ?? undefined,
     externalUpdatedAt: row.external_updated_at ?? undefined,
