@@ -11,9 +11,9 @@ import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
-type FilterKey='events'|'tasks'|'reminders'|'past'|'overdue';
+type FilterKey='events'|'tasks'|'past'|'overdue';
 type Filters=Record<FilterKey,boolean>;
-const DEFAULT_FILTERS:Filters={events:true,tasks:true,reminders:true,past:false,overdue:true};
+const DEFAULT_FILTERS:Filters={events:true,tasks:true,past:false,overdue:true};
 type ContactsFilter='all'|'onlyContacts'|'excludeContacts';
 const CONTACTS_FILTER_KEY='flowos-plan-contacts-filter-v1';
 
@@ -54,7 +54,7 @@ export default function Plan(){
   const items=useMemo(()=>{
     const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     return commitments.filter(item=>{
-      const event=item.kind==='event',task=item.kind==='task',reminder=item.kind==='reminder'||item.kind==='routine',flexible=task||reminder,date=itemDate(item),past=Boolean(date&&new Date(date).getTime()<now),open=item.status!=='done';
+      const event=item.kind==='event',task=item.kind==='task',flexible=task,date=itemDate(item),past=Boolean(date&&new Date(date).getTime()<now),open=item.status!=='done';
       if(event&&!filters.events)return false;
       if(task&&!filters.tasks)return false;
       if(reminder&&!filters.reminders)return false;
