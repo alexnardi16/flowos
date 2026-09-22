@@ -277,7 +277,7 @@ jobs:
 
           GH_TOKEN="$FLOWOS_WORKFLOW_TOKEN" gh auth setup-git
           git fetch origin main
-          git checkout main
+          git checkout -B main origin/main
 
           printf '%s\n' "${{ steps.release.outputs.version_code }}" > .github/production-version-code
 
