@@ -28,9 +28,7 @@ export function formatReminderOffsetLabel(minutesBefore: number): string {
 
 /**
  * Pure function: which reminder notifications should be pending right now,
- * for every commitment's own configured `reminders` (or the historical
- * default — a single 10-minutes-before reminder — for events that haven't
- * configured any, so existing behavior doesn't silently disappear).
+ * for every commitment's own configured `reminders`.
  * All-day items are skipped: "N minutes before midnight" isn't meaningful.
  */
 export function buildCustomReminders(commitments: Commitment[], now: Date = new Date()): ScheduledReminder[] {
@@ -40,11 +38,16 @@ export function buildCustomReminders(commitments: Commitment[], now: Date = new 
     const base = baseTime(item);
     if (!base) continue;
 
-    const offsets = item.reminders && item.reminders.length
-      ? item.reminders
-      : (item.kind === 'event' ? [{ id: 'default', minutesBefore: 10 }] : []);
+    const offsets = item.reminders && item.reminders.length ? item.reminders : [];
+    const dismissedAt = item.reminderDismissedAt ? new Date(item.reminderDismissedAt).getTime() : null;
 
     for (const offset of offsets) {
+      // A "complete" action dismisses the reminders that existed at that moment.
+      // A newly added reminder carries a later createdAt and is therefore eligible again.
+      if (dismissedAt !== null) {
+        const createdAt = offset.createdAt ? new Date(offset.createdAt).getTime() : Number.NaN;
+        if (!Number.isFinite(createdAt) || createdAt <= dismissedAt) continue;
+      }
       const triggerAt = new Date(new Date(base).getTime() - offset.minutesBefore * 60000);
       if (triggerAt.getTime() < now.getTime()) continue;
       result.push({
