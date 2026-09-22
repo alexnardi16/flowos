@@ -56,5 +56,23 @@ export function buildCustomReminders(commitments: Commitment[], now: Date = new 
       });
     }
   }
-  return result.sort((a, b) => new Date(a.triggerAt).getTime() - new Date(b.triggerAt).getTime());
+  return dedupeScheduledReminders(result);
+}
+
+/**
+ * Guarantees one desired notification per logical reminder key.
+ * Duplicate commitment rows can otherwise generate the same OS notification
+ * more than once. The earliest trigger wins deterministically.
+ */
+export function dedupeScheduledReminders(reminders: ScheduledReminder[]): ScheduledReminder[] {
+  const byId = new Map<string, ScheduledReminder>();
+  for (const reminder of reminders) {
+    const existing = byId.get(reminder.id);
+    if (!existing || new Date(reminder.triggerAt).getTime() < new Date(existing.triggerAt).getTime()) {
+      byId.set(reminder.id, reminder);
+    }
+  }
+  return [...byId.values()].sort(
+    (a, b) => new Date(a.triggerAt).getTime() - new Date(b.triggerAt).getTime(),
+  );
 }
