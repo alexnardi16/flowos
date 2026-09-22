@@ -1,6 +1,6 @@
 export type CommitmentStatus = 'active' | 'waiting' | 'scheduled' | 'blocked' | 'someday' | 'done';
 export type Energy = 'low' | 'medium' | 'high';
-export type CommitmentKind = 'task' | 'event' | 'reminder' | 'routine' | 'idea';
+export type CommitmentKind = 'task' | 'event' | 'routine' | 'idea';
 
 export interface Commitment {
   id: string;
@@ -27,6 +27,7 @@ export interface Commitment {
   recurrenceRule?: RecurrenceRule;
   recurrenceSeriesId?: string;
   reminders?: ReminderOffset[];
+  reminderDismissedAt?: string;
   externalId?: string;
   externalEtag?: string;
   externalUpdatedAt?: string;
@@ -49,4 +50,6 @@ export interface RecurrenceRule {
 export interface ReminderOffset {
   id: string;
   minutesBefore: number;
+  /** When this reminder was added. Used to distinguish new reminders from reminders dismissed by an action. */
+  createdAt?: string;
 }
