@@ -8,7 +8,7 @@ const TodayWidgetComponent=(props:TodayGlance,environment:WidgetEnvironment)=>{
   const visible=props.items.slice(0,5);
   return <VStack modifiers={[padding({all:10})]}>
     <Text modifiers={[font({weight:'bold',size:16})]}>Oggi · {props.items.length} attività</Text>
-    {visible.length?visible.map(item=><Text key={item.id} modifiers={[font({size:12})]}>{item.time} · {item.kind==='event'?'Evento':item.kind==='task'?'Task':'Reminder'} · {item.title}</Text>):<Text modifiers={[font({size:12}),foregroundStyle('#6B7280')]}>Nessuna attività prevista</Text>}
+    {visible.length?visible.map(item=><Text key={item.id} modifiers={[font({size:12})]}>{item.time} · {item.kind==='event'?'Evento':'Task'} · {item.title}</Text>):<Text modifiers={[font({size:12}),foregroundStyle('#6B7280')]}>Nessuna attività prevista</Text>}
     {props.items.length>visible.length?<Text modifiers={[font({size:10}),foregroundStyle('#6B7280')]}>+{props.items.length-visible.length} altre</Text>:null}
   </VStack>;
 };
