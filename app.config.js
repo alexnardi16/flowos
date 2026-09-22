@@ -23,6 +23,7 @@ module.exports = {
   owner: 'alex16nardi',
   version: '1.0.0',
   description: 'Unifica task, eventi e reminder in un unico modello di Commitment.',
+  icon: './assets/flowos-app-icon-512-store.png',
   orientation: 'portrait',
   scheme: 'flowos',
   userInterfaceStyle: 'automatic',
@@ -58,6 +59,7 @@ module.exports = {
   web: { bundler: 'metro', output: 'static' },
   android: {
     package: 'com.alexnardi.flowos',
+    icon: './assets/flowos-app-icon-512-store.png',
     versionCode: androidVersionCode,
     permissions: ['POST_NOTIFICATIONS', 'SCHEDULE_EXACT_ALARM'],
     ...(googleServicesFile ? { googleServicesFile } : {}),
