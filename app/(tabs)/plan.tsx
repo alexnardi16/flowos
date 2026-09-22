@@ -57,7 +57,6 @@ export default function Plan(){
       const event=item.kind==='event',task=item.kind==='task',flexible=task,date=itemDate(item),past=Boolean(date&&new Date(date).getTime()<now),open=item.status!=='done';
       if(event&&!filters.events)return false;
       if(task&&!filters.tasks)return false;
-      if(reminder&&!filters.reminders)return false;
       if(!event&&!flexible)return false;
       if(past&&!filters.past&&!(flexible&&open&&filters.overdue))return false;
       if(item.status==='done'&&!filters.past)return false;
@@ -80,7 +79,6 @@ export default function Plan(){
     <View style={styles.filters}>
       <Filter label="Eventi" active={filters.events} onPress={()=>toggle('events')}/>
       <Filter label="Task" active={filters.tasks} onPress={()=>toggle('tasks')}/>
-      <Filter label="Reminder" active={filters.reminders} onPress={()=>toggle('reminders')}/>
       <Filter label="Passati e completati" active={filters.past} onPress={()=>toggle('past')}/>
       <Filter label="Scaduti aperti" active={filters.overdue} onPress={()=>toggle('overdue')}/>
     </View>
