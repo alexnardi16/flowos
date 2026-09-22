@@ -10,7 +10,7 @@ import { runIntelligentReplan } from './replanEngine';
 import { autoCompleteExpiredEvents } from './autoCompleteEvents';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
-import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
+import { getDailySummaryTime, getLastRecoveryDateKey, hasPresentedDailySummaryForDate, hasRecoveredToday, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
 export const GOOGLE_TASKS_BACKGROUND_TASK = 'flowos-google-tasks-sync';
@@ -29,44 +29,112 @@ async function loadFreshData(now: Date) {
 }
 async function safeRunReminderEngine(commitments: Parameters<typeof runReminderEngine>[0], now: Date) { try { return await runReminderEngine(commitments, now); } catch (error) { await logNotificationEvent('reminder-engine-failed', error, 'warn'); return null; } }
 
-export async function runDailySummaryRefresh(now: Date = new Date()) {
-  if (!(await hasAuthenticatedSession())) { await logNotificationEvent('daily-summary-refresh-skipped-no-session'); return null; }
+let dailySummaryRefreshInFlight: Promise<ReturnType<typeof buildDailySummary> | null> | null = null;
+
+async function runDailySummaryRefreshInternal(now: Date): Promise<ReturnType<typeof buildDailySummary> | null> {
+  if (!(await hasAuthenticatedSession())) {
+    await logNotificationEvent('daily-summary-refresh-skipped-no-session');
+    return null;
+  }
+
   await logNotificationEvent('daily-summary-refresh-started');
-  try { await syncGoogleWorkspace(); await logNotificationEvent('daily-summary-google-sync-ok'); }
-  catch (error) { await logNotificationEvent('daily-summary-google-sync-failed', error, 'warn'); }
+  try {
+    await syncGoogleWorkspace();
+    await logNotificationEvent('daily-summary-google-sync-ok');
+  } catch (error) {
+    await logNotificationEvent('daily-summary-google-sync-failed', error, 'warn');
+  }
 
   const { commitments, summary } = await loadFreshData(now);
-  try { await syncTodayWidget(commitments, now); } catch (error) { await logNotificationEvent('background-widget-refresh-failed', error, 'warn'); }
+  try {
+    await syncTodayWidget(commitments, now);
+  } catch (error) {
+    await logNotificationEvent('background-widget-refresh-failed', error, 'warn');
+  }
   await safeRunReminderEngine(commitments, now);
 
-  if (!(await isDailySummaryEnabledStored())) { await logNotificationEvent('daily-summary-refresh-skipped-disabled'); return summary; }
-  await scheduleDailySummaryNotification(summary);
-  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+  if (!(await isDailySummaryEnabledStored())) {
+    await logNotificationEvent('daily-summary-refresh-skipped-disabled');
+    return summary;
+  }
+
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowSummary = buildDailySummary(commitments, now, tomorrow);
+  const afterConfiguredTime = await isPastDailySummaryTime(now);
+
+  // A DAILY trigger fires at the next occurrence. If today's configured time
+  // has already passed, its content must describe tomorrow, not today's data.
+  await scheduleDailySummaryNotification(afterConfiguredTime ? tomorrowSummary : summary);
   await scheduleTomorrowMorningSummary(tomorrowSummary, now);
-  await logNotificationEvent('daily-summary-refresh-completed', { dateKey: summary.dateKey, tomorrowDateKey: tomorrowSummary.dateKey });
+  await logNotificationEvent('daily-summary-refresh-completed', {
+    dateKey: summary.dateKey,
+    tomorrowDateKey: tomorrowSummary.dateKey,
+    scheduledSummaryDateKey: afterConfiguredTime ? tomorrowSummary.dateKey : summary.dateKey,
+  });
   return summary;
+}
+
+export async function runDailySummaryRefresh(now: Date = new Date()) {
+  if (dailySummaryRefreshInFlight) return dailySummaryRefreshInFlight;
+  dailySummaryRefreshInFlight = runDailySummaryRefreshInternal(now).finally(() => {
+    dailySummaryRefreshInFlight = null;
+  });
+  return dailySummaryRefreshInFlight;
 }
 
 export async function refreshReminders(now: Date = new Date()) { if (!(await hasAuthenticatedSession())) return null; const { commitments } = await loadFreshData(now); return safeRunReminderEngine(commitments, now); }
 
-export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) {
+let dailySummaryRecoveryInFlight: Promise<void> | null = null;
+
+async function checkAndRecoverMissedDailySummaryInternal(now: Date): Promise<void> {
   if (!(await isDailySummaryEnabledStored())) return;
   if (!(await isPastDailySummaryTime(now))) return;
   if (!(await hasAuthenticatedSession())) return;
+
   const dateKey = toDateKey(now);
   const lastRecovery = await getLastRecoveryDateKey();
   if (hasRecoveredToday(lastRecovery, dateKey)) return;
+
+  // If the scheduled notification is already visible in the notification
+  // shade, recovery is unnecessary. This prevents the normal 07:30 trigger
+  // plus a second recovery notification when the app opens at 07:38.
+  if (await hasPresentedDailySummaryForDate(dateKey)) {
+    await markRecovered(dateKey);
+    await logNotificationEvent('daily-summary-recovery-skipped-already-presented', { dateKey });
+    return;
+  }
+
   await logNotificationEvent('daily-summary-recovery-triggered', { dateKey });
-  try { await syncGoogleWorkspace(); } catch (error) { await logNotificationEvent('daily-summary-recovery-google-sync-failed', error, 'warn'); }
+  try {
+    await syncGoogleWorkspace();
+  } catch (error) {
+    await logNotificationEvent('daily-summary-recovery-google-sync-failed', error, 'warn');
+  }
+
   const { commitments, summary } = await loadFreshData(now);
-  try { await syncTodayWidget(commitments, now); } catch (error) { await logNotificationEvent('recovery-widget-refresh-failed', error, 'warn'); }
+  try {
+    await syncTodayWidget(commitments, now);
+  } catch (error) {
+    await logNotificationEvent('recovery-widget-refresh-failed', error, 'warn');
+  }
+
   await sendImmediateSummaryNotification(summary);
   await markRecovered(dateKey);
-  await scheduleDailySummaryNotification(summary);
-  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  await scheduleDailySummaryNotification(buildDailySummary(commitments, now, tomorrow));
   await scheduleTomorrowMorningSummary(buildDailySummary(commitments, now, tomorrow), now);
   await logNotificationEvent('daily-summary-recovery-completed', { dateKey });
+}
+
+export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) {
+  if (dailySummaryRecoveryInFlight) return dailySummaryRecoveryInFlight;
+  dailySummaryRecoveryInFlight = checkAndRecoverMissedDailySummaryInternal(now).finally(() => {
+    dailySummaryRecoveryInFlight = null;
+  });
+  return dailySummaryRecoveryInFlight;
 }
 
 TaskManager.defineTask(GOOGLE_TASKS_BACKGROUND_TASK, async () => {
