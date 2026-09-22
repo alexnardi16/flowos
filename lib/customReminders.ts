@@ -29,12 +29,12 @@ export function formatReminderOffsetLabel(minutesBefore: number): string {
 /**
  * Pure function: which reminder notifications should be pending right now,
  * for every commitment's own configured `reminders`.
- * All-day items are skipped: "N minutes before midnight" isn't meaningful.
+ * All-day events are skipped because they have no meaningful reminder time; all-day tasks may still use their due date as the reminder anchor.
  */
 export function buildCustomReminders(commitments: Commitment[], now: Date = new Date()): ScheduledReminder[] {
   const result: ScheduledReminder[] = [];
   for (const item of commitments) {
-    if (item.status === 'done' || item.deletedAt || item.allDay) continue;
+    if (item.status === 'done' || item.deletedAt || (item.allDay && item.kind === 'event')) continue;
     const base = baseTime(item);
     if (!base) continue;
 
