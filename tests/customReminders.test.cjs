@@ -19,6 +19,17 @@ test('an event with no configured reminders falls back to the historical single 
   assert.equal(reminders[0].triggerAt, now.toISOString());
 });
 
+test('duplicate commitment rows produce only one logical reminder', () => {
+  const now = new Date(2026, 6, 23, 9, 0);
+  const event = commitment({
+    id: 'ev-duplicate',
+    scheduledAt: new Date(2026, 6, 23, 10, 0).toISOString(),
+  });
+  const reminders = buildCustomReminders([event, { ...event }], now);
+  assert.equal(reminders.length, 1);
+  assert.equal(reminders[0].id, 'ev-duplicate:default');
+});
+
 test('a task with no configured reminders gets none by default (unlike events)', () => {
   const now = new Date(2026, 6, 23, 9, 0);
   const commitments = [commitment({ id: 't1', kind: 'task', dueAt: new Date(2026, 6, 23, 9, 10).toISOString() })];
