@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
@@ -74,7 +75,7 @@ export async function scheduleSnoozedReminder(commitmentId: string, notification
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: triggerAt,
-      ...(Notifications.SchedulableTriggerInputTypes.DATE && { channelId: EVENT_REMINDER_CHANNEL }),
+      ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
     } as Notifications.DateTriggerInput,
   });
 
