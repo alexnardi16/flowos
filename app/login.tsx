@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { BuildInfo } from '../components/BuildInfo';
@@ -96,7 +96,9 @@ export default function LoginScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.main}>
+        <Image source={require("../assets/flowos-app-icon-512-store.png")} style={styles.appIcon} resizeMode="contain" accessibilityLabel="Logo FlowOS" />
         <Text style={styles.eyebrow}>FLOWOS</Text>
+        <Image source={require("../assets/flowos-feature-graphic-1024x500.jpg")} style={styles.featureGraphic} resizeMode="contain" accessibilityLabel="Feature graphic FlowOS" />
         <Text style={styles.title}>Il tuo sistema operativo personale.</Text>
         <Text style={styles.subtitle}>Accedi con Google per usare FlowOS e sincronizzare automaticamente Calendar e Tasks.</Text>
         <Pressable disabled={googleLoading} onPress={() => { void loginWithGoogle(); }} style={[styles.googleButton, googleLoading && styles.buttonDisabled]}>
@@ -123,7 +125,9 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: '#F7F6F2', padding: 28 },
   main: { flex: 1, justifyContent: 'center', minHeight: 760 },
-  eyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: 14 },
+  appIcon: { width: 92, height: 92, borderRadius: 20, alignSelf: 'center', marginBottom: 12 },
+  featureGraphic: { width: '100%', height: 145, borderRadius: 16, marginBottom: 18 },
+  eyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: 10, textAlign: 'center' },
   title: { fontSize: 36, lineHeight: 40, fontWeight: '800', color: '#111' },
   subtitle: { fontSize: 16, lineHeight: 23, color: '#5E5E5E', marginTop: 14, marginBottom: 22 },
   googleButton: { borderRadius: 16, padding: 17, backgroundColor: '#fff', alignItems: 'center', borderWidth: 1, borderColor: '#D8D5CB' },
