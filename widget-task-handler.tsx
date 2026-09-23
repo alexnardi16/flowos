@@ -51,6 +51,7 @@ async function runWidgetPostpone(id:string){
   const nextDay=new Date(new Date(base).getTime()+86400000).toISOString();
   const updated={...item,status:item.kind==='event'?'scheduled':item.status,scheduledAt:item.scheduledAt?nextDay:undefined,dueAt:item.dueAt?nextDay:undefined} as Commitment;
   await saveCommitment(updated);
+  await flushOfflineQueue();
   await pushPendingToGoogle();
   const refreshed=await loadCommitments();
   await writeCommitments(refreshed);
