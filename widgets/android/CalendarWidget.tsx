@@ -31,9 +31,26 @@ function titleLines(text: string, maxChars = 18) {
   return [line1, rest.length > maxChars ? `${rest.slice(0, maxChars - 1)}…` : rest];
 }
 
+const ITEM_TIME_HEIGHT = 7;
+const ITEM_TITLE_LINE_HEIGHT = 7;
+const ITEM_PADDING = 4;
+const ITEM_MARGIN = 2;
+const DAY_HEADER_HEIGHT = 10;
+const ITEM_GAP = 2;
+
+function itemHeight(item: AndroidCalendarItem) {
+  const lines = titleLines(item.title).length;
+  return ITEM_PADDING + ITEM_TIME_HEIGHT + lines * ITEM_TITLE_LINE_HEIGHT;
+}
+
+function dayHeight(day: AndroidCalendarDay) {
+  const itemsHeight = day.items.reduce((total, item) => total + itemHeight(item), 0);
+  const gaps = day.items.length ? day.items.length * ITEM_GAP : 0;
+  return Math.max(92, DAY_HEADER_HEIGHT + itemsHeight + gaps + 4);
+}
+
 function weekHeight(week: AndroidCalendarWeek) {
-  const maxItems = Math.max(0, ...week.days.map(day => day.items.length));
-  return Math.max(92, 20 + maxItems * 43);
+  return Math.max(92, ...week.days.map(day => dayHeight(day)));
 }
 
 export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
@@ -87,9 +104,9 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
                     {day.items.map(item => {
                       const lines = titleLines(item.title);
                       return (
-                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: 41, marginTop: 2, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }}>
+                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 2, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }}>
                           <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: 7, fontWeight: 'bold', color: MUTED }} />
-                          <TextWidget text={lines[0]} style={{ fontSize: 7, lineHeight: 8, fontWeight: 'bold', color: INK }} />
+                          <TextWidget text={lines[0]} style={{ fontSize: 5, lineHeight: 7, fontWeight: 'bold', color: INK }} />
                           {lines[1] ? <TextWidget text={lines[1]} style={{ fontSize: 7, lineHeight: 8, fontWeight: 'bold', color: INK }} /> : null}
                           {lines[2] ? <TextWidget text={lines[2]} style={{ fontSize: 7, lineHeight: 8, fontWeight: 'bold', color: INK }} /> : null}
                         </FlexWidget>
