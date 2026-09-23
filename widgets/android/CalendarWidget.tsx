@@ -50,9 +50,9 @@ function titleLines(text: string, maxChars = 18) {
   return lines;
 }
 
-const ITEM_TIME_HEIGHT = 7;
-const ITEM_TITLE_LINE_HEIGHT = 7;
-const ITEM_PADDING = 4;
+const ITEM_TIME_HEIGHT = 9;
+const ITEM_TITLE_LINE_HEIGHT = 9;
+const ITEM_PADDING = 8;
 const DAY_HEADER_HEIGHT = 10;
 const ITEM_GAP = 2;
 
@@ -124,9 +124,9 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
                       const lines = titleLines(item.title);
                       return (
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 2, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }}>
-                          {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: 7, fontWeight: 'bold', color: MUTED }} /> : null}
+                          {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: MUTED }} /> : null}
                           {lines.map((line, index) => (
-                            <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: 7, fontWeight: 'bold', color: INK }} />
+                            <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: INK }} />
                           ))}
                         </FlexWidget>
                       );
