@@ -17,7 +17,7 @@ function capitalizeMonthTitle(value: string) {
   return month ? `${month.charAt(0).toUpperCase()}${month.slice(1)} ${year.join(' ')}` : value;
 }
 
-function titleLines(text: string, maxChars = 14) {
+function titleLines(text: string, maxChars = 18) {
   const clean = text.trim();
   if (!clean) return [''];
   if (clean.length <= maxChars) return [clean];
@@ -33,7 +33,7 @@ function titleLines(text: string, maxChars = 14) {
 
 function weekHeight(week: AndroidCalendarWeek) {
   const maxItems = Math.max(0, ...week.days.map(day => day.items.length));
-  return Math.max(92, 20 + maxItems * 34);
+  return Math.max(92, 20 + maxItems * 43);
 }
 
 export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
@@ -87,10 +87,11 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
                     {day.items.map(item => {
                       const lines = titleLines(item.title);
                       return (
-                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: 31, marginTop: 2, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }}>
-                          <TextWidget text={item.time} style={{ fontSize: 6, lineHeight: 8, fontWeight: 'bold', color: MUTED }} />
-                          <TextWidget text={lines[0]} style={{ fontSize: 8, lineHeight: 10, fontWeight: 'bold', color: INK }} />
-                          {lines[1] ? <TextWidget text={lines[1]} style={{ fontSize: 8, lineHeight: 10, fontWeight: 'bold', color: INK }} /> : null}
+                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: 41, marginTop: 2, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }}>
+                          <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: 7, fontWeight: 'bold', color: MUTED }} />
+                          <TextWidget text={lines[0]} style={{ fontSize: 7, lineHeight: 8, fontWeight: 'bold', color: INK }} />
+                          {lines[1] ? <TextWidget text={lines[1]} style={{ fontSize: 7, lineHeight: 8, fontWeight: 'bold', color: INK }} /> : null}
+                          {lines[2] ? <TextWidget text={lines[2]} style={{ fontSize: 7, lineHeight: 8, fontWeight: 'bold', color: INK }} /> : null}
                         </FlexWidget>
                       );
                     })}
