@@ -8,6 +8,7 @@ import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment
 import { parseVoiceCommand, listenForVoiceCommand, findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
 import type { Commitment } from './types';
 import { recordDiagnostic } from './lib/diagnostics';
+import { promptWidgetQuickAdd } from './lib/widgetQuickAdd';
 
 const STORAGE_KEY='flowos-store-v2';
 const CALENDAR_CACHE_KEY='flowos-calendar-widget-v1';
@@ -40,6 +41,19 @@ async function refreshFromGoogle(){
   const remote=await loadCommitments();
   await writeCommitments(remote);
   return remote;
+}
+async function runWidgetPostpone(id:string){
+  const items=await loadCommitments();
+  const item=items.find(candidate=>candidate.id===id);
+  if(!item)return;
+  const base=item.scheduledAt??item.dueAt;
+  if(!base)return;
+  const nextDay=new Date(new Date(base).getTime()+86400000).toISOString();
+  const updated={...item,status:item.kind==='event'?'scheduled':item.status,scheduledAt:item.scheduledAt?nextDay:undefined,dueAt:item.dueAt?nextDay:undefined} as Commitment;
+  await saveCommitment(updated);
+  await pushPendingToGoogle();
+  const refreshed=await loadCommitments();
+  await writeCommitments(refreshed);
 }
 function findVoiceItem(items:Commitment[],query:string){return findBestVoiceMatch(items,query);}
 function localWhen(value?:string){return value?new Date(value):undefined;}
@@ -81,9 +95,15 @@ async function runWidgetVoice(){
   }catch(error){recordDiagnostic('widget-voice-command-failed',error,'error');}
 }
 export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
-  if(props.widgetAction==='WIDGET_CLICK'&&(props.clickAction==='SYNC_GOOGLE'||props.clickAction==='VOICE_COMMAND')){
+  if(props.widgetAction==='WIDGET_CLICK'){
     if(props.clickAction==='SYNC_GOOGLE')await runWidgetSync();
-    else await runWidgetVoice();
+    else if(props.clickAction==='VOICE_COMMAND')await runWidgetVoice();
+    else if(props.clickAction==='POSTPONE'){
+      const id=String((props.clickActionData as Record<string,unknown>|undefined)?.id??'');
+      if(id)try{await runWidgetPostpone(id);recordDiagnostic('widget-postpone-completed',{id});}catch(error){recordDiagnostic('widget-postpone-failed',error,'warn');}
+    }else if(props.clickAction==='QUICK_ADD'){
+      try{await promptWidgetQuickAdd();recordDiagnostic('widget-quick-add-prompted');}catch(error){recordDiagnostic('widget-quick-add-prompt-failed',error,'warn');}
+    }
   }
   const raw=await AsyncStorage.getItem(STORAGE_KEY);
   const heightDp=props.widgetInfo.height;
