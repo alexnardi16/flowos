@@ -1,0 +1,4 @@
+{
+  "compilerOptions":{"target":"ES2020","module":"CommonJS","moduleResolution":"Node","rootDir":"..","outDir":"../.test-dist-mutations","strict":true,"esModuleInterop":true,"skipLibCheck":true,"ignoreDeprecations":"6.0","types":[]},
+  "include":["../lib/commitmentState.ts","../types/index.ts"]
+}
