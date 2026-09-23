@@ -17,7 +17,7 @@ function capitalizeMonthTitle(value: string) {
   return month ? `${month.charAt(0).toUpperCase()}${month.slice(1)} ${year.join(' ')}` : value;
 }
 
-function titleLines(text: string, maxChars = 18) {
+function titleLines(text: string, maxChars = 12) {
   const clean = text.trim();
   if (!clean) return [''];
 
