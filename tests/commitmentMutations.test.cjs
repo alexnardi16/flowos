@@ -1,0 +1,9 @@
+const test=require('node:test');const assert=require('node:assert/strict');const{upsertCommitmentState,removeCommitmentState,mergeRemoteCommitments}=require('../.test-dist-mutations/lib/commitmentState.js');
+function item(id,kind,title=id){return{id,title,kind,status:kind==='event'?'scheduled':'active',durationMinutes:30,energy:'medium',context:kind==='event'?'Calendario':'Google Tasks',confidence:1};}
+test('creates an event',()=>{const created=item('event-1','event','Visita');assert.deepEqual(upsertCommitmentState([],created),[created]);});
+test('creates a task',()=>{const created=item('task-1','task','Telefonare');assert.deepEqual(upsertCommitmentState([],created),[created]);});
+test('updates an event without duplication',()=>{const original=item('event-1','event','Vecchio');const updated={...original,title:'Nuovo',durationMinutes:60};const next=upsertCommitmentState([original],updated);assert.equal(next.length,1);assert.deepEqual(next[0],updated);});
+test('updates a task without duplication',()=>{const original=item('task-1','task','Vecchio');const updated={...original,title:'Nuovo',status:'waiting'};const next=upsertCommitmentState([original],updated);assert.equal(next.length,1);assert.deepEqual(next[0],updated);});
+test('deletes an event',()=>{const event=item('event-1','event');const task=item('task-1','task');assert.deepEqual(removeCommitmentState([event,task],event.id),[task]);});
+test('deletes a task',()=>{const event=item('event-1','event');const task=item('task-1','task');assert.deepEqual(removeCommitmentState([event,task],task.id),[event]);});
+test('preserves pending local data during a remote refresh',()=>{const pending=item('event-1','event','Nuovo evento');const remote=item('task-1','task');assert.deepEqual(mergeRemoteCommitments([remote],[pending,remote],[pending.id]),[pending,remote]);});
