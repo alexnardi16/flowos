@@ -13,6 +13,15 @@ const SOURCE_COLORS=['#E8F0FF','#E9F8EF','#FFF0D9','#F3E9FF','#FFE8EE','#E7F6F5'
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
+function formatItemTime(item:Commitment){
+  if(item.allDay)return '';
+  const value=itemDate(item);if(!value)return '';
+  const start=new Date(value);
+  const startText=start.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  if(!item.scheduledAt||!item.durationMinutes)return startText;
+  const end=new Date(start.getTime()+item.durationMinutes*60000);
+  return `${startText} - ${end.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}`;
+}
 function monthLabelForWeek(week:Date[],weekIndex:number){if(weekIndex===0){const now=new Date();return `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;}const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${MONTH_NAMES[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
 function sourceKey(item:Commitment){if(item.kind==='task'&&item.googleTaskListId)return `task:${item.googleTaskListId}`;if(item.googleCalendarId)return `calendar:${item.googleCalendarId}`;return 'flowos';}
 function sourceStyle(item:Commitment,sourceColors:Map<string,string>){
@@ -91,7 +100,7 @@ export default function Calendar(){
               </View>
               <View style={styles.dayActivities}>
                 {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),pressed&&styles.itemPressed]}>
-                  <Text style={styles.itemTime}>{item.allDay?'':new Date(itemDate(item)!).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</Text>
+                  <Text style={styles.itemTime}>{formatItemTime(item)}</Text>
                   <Text style={styles.itemTitle}>{item.title}</Text>
                   {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
                 </Pressable>)}
@@ -119,8 +128,8 @@ const styles=StyleSheet.create({
   dayActivities:{gap:2,paddingTop:3},
   item:{borderRadius:5,padding:2,borderWidth:1,gap:0},
   flowosItem:{backgroundColor:'#F3F4F7',borderColor:'#E0E2E8'},
-  itemTime:{fontSize:6,lineHeight:8,fontWeight:'800',color:palette.muted},
-  itemTitle:{fontSize:8,lineHeight:10,fontWeight:'900',color:palette.ink},
+  itemTime:{fontSize:5,lineHeight:7,fontWeight:'800',color:palette.muted},
+  itemTitle:{fontSize:4,lineHeight:7,fontWeight:'900',color:palette.ink},
   itemMeta:{fontSize:6,lineHeight:8,color:palette.muted},
   itemPressed:{opacity:.78}
 });
