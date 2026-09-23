@@ -32,7 +32,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
   removeOnlyFromFlowOS:async id=>{const item=get().commitments.find(c=>c.id===id);await removeCommitmentOnlyFromFlowOS(id);const next=removeCommitmentState(get().commitments,id);set({commitments:next});refreshWidget(next);refreshNotifications(next);if(item)showSnackbar('Attività eliminata da FlowOS','Annulla',()=>{void(async()=>{const restored=[item,...get().commitments];set({commitments:restored});await saveCommitment({...item,deletedAt:undefined});refreshWidget(restored);refreshNotifications(restored);})();});},
   removeAlsoFromGoogle:async id=>{const item=get().commitments.find(c=>c.id===id);if(!item)return;await deleteCommitmentAlsoFromGoogle(item);const next=get().commitments.filter(c=>c.id!==id);set({commitments:next});refreshWidget(next);refreshNotifications(next);showSnackbar('Eliminata da FlowOS e da Google');},
   removeSeriesFromGoogle:async id=>{const item=get().commitments.find(c=>c.id===id);if(!item)return;await deleteRecurringSeries(item);const seriesId=item.googleRecurringEventId;const next=get().commitments.filter(c=>c.googleRecurringEventId!==seriesId);set({commitments:next});refreshWidget(next);refreshNotifications(next);},
-  syncItemToGoogleNow:async()=>{await pushPendingToGoogle();refreshWidget(get().commitments);refreshNotifications(get().commitments);},
+  syncItemToGoogleNow:async()=>{await pushGoogleAndRefresh();},
   syncWithGoogle:async()=>{await syncGoogleWorkspace();await get().hydrateFromCloud();},
   autoCompleteExpiredEvents:async()=>{
     const current=get().commitments;
