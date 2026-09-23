@@ -104,13 +104,17 @@ export async function loadCommitments(): Promise<Commitment[]> {
   return (data ?? []).map(fromRow);
 }
 
-export async function saveCommitment(item: Commitment) {
+export async function saveCommitment(item: Commitment): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth.user?.id;
-  if (!isSupabaseConfigured || !userId) return;
+  if (!userId) throw new Error('Sessione FlowOS scaduta. Esci e accedi nuovamente.');
   const row = toRow(item, userId);
   const { error } = await supabase.from('commitments').upsert(row);
-  if (error) await enqueueMutation({ id: `${Date.now()}-${item.id}`, table: 'commitments', action: 'upsert', payload: row, createdAt: new Date().toISOString() });
+  if (!error) return true;
+  await enqueueMutation({ id: `${Date.now()}-${item.id}`, table: 'commitments', action: 'upsert', payload: row, createdAt: new Date().toISOString(), lastError: error.message });
+  await logNotificationEvent('commitment-persist-queued', { id: item.id, error: error.message }, 'warn');
+  return false;
 }
 
 export async function removeCommitmentOnlyFromFlowOS(id: string) {
@@ -147,14 +151,15 @@ export async function deleteAllFlowOSOnlyData() {
 }
 
 export async function flushOfflineQueue() {
-  if (!isSupabaseConfigured) return;
+  if (!isSupabaseConfigured) return [];
   const queue = await readQueue();
-  const failed = [];
+  const failed: typeof queue = [];
   for (const mutation of queue) {
     const result = mutation.action === 'upsert' ? await supabase.from(mutation.table).upsert(mutation.payload) : await supabase.from(mutation.table).delete().eq('id', mutation.payload.id);
     if (result.error) failed.push(mutation);
   }
   await replaceQueue(failed);
+  return failed;
 }
 
 /** Forces an immediate push of any pending local changes to Google (saveCommitment already marks Google-syncable items as pending; this is what actually sends them). */
