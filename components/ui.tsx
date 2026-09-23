@@ -1,5 +1,5 @@
 import { PropsWithChildren, RefObject } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BuildInfo } from './BuildInfo';
 
@@ -35,7 +35,10 @@ export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef 
   return <SafeAreaView edges={['top','bottom']} style={styles.screenSafe}>
     <ScrollView ref={scrollRef} {...scrollProps} contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
       <View style={styles.screenBrandRow}>
-        <Text style={styles.screenBrand}>FLOWOS</Text>
+        <View style={styles.screenBrandLeft}>
+          <Image source={require("../assets/flowos-app-icon-512-store.png")} style={styles.screenLogo} resizeMode="contain" accessibilityLabel="Logo FlowOS" />
+          <Text style={styles.screenBrand}>FLOWOS</Text>
+        </View>
         <BuildInfo inline />
       </View>
       <Text style={styles.screenTitle}>{title}</Text>
@@ -75,7 +78,9 @@ export function EmptyState({ title, message, actionLabel, onAction }: {title:str
 const styles=StyleSheet.create({
   screenSafe:{flex:1,backgroundColor:palette.bg},
   screenContent:{paddingHorizontal:20,paddingTop:8,gap:14},
-  screenBrandRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:20},
+  screenBrandRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:38},
+  screenBrandLeft:{flexDirection:'row',alignItems:'center',gap:9},
+  screenLogo:{width:34,height:34,borderRadius:9},
   screenBrand:{fontSize:15,lineHeight:18,fontWeight:'900',letterSpacing:2.2,color:palette.primary,marginTop:2},
   screenTitle:{fontSize:30,lineHeight:36,fontWeight:'900',color:palette.ink,marginTop:-2},
   screenSubtitle:{fontSize:14,lineHeight:20,color:palette.muted,marginTop:-4},
