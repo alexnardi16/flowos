@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import './lib/googlePushSync';
+import './lib/widgetQuickAdd';
 
 declare const require: (moduleName: string) => any;
 
