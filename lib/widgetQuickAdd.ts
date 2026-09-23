@@ -3,7 +3,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { parseVoiceCommand } from './voiceParser';
 import { getGoogleWorkspaceStatus } from './googleWorkspace';
-import { pushPendingToGoogle, saveCommitment } from './commitmentsRepository';
+import { loadCommitments, pushPendingToGoogle, saveCommitment } from './commitmentsRepository';
 import { syncTodayWidget } from './widgetSync';
 import type { Commitment } from '../types';
 import { recordDiagnostic } from './diagnostics';
@@ -63,7 +63,8 @@ async function createFromText(text:string){
   };
   await saveCommitment(item);
   await pushPendingToGoogle();
-  await syncTodayWidget(undefined,new Date()).catch(()=>undefined);
+  const refreshed=await loadCommitments().catch(()=>[]);
+  await syncTodayWidget(refreshed,new Date()).catch(()=>undefined);
   return item;
 }
 
