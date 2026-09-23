@@ -57,7 +57,7 @@ export default function Calendar(){
 
   const sourceColors=useMemo(()=>{
     const map=new Map<string,string>();let next=0;
-    for(const item of commitments){
+    for(const item of commitments.filter(item=>!item.deletedAt&&item.status!=='done')){
       const key=sourceKey(item);if(key==='flowos'||map.has(key))continue;
       map.set(key,SOURCE_COLORS[next%SOURCE_COLORS.length]);next+=1;
     }
