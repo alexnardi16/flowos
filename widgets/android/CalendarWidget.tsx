@@ -125,7 +125,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 2, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }}>
                           <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: 7, fontWeight: 'bold', color: MUTED }} />
                           {lines.map((line, index) => (
-                            <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: 7, fontWeight: 'bold', color: INK }} />
+                            <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 4, lineHeight: 7, fontWeight: 'bold', color: INK }} />
                           ))}
                         </FlexWidget>
                       );
