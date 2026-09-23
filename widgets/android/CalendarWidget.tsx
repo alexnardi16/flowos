@@ -50,9 +50,9 @@ function titleLines(text: string, maxChars = 12) {
   return lines;
 }
 
-const ITEM_TIME_HEIGHT = 9;
-const ITEM_TITLE_LINE_HEIGHT = 9;
-const ITEM_PADDING = 8;
+const ITEM_TIME_HEIGHT = 7;
+const ITEM_TITLE_LINE_HEIGHT = 7;
+const ITEM_PADDING = 4;
 const DAY_HEADER_HEIGHT = 10;
 const ITEM_GAP = 2;
 
