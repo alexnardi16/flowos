@@ -36,8 +36,8 @@ function toRow(item: Commitment, userId: string) {
     context: item.context,
     confidence_score: item.confidence,
     ai_metadata: { fixed: item.fixed, outcome: item.outcome, originalDescription: item.description, notes: item.notes, location: item.location, link: item.link, allDay: item.allDay, recurrenceRule: item.recurrenceRule ? (item.kind === 'event' ? toRRuleString(item.recurrenceRule) : item.recurrenceRule) : undefined, recurrenceSeriesId: item.recurrenceSeriesId, reminders: item.reminders, reminderDismissedAt: item.reminderDismissedAt },
-    external_provider: resourceType ? 'google' : null,
-    external_resource_type: resourceType,
+    external_provider: item.externalId ? 'google' : null,
+    external_resource_type: item.externalId ? resourceType : null,
     google_calendar_id: item.googleCalendarId ?? null,
     google_task_list_id: item.googleTaskListId ?? null,
     external_id: item.externalId ?? null,
@@ -110,7 +110,7 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
   const userId = auth.user?.id;
   if (!userId) throw new Error('Sessione FlowOS scaduta. Esci e accedi nuovamente.');
   const row = toRow(item, userId);
-  const { error } = await supabase.from('commitments').upsert(row);
+  const { error } = await supabase.from('commitments').upsert(row, { onConflict: 'id' });
   if (!error) return true;
   await enqueueMutation({ id: `${Date.now()}-${item.id}`, table: 'commitments', action: 'upsert', payload: row, createdAt: new Date().toISOString(), lastError: error.message });
   await logNotificationEvent('commitment-persist-queued', { id: item.id, error: error.message }, 'warn');
