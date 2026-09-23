@@ -82,7 +82,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
     >
       <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 5 }}>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex:1 }}>
-          <ImageWidget source={require("../../assets/flowos-app-icon-512-store.png")} style={{ width:26, height:26, marginRight:7, borderRadius:7 }} resizeMode="contain" />
+          <ImageWidget image={require("../../assets/flowos-app-icon-512-store.png")} imageWidth={26} imageHeight={26} style={{ width:26, height:26, marginRight:7 }} radius={7} resizeMode="contain" />
           <TextWidget text="Calendario" style={{ fontSize: 19, fontWeight: 'bold', color: INK }} />
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
