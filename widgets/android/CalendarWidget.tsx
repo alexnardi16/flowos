@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlexWidget, ListWidget, TextWidget } from 'react-native-android-widget';
+import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
 export type AndroidCalendarItem = { id: string; title: string; time: string; sourceColor: any };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
@@ -81,7 +81,8 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
       accessibilityLabel="FlowOS: calendario"
     >
       <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 5 }}>
-        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex:1 }}>
+          <ImageWidget source={require("../../assets/flowos-app-icon-512-store.png")} style={{ width:26, height:26, marginRight:7, borderRadius:7 }} resizeMode="contain" />
           <TextWidget text="Calendario" style={{ fontSize: 19, fontWeight: 'bold', color: INK }} />
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
