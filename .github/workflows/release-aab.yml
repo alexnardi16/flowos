@@ -29,7 +29,7 @@ jobs:
   build-aab:
     name: Build production AAB with GitHub Actions + Gradle
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout main for production version metadata
         uses: actions/checkout@v4
@@ -129,6 +129,11 @@ jobs:
       - name: Install project dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Validate TypeScript and mutation tests
+        run: |
+          npm run typecheck
+          npm run test:mutations
+
       - name: Restore Firebase Android configuration
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
@@ -207,6 +212,12 @@ jobs:
           EOF
           echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/android/flowos-production.keystore" >> "$GITHUB_ENV"
 
+      - name: Prepare Gradle
+        working-directory: android
+        run: chmod +x ./gradlew
+
+      - uses: gradle/actions/setup-gradle@v4
+
       - name: Build production AAB
         working-directory: android
         env:
@@ -218,7 +229,7 @@ jobs:
           set -euo pipefail
           for attempt in 1 2 3 4 5; do
             echo "Gradle bundleRelease attempt $attempt/5"
-            if ./gradlew bundleRelease --no-daemon --stacktrace; then
+            if ./gradlew bundleRelease --no-daemon --stacktrace --max-workers=2; then
               exit 0
             fi
             if [ "$attempt" -lt 5 ]; then
