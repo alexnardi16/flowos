@@ -8,6 +8,7 @@ import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment
 import { parseVoiceCommand, listenForVoiceCommand, findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
 import type { Commitment } from './types';
 import { recordDiagnostic } from './lib/diagnostics';
+import { normalizeTaskPriorities } from './lib/taskPriority';
 import { promptWidgetQuickAdd } from './lib/widgetQuickAdd';
 
 const STORAGE_KEY='flowos-store-v2';
@@ -50,11 +51,15 @@ async function runWidgetPostpone(id:string){
   if(!base)return;
   const nextDay=new Date(new Date(base).getTime()+86400000).toISOString();
   const updated={...item,status:item.kind==='event'?'scheduled':item.status,scheduledAt:item.scheduledAt?nextDay:undefined,dueAt:item.dueAt?nextDay:undefined} as Commitment;
-  await saveCommitment(updated);
+  const normalized=normalizeTaskPriorities(items.map(candidate=>candidate.id===id?updated:candidate));
+  for(const changed of normalized){
+    const previous=items.find(candidate=>candidate.id===changed.id);
+    if(!previous||previous.priority!==changed.priority||changed.id===id)await saveCommitment(changed);
+  }
   await flushOfflineQueue();
   await pushPendingToGoogle();
   const refreshed=await loadCommitments();
-  await writeCommitments(refreshed);
+  await writeCommitments(normalizeTaskPriorities(refreshed));
 }
 function findVoiceItem(items:Commitment[],query:string){return findBestVoiceMatch(items,query);}
 function localWhen(value?:string){return value?new Date(value):undefined;}
