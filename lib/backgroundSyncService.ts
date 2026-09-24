@@ -3,7 +3,7 @@ import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
 import { buildDailySummary, toDateKey } from './dailySummary';
 import { loadCommitments, pushPendingToGoogle, saveCommitment } from './commitmentsRepository';
-import { syncGoogleTasksIncremental, syncGoogleWorkspace } from './googleWorkspace';
+import { getGoogleWorkspaceStatus, syncGoogleTasksIncremental, syncGoogleWorkspace } from './googleWorkspace';
 import { syncTodayWidget } from './widgetSync';
 import { runReminderEngine } from './reminderEngine';
 import { runIntelligentReplan } from './replanEngine';
@@ -100,9 +100,13 @@ async function checkAndRecoverMissedDailySummaryInternal(now: Date): Promise<voi
 
   await logNotificationEvent('daily-summary-recovery-triggered', { dateKey });
   try {
-    await syncGoogleWorkspace();
+    const status = await getGoogleWorkspaceStatus();
+    if (status.connection && status.connection.last_sync_status !== 'disconnected') {
+      await syncGoogleWorkspace();
+    }
   } catch (error) {
     await logNotificationEvent('daily-summary-recovery-google-sync-failed', error, 'warn');
+    return;
   }
 
   const { commitments, summary } = await loadFreshData(now);
