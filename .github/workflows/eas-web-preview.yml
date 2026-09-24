@@ -35,7 +35,7 @@ jobs:
           cache: npm
 
       - name: Install project dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Install EAS CLI
         run: npm install --global eas-cli@latest
