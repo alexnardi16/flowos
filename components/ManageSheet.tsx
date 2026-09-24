@@ -69,7 +69,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   }
 
   function setDurationFields(total:number){const safe=Math.max(1,Math.round(total));setDays(String(Math.floor(safe/1440)));setHours(String(Math.floor((safe%1440)/60)));setMinutes(String(safe%60));}
-  function setEndFromDuration(total=item.durationMinutes){if(allDay)return;const start=combine(dateStr,timeStr,false);if(!start)return;const end=new Date(new Date(start).getTime()+Math.max(1,total)*60000);setEndDate(end.toISOString().slice(0,10));setEndTime(end.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));}
+  function setEndFromDuration(total=Math.max(1,(Number(days)||0)*1440+(Number(hours)||0)*60+(Number(minutes)||0))){if(allDay)return;const start=combine(dateStr,timeStr,false);if(!start)return;const end=new Date(new Date(start).getTime()+Math.max(1,total)*60000);setEndDate(end.toISOString().slice(0,10));setEndTime(end.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));}
   function updateStartDate(value:string){setDateStr(value);if(durationMode==='end')setEndFromDuration();}
   function updateStartTime(value:string){setTimeStr(value);if(durationMode==='end')setEndFromDuration();}
   function updateEndDate(value:string){setEndDate(value);const start=combine(dateStr,timeStr,allDay),end=combine(value,endTime,allDay);if(durationMode==='end'&&start&&end)setDurationFields(Math.max(1,Math.round((new Date(end).getTime()-new Date(start).getTime())/60000)));}
