@@ -87,7 +87,7 @@ export default function Plan(){
       <Filter label="Solo contatti" active={contactsFilter==='onlyContacts'} onPress={()=>setContactsFilter('onlyContacts')}/>
       <Filter label="Escludi contatti" active={contactsFilter==='excludeContacts'} onPress={()=>setContactsFilter('excludeContacts')}/>
     </View>
-    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>Attività in ritardo</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><Text style={styles.overdueItemTitle}>{item.title}</Text><Text style={styles.overdueItemMeta}>{formatDateTime(item)} · {item.kind==='event'?'Evento':false?'Reminder':'Task'}</Text></Pressable>)}</Card>:null}
+    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>Attività in ritardo</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>#{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatDateTime(item)} · {item.kind==='event'?'Evento':false?'Reminder':'Task'}</Text></Pressable>)}</Card>:null}
     <SectionTitle title="Elementi" subtitle="Tocca una scheda per aprirla."/>
     {items.length?items.map(item=>{
       const overdue=item.status!=='done'&&isExpired(item);
@@ -97,7 +97,7 @@ export default function Plan(){
             <Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':false?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
             <CommitmentSourceTag item={item} google={google}/>
           </ScrollView>
-          <Text style={styles.item}>{item.title}</Text>
+          <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>#{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
           <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item)}{overdue?' · scaduta':''}</Text>
           <Text style={styles.meta}>{formatDurationLabel(item)} · {item.context||'nessun contesto'}</Text>
           {item.description?<Text style={styles.description}>{item.description}</Text>:null}
@@ -134,7 +134,7 @@ const styles=StyleSheet.create({
   cardTask:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1},
   cardReminder:{backgroundColor:'#EAFBF3',borderColor:'#B9EAD4',borderWidth:1},
   tagRow:{alignItems:'center',gap:6,paddingRight:4},
-  item:{fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
+  titleRow:{flexDirection:'row',alignItems:'center',gap:7},priorityBadge:{fontSize:12,lineHeight:18,fontWeight:'900',color:palette.primary,backgroundColor:palette.soft,borderRadius:8,paddingHorizontal:6},item:{fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
   date:{fontSize:13,lineHeight:17,fontWeight:'800',color:palette.primary},
   meta:{fontSize:12,lineHeight:16,color:palette.muted},
   description:{fontSize:12,lineHeight:16,color:palette.ink,marginTop:1},
