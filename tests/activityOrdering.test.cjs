@@ -19,3 +19,13 @@ test('uses time and id only as stable tie breakers',()=>{
   ]);
   assert.deepEqual(result.map(x=>x.id),['early','late']);
 });
+
+
+test('orders prioritized tasks before unprioritized tasks and by priority number',()=>{
+  const result=sortCommitmentsAlphabetically([
+    {...item('u','Unprioritized')},
+    {...item('p2','Second',),priority:2},
+    {...item('p1','First',),priority:1},
+  ]);
+  assert.deepEqual(result.map(x=>x.id),['p1','p2','u']);
+});
