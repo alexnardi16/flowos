@@ -29,21 +29,38 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v5
         with:
           node-version: 22.13
-
-      - name: Setup Expo and EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          cache: npm
 
       - name: Install project dependencies
         run: npm install --no-audit --no-fund
 
       - name: Install Expo web dependencies
         run: npx expo install react-native-web @expo/metro-runtime
+
+      - name: Install EAS CLI
+        run: npm install --global eas-cli@latest
+
+      - name: Authenticate with Expo
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5; do
+            echo "Expo authentication attempt ${attempt}/5"
+            if eas whoami; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "Authentication failed; retrying in 15 seconds..."
+              sleep 15
+            fi
+          done
+          echo "Unable to authenticate with Expo after 5 attempts."
+          exit 1
 
       - name: Validate TypeScript
         run: npm run typecheck
