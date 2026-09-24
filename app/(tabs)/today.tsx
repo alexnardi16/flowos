@@ -8,7 +8,7 @@ import { ManageSheet } from '@/components/ManageSheet';
 import { formatCommitmentTime } from '@/lib/allDayDate';
 import { isContactEvent } from '@/lib/contactEvents';
 import { recordDiagnostic } from '@/lib/diagnostics';
-import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
+import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
@@ -32,7 +32,7 @@ export default function Today() {
   const handledWidgetAction=useRef<string|null>(null);
   useEffect(()=>{const id=typeof params.id==='string'?params.id:undefined;const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;if(!action)return;const key=`${action}:${id??''}`;if(handledWidgetAction.current===key)return;handledWidgetAction.current=key;setTimeout(()=>{if(handledWidgetAction.current===key)handledWidgetAction.current=null;},1000);if(action==='sync'){void syncWithGoogle();return;}if(!id)return;const item=commitments.find(value=>value.id===id);if(!item)return;if(action==='manage'){setManageId(id);return;}if(action==='complete'){void complete(id);return;}if(action==='postpone'){void postpone(id);}},[params.widgetAction,params.id,commitments,complete,postpone,syncWithGoogle]);
   const open=useMemo(()=>commitments.filter(item=>item.status!=='done'),[commitments]);
-  const calendarNames=useMemo(()=>new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,calendar.summary])),[google]); const todayItems=useMemo(()=>sortCommitments(open.filter(isToday).filter(item=>contactsFilter==='onlyContacts'?isContactEvent(item)&&!isGoogleTask(item):contactsFilter==='excludeContacts'?!isContactEvent(item)||isGoogleTask(item):true),calendarNames),[open,contactsFilter,calendarNames]);
+  const calendarNames=useMemo(()=>new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email)])),[google]); const todayItems=useMemo(()=>sortCommitments(open.filter(isToday).filter(item=>contactsFilter==='onlyContacts'?isContactEvent(item)&&!isGoogleTask(item):contactsFilter==='excludeContacts'?!isContactEvent(item)||isGoogleTask(item):true),calendarNames),[open,contactsFilter,calendarNames]);
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   useEffect(()=>{const run=()=>{void autoCompleteExpiredEvents();};run();const interval=setInterval(run,30000);return()=>clearInterval(interval);},[autoCompleteExpiredEvents]);
   useEffect(()=>{recordDiagnostic('authenticated-home-mounted',{route:'/today',itemCount:open.length});},[open.length]);
