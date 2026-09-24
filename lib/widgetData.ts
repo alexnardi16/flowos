@@ -2,6 +2,7 @@ import type { Commitment } from '../types';
 import { isSameCalendarDay, formatCommitmentTime } from './allDayDate';
 import { isExpired } from './itemTiming';
 import { toDateKey } from './dailySummary';
+import { sortCommitmentsAlphabetically } from './activityOrdering';
 
 export type WidgetItem = { id: string; title: string; time: string; kind: Commitment['kind'] };
 export type TodayGlance = { dateKey: string; items: WidgetItem[]; nextEventTitle: string | null; nextEventTime: string | null; dueSoonCount: number; overdueCount: number; generatedAt: string };
@@ -33,11 +34,7 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
     if(isExpired(item,now))overdueCount++;
   }
 
-  todayItems.sort((a,b)=>{
-    const av=a.scheduledAt??a.dueAt,bv=b.scheduledAt??b.dueAt;
-    if(!av)return 1;if(!bv)return -1;
-    return new Date(av).getTime()-new Date(bv).getTime();
-  });
+  const sortedTodayItems = sortCommitmentsAlphabetically(todayItems);
 
-  return {dateKey:toDateKey(now),items:todayItems.map(item=>({id:item.id,title:item.title,time:formatCommitmentTime(item,(item.scheduledAt??item.dueAt)!),kind:item.kind})),nextEventTitle:nextEvent?.title??null,nextEventTime:nextEvent?.scheduledAt?formatCommitmentTime(nextEvent,nextEvent.scheduledAt):null,dueSoonCount,overdueCount,generatedAt:now.toISOString()};
+  return {dateKey:toDateKey(now),items:sortedTodayItems.map(item=>({id:item.id,title:item.title,time:formatCommitmentTime(item,(item.scheduledAt??item.dueAt)!),kind:item.kind})),nextEventTitle:nextEvent?.title??null,nextEventTime:nextEvent?.scheduledAt?formatCommitmentTime(nextEvent,nextEvent.scheduledAt):null,dueSoonCount,overdueCount,generatedAt:now.toISOString()};
 }
