@@ -102,7 +102,7 @@ export default function Calendar(){
               <View style={styles.dayActivities}>
                 {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),pressed&&styles.itemPressed]}>
                   {formatItemTime(item) ? <Text style={styles.itemTime}>{formatItemTime(item)}</Text> : null}
-                  <Text style={styles.itemTitle}>{item.title}</Text>
+                  <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>#{item.priority}</Text> : null}<Text style={styles.itemTitle}>{item.title}</Text></View>
                   {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
                 </Pressable>)}
               </View>
@@ -130,7 +130,7 @@ const styles=StyleSheet.create({
   item:{borderRadius:5,padding:2,borderWidth:1,gap:0},
   flowosItem:{backgroundColor:'#F3F4F7',borderColor:'#E0E2E8'},
   itemTime:{fontSize:4,lineHeight:7,fontWeight:'800',color:palette.muted},
-  itemTitle:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.ink},
+  itemTitleRow:{flexDirection:'row',alignItems:'center',gap:2},itemPriority:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.primary},itemTitle:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.ink},
   itemMeta:{fontSize:6,lineHeight:8,color:palette.muted},
   itemPressed:{opacity:.78}
 });
