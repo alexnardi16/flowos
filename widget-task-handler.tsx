@@ -9,6 +9,7 @@ import { parseVoiceCommand, listenForVoiceCommand, findBestVoiceMatch, type Voic
 import type { Commitment } from './types';
 import { recordDiagnostic } from './lib/diagnostics';
 import { normalizeTaskPriorities } from './lib/taskPriority';
+import { sortCommitmentsAlphabetically } from './lib/activityOrdering';
 import { promptWidgetQuickAdd } from './lib/widgetQuickAdd';
 
 const STORAGE_KEY='flowos-store-v2';
@@ -26,11 +27,10 @@ async function writeCommitments(commitments:Commitment[]){
 }
 function todayData(raw:string|null):Omit<AndroidTodayWidgetProps,'heightDp'>{
   const commitments=readCommitments(raw),now=new Date();
-  const items=commitments.filter((item:any)=>item&&item.status!=='done'&&!item.deletedAt)
-    .map((item:any)=>({item,date:item.scheduledAt??item.dueAt}))
-    .filter(({item,date}:any)=>{if(!date)return false;const d=new Date(date);return item.allDay?d.getUTCFullYear()===now.getFullYear()&&d.getUTCMonth()===now.getMonth()&&d.getUTCDate()===now.getDate():dateKey(d)===dateKey(now);})
-    .sort((a:any,b:any)=>new Date(a.date).getTime()-new Date(b.date).getTime())
-    .map(({item,date}:any)=>({id:item.id,title:item.title,time:item.allDay?'Tutto il giorno':new Date(date).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),kind:kindLabel(item.kind),priority:item.kind==='task'?item.priority:undefined}));
+  const todayItems=commitments.filter((item:any)=>item&&item.status!=='done'&&!item.deletedAt)
+    .filter((item:any)=>{const date=item.scheduledAt??item.dueAt;if(!date)return false;const d=new Date(date);return item.allDay?d.getUTCFullYear()===now.getFullYear()&&d.getUTCMonth()===now.getMonth()&&d.getUTCDate()===now.getDate():dateKey(d)===dateKey(now);});
+  const items=sortCommitmentsAlphabetically(todayItems as Commitment[])
+    .map((item:any)=>{const date=item.scheduledAt??item.dueAt;return {id:item.id,title:item.title,time:item.allDay?'Tutto il giorno':new Date(date).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),kind:kindLabel(item.kind),priority:item.kind==='task'?item.priority:undefined};});
   return{items};
 }
 async function loadCalendarCache(){try{const raw=await AsyncStorage.getItem(CALENDAR_CACHE_KEY);if(!raw)return null;const parsed=JSON.parse(raw);return parsed?.dateKey===dateKey(new Date())&&Array.isArray(parsed?.weeks)?{weeks:parsed.weeks as AndroidCalendarWidgetProps['weeks']}:null;}catch{return null;}}
