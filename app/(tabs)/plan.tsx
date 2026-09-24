@@ -9,7 +9,6 @@ import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/goog
 import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
-import { sortCommitmentsAlphabetically } from '@/lib/activityOrdering';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
 type FilterKey='events'|'tasks'|'past'|'overdue';
@@ -118,43 +117,3 @@ export default function Plan(){
             <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item)}{overdue?' · scaduta':''}</Text>
             <Text style={styles.meta}>{formatDurationLabel(item)} · {item.context||'nessun contesto'}</Text>
             {item.description?<Text style={styles.description}>{item.description}</Text>:null}
-            {item.location?<Text style={styles.meta}>Luogo: {item.location}</Text>:null}
-          </Card>
-        </Pressable>;
-      })}
-    </View>):<EmptyState title="Nessun risultato" message="Modifica i filtri oppure aggiungi un nuovo elemento."/>}
-    {manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}
-  </ScreenShell>;
-}
-
-function Filter({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}){
-  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{selected:active}} style={[styles.filter,active&&styles.filterActive]}>
-    <Text style={[styles.filterText,active&&styles.filterTextActive]}>{label}</Text>
-  </Pressable>;
-}
-
-const styles=StyleSheet.create({
-  warning:{color:palette.warning},
-  search:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:15,paddingHorizontal:15,paddingVertical:13,fontSize:15,color:palette.ink},
-  filters:{flexDirection:'row',flexWrap:'wrap',gap:8},
-  filter:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#ECEEF4'},
-  filterActive:{backgroundColor:palette.primary},
-  filterText:{fontSize:12,fontWeight:'800',color:palette.muted},
-  filterTextActive:{color:'#FFF'},
-  overdueCard:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1,gap:8,padding:13},
-  overdueHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
-  overdueTitle:{fontSize:16,fontWeight:'900',color:palette.ink},
-  overdueItem:{paddingTop:6,borderTopWidth:1,borderTopColor:'#F3DCA8'},
-  overdueItemTitle:{fontSize:15,fontWeight:'900',color:palette.ink},
-  overdueItemMeta:{fontSize:12,lineHeight:16,color:palette.muted,marginTop:1},dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:12,fontWeight:'900',color:palette.primary,textTransform:'capitalize'},
-  itemCard:{padding:9,gap:4},
-  cardEvent:{backgroundColor:'#EEF1FE',borderColor:'#C7D0FB',borderWidth:1},
-  cardTask:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1},
-  cardReminder:{backgroundColor:'#EAFBF3',borderColor:'#B9EAD4',borderWidth:1},
-  tagRow:{alignItems:'center',gap:6,paddingRight:4},
-  titleRow:{flexDirection:'row',alignItems:'flex-start',gap:7,minWidth:0},priorityBadge:{fontSize:12,lineHeight:18,fontWeight:'900',color:palette.primary,backgroundColor:palette.soft,borderRadius:8,paddingHorizontal:6},item:{flex:1,minWidth:0,flexShrink:1,fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
-  date:{fontSize:13,lineHeight:17,fontWeight:'800',color:palette.primary},
-  meta:{fontSize:12,lineHeight:16,color:palette.muted},
-  description:{fontSize:12,lineHeight:16,color:palette.ink,marginTop:1},
-  cardPressed:{opacity:.96,transform:[{scale:.995}]}
-});
