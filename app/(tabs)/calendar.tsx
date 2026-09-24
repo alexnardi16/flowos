@@ -91,7 +91,7 @@ export default function Calendar(){
         {monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}
         <View style={styles.grid}>
           {week.map((date,dayIndex)=>{
-            const items=byDay.get(dayKey(date))??[];
+            const items=sortCommitments(byDay.get(dayKey(date))??[],new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,calendar.summary])));
             const today=dayKey(date)===dayKey(new Date());
             const selected=dayKey(date)===selectedDateKey;
             return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox,selected&&styles.selectedBox]}>
