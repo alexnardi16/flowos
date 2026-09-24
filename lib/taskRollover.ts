@@ -71,7 +71,7 @@ export function rolloverIncompleteTasks(
     const updated: Commitment = {
       ...item,
       ...(item.dueAt ? { dueAt: item.allDay ? addUtcDay(item.dueAt, shiftDays) : addLocalDay(item.dueAt, shiftDays) } : {}),
-      ...(item.scheduledAt ? { scheduledAt: item.allDay ? addUtcDay(item.scheduledAt, shiftDays) : addLocalDay(item.scheduledAt, shiftDays) } : {},
+      ...(item.scheduledAt ? { scheduledAt: item.allDay ? addUtcDay(item.scheduledAt, shiftDays) : addLocalDay(item.scheduledAt, shiftDays) } : {}),
       syncStatus: item.externalId ? 'pending' : item.syncStatus,
     };
     changed.push(updated);
