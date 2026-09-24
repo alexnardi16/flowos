@@ -5,7 +5,7 @@ import { Card, Chip, EmptyState, ScreenShell, SectionTitle, palette } from '@/co
 import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';
 import { ManageSheet } from '@/components/ManageSheet';
 import { isContactEvent } from '@/lib/contactEvents';
-import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
+import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
@@ -68,7 +68,7 @@ export default function Plan(){
   },[commitments,filters,query,contactsFilter,now]);
 
   const overdueItems=items.filter(item=>item.status!=='done'&&isExpired(item));
-  const calendarNames=new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,calendar.summary]));
+  const calendarNames=new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email)]));
   const groupedItems=useMemo(()=>{
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
