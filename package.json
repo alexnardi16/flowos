@@ -22,7 +22,8 @@
     "eas:build:preview": "npx eas-cli build --profile preview --platform android",
     "test:voice": "rm -rf .test-dist-voice && tsc -p tests/tsconfig.voice.json && node --test tests/voiceCommands.test.cjs",
     "test:widget": "rm -rf .test-dist-widget && tsc -p tests/tsconfig.widget.json && node --test tests/calendarWidgetData.test.cjs",
-    "test:mutations": "rm -rf .test-dist-mutations && tsc -p tests/tsconfig.mutations.json && node --test tests/commitmentMutations.test.cjs tests/syncConflictPolicy.test.cjs"
+    "test:mutations": "rm -rf .test-dist-mutations && tsc -p tests/tsconfig.mutations.json && node --test tests/commitmentMutations.test.cjs tests/syncConflictPolicy.test.cjs",
+    "lint": "npx expo lint"
   },
   "dependencies": {
     "@expo/ui": "~57.0.19",
@@ -54,9 +55,7 @@
     "react-native-screens": "~4.26.0",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.12.2",
-    "zustand": "^5.0.8",
-    "react-native-reanimated": "4.6.0"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
@@ -67,16 +66,6 @@
   "overrides": {
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-native-screens": "~4.26.0",
-    "react-native-worklets": "0.12.2",
-    "react-native-reanimated": "4.6.0"
-  },
-  "expo": {
-    "install": {
-      "exclude": [
-        "react-native-worklets",
-        "react-native-reanimated"
-      ]
-    }
+    "react-native-screens": "~4.26.0"
   }
 }
