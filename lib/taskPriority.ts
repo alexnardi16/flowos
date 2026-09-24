@@ -1,5 +1,15 @@
 import type { Commitment } from '../types';
 
+function taskDateKey(item: Commitment): string {
+  const value = item.scheduledAt ?? item.dueAt;
+  if (!value) return '__undated__';
+  const date = new Date(value);
+  if (item.allDay) {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+  }
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function taskItems(items: Commitment[]): Commitment[] {
   return items.filter(item => item.kind === 'task' && item.status !== 'done' && !item.deletedAt);
 }
