@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
 import { ManageSheet } from '@/components/ManageSheet';
-import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
+import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 import { sortCommitmentsAlphabetically } from '@/lib/activityOrdering';
@@ -91,7 +91,7 @@ export default function Calendar(){
         {monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}
         <View style={styles.grid}>
           {week.map((date,dayIndex)=>{
-            const items=sortCommitments(byDay.get(dayKey(date))??[],new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,calendar.summary])));
+            const items=sortCommitments(byDay.get(dayKey(date))??[],new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email)])));
             const today=dayKey(date)===dayKey(new Date());
             const selected=dayKey(date)===selectedDateKey;
             return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox,selected&&styles.selectedBox]}>
