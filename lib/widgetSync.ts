@@ -2,7 +2,7 @@ import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { buildTodayGlance } from './widgetData';
-import { getGoogleWorkspaceStatus } from './googleWorkspace';
+import { friendlyCalendarName, getGoogleWorkspaceStatus } from './googleWorkspace';
 import { logNotificationEvent } from './notificationLog';
 import { recordDiagnostic } from './diagnostics';
 import type { Commitment } from '../types';
@@ -12,7 +12,7 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
   const startedAt=Date.now();
   try {
     let calendarNames:Map<string,string>|undefined;
-    try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
+    try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email)])); } catch {}
     const glance = buildTodayGlance(commitments, now, calendarNames);
     const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? 'Evento' : 'Task', priority:item.priority }));
     if (Platform.OS === 'ios') {
