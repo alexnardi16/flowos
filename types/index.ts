@@ -35,6 +35,7 @@ export interface Commitment {
   externalUpdatedAt?: string;
   syncStatus?: 'pending' | 'syncing' | 'synced' | 'error' | 'local_only' | 'conflict';
   syncError?: string;
+  resolutionPending?: boolean;
   deletedAt?: string;
 }
 
