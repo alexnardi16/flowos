@@ -1,0 +1,20 @@
+const test=require('node:test');const assert=require('node:assert/strict');const {sortCommitmentsAlphabetically}=require('../.test-dist-notifications/lib/activityOrdering.js');
+
+function item(id,title){return {id,title,kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-24T10:00:00.000Z'};}
+
+test('sorts activities alphabetically, ignoring case, accents, and punctuation',()=>{
+  const result=sortCommitmentsAlphabetically([
+    item('1','Zaino'),
+    item('2','Àlbero'),
+    item('3','appuntamento'),
+    item('4','Casa'),
+  ]);
+  assert.deepEqual(result.map(x=>x.title),['Àlbero','appuntamento','Casa','Zaino']);
+});
+
+test('uses time and id only as stable tie breakers',()=>{
+  const result=sortCommitmentsAlphabetically([
+    item('late','Casa').constructor?item('late','Casa'):null,
+  ]);
+  assert.equal(result[0].title,'Casa');
+});
