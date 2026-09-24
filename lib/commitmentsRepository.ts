@@ -115,6 +115,13 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
   const userId = auth.user?.id;
   if (!userId) throw new Error('Sessione FlowOS scaduta. Esci e accedi nuovamente.');
   const row = toRow(item, userId);
+  const { data: existing, error: existingError } = await supabase.from('commitments').select('*').eq('id', item.id).eq('user_id', userId).maybeSingle();
+  if (existingError) throw existingError;
+  if (existing) {
+    const comparableKeys = Object.keys(row).filter(key => key !== 'updated_at');
+    const unchanged = comparableKeys.every(key => JSON.stringify(existing[key]) === JSON.stringify((row as Record<string, unknown>)[key]));
+    if (unchanged) return true;
+  }
   const { error } = await supabase.from('commitments').upsert(row, { onConflict: 'id' });
   if (!error) return true;
   await enqueueMutation({ id: `${Date.now()}-${item.id}`, table: 'commitments', action: 'upsert', payload: row, createdAt: new Date().toISOString(), lastError: error.message });
