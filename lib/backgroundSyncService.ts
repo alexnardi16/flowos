@@ -200,6 +200,6 @@ export async function registerBackgroundSync() {
 }
 export async function unregisterBackgroundSync() {
   if (Platform.OS === 'web') return;
-  try { const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK); if (already) await BackgroundTask.unregisterTaskAsync(DAILY_SUMMARY_TASK); const tasksAlready = await TaskManager.isTaskRegisteredAsync(GOOGLE_TASKS_BACKGROUND_TASK); if (tasksAlready) await BackgroundTask.unregisterTaskAsync(GOOGLE_TASKS_BACKGROUND_TASK); await logNotificationEvent('background-task-unregistered'); }
+  try { const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK); if (already) await BackgroundTask.unregisterTaskAsync(DAILY_SUMMARY_TASK); const tasksAlready = await TaskManager.isTaskRegisteredAsync(GOOGLE_TASKS_BACKGROUND_TASK); if (tasksAlready) await BackgroundTask.unregisterTaskAsync(GOOGLE_TASKS_BACKGROUND_TASK); const rolloverAlready = await TaskManager.isTaskRegisteredAsync(TASK_ROLLOVER_BACKGROUND_TASK); if (rolloverAlready) await BackgroundTask.unregisterTaskAsync(TASK_ROLLOVER_BACKGROUND_TASK); await logNotificationEvent('background-task-unregistered'); }
   catch (error) { await logNotificationEvent('background-task-unregister-failed', error, 'warn'); }
 }
