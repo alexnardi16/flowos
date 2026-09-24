@@ -59,8 +59,7 @@ const ITEM_GAP = 3;
 function itemHeight(item: AndroidCalendarItem) {
   const lines = titleLines(item.title).length;
   const timeHeight = item.time ? ITEM_TIME_HEIGHT : 0;
-  const priorityHeight = item.priority ? ITEM_TITLE_LINE_HEIGHT : 0;
-  return ITEM_PADDING + timeHeight + priorityHeight + lines * ITEM_TITLE_LINE_HEIGHT + 2;
+  return ITEM_PADDING + timeHeight + lines * ITEM_TITLE_LINE_HEIGHT + 2;
 }
 
 function dayHeight(day: AndroidCalendarDay) {
@@ -100,7 +99,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
       </FlexWidget>
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
-        {weeks.slice(0, 16).map(week => {
+        {weeks.slice(0, 8).map(week => {
           const height = weekHeight(week);
           return (
             <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width: 'match_parent', flexDirection: 'column', marginVertical: 2 }}>
@@ -126,10 +125,15 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
                       const lines = titleLines(item.title);
                       return (
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }}>
-                          {item.priority ? <TextWidget text={`#${item.priority}`} style={{ fontSize: 5, lineHeight: 7, fontWeight: 'bold', color: PRIMARY }} /> : null}\n                          {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: MUTED }} /> : null}
-                          {lines.map((line, index) => (
-                            <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: INK }} />
-                          ))}
+                          {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: MUTED }} /> : null}
+                          <FlexWidget style={{ width:'match_parent', flexDirection:'row', alignItems:'flex-start' }}>
+                            {item.priority ? <TextWidget text={String(item.priority)} style={{ width:8, fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: PRIMARY }} /> : null}
+                            <FlexWidget style={{ flex:1, minWidth:0, flexDirection:'column' }}>
+                              {lines.map((line, index) => (
+                                <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: INK }} />
+                              ))}
+                            </FlexWidget>
+                          </FlexWidget>
                         </FlexWidget>
                       );
                     })}
