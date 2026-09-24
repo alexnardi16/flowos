@@ -104,6 +104,7 @@ async function resolve(userId:string,id:string,resolution:string){
     throw new Error('Risoluzione non supportata');
   }
   const resolvedAt=new Date().toISOString();
+  await admin.from('google_connections').update({last_sync_at:resolvedAt,last_sync_status:'ok',last_sync_error:null,updated_at:resolvedAt}).eq('user_id',userId);
   await admin.from('sync_conflicts').update({status:'resolved',resolution,resolved_at:resolvedAt}).eq('id',id).eq('user_id',userId);
   return{ok:true,resolvedAt};
 }
