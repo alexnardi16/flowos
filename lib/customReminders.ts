@@ -46,7 +46,7 @@ export function buildCustomReminders(commitments: Commitment[], now: Date = new 
     for (const offset of offsets) {
       // A "complete" action dismisses the reminders that existed at that moment.
       // A newly added reminder carries a later createdAt and is therefore eligible again.
-      if (dismissedAt !== null) {
+      if (offset.id !== 'automatic-start' && dismissedAt !== null) {
         const createdAt = offset.createdAt ? new Date(offset.createdAt).getTime() : Number.NaN;
         if (!Number.isFinite(createdAt) || createdAt <= dismissedAt) continue;
       }
