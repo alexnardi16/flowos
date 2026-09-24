@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const hydrateFromCloud = useFlowStore((state) => state.hydrateFromCloud);
+  const rolloverTodayTasks = useFlowStore((state) => state.rolloverTodayTasks);
   const googleSyncInProgressRef = useRef(false);
 
   useEffect(() => {
@@ -111,20 +112,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!connection || connection.last_sync_status === 'disconnected') {
           recordDiagnostic('google-auto-sync-skipped-not-connected');
-          if (active) await hydrateFromCloud();
+          if (active) { await hydrateFromCloud(); await rolloverTodayTasks(); }
           return;
         }
 
         googleSyncInProgressRef.current = true;
         void syncGoogleWorkspace((progress) => recordDiagnostic('google-auto-sync-progress', progress)).then(async () => {
-          if (active) await hydrateFromCloud();
+          if (active) { await hydrateFromCloud(); await rolloverTodayTasks(); }
           recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
         }).catch((error) => { if (active) recordDiagnostic('google-auto-sync-failed', error, 'error'); })
           .finally(() => { googleSyncInProgressRef.current = false; });
       } catch (error) { if (active) recordDiagnostic('google-auto-sync-failed', error, 'error'); }
     })();
     return () => { active = false; };
-  }, [session?.provider_token, session?.user.id, session?.access_token, hydrateFromCloud]);
+  }, [session?.provider_token, session?.user.id, session?.access_token, hydrateFromCloud, rolloverTodayTasks]);
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -158,15 +159,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void registerGooglePushToken(session.user.id);
     void checkAndRecoverMissedDailySummary();
     void refreshReminders();
+    void rolloverTodayTasks();
 
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         void checkAndRecoverMissedDailySummary();
         void refreshReminders();
+        void rolloverTodayTasks();
       }
     });
     return () => subscription.remove();
-  }, [session?.user.id]);
+  }, [session?.user.id, rolloverTodayTasks]);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,
