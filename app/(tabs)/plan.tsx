@@ -9,6 +9,7 @@ import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/goog
 import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
+import { sortCommitmentsAlphabetically } from '@/lib/activityOrdering';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
 type FilterKey='events'|'tasks'|'past'|'overdue';
@@ -63,14 +64,28 @@ export default function Plan(){
       if(contactsFilter==='onlyContacts'&&(!isContactEvent(item)||isGoogleTask(item)))return false;
       if(contactsFilter==='excludeContacts'&&isContactEvent(item))return false;
       return!normalized||searchable(item).includes(normalized);
-    }).sort((a,b)=>{
-      const ad=itemDate(a),bd=itemDate(b);
-      if(!ad)return 1;if(!bd)return-1;
-      return new Date(ad).getTime()-new Date(bd).getTime();
     });
   },[commitments,filters,query,contactsFilter,now]);
 
   const overdueItems=items.filter(item=>item.status!=='done'&&isExpired(item));
+  const groupedItems=useMemo(()=>{
+    const groups=new Map<string,{label:string;items:Commitment[]}>();
+    for(const item of items){
+      const value=itemDate(item);
+      if(!value)continue;
+      const date=new Date(value);
+      const key=item.allDay
+        ? `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`
+        : `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+      const label=item.allDay
+        ? date.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'})
+        : date.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+      const group=groups.get(key)??{label,items:[]};
+      group.items.push(item);
+      groups.set(key,group);
+    }
+    return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([,group])=>({...group,items:sortCommitmentsAlphabetically(group.items)}));
+  },[items]);
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   const toggle=(key:FilterKey)=>setFilters(current=>({...current,[key]:!current[key]}));
 
@@ -89,22 +104,25 @@ export default function Plan(){
     </View>
     {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>Attività in ritardo</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatDateTime(item)} · {item.kind==='event'?'Evento':false?'Reminder':'Task'}</Text></Pressable>)}</Card>:null}
     <SectionTitle title="Elementi" subtitle="Tocca una scheda per aprirla."/>
-    {items.length?items.map(item=>{
-      const overdue=item.status!=='done'&&isExpired(item);
-      return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
-        <Card style={[styles.itemCard,cardKindStyle(item.kind)]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
-            <Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':false?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
-            <CommitmentSourceTag item={item} google={google}/>
-          </ScrollView>
-          <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>#{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
-          <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item)}{overdue?' · scaduta':''}</Text>
-          <Text style={styles.meta}>{formatDurationLabel(item)} · {item.context||'nessun contesto'}</Text>
-          {item.description?<Text style={styles.description}>{item.description}</Text>:null}
-          {item.location?<Text style={styles.meta}>Luogo: {item.location}</Text>:null}
-        </Card>
-      </Pressable>;
-    }):<EmptyState title="Nessun risultato" message="Modifica i filtri oppure aggiungi un nuovo elemento."/>}
+    {groupedItems.length?groupedItems.map(group=><View key={group.label} style={styles.dayGroup}>
+      <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={styles.dayDividerText}>{group.label}</Text><View style={styles.dayDividerLine}/></View>
+      {group.items.map(item=>{
+        const overdue=item.status!=='done'&&isExpired(item);
+        return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
+          <Card style={[styles.itemCard,cardKindStyle(item.kind)]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
+              <Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':false?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
+              <CommitmentSourceTag item={item} google={google}/>
+            </ScrollView>
+            <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
+            <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item)}{overdue?' · scaduta':''}</Text>
+            <Text style={styles.meta}>{formatDurationLabel(item)} · {item.context||'nessun contesto'}</Text>
+            {item.description?<Text style={styles.description}>{item.description}</Text>:null}
+            {item.location?<Text style={styles.meta}>Luogo: {item.location}</Text>:null}
+          </Card>
+        </Pressable>;
+      })}
+    </View>):<EmptyState title="Nessun risultato" message="Modifica i filtri oppure aggiungi un nuovo elemento."/>}
     {manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}
   </ScreenShell>;
 }
@@ -128,7 +146,7 @@ const styles=StyleSheet.create({
   overdueTitle:{fontSize:16,fontWeight:'900',color:palette.ink},
   overdueItem:{paddingTop:6,borderTopWidth:1,borderTopColor:'#F3DCA8'},
   overdueItemTitle:{fontSize:15,fontWeight:'900',color:palette.ink},
-  overdueItemMeta:{fontSize:12,lineHeight:16,color:palette.muted,marginTop:1},
+  overdueItemMeta:{fontSize:12,lineHeight:16,color:palette.muted,marginTop:1},dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:12,fontWeight:'900',color:palette.primary,textTransform:'capitalize'},
   itemCard:{padding:9,gap:4},
   cardEvent:{backgroundColor:'#EEF1FE',borderColor:'#C7D0FB',borderWidth:1},
   cardTask:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1},
