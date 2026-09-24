@@ -6,6 +6,7 @@ import { ManageSheet } from '@/components/ManageSheet';
 import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
+import { sortCommitments } from '@/lib/activityOrdering';
 
 const DAY_NAMES=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 const MONTH_NAMES=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
