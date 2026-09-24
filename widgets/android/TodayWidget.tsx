@@ -40,10 +40,10 @@ export function TodayWidget({ items }: AndroidTodayWidgetProps) {
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:BG }}>
       {items.length ? items.map((item)=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:2, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:'#FFFFFF', flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:4, height:28, marginRight:7, borderRadius:2, backgroundColor:item.kind==='Evento'?'#6C7BE8':item.kind==='Task'?'#E5A73B':'#45B887' }}/>
-        <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center', minWidth:0 }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
-          <FlexWidget style={{ width:'match_parent', flexDirection:'row', alignItems:'flex-start', minWidth:0 }}>
+        <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
+          <FlexWidget style={{ width:'match_parent', flexDirection:'row', alignItems:'flex-start' }}>
             {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
-            <FlexWidget style={{ flex:1, minWidth:0, flexDirection:'column' }}>{lines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:12, lineHeight:15, fontWeight:'bold', color:INK }}/>)}</FlexWidget>
+            <FlexWidget style={{ flex:1, flexDirection:'column' }}>{lines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:12, lineHeight:15, fontWeight:'bold', color:INK }}/>)}</FlexWidget>
           </FlexWidget>
           <TextWidget text={`${item.time} · ${item.kind}`} style={{ fontSize:9, lineHeight:12, color:MUTED }}/>
         </FlexWidget>
