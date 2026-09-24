@@ -8,7 +8,7 @@ const uri=(action:string,id:string)=>`flowos://today?widgetAction=${action}&id=$
 function titleLines(text:string,maxChars=32){
   const clean=text.trim();
   if(!clean)return [''];
-  const words=clean.split(/\\s+/);
+  const words=clean.split(/\s+/);
   const lines:string[]=[];
   let current='';
   for(const word of words){
@@ -17,7 +17,7 @@ function titleLines(text:string,maxChars=32){
       for(let index=0;index<word.length;index+=maxChars)lines.push(word.slice(index,index+maxChars));
       continue;
     }
-    const candidate=current?\`\${current} \${word}\`:word;
+    const candidate=current?`${current} ${word}`:word;
     if(candidate.length<=maxChars)current=candidate;
     else{lines.push(current);current=word;}
   }
