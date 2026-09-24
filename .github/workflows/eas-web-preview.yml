@@ -76,7 +76,7 @@ jobs:
           set -o pipefail
           for attempt in 1 2 3 4; do
             echo "EAS Hosting deployment attempt ${attempt}/4"
-            if eas deploy --alias flowos-private --dev-domain flowos --environment preview --non-interactive; then
+            if eas deploy --alias flowos-private --dev-domain flowos-alex16 --environment preview --non-interactive; then
               exit 0
             fi
             if [ "$attempt" -lt 4 ]; then
