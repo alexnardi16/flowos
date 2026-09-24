@@ -14,7 +14,7 @@ import { syncTodayWidget } from './widgetSync';
 import { syncGoogleWorkspace } from './googleWorkspace';
 import { autoCompleteExpiredEvents } from './autoCompleteEvents';
 import { rolloverIncompleteTasks } from './taskRollover';
-import { nextTaskPriority, normalizeTaskPriorities, reorderTaskPriorities } from './taskPriority';
+import { normalizeTaskPriorities, reorderTaskPriorities } from './taskPriority';
 import { isSupabaseConfigured } from './supabase';
 
 function refreshWidget(commitments:Commitment[]){void syncTodayWidget(commitments).catch(()=>undefined);}
