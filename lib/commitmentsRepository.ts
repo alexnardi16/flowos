@@ -50,6 +50,7 @@ function toRow(item: Commitment, userId: string) {
     // events do not have a completed status, so never enqueue that transition
     // as a Google write. Tasks can still use pending because Google Tasks has
     // an explicit completed status.
+    resolution_pending: item.resolutionPending ?? false,
     sync_status: resourceType && !(item.kind === 'event' && item.status === 'done') ? 'pending' : resourceType ? 'synced' : 'local_only',
     sync_error: null,
     deleted_at: item.deletedAt ?? null,
@@ -95,6 +96,7 @@ function fromRow(row: any): Commitment {
     externalEtag: row.external_etag ?? undefined,
     externalUpdatedAt: row.external_updated_at ?? undefined,
     syncStatus: row.sync_status ?? undefined,
+    resolutionPending: Boolean(row.resolution_pending),
     syncError: row.sync_error ?? undefined,
     deletedAt: row.deleted_at ?? undefined,
   };
