@@ -13,12 +13,13 @@ import { showSnackbar } from './snackbar';
 import { syncTodayWidget } from './widgetSync';
 import { syncGoogleWorkspace } from './googleWorkspace';
 import { autoCompleteExpiredEvents } from './autoCompleteEvents';
+import { rolloverIncompleteTasks } from './taskRollover';
 import { isSupabaseConfigured } from './supabase';
 
 function refreshWidget(commitments:Commitment[]){void syncTodayWidget(commitments).catch(()=>undefined);}
 function refreshNotifications(commitments:Commitment[]){if(Platform.OS==='web')return;void import('./reminderEngine').then(({runReminderEngine})=>runReminderEngine(commitments)).catch(()=>undefined);}
 
-type State={commitments:Commitment[];focusId?:string;syncing:boolean;addCommitment:(commitment:Commitment)=>Promise<void>;hydrateFromCloud:()=>Promise<void>;complete:(id:string)=>Promise<void>;postpone:(id:string)=>Promise<void>;updateCommitment:(commitment:Commitment)=>Promise<void>;removeOnlyFromFlowOS:(id:string)=>Promise<void>;removeAlsoFromGoogle:(id:string)=>Promise<void>;removeSeriesFromGoogle:(id:string)=>Promise<void>;syncItemToGoogleNow:()=>Promise<void>;syncWithGoogle:()=>Promise<void>;autoCompleteExpiredEvents:()=>Promise<void>;autoPlan:()=>Promise<void>;startFocus:(id:string)=>void;stopFocus:()=>void;};
+type State={commitments:Commitment[];focusId?:string;syncing:boolean;addCommitment:(commitment:Commitment)=>Promise<void>;hydrateFromCloud:()=>Promise<void>;rolloverTodayTasks:()=>Promise<void>;complete:(id:string)=>Promise<void>;postpone:(id:string)=>Promise<void>;updateCommitment:(commitment:Commitment)=>Promise<void>;removeOnlyFromFlowOS:(id:string)=>Promise<void>;removeAlsoFromGoogle:(id:string)=>Promise<void>;removeSeriesFromGoogle:(id:string)=>Promise<void>;syncItemToGoogleNow:()=>Promise<void>;syncWithGoogle:()=>Promise<void>;autoCompleteExpiredEvents:()=>Promise<void>;autoPlan:()=>Promise<void>;startFocus:(id:string)=>void;stopFocus:()=>void;};
 
 export const useFlowStore=create<State>()(persist((set,get)=>{
   const pushGoogleAndRefresh=async()=>{if(!isSupabaseConfigured)return;try{await flushOfflineQueue();await pushPendingToGoogle();const remote=await loadCommitments();const pendingIds=await getPendingCommitmentIds();const merged=mergeRemoteCommitments(remote,get().commitments,pendingIds);set({commitments:merged});refreshWidget(merged);refreshNotifications(merged);}catch(error){const pendingIds=await getPendingCommitmentIds();const preserved=mergeRemoteCommitments([],get().commitments,pendingIds);set({commitments:preserved});refreshWidget(preserved);refreshNotifications(preserved);void logNotificationEvent('auto-push-failed',error,'warn');}};
