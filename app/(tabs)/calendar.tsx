@@ -6,7 +6,6 @@ import { ManageSheet } from '@/components/ManageSheet';
 import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
-import { sortCommitmentsAlphabetically } from '@/lib/activityOrdering';
 
 const DAY_NAMES=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 const MONTH_NAMES=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
@@ -73,7 +72,6 @@ export default function Calendar(){
       const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dayKey(d);
       const list=map.get(key)??[];list.push(item);map.set(key,list);
     }
-    for(const [key,list] of map) map.set(key,sortCommitmentsAlphabetically(list));
     return map;
   },[commitments]);
 
