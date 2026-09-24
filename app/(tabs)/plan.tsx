@@ -86,7 +86,7 @@ export default function Plan(){
       groups.set(key,group);
     }
     return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([,group])=>({...group,items:sortCommitments(group.items,calendarNames)}));
-  },[items]);
+  },[items,calendarNames]);
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   function formatStartEnd(item:Commitment){if(item.allDay)return 'Tutto il giorno';const startValue=item.scheduledAt??item.dueAt;if(!startValue)return 'Data e ora non definite';const start=new Date(startValue);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});const time=(d:Date)=>d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});return `${date(start)} ${time(start)} · ${date(end)===date(start)?time(end):`${date(end)} ${time(end)}`}`;}
   const toggle=(key:FilterKey)=>setFilters(current=>({...current,[key]:!current[key]}));
