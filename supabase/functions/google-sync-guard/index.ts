@@ -74,6 +74,11 @@ async function guard(userId:string){
   const token=(await tokenFor(userId)).access_token;
   const {data:items,error}=await admin.from('commitments').select('*').eq('user_id',userId).in('sync_status',['pending','error']).limit(100);
   if(error)throw error;
+  const {data:resolvedRows}=await admin.from('sync_conflicts').select('commitment_id,resolved_at').eq('user_id',userId).eq('status','resolved').not('commitment_id','is',null).not('resolved_at','is',null).order('resolved_at',{ascending:false}).limit(500);
+  const latestResolvedAt=new Map<string,string>();
+  for(const row of resolvedRows??[]){
+    if(!latestResolvedAt.has(row.commitment_id))latestResolvedAt.set(row.commitment_id,row.resolved_at);
+  }
   const {data:connection}=await admin.from('google_connections').select('last_sync_at').eq('user_id',userId).maybeSingle();
   const lastSyncAt=connection?.last_sync_at??null;
   let conflicts=0;
@@ -82,6 +87,8 @@ async function guard(userId:string){
   for(const item of items??[]){
     try{
       if(item.resolution_pending) continue;
+      const resolvedAt=item.id?latestResolvedAt.get(item.id):undefined;
+      if(resolvedAt && new Date(resolvedAt).getTime() >= new Date(item.updated_at).getTime()) continue;
       const isEvent=item.kind==='event',isTask=item.kind==='task',externalId=item.external_id,calendarId=item.google_calendar_id??defCal?.google_calendar_id,listId=item.google_task_list_id??defList?.google_task_list_id;
       if(externalId){
         const base=isEvent?'https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(calendarId)+'/events/'+encodeURIComponent(externalId):'https://tasks.googleapis.com/tasks/v1/lists/'+encodeURIComponent(listId)+'/tasks/'+encodeURIComponent(externalId);
