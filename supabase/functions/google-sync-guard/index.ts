@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2.57.4';
-import { bothChangedSince, bothCreatedSince, localChangedAndRemoteDeleted } from '../../../lib/syncConflictPolicy.ts';
+import { bothChangedSince, bothCreatedSince, localChangedAndRemoteDeleted } from './syncConflictPolicy.ts';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type'};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json'}});
 const URL=Deno.env.get('SUPABASE_URL')!;const SERVICE=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;const CLIENT_ID=Deno.env.get('GOOGLE_CLIENT_ID')??'';const CLIENT_SECRET=Deno.env.get('GOOGLE_CLIENT_SECRET')??'';const admin=createClient(URL,SERVICE,{auth:{persistSession:false}});
