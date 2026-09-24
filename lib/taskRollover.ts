@@ -10,6 +10,14 @@ function utcDateKey(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 }
 
+function dayDistance(fromKey: string, toKey: string): number {
+  const [fy, fm, fd] = fromKey.split('-').map(Number);
+  const [ty, tm, td] = toKey.split('-').map(Number);
+  const from = Date.UTC(fy, fm - 1, fd);
+  const to = Date.UTC(ty, tm - 1, td);
+  return Math.max(1, Math.round((to - from) / 86400000));
+}
+
 function addLocalDay(value: string, days: number): string {
   const date = new Date(value);
   const next = new Date(
@@ -59,10 +67,11 @@ export function rolloverIncompleteTasks(
     const dateKey = itemDateKey(item);
     if (!value || !dateKey || dateKey >= todayKey) return item;
 
+    const shiftDays = dayDistance(dateKey, todayKey);
     const updated: Commitment = {
       ...item,
-      ...(item.dueAt ? { dueAt: item.allDay ? addUtcDay(item.dueAt, 1) : addLocalDay(item.dueAt, 1) } : {}),
-      ...(item.scheduledAt ? { scheduledAt: item.allDay ? addUtcDay(item.scheduledAt, 1) : addLocalDay(item.scheduledAt, 1) } : {}),
+      ...(item.dueAt ? { dueAt: item.allDay ? addUtcDay(item.dueAt, shiftDays) : addLocalDay(item.dueAt, shiftDays) } : {}),
+      ...(item.scheduledAt ? { scheduledAt: item.allDay ? addUtcDay(item.scheduledAt, shiftDays) : addLocalDay(item.scheduledAt, shiftDays) } : {},
       syncStatus: item.externalId ? 'pending' : item.syncStatus,
     };
     changed.push(updated);
