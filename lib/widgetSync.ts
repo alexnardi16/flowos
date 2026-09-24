@@ -11,7 +11,7 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
   const startedAt=Date.now();
   try {
     const glance = buildTodayGlance(commitments, now);
-    const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? 'Evento' : 'Task' }));
+    const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? 'Evento' : 'Task', priority:item.priority }));
     if (Platform.OS === 'ios') {
       const { default: TodayWidget } = await import('../widgets/TodayWidget');
       TodayWidget.updateSnapshot(glance);
