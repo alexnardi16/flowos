@@ -168,7 +168,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void rolloverTodayTasks();
       }
     });
-    return () => subscription.remove();
+    // Retry while the app is in the foreground so reconnecting Wi-Fi/mobile
+    // data after the configured summary time is picked up automatically.
+    const recoveryInterval = setInterval(() => {
+      void checkAndRecoverMissedDailySummary();
+    }, 30000);
+    return () => {
+      subscription.remove();
+      clearInterval(recoveryInterval);
+    };
   }, [session?.user.id, rolloverTodayTasks]);
 
   const value = useMemo<AuthContextValue>(() => ({
