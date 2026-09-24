@@ -1,5 +1,6 @@
 import type { Commitment } from '../types';
 import type { AndroidCalendarDay, AndroidCalendarWeek } from '../widgets/android/CalendarWidget';
+import { sortCommitmentsAlphabetically } from './activityOrdering';
 
 export type CalendarWidgetData = { weeks: AndroidCalendarWeek[] };
 const MONTHS=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
@@ -23,7 +24,7 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
   const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
   const active=commitments.filter(item=>item.status!=='done'&&!item.deletedAt);const sourceColors=buildSourceColors(active);const byDate=new Map<string,Commitment[]>();
   for(const item of active){const value=item.scheduledAt??item.dueAt;if(!value)continue;const d=new Date(value);const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dateKey(d);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}
-  for(const list of byDate.values())list.sort((a,b)=>new Date(a.scheduledAt??a.dueAt!).getTime()-new Date(b.scheduledAt??b.dueAt!).getTime());
+  for(const [key, list] of byDate) byDate.set(key, sortCommitmentsAlphabetically(list));
   const weeks:AndroidCalendarWeek[]=[];
   for(let w=0;;w++){const start=new Date(monday);start.setDate(monday.getDate()+w*7);if(start.getTime()>syncEndDate.getTime())break;const days:AndroidCalendarDay[]=[];
     for(let i=0;i<7;i++){const day=new Date(start);day.setDate(start.getDate()+i);const key=dateKey(day);const items=(byDate.get(key)??[]).map(item=>({id:item.id,title:item.title,time:formatItemTime(item),sourceColor:sourceColors.get(sourceKey(item))??'#F3F4F7'}));days.push({label:`${DAY_NAMES[i]} ${day.getDate()}`,dateKey:key,isToday:key===dateKey(now),items});}
