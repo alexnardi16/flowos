@@ -44,6 +44,31 @@ async function forcePushFlowosVersion(userId:string,item:any){
   return {deleted:false,externalId:remote.id};
 }
 
+
+function normalizeText(value:any){return String(value??'').trim().replace(/\\s+/g,' ').toLocaleLowerCase();}
+function remoteMatchesLocal(item:any,remote:any){
+  const localStart=item.starts_at?new Date(item.starts_at).getTime():null;
+  const localDue=item.deadline_at?new Date(item.deadline_at).getTime():null;
+  const localDescription=normalizeText(item.description??item.ai_metadata?.originalDescription);
+  const localLocation=normalizeText(item.ai_metadata?.location);
+  if(item.kind==="event"){
+    const remoteStart=remote?.start?.dateTime?new Date(remote.start.dateTime).getTime():remote?.start?.date?new Date(`${remote.start.date}T00:00:00Z`).getTime():null;
+    const remoteEnd=remote?.end?.dateTime?new Date(remote.end.dateTime).getTime():null;
+    const remoteDuration=remoteStart!==null&&remoteEnd!==null?Math.round((remoteEnd-remoteStart)/60000):null;
+    const localDuration=Number(item.duration_minutes??0);
+    return normalizeText(item.title)===normalizeText(remote?.summary)
+      && normalizeText(remote?.description)===localDescription
+      && localStart===remoteStart
+      && localDuration===remoteDuration
+      && localLocation===normalizeText(remote?.location);
+  }
+  const remoteDue=remote?.due?new Date(remote.due).getTime():null;
+  return normalizeText(item.title)===normalizeText(remote?.title)
+    && normalizeText(remote?.notes)===localDescription
+    && localDue===remoteDue
+    && ((item.status==="done"||item.status==="completed") ? remote?.status==="completed" : remote?.status!=="completed");
+}
+
 async function createConflict(userId:string,item:any,remote:any,type:string,message:string){const {data:existing}=await admin.from('sync_conflicts').select('id').eq('user_id',userId).eq('commitment_id',item.id).eq('status','open').eq('conflict_type',type).limit(1);if(!existing?.length)await admin.from('sync_conflicts').insert({user_id:userId,commitment_id:item.id,external_provider:'google',external_resource_type:item.external_resource_type,external_id:item.external_id??null,conflict_type:type,local_snapshot:item,remote_snapshot:remote??null,message,status:'open'});await admin.from('commitments').update({sync_status:'conflict',sync_error:message}).eq('id',item.id).eq('user_id',userId);}
 async function guard(userId:string){
   const token=(await tokenFor(userId)).access_token;
@@ -62,7 +87,7 @@ async function guard(userId:string){
         const base=isEvent?'https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(calendarId)+'/events/'+encodeURIComponent(externalId):'https://tasks.googleapis.com/tasks/v1/lists/'+encodeURIComponent(listId)+'/tasks/'+encodeURIComponent(externalId);
         try{
           const remote=await gfetch(base,token);
-          if(bothChangedSince(item.updated_at,remote.updated,lastSyncAt)){await createConflict(userId,item,remote,'remote_changed','Google e FlowOS hanno modificato questa attività dall’ultima sincronizzazione. Nessuna delle due versioni è stata sovrascritta.');conflicts++;}
+          if(bothChangedSince(item.updated_at,remote.updated,lastSyncAt)&&!remoteMatchesLocal(item,remote)){await createConflict(userId,item,remote,'remote_changed','Google e FlowOS hanno modificato questa attività dall’ultima sincronizzazione. Nessuna delle due versioni è stata sovrascritta.');conflicts++;}
         }catch(e:any){
           if(e?.status===404||e?.status===410){
             if(localChangedAndRemoteDeleted(item.updated_at,false,lastSyncAt)){await createConflict(userId,item,null,'remote_deleted','Google e FlowOS hanno eliminato questa attività dall’ultima sincronizzazione. Nessuna delle due versioni è stata eliminata automaticamente.');conflicts++;}
