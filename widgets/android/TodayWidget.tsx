@@ -24,8 +24,8 @@ function titleLines(text:string,maxChars=32){
   if(current)lines.push(current);
   return lines;
 }
-function itemHeight(title:string){
-  return Math.max(48,12+titleLines(title).length*15+12+8);
+function itemHeight(title:string,hasPriority=false){
+  return Math.max(48,12+(hasPriority?12:0)+titleLines(title).length*15+12+8);
 }
 export function TodayWidget({ items }: AndroidTodayWidgetProps) {
   return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel={`FlowOS: attività di oggi, ${items.length} attività`}>
@@ -38,7 +38,7 @@ export function TodayWidget({ items }: AndroidTodayWidgetProps) {
       </FlexWidget>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:BG }}>
-      {items.length ? items.map((item)=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title), marginVertical:2, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:'#FFFFFF', flexDirection:'row', alignItems:'center' }}>
+      {items.length ? items.map((item)=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:2, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:'#FFFFFF', flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:4, height:28, marginRight:7, borderRadius:2, backgroundColor:item.kind==='Evento'?'#6C7BE8':item.kind==='Task'?'#E5A73B':'#45B887' }}/>
         <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>{item.priority ? <TextWidget text={`#${item.priority}`} style={{ fontSize:10, lineHeight:12, fontWeight:'bold', color:PRIMARY }} /> : null}{lines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:12, lineHeight:15, fontWeight:'bold', color:INK }}/>)}<TextWidget text={`${item.time} · ${item.kind}`} style={{ fontSize:9, lineHeight:12, color:MUTED }}/></FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:'#ECEEF4', justifyContent:'center', alignItems:'center' }} clickAction="POSTPONE" clickActionData={{ id:item.id }}><TextWidget text="+1g" style={{ fontSize:9, fontWeight:'bold', color:INK }}/></FlexWidget>
