@@ -12,6 +12,7 @@ import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/goog
 import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
+import { sortCommitmentsAlphabetically } from '@/lib/activityOrdering';
 function when(item: Commitment) { return item.scheduledAt ?? item.dueAt; }
 function isToday(item: Commitment) { const value=when(item); if(!value)return false; const date=new Date(value),now=new Date(); if(item.allDay)return date.getUTCFullYear()===now.getFullYear()&&date.getUTCMonth()===now.getMonth()&&date.getUTCDate()===now.getDate(); return date.getFullYear()===now.getFullYear()&&date.getMonth()===now.getMonth()&&date.getDate()===now.getDate(); }
 function kindLabel(kind:Commitment['kind']){return kind==='event'?'EVENTO':'TASK';}
@@ -30,7 +31,7 @@ export default function Today() {
   const handledWidgetAction=useRef<string|null>(null);
   useEffect(()=>{const id=typeof params.id==='string'?params.id:undefined;const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;if(!action)return;const key=`${action}:${id??''}`;if(handledWidgetAction.current===key)return;handledWidgetAction.current=key;setTimeout(()=>{if(handledWidgetAction.current===key)handledWidgetAction.current=null;},1000);if(action==='sync'){void syncWithGoogle();return;}if(!id)return;const item=commitments.find(value=>value.id===id);if(!item)return;if(action==='manage'){setManageId(id);return;}if(action==='complete'){void complete(id);return;}if(action==='postpone'){void postpone(id);}},[params.widgetAction,params.id,commitments,complete,postpone,syncWithGoogle]);
   const open=useMemo(()=>commitments.filter(item=>item.status!=='done'),[commitments]);
-  const todayItems=useMemo(()=>open.filter(isToday).filter(item=>contactsFilter==='onlyContacts'?isContactEvent(item)&&!isGoogleTask(item):contactsFilter==='excludeContacts'?!isContactEvent(item)||isGoogleTask(item):true).sort((a,b)=>{const av=when(a),bv=when(b);if(!av)return 1;if(!bv)return -1;return new Date(av).getTime()-new Date(bv).getTime();}),[open,contactsFilter]);
+  const todayItems=useMemo(()=>sortCommitmentsAlphabetically(open.filter(isToday).filter(item=>contactsFilter==='onlyContacts'?isContactEvent(item)&&!isGoogleTask(item):contactsFilter==='excludeContacts'?!isContactEvent(item)||isGoogleTask(item):true)),[open,contactsFilter]);
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   useEffect(()=>{const run=()=>{void autoCompleteExpiredEvents();};run();const interval=setInterval(run,30000);return()=>clearInterval(interval);},[autoCompleteExpiredEvents]);
   useEffect(()=>{recordDiagnostic('authenticated-home-mounted',{route:'/today',itemCount:open.length});},[open.length]);
