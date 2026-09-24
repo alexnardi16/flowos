@@ -3,7 +3,7 @@ import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { TodayWidget, type AndroidTodayWidgetProps } from './widgets/android/TodayWidget';
 import { CalendarWidget, type AndroidCalendarWidgetProps } from './widgets/android/CalendarWidget';
 import { buildCalendarWidgetData } from './lib/calendarWidgetData';
-import { getGoogleWorkspaceStatus, syncGoogleWorkspace } from './lib/googleWorkspace';
+import { friendlyCalendarName, getGoogleWorkspaceStatus, syncGoogleWorkspace } from './lib/googleWorkspace';
 import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment, deleteCommitmentAlsoFromGoogle, removeCommitmentOnlyFromFlowOS } from './lib/commitmentsRepository';
 import { parseVoiceCommand, listenForVoiceCommand, findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
 import type { Commitment } from './types';
@@ -28,7 +28,7 @@ async function writeCommitments(commitments:Commitment[]){
 async function todayData(raw:string|null):Promise<Omit<AndroidTodayWidgetProps,'heightDp'>>{
   const commitments=readCommitments(raw),now=new Date();
   let calendarNames:Map<string,string>|undefined;
-  try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
+  try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email)])); } catch {}
   const todayItems=commitments.filter((item:any)=>item&&item.status!=='done'&&!item.deletedAt)
     .filter((item:any)=>{const date=item.scheduledAt??item.dueAt;if(!date)return false;const d=new Date(date);return item.allDay?d.getUTCFullYear()===now.getFullYear()&&d.getUTCMonth()===now.getMonth()&&d.getUTCDate()===now.getDate():dateKey(d)===dateKey(now);});
   const items=sortCommitments(todayItems as Commitment[],calendarNames)
