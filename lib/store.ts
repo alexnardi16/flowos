@@ -31,9 +31,17 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
     const normalized = commitment.kind === 'task' && commitment.status !== 'done'
       ? { ...commitment, priority: commitment.priority }
       : commitment;
-    const next=upsertCommitmentState(get().commitments,normalized);
+    const current=get().commitments;
+    const base=upsertCommitmentState(current,normalized);
+    const next=normalized.kind==='task'&&normalized.status!=='done'&&normalized.priority
+      ? reorderTaskPriorities(normalizeTaskPriorities(base),normalized.id,normalized.priority)
+      : base;
     set({commitments:next});refreshWidget(next);refreshNotifications(next);
-    await saveCommitment(normalized);await pushGoogleAndRefresh();
+    for(const changed of next){
+      const before=current.find(c=>c.id===changed.id);
+      if(!before||before.priority!==changed.priority||changed.id===normalized.id)await saveCommitment(changed);
+    }
+    await pushGoogleAndRefresh();
   },
   rolloverTodayTasks:async()=>{if(taskRolloverInFlight)return taskRolloverInFlight;taskRolloverInFlight=(async()=>{const current=get().commitments;const result=rolloverIncompleteTasks(current,new Date());if(!result.changed.length)return;const normalized=normalizeTaskPriorities(result.commitments);set({commitments:normalized});refreshWidget(normalized);refreshNotifications(normalized);for(const changed of normalized){const before=current.find(c=>c.id===changed.id);if(!before||before.priority!==changed.priority||result.changed.some(item=>item.id===changed.id))await saveCommitment(changed);}try{await pushGoogleAndRefresh();}catch(error){void logNotificationEvent('task-rollover-push-failed',error,'warn');}})().finally(()=>{taskRolloverInFlight=null;});return taskRolloverInFlight;},
   hydrateFromCloud:async()=>{if(!isSupabaseConfigured)return;set({syncing:true});try{await flushOfflineQueue();const pendingIds=await getPendingCommitmentIds();const remote=await loadCommitments();const merged=mergeRemoteCommitments(remote,get().commitments,pendingIds);set({commitments:merged});refreshWidget(merged);refreshNotifications(merged);}finally{set({syncing:false});}},
