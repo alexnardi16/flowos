@@ -59,7 +59,8 @@ const ITEM_GAP = 3;
 function itemHeight(item: AndroidCalendarItem) {
   const lines = titleLines(item.title).length;
   const timeHeight = item.time ? ITEM_TIME_HEIGHT : 0;
-  return ITEM_PADDING + timeHeight + lines * ITEM_TITLE_LINE_HEIGHT + 2;
+  const priorityHeight = item.priority ? ITEM_TITLE_LINE_HEIGHT : 0;
+  return ITEM_PADDING + timeHeight + priorityHeight + lines * ITEM_TITLE_LINE_HEIGHT + 2;
 }
 
 function dayHeight(day: AndroidCalendarDay) {
