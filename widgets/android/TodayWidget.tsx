@@ -37,7 +37,7 @@ export function TodayWidget({ items }: AndroidTodayWidgetProps) {
         <FlexWidget style={{ height:26, paddingHorizontal:9, borderRadius:13, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="QUICK_ADD"><TextWidget text="+" style={{ fontSize:10, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
       </FlexWidget>
     </FlexWidget>
-    <ListWidget style={{ height:'match_parent', backgroundColor:BG }}>
+    <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:BG }}>
       {items.length ? items.map((item)=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{ flex:1, height:itemHeight(item.title,Boolean(item.priority)), marginVertical:2, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:'#FFFFFF', flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:4, height:28, marginRight:7, borderRadius:2, backgroundColor:item.kind==='Evento'?'#6C7BE8':item.kind==='Task'?'#E5A73B':'#45B887' }}/>
         <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
