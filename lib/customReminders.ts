@@ -23,6 +23,7 @@ export function formatReminderOffsetLabel(minutesBefore: number): string {
     const hours = minutesBefore / 60;
     return `${hours} or${hours === 1 ? 'a' : 'e'} prima`;
   }
+  if (minutesBefore === 0) return `All'inizio`;
   return `${minutesBefore} minuti prima`;
 }
 
@@ -38,7 +39,8 @@ export function buildCustomReminders(commitments: Commitment[], now: Date = new 
     const base = baseTime(item);
     if (!base) continue;
 
-    const offsets = item.reminders && item.reminders.length ? item.reminders : [];
+    const configured = item.reminders && item.reminders.length ? item.reminders : [];
+    const offsets = [...configured, { id: 'automatic-start', minutesBefore: 0, createdAt: undefined }];
     const dismissedAt = item.reminderDismissedAt ? new Date(item.reminderDismissedAt).getTime() : null;
 
     for (const offset of offsets) {
