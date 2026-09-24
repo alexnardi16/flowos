@@ -4,6 +4,7 @@ import { enqueueMutation, readQueue, replaceQueue } from './offlineQueue';
 import { logNotificationEvent } from './notificationLog';
 import { recordDiagnostic } from './diagnostics';
 import { isSupabaseConfigured, supabase } from './supabase';
+import { normalizeTaskPriorities } from './taskPriority';
 
 function googleDescription(item: Commitment) {
   const parts = [
@@ -103,7 +104,7 @@ export async function loadCommitments(): Promise<Commitment[]> {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase.from('commitments').select('*').is('deleted_at', null).order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map(fromRow);
+  return normalizeTaskPriorities((data ?? []).map(fromRow));
 }
 
 export async function saveCommitment(item: Commitment): Promise<boolean> {
