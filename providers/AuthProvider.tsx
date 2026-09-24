@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const hydrateFromCloud = useFlowStore((state) => state.hydrateFromCloud);
   const rolloverTodayTasks = useFlowStore((state) => state.rolloverTodayTasks);
+  const commitments = useFlowStore((state) => state.commitments);
   const googleSyncInProgressRef = useRef(false);
 
   useEffect(() => {
@@ -172,12 +173,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // data after the configured summary time is picked up automatically.
     const recoveryInterval = setInterval(() => {
       void checkAndRecoverMissedDailySummary();
+      if (!googleSyncInProgressRef.current && commitments.some(item => item.resolutionPending)) {
+        googleSyncInProgressRef.current = true;
+        void syncGoogleWorkspace().then(() => hydrateFromCloud()).catch(error => recordDiagnostic('resolved-conflict-push-retry-failed', error, 'warn')).finally(() => { googleSyncInProgressRef.current = false; });
+      }
     }, 30000);
     return () => {
       subscription.remove();
       clearInterval(recoveryInterval);
     };
-  }, [session?.user.id, rolloverTodayTasks]);
+  }, [session?.user.id, rolloverTodayTasks, commitments, hydrateFromCloud]);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,
