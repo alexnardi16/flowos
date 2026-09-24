@@ -14,7 +14,8 @@ test('sorts activities alphabetically, ignoring case, accents, and punctuation',
 
 test('uses time and id only as stable tie breakers',()=>{
   const result=sortCommitmentsAlphabetically([
-    item('late','Casa').constructor?item('late','Casa'):null,
+    {...item('late','Casa'),dueAt:'2026-09-24T15:00:00.000Z'},
+    {...item('early','Casa'),dueAt:'2026-09-24T10:00:00.000Z'},
   ]);
-  assert.equal(result[0].title,'Casa');
+  assert.deepEqual(result.map(x=>x.id),['early','late']);
 });
