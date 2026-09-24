@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
 import { buildDailySummary, toDateKey } from './dailySummary';
-import { loadCommitments } from './commitmentsRepository';
+import { loadCommitments, pushPendingToGoogle, saveCommitment } from './commitmentsRepository';
 import { syncGoogleTasksIncremental, syncGoogleWorkspace } from './googleWorkspace';
 import { syncTodayWidget } from './widgetSync';
 import { runReminderEngine } from './reminderEngine';
@@ -10,10 +10,12 @@ import { runIntelligentReplan } from './replanEngine';
 import { autoCompleteExpiredEvents } from './autoCompleteEvents';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
+import { rolloverIncompleteTasks } from './taskRollover';
 import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, reconcilePresentedDailySummary, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
 export const GOOGLE_TASKS_BACKGROUND_TASK = 'flowos-google-tasks-sync';
+export const TASK_ROLLOVER_BACKGROUND_TASK = 'flowos-task-rollover';
 async function isPastDailySummaryTime(now: Date): Promise<boolean> {
   const { hour, minute } = await getDailySummaryTime();
   return now.getHours() > hour || (now.getHours() === hour && now.getMinutes() >= minute);
@@ -137,6 +139,23 @@ export async function checkAndRecoverMissedDailySummary(now: Date = new Date()) 
   return dailySummaryRecoveryInFlight;
 }
 
+TaskManager.defineTask(TASK_ROLLOVER_BACKGROUND_TASK, async () => {
+  try {
+    if (!(await hasAuthenticatedSession())) return BackgroundTask.BackgroundTaskResult.Success;
+    const commitments = await loadCommitments();
+    const result = rolloverIncompleteTasks(commitments, new Date());
+    if (!result.changed.length) return BackgroundTask.BackgroundTaskResult.Success;
+    for (const item of result.changed) await saveCommitment(item);
+    try { await pushPendingToGoogle(); } catch (error) { await logNotificationEvent('task-rollover-google-push-failed', error, 'warn'); }
+    await syncTodayWidget(result.commitments, new Date());
+    await logNotificationEvent('task-rollover-background-completed', { count: result.changed.length });
+    return BackgroundTask.BackgroundTaskResult.Success;
+  } catch (error) {
+    await logNotificationEvent('task-rollover-background-failed', error, 'warn');
+    return BackgroundTask.BackgroundTaskResult.Failed;
+  }
+});
+
 TaskManager.defineTask(GOOGLE_TASKS_BACKGROUND_TASK, async () => {
   try {
     if (!(await hasAuthenticatedSession())) return BackgroundTask.BackgroundTaskResult.Success;
@@ -172,6 +191,9 @@ export async function registerBackgroundSync() {
     }
     if (!(await TaskManager.isTaskRegisteredAsync(GOOGLE_TASKS_BACKGROUND_TASK))) {
       await BackgroundTask.registerTaskAsync(GOOGLE_TASKS_BACKGROUND_TASK, { minimumInterval: 15 });
+    }
+    if (!(await TaskManager.isTaskRegisteredAsync(TASK_ROLLOVER_BACKGROUND_TASK))) {
+      await BackgroundTask.registerTaskAsync(TASK_ROLLOVER_BACKGROUND_TASK, { minimumInterval: 15 });
     }
     await logNotificationEvent('background-task-registered');
   } catch (error) { await logNotificationEvent('background-task-register-failed', error, 'error'); }
