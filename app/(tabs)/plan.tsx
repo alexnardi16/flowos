@@ -9,7 +9,7 @@ import { getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/goog
 import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
-import { sortCommitmentsAlphabetically } from '@/lib/activityOrdering';
+import { sortCommitments } from '@/lib/activityOrdering';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
 type FilterKey='events'|'tasks'|'past'|'overdue';
@@ -68,6 +68,7 @@ export default function Plan(){
   },[commitments,filters,query,contactsFilter,now]);
 
   const overdueItems=items.filter(item=>item.status!=='done'&&isExpired(item));
+  const calendarNames=new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,calendar.summary]));
   const groupedItems=useMemo(()=>{
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
@@ -84,9 +85,10 @@ export default function Plan(){
       group.items.push(item);
       groups.set(key,group);
     }
-    return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([,group])=>({...group,items:sortCommitmentsAlphabetically(group.items)}));
+    return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([,group])=>({...group,items:sortCommitments(group.items,calendarNames)}));
   },[items]);
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
+  function formatStartEnd(item:Commitment){if(item.allDay)return 'Tutto il giorno';const startValue=item.scheduledAt??item.dueAt;if(!startValue)return 'Data e ora non definite';const start=new Date(startValue);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});const time=(d:Date)=>d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});return `${date(start)} ${time(start)} · ${date(end)===date(start)?time(end):`${date(end)} ${time(end)}`}`;}
   const toggle=(key:FilterKey)=>setFilters(current=>({...current,[key]:!current[key]}));
 
   return <ScreenShell title="Lista" subtitle="Eventi e attività ordinati nel tempo, con filtri salvati automaticamente.">
@@ -116,7 +118,7 @@ export default function Plan(){
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
             <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item)}{overdue?' · scaduta':''}</Text>
-            <Text style={styles.meta}>{formatDurationLabel(item)} · {item.context||'nessun contesto'}</Text>
+            <Text style={styles.meta}>{formatStartEnd(item)}</Text>
             {item.description?<Text style={styles.description}>{item.description}</Text>:null}
             {item.location?<Text style={styles.meta}>Luogo: {item.location}</Text>:null}
           </Card>
