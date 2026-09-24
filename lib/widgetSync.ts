@@ -2,6 +2,7 @@ import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { buildTodayGlance } from './widgetData';
+import { getGoogleWorkspaceStatus } from './googleWorkspace';
 import { logNotificationEvent } from './notificationLog';
 import { recordDiagnostic } from './diagnostics';
 import type { Commitment } from '../types';
@@ -10,7 +11,9 @@ import { buildCalendarWidgetData } from './calendarWidgetData';
 async function performWidgetSync(commitments: Commitment[], now: Date = new Date()) {
   const startedAt=Date.now();
   try {
-    const glance = buildTodayGlance(commitments, now);
+    let calendarNames:Map<string,string>|undefined;
+    try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
+    const glance = buildTodayGlance(commitments, now, calendarNames);
     const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? 'Evento' : 'Task', priority:item.priority }));
     if (Platform.OS === 'ios') {
       const { default: TodayWidget } = await import('../widgets/TodayWidget');
@@ -27,7 +30,7 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       try { const cachedRange=await AsyncStorage.getItem('flowos-calendar-widget-range-v1'); if(cachedRange){const parsed=JSON.parse(cachedRange);if(parsed?.endDate)syncEndDate=new Date(`${parsed.endDate}T23:59:59`);} } catch {}
       await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => React.createElement(TodayWidget, { items }) });
 
-      const { weeks } = buildCalendarWidgetData(commitments, syncEndDate, now);
+      const { weeks } = buildCalendarWidgetData(commitments, syncEndDate, now, calendarNames);
       await AsyncStorage.setItem('flowos-calendar-widget-v1',JSON.stringify({dateKey:glance.dateKey,weeks}));
       await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks}) });
       await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:weeks.length,calendarDays:weeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
