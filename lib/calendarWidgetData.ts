@@ -27,7 +27,7 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
   for(const [key, list] of byDate) byDate.set(key, sortCommitmentsAlphabetically(list));
   const weeks:AndroidCalendarWeek[]=[];
   for(let w=0;;w++){const start=new Date(monday);start.setDate(monday.getDate()+w*7);if(start.getTime()>syncEndDate.getTime())break;const days:AndroidCalendarDay[]=[];
-    for(let i=0;i<7;i++){const day=new Date(start);day.setDate(start.getDate()+i);const key=dateKey(day);const items=(byDate.get(key)??[]).map(item=>({id:item.id,title:item.title,time:formatItemTime(item),sourceColor:sourceColors.get(sourceKey(item))??'#F3F4F7'}));days.push({label:`${DAY_NAMES[i]} ${day.getDate()}`,dateKey:key,isToday:key===dateKey(now),items});}
+    for(let i=0;i<7;i++){const day=new Date(start);day.setDate(start.getDate()+i);const key=dateKey(day);const items=(byDate.get(key)??[]).map(item=>({id:item.id,title:item.title,time:formatItemTime(item),sourceColor:sourceColors.get(sourceKey(item))??'#F3F4F7',priority:item.kind==='task'?item.priority:undefined}));days.push({label:`${DAY_NAMES[i]} ${day.getDate()}`,dateKey:key,isToday:key===dateKey(now),items});}
     const monthStart=days.find(day=>day.dateKey.endsWith('-01'));const title=w===0?monthTitle(start.getMonth(),start.getFullYear()):monthStart?monthTitle(Number(monthStart.dateKey.slice(5,7))-1,Number(monthStart.dateKey.slice(0,4))):'';weeks.push({title,days});
   } return {weeks};
 }
