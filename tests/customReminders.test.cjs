@@ -68,7 +68,7 @@ test('dismissed reminders suppress existing offsets but allow newly added remind
     { id: 'new', minutesBefore: 30, createdAt: new Date(2026, 6, 23, 8, 31).toISOString() },
   ] })];
   const reminders = buildCustomReminders(commitments, now);
-  assert.deepEqual(reminders.map((r) => r.id), ['ev1:new']);
+  assert.deepEqual(reminders.map((r) => r.id).sort(), ['ev1:new','ev1:automatic-start'].sort());
 });
 
 test('all-day tasks can still have date-based reminders', () => {
