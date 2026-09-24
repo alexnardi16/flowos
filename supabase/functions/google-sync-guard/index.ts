@@ -12,7 +12,7 @@ async function gfetch(url:string,token:string,options:RequestInit={}){const r=aw
 function eventBody(c:any){
   const start=c.starts_at?new Date(c.starts_at):new Date();
   const end=new Date(start.getTime()+Math.max(1,c.duration_minutes??60)*60000);
-  return {summary:c.title,description:c.description??undefined,start:{dateTime:start.toISOString()},end:{dateTime:end.toISOString()},extendedProperties:{private:{flowosCommitmentId:c.id}},reminders:{useDefault:false,overrides:[]}};
+  return {summary:c.title,description:c.description??undefined,location:c.ai_metadata?.location??undefined,start:{dateTime:start.toISOString()},end:{dateTime:end.toISOString()},extendedProperties:{private:{flowosCommitmentId:c.id}},reminders:{useDefault:false,overrides:[]}};
 }
 function taskBody(c:any){
   return {title:c.title,notes:c.description??undefined,due:c.deadline_at?new Date(c.deadline_at).toISOString():undefined,status:c.status==="completed"||c.status==="done"?"completed":"needsAction"};
