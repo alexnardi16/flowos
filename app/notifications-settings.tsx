@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, View, Pressable } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, View, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Button, Card, palette, showAlert } from '@/components/ui';
 import { buildDailySummary, DailySummary } from '@/lib/dailySummary';
