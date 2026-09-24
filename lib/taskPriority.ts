@@ -60,6 +60,7 @@ export function reorderTaskPriorities(items: Commitment[], taskId: string, reque
     : item);
 }
 
-export function nextTaskPriority(items: Commitment[]): number {
-  return taskItems(items).length + 1;
+export function nextTaskPriority(items: Commitment[], forItem?: Commitment): number {
+  const candidates = taskItems(items).filter(item => !forItem || taskDateKey(item) === taskDateKey(forItem));
+  return candidates.length + 1;
 }
