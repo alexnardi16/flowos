@@ -16,6 +16,7 @@ useEffect(()=>{void getGoogleWorkspaceStatus().then(status=>{const writable=stat
 const destinationName=useMemo(()=>{const raw=kind==='event'?calendars.find(item=>item.google_calendar_id===calendarId)?.summary:taskLists.find(item=>item.google_task_list_id===taskListId)?.title;return raw?(kind==='event'?friendlyCalendarName(raw,ownEmail):raw):undefined;},[kind,calendars,taskLists,calendarId,taskListId,ownEmail]);const at=allDay?allDayIso(date):localIso(date,time);
 const endAt=allDay?allDayIso(endDate):localIso(endDate,endTime);
 const durationMinutes=durationMode==='end'&&!allDay&&at&&endAt?Math.max(1,Math.round((new Date(endAt).getTime()-new Date(at).getTime())/60000)):totalDurationMinutes(allDay,days,hours,minutes);
+const valid=Boolean(title.trim()&&at&&durationMinutes>0&&destinationName);
 const nextPriority=useMemo(()=>commitments.filter(item=>item.kind==='task'&&item.status!=='done'&&!item.deletedAt).length+1,[commitments]);
 function setDurationFields(total:number){const safe=Math.max(1,Math.round(total));setDays(String(Math.floor(safe/1440)));setHours(String(Math.floor((safe%1440)/60)));setMinutes(String(safe%60));}
 function setEndFromDuration(startIso?:string,total=durationMinutes){if(!startIso||allDay)return;const end=new Date(new Date(startIso).getTime()+Math.max(1,total)*60000);setEndDate(end.toISOString().slice(0,10));setEndTime(end.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));}
