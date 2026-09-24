@@ -12,6 +12,8 @@ export interface Commitment {
   kind: CommitmentKind;
   status: CommitmentStatus;
   durationMinutes: number;
+  /** FlowOS task execution order. 1 is the highest priority. */
+  priority?: number;
   energy: Energy;
   context: string;
   dueAt?: string;
