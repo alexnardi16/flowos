@@ -13,7 +13,7 @@ import { sortCommitments } from './lib/activityOrdering';
 import { promptWidgetQuickAdd } from './lib/widgetQuickAdd';
 
 const STORAGE_KEY='flowos-store-v2';
-const CALENDAR_CACHE_KEY='flowos-calendar-widget-v1';
+const CALENDAR_CACHE_KEY='flowos-calendar-widget-v2';
 
 function dateKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function kindLabel(kind:string){return kind==='event'?'Evento':'Task';}
