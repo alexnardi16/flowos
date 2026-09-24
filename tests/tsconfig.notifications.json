@@ -26,6 +26,7 @@
     "../lib/customReminders.ts",
     "../types/index.ts",
     "../lib/activityOrdering.ts",
-    "../lib/taskRollover.ts"
+    "../lib/taskRollover.ts",
+    "../lib/taskPriority.ts"
   ]
 }
