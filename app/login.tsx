@@ -122,8 +122,8 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: '#F7F6F2', padding: 28 },
-  main: { flex: 1, justifyContent: 'center', minHeight: 760 },
+  container: { flexGrow: 1, backgroundColor: '#F7F6F2', padding: 28, paddingBottom: 48 },
+  main: { width: '100%', justifyContent: 'center' },
   appIcon: { width: 92, height: 92, borderRadius: 20, alignSelf: 'center', marginBottom: 12 },
   featureGraphic: { width: '100%', height: 145, borderRadius: 16, marginBottom: 18 },
   eyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: 10, textAlign: 'center' },
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   error: { marginTop: 16, fontSize: 14, lineHeight: 20, color: '#A12626' },
   diagnosticsCard: { marginTop: 24, padding: 14, borderRadius: 14, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#DDD9CF' },
   diagnosticsTitle: { fontSize: 11, fontWeight: '900', letterSpacing: 1, color: '#555', marginBottom: 4 },
-  logScroll: { marginTop: 8, maxHeight: 230, minHeight: 90, borderWidth: 1, borderColor: '#E5E2DA', borderRadius: 10, padding: 8 },
+  logScroll: { marginTop: 8, height: 230, maxHeight: 230, minHeight: 90, borderWidth: 1, borderColor: '#E5E2DA', borderRadius: 10, padding: 8 },
   log: { fontFamily: 'monospace', fontSize: 9, lineHeight: 13, color: '#333' },
   logError: { color: '#B42318' },
   logWarn: { color: '#A15C00' },
