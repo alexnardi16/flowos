@@ -40,5 +40,5 @@ test('Settings diagnostics uses a visible light log surface and severity colors'
 test('Today widget list rows never use flex for their outer height',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.doesNotMatch(source,/style=\{\{ flex:1, height:itemHeight/);
-  assert.match(source,/width:'match_parent', height:itemHeight/);
+  assert.match(source,/height:itemHeight\(item\.title/);
 });
