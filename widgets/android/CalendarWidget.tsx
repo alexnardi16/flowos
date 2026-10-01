@@ -55,6 +55,7 @@ const ITEM_TITLE_LINE_HEIGHT = 9;
 const ITEM_PADDING = 7;
 const DAY_HEADER_HEIGHT = 11;
 const ITEM_GAP = 3;
+const WEEK_BOTTOM_PADDING = 10;
 
 function itemHeight(item: AndroidCalendarItem) {
   const lines = titleLines(item.title).length;
@@ -65,7 +66,7 @@ function itemHeight(item: AndroidCalendarItem) {
 function dayHeight(day: AndroidCalendarDay) {
   const itemsHeight = day.items.reduce((total, item) => total + itemHeight(item), 0);
   const gaps = Math.max(0, day.items.length - 1) * ITEM_GAP;
-  return Math.max(92, DAY_HEADER_HEIGHT + itemsHeight + gaps + 4);
+  return Math.max(92, DAY_HEADER_HEIGHT + itemsHeight + gaps + WEEK_BOTTOM_PADDING);
 }
 
 function weekHeight(week: AndroidCalendarWeek) {
@@ -102,7 +103,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
         {weeks.slice(0, 8).map(week => {
           const height = weekHeight(week);
           return (
-            <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width: 'match_parent', flexDirection: 'column', marginVertical: 2 }}>
+            <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width: 'match_parent', flexDirection: 'column', marginVertical: 2, paddingBottom: WEEK_BOTTOM_PADDING }}>
               {week.title ? <TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize: 10, fontWeight: 'bold', color: PRIMARY, marginBottom: 3 }} /> : null}
               <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'flex-start' }}>
                 {Array.from({ length: 7 }, (_, index) => week.days[index] ?? {
@@ -144,7 +145,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
             </FlexWidget>
           );
         })}
-        <FlexWidget style={{ width: 'match_parent', height: 40 }} />
+        <FlexWidget style={{ width: 'match_parent', height: 64 }} />
       </ListWidget>
     </FlexWidget>
   );
