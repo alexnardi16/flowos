@@ -139,7 +139,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const isFlowOSOnly = !item.externalId;
 
   return <Modal visible animationType="slide" onRequestClose={onClose}>
-    <ScrollView contentContainerStyle={styles.wrap}>
+    <ScrollView showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.wrap}>
       <Text style={styles.title}>Gestisci</Text>
       <Text style={styles.label}>Titolo</Text><TextInput value={title} onChangeText={setTitle} style={styles.input} />
       <Text style={styles.label}>Tipo</Text><View style={styles.row}>{(['event','task'] as const).map((k)=><Pressable key={k} onPress={()=>setKind(k)} style={[styles.choice,kind===k&&styles.choiceActive]}><Text style={[styles.choiceText,kind===k&&styles.choiceTextActive]}>{k==='event'?'Evento':'Task'}</Text></Pressable>)}</View>
