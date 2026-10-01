@@ -28,7 +28,7 @@ function itemHeight(title:string,hasPriority=false){
   return Math.max(48,12+titleLines(title).length*15+12+8);
 }
 export function TodayWidget({ items }: AndroidTodayWidgetProps) {
-  return <FlexWidget style={{ flex:1, height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel={`FlowOS: attività di oggi, ${items.length} attività`}>
+  return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel={`FlowOS: attività di oggi, ${items.length} attività`}>
     <FlexWidget style={{ width:'match_parent', height:34, flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingBottom:5 }}>
       <FlexWidget style={{ flexDirection:'row', alignItems:'center', flex:1 }}><ImageWidget image={require("../../assets/flowos-app-icon-512-store.png")} imageWidth={26} imageHeight={26} style={{ width:26, height:26, marginRight:7 }} radius={7} resizeMode="contain" /><TextWidget text="Oggi" style={{ fontSize:19, fontWeight:'bold', color:INK,marginRight:5 }}/><TextWidget text={`${items.length}`} style={{ fontSize:10,fontWeight:'bold',color:MUTED }}/></FlexWidget>
       <FlexWidget style={{ flexDirection:'row', alignItems:'center' }}>
