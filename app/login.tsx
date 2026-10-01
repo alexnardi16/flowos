@@ -94,7 +94,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.container}>
       <View style={styles.main}>
         <Image source={require("../assets/flowos-app-icon-512-store.png")} style={styles.appIcon} resizeMode="contain" accessibilityLabel="Logo FlowOS" />
         <Text style={styles.eyebrow}>FLOWOS</Text>
@@ -111,12 +111,11 @@ export default function LoginScreen() {
         <View style={styles.diagnosticsCard}>
           <Text style={styles.diagnosticsTitle}>DIAGNOSTICA ACCESSO</Text>
           <BuildInfo inline />
-          <Text selectable style={styles.log}>
+          <ScrollView style={styles.logScroll} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar>
             {diagnostics.length
-              ? diagnostics.map((entry) => `${entry.at} [${entry.level}] ${entry.event}${entry.details ? ` · ${entry.details}` : ''}`).join('\n')
-              : 'Nessun evento diagnostico disponibile.'}
-          </Text>
-        </View>
+              ? diagnostics.map((entry, index) => <Text key={`${entry.at}-${index}`} selectable style={[styles.log, entry.level==='error'&&styles.logError, entry.level==='warn'&&styles.logWarn]}>{entry.at} [{entry.level}] {entry.event}{entry.details ? ` · ${entry.details}` : ''}</Text>)
+              : <Text style={styles.log}>Nessun evento diagnostico disponibile.</Text>}
+          </ScrollView>        </View>
       </View>
     </ScrollView>
   );
@@ -138,5 +137,8 @@ const styles = StyleSheet.create({
   error: { marginTop: 16, fontSize: 14, lineHeight: 20, color: '#A12626' },
   diagnosticsCard: { marginTop: 24, padding: 14, borderRadius: 14, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#DDD9CF' },
   diagnosticsTitle: { fontSize: 11, fontWeight: '900', letterSpacing: 1, color: '#555', marginBottom: 4 },
-  log: { marginTop: 8, fontFamily: 'monospace', fontSize: 9, lineHeight: 13, color: '#333' },
+  logScroll: { marginTop: 8, maxHeight: 230, minHeight: 90, borderWidth: 1, borderColor: '#E5E2DA', borderRadius: 10, padding: 8 },
+  log: { fontFamily: 'monospace', fontSize: 9, lineHeight: 13, color: '#333' },
+  logError: { color: '#B42318' },
+  logWarn: { color: '#A15C00' },
 });
