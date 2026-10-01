@@ -266,7 +266,7 @@ export default function Me(){
       <Text style={styles.label}>Logger notifiche</Text>
       <Text style={styles.meta}>Registra pianificazione, invio e sincronizzazione legati alle notifiche.</Text>
       <View style={styles.actions}><Button secondary style={styles.actionButton} label={showNotificationLogs?'Nascondi log':'Mostra log'} onPress={()=>setShowNotificationLogs(value=>!value)}/><Button secondary style={styles.actionButton} label="Copia log" onPress={()=>{void copyNotificationLogs();}}/><Button secondary style={styles.actionButton} label="Pulisci log" onPress={clearNotificationLogs}/></View>
-      {showNotificationLogs?<ScrollView style={styles.notificationLogBox} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.notificationLogContent}>{notificationLogs.length?notificationLogs.map((entry,index)=><Text key={`${entry.at}-${index}`} selectable style={[styles.notificationLogText,entry.level==='error'&&styles.notificationLogError]}>{notificationLogLine(entry)}</Text>):<Text style={styles.meta}>Nessun evento registrato.</Text>}</ScrollView>:null}
+      {showNotificationLogs?<ScrollView style={styles.notificationLogBox} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.notificationLogContent}>{notificationLogs.length?notificationLogs.map((entry,index)=><Text key={`${entry.at}-${index}`} selectable style={[styles.notificationLogText,entry.level==='error'&&styles.notificationLogError,entry.level==='warn'&&styles.notificationLogWarn]}>{notificationLogLine(entry)}</Text>):<Text style={styles.meta}>Nessun evento registrato.</Text>}</ScrollView>:null}
     </Card>
 
     <Card>
@@ -314,7 +314,7 @@ const styles=StyleSheet.create({
   notificationLogBox:{marginTop:10,height:260,maxHeight:260,borderRadius:12,backgroundColor:'#111827'},
   notificationLogContent:{padding:10,paddingBottom:36,gap:5},
   notificationLogText:{fontSize:9,lineHeight:13,color:'#D1D5DB',fontFamily:'monospace'},
-  notificationLogError:{color:'#FCA5A5'},
+  notificationLogWarn:{color:palette.warning},notificationLogError:{color:'#FCA5A5'},
   diagnosticHeader:{gap:2},
   logBox:{marginTop:10,height:420,maxHeight:420,borderRadius:12,backgroundColor:'#111827'},
   logContent:{padding:10,paddingBottom:48,gap:3},
