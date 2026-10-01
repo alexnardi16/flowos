@@ -3,7 +3,7 @@ import { Button, Card, palette } from '@/components/ui';
 
 export default function PrivacyPolicy() {
   const deleteUrl = 'https://getflowos.netlify.app/delete-account';
-  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.wrap}>
+  return <SafeAreaView style={styles.safe}><ScrollView showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.wrap}>
     <Text style={styles.eyebrow}>FLOWOS</Text>
     <Text style={styles.title}>Privacy Policy</Text>
     <Text style={styles.date}>Ultimo aggiornamento: 9 settembre 2026</Text>
