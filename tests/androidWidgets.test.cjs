@@ -5,7 +5,7 @@ test('Android Today widget reserves space for the list and cannot collapse to ze
   assert.match(source,/height:'match_parent'/);
   assert.match(source,/<ListWidget[^>]*height:'match_parent'/);
   assert.match(source,/height:34, flexDirection:'row'/);
-  assert.doesNotMatch(source,/justifyContent:'space-between', alignItems:'center', paddingBottom:5 }}>/);
+  assert.doesNotMatch(source,/style=\{\{ flex:1, flexDirection:'row', justifyContent:'space-between'/);
 });
 
 test('Android Calendar widget keeps a bottom safety area for the last row',()=>{
