@@ -33,7 +33,7 @@ export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef 
   const insets = useSafeAreaInsets();
   const contentPaddingBottom = Math.max(118, insets.bottom + 112);
   return <SafeAreaView edges={['top','bottom']} style={styles.screenSafe}>
-    <ScrollView ref={scrollRef} {...scrollProps} contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
+    <ScrollView ref={scrollRef} showsVerticalScrollIndicator persistentScrollbar {...scrollProps} contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
       <View style={styles.screenBrandRow}>
         <View style={styles.screenBrandLeft}>
           <Image source={require("../assets/flowos-app-icon-512-store.png")} style={styles.screenLogo} resizeMode="contain" accessibilityLabel="Logo FlowOS" />
