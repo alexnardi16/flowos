@@ -7,7 +7,7 @@ import { sortCommitments } from './activityOrdering';
 export type WidgetItem = { id: string; title: string; time: string; kind: Commitment['kind']; priority?: number };
 export type TodayGlance = { dateKey: string; items: WidgetItem[]; nextEventTitle: string | null; nextEventTime: string | null; dueSoonCount: number; overdueCount: number; generatedAt: string };
 
-function isActive(item: Commitment): boolean { return item.status !== 'done' && !item.deletedAt; }
+function isActive(item: Commitment): boolean { return item.status !== 'done' && item.status !== 'completed' && !item.deletedAt; }
 function itemIsToday(item: Commitment, now: Date) { const value=item.scheduledAt??item.dueAt; return Boolean(value&&isSameCalendarDay(item,value,now)); }
 
 export function buildTodayGlance(commitments: Commitment[], now: Date = new Date(), calendarNames?: Map<string,string>): TodayGlance {
