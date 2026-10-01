@@ -101,9 +101,9 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
         {weeks.slice(0, 8).map(week => {
-          const height = weekHeight(week);
+          const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4;
           return (
-            <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width: 'match_parent', flexDirection: 'column', marginVertical: 2, paddingBottom: WEEK_BOTTOM_PADDING }}>
+            <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width: 'match_parent', height: weekContainerHeight, flexDirection: 'column', marginVertical: 2, paddingBottom: WEEK_BOTTOM_PADDING }}>
               {week.title ? <TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize: 10, fontWeight: 'bold', color: PRIMARY, marginBottom: 3 }} /> : null}
               <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'flex-start' }}>
                 {Array.from({ length: 7 }, (_, index) => week.days[index] ?? {
