@@ -36,18 +36,43 @@ export async function registerGooglePushBackgroundTask(){
   }
 }
 
+function transientPushError(error:unknown){
+  const message=error instanceof Error?error.message:String(error);
+  return /network|fetch failed|unknownhost|unable to resolve host|no address associated|timeout|abort|exp\.host/i.test(message);
+}
+
 export async function registerGooglePushToken(userId:string){
   if (Platform.OS==='web') return;
   try {
     const allowed=await requestNotificationPermission();
     if(!allowed)return;
-    const token=(await Notifications.getExpoPushTokenAsync({projectId:EXPO_PROJECT_ID})).data;
-    if(!token)return;
+    let token:string|undefined;
+    let lastError:unknown;
+    for(let attempt=1;attempt<=3;attempt++){
+      try {
+        token=(await Notifications.getExpoPushTokenAsync({projectId:EXPO_PROJECT_ID})).data;
+        if(token)break;
+      } catch(error){
+        lastError=error;
+        if(attempt<3)await new Promise(resolve=>setTimeout(resolve,attempt*1000));
+      }
+    }
+    if(!token){
+      if(lastError&&transientPushError(lastError)){
+        recordDiagnostic('google-push-token-registration-deferred',{reason:'temporary-network-failure'});
+        return;
+      }
+      throw lastError??new Error('Expo push token unavailable.');
+    }
     const {error}=await supabase.from('device_push_tokens').upsert({user_id:userId,expo_push_token:token,platform:Platform.OS,updated_at:new Date().toISOString()},{onConflict:'user_id,expo_push_token'});
     if(error)throw error;
     await registerGooglePushBackgroundTask();
     recordDiagnostic('google-push-token-registered',{platform:Platform.OS});
   } catch(error) {
-    recordDiagnostic('google-push-token-registration-failed',error,'warn');
+    if(transientPushError(error)){
+      recordDiagnostic('google-push-token-registration-deferred',{reason:'temporary-network-failure'});
+    }else{
+      recordDiagnostic('google-push-token-registration-failed',error,'error');
+    }
   }
 }
