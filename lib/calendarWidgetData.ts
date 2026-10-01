@@ -22,7 +22,7 @@ function formatItemTime(item:Commitment){
 }
 export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Date,now:Date=new Date(),calendarNames?:Map<string,string>):CalendarWidgetData{
   const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
-  const active=commitments.filter(item=>item.status!=='done'&&!item.deletedAt);const sourceColors=buildSourceColors(active);const byDate=new Map<string,Commitment[]>();
+  const active=commitments.filter(item=>item.status!=='done'&&item.status!=='completed'&&!item.deletedAt);const sourceColors=buildSourceColors(active);const byDate=new Map<string,Commitment[]>();
   for(const item of active){const value=item.scheduledAt??item.dueAt;if(!value)continue;const d=new Date(value);const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dateKey(d);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}
   for(const [key, list] of byDate) byDate.set(key, sortCommitments(list,calendarNames));
   const weeks:AndroidCalendarWeek[]=[];
