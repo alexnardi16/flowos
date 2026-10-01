@@ -25,7 +25,7 @@ export default function DeleteAccount() {
     }
   }
 
-  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.wrap}>
+  return <SafeAreaView style={styles.safe}><ScrollView showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.wrap}>
     <Text style={styles.eyebrow}>FLOWOS</Text>
     <Text style={styles.title}>Eliminazione account</Text>
     {done ? <Card><Text style={styles.heading}>Account eliminato</Text><Text style={styles.body}>L'account FlowOS e i dati associati sono stati eliminati definitivamente.</Text></Card> : <>
