@@ -314,7 +314,7 @@ const styles=StyleSheet.create({
   notificationLogBox:{marginTop:10,height:260,maxHeight:260,borderRadius:12,backgroundColor:'#F8F9FC',borderWidth:1,borderColor:'#D8DCE5'},
   notificationLogContent:{padding:10,paddingBottom:36,gap:5},
   notificationLogText:{fontSize:9,lineHeight:13,color:'#172033',fontFamily:'monospace'},
-  notificationLogWarn:{color:palette.warning},notificationLogError:{color:'#FCA5A5'},
+  notificationLogWarn:{color:palette.warning},notificationLogError:{color:palette.danger},
   diagnosticHeader:{gap:2},
   logBox:{marginTop:10,height:420,maxHeight:420,borderRadius:12,backgroundColor:'#F8F9FC',borderWidth:1,borderColor:'#D8DCE5'},
   logContent:{padding:10,paddingBottom:48,gap:3},
