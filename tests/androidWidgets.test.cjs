@@ -3,7 +3,7 @@ const test=require('node:test');const assert=require('node:assert/strict');const
 test('Android Today widget reserves space for the list and cannot collapse to zero height',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.match(source,/height:'match_parent'/);
-  assert.match(source,/<ListWidget[^>]*height:'match_parent'/);
+  assert.match(source,/<ListWidget[^>]*height:listHeight\(heightDp\)/);
   assert.match(source,/height:34, flexDirection:'row'/); assert.match(source,/width:'match_parent', height:'match_parent', padding:10/);
   assert.doesNotMatch(source,/style=\{\{ flex:1, height:itemHeight/);
 });
@@ -11,9 +11,9 @@ test('Android Today widget reserves space for the list and cannot collapse to ze
 test('Android Calendar widget keeps a bottom safety area for the last row',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
   assert.match(source,/WEEK_BOTTOM_PADDING = 10/);
-  assert.match(source,/paddingBottom: WEEK_BOTTOM_PADDING/);
-  assert.match(source,/height: 64/);
-  assert.match(source,/<ListWidget[^>]*height: 'match_parent'/);
+  assert.match(source,/weekContainerHeight = height \+ \(week.title \? 14 : 0\) \+ 4 \+ WEEK_BOTTOM_PADDING/);
+  assert.match(source,/height: 96/);
+  assert.match(source,/<ListWidget[^>]*height:listHeight\(heightDp\)/);
 });
 
 test('vertical app scrolling keeps its indicator persistent',()=>{
