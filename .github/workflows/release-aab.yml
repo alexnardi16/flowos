@@ -2,6 +2,9 @@ name: Production Android AAB
 
 on:
   push:
+    branches: [main]
+    paths-ignore:
+      - ".github/production-version-code"
     tags: ['v*', '*.*.*']
   release:
     types: [published]
@@ -49,8 +52,13 @@ jobs:
             TAG="${{ github.event.release.tag_name }}"
             SOURCE_REF="$TAG"
           else
-            TAG="${GITHUB_REF_NAME}"
-            SOURCE_REF="$TAG"
+            if [ "${{ github.ref_type }}" = "tag" ]; then
+              TAG="${GITHUB_REF_NAME}"
+              SOURCE_REF="$TAG"
+            else
+              TAG="ci-${GITHUB_SHA:0:12}"
+              SOURCE_REF="$GITHUB_SHA"
+            fi
           fi
           test -n "$TAG"
           test -n "$SOURCE_REF"
