@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { beginDiagnosticSession, clearDiagnostics, endDiagnosticSession, recordDiagnostic } from '../lib/diagnostics';
-import { connectGoogleFromSession, getGoogleWorkspaceStatus, syncGoogleWorkspace } from '../lib/googleWorkspace';
+import { connectGoogleFromSession, getGoogleWorkspaceStatus, syncGoogleRemote, syncGoogleWorkspace } from '../lib/googleWorkspace';
 import { checkAndRecoverMissedDailySummary, refreshReminders, registerBackgroundSync } from '../lib/notificationSettingsBridge';
 import { clearNotificationLog } from '../lib/notificationLog';
 import { useFlowStore } from '../lib/store';
@@ -178,9 +178,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void syncGoogleWorkspace().then(() => hydrateFromCloud()).catch(error => recordDiagnostic('resolved-conflict-push-retry-failed', error, 'warn')).finally(() => { googleSyncInProgressRef.current = false; });
       }
     }, 30000);
+
+    // Google Calendar changes normally arrive through the Calendar webhook.
+    // Google Tasks has no equivalent watch endpoint, so keep the foreground
+    // view close to real time with a lightweight incremental sync. The worker
+    // uses sync tokens, so this does not perform a full historical import.
+    const remoteSyncInterval = setInterval(() => {
+      if (AppState.currentState !== 'active' || googleSyncInProgressRef.current) return;
+      void syncGoogleRemote()
+        .then(() => hydrateFromCloud())
+        .catch(error => recordDiagnostic('google-remote-fast-sync-failed', error, 'warn'));
+    }, 10000);
     return () => {
       subscription.remove();
       clearInterval(recoveryInterval);
+      clearInterval(remoteSyncInterval);
     };
   }, [session?.user.id, rolloverTodayTasks, commitments, hydrateFromCloud]);
 
