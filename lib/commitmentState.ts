@@ -17,5 +17,11 @@ export function mergeRemoteCommitments(
   const protectedSet = new Set(protectedIds);
   const remoteIds = new Set(remote.map(item => item.id));
   const preserved = local.filter(item => protectedSet.has(item.id) && !remoteIds.has(item.id));
-  return [...preserved, ...remote];
+  const localById = new Map(local.map(item => [item.id, item]));
+  const merged = remote.map(item => {
+    const localItem = localById.get(item.id);
+    if (localItem?.syncStatus === 'pending' && localItem.status === 'done' && item.status !== 'done') return localItem;
+    return item;
+  });
+  return [...preserved, ...merged];
 }
