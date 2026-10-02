@@ -222,60 +222,97 @@ async function syncGroupedNotification(
   body: string,
   source: string,
 ) {
-  const hash = tasks.map((task) => task.id).sort().join(',');
+  const uniqueTasks = Array.from(new Map(tasks.map((task) => [task.id, task])).values());
+  const hash = uniqueTasks.map((task) => task.id).sort().join(',');
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  const matching = scheduled.filter((notification) => notification.content.data?.source === source);
+  const matchingScheduled = scheduled.filter((notification) => notification.content.data?.source === source);
+  const presented = NOTIFICATIONS_SUPPORTED_HERE
+    ? await Notifications.getPresentedNotificationsAsync().catch(() => [])
+    : [];
+  const matchingPresented = presented.filter((notification) => notification.content.data?.source === source);
 
   let previousHash: string | null = null;
   try {
     const raw = await AsyncStorage.getItem(storageKey);
-    if (raw) previousHash = (JSON.parse(raw) as { hash?: string }).hash ?? null;
+    previousHash = (JSON.parse(raw ?? 'null') as { hash?: string } | null)?.hash ?? null;
   } catch {
     previousHash = null;
   }
 
-  if (tasks.length === 0) {
-    for (const notification of matching) {
+  if (uniqueTasks.length === 0) {
+    for (const notification of matchingScheduled) {
       await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
         logNotificationEvent(`cancel-${source}-failed`, error, 'warn'),
+      );
+    }
+    for (const notification of matchingPresented) {
+      await Notifications.dismissNotificationAsync(notification.request.identifier).catch((error) =>
+        logNotificationEvent(`dismiss-${source}-failed`, error, 'warn'),
       );
     }
     await AsyncStorage.removeItem(storageKey);
     return;
   }
 
-  // The grouped notification is intentionally one-shot. Once the same set of
-  // task IDs has already been notified, running the engine again must not
-  // schedule the same alert again — even if the previous one has already fired.
+  // Same logical set: never generate another alert. This remains true even
+  // after the first alert has already been presented, preventing repeated
+  // notifications on every background/foreground engine pass.
   if (previousHash === hash) {
-    // If an old version left multiple pending copies, keep at most one.
-    for (const notification of matching.slice(1)) {
-      await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
-        logNotificationEvent(`cancel-${source}-duplicate-failed`, error, 'warn'),
-      );
+    if (matchingScheduled.length > 1) {
+      const keep = [...matchingScheduled].sort((a, b) => a.identifier.localeCompare(b.identifier))[0];
+      for (const notification of matchingScheduled) {
+        if (notification.identifier === keep.identifier) continue;
+        await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+          logNotificationEvent(`cancel-${source}-duplicate-failed`, error, 'warn'),
+        );
+      }
     }
     return;
   }
 
-  for (const notification of matching) {
+  // The task set changed: the old alert is stale. Remove both queued and
+  // already-presented FlowOS alerts before emitting the new consolidated one.
+  for (const notification of matchingScheduled) {
     await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
-      logNotificationEvent(`cancel-${source}-failed`, error, 'warn'),
+      logNotificationEvent(`cancel-${source}-stale-failed`, error, 'warn'),
+    );
+  }
+  for (const notification of matchingPresented) {
+    await Notifications.dismissNotificationAsync(notification.request.identifier).catch((error) =>
+      logNotificationEvent(`dismiss-${source}-stale-failed`, error, 'warn'),
     );
   }
 
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
-      title: title(tasks.length),
+      title: title(uniqueTasks.length),
       body,
-      data: { source },
+      data: { source, hash, taskIds: uniqueTasks.map((task) => task.id) },
       ...(Platform.OS === 'ios' ? { threadIdentifier: source } : null),
     },
     trigger: Platform.OS === 'android'
       ? { channelId: channel, seconds: 1, type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, repeats: false }
       : null,
   });
-  await AsyncStorage.setItem(storageKey, JSON.stringify({ notificationId: identifier, hash }));
-  await logNotificationEvent(`${source}-scheduled`, { count: tasks.length, identifier });
+
+  // Deterministically collapse a race with another engine instance.
+  const afterSchedule = await Notifications.getAllScheduledNotificationsAsync();
+  const sameSource = afterSchedule
+    .filter((notification) => notification.content.data?.source === source)
+    .sort((a, b) => a.identifier.localeCompare(b.identifier));
+  const keeper = sameSource[0]?.identifier ?? identifier;
+  for (const notification of sameSource) {
+    if (notification.identifier === keeper) continue;
+    await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
+      logNotificationEvent(`cancel-${source}-race-duplicate-failed`, error, 'warn'),
+    );
+  }
+
+  await AsyncStorage.setItem(storageKey, JSON.stringify({ notificationId: keeper, hash }));
+  await logNotificationEvent(`${source}-scheduled`, {
+    count: uniqueTasks.length,
+    identifier: keeper,
+  });
 }
 async function syncBadge(count: number) {
   try {
