@@ -56,6 +56,7 @@ const ITEM_PADDING = 7;
 const DAY_HEADER_HEIGHT = 11;
 const ITEM_GAP = 3;
 const WEEK_BOTTOM_PADDING = 10;
+function listHeight(heightDp:number|undefined){return Math.max(120,(heightDp??300)-48);}
 
 function itemHeight(item: AndroidCalendarItem) {
   const lines = titleLines(item.title).length;
@@ -99,11 +100,11 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
         </FlexWidget>
       </FlexWidget>
 
-      <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
+      <ListWidget style={{ width: 'match_parent', height:listHeight(heightDp), backgroundColor: BG }}>
         {weeks.slice(0, 8).map(week => {
-          const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4;
+          const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
           return (
-            <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width: 'match_parent', height: weekContainerHeight, flexDirection: 'column', marginVertical: 2, paddingBottom: WEEK_BOTTOM_PADDING }}>
+            <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width: 'match_parent', height: weekContainerHeight, flexDirection: 'column', marginVertical: 2 }}>
               {week.title ? <TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize: 10, fontWeight: 'bold', color: PRIMARY, marginBottom: 3 }} /> : null}
               <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'flex-start' }}>
                 {Array.from({ length: 7 }, (_, index) => week.days[index] ?? {
@@ -145,7 +146,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
             </FlexWidget>
           );
         })}
-        <FlexWidget style={{ width: 'match_parent', height: 64 }} />
+        <FlexWidget style={{ width: 'match_parent', height: 96 }} />
       </ListWidget>
     </FlexWidget>
   );
