@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hydrateFromCloud = useFlowStore((state) => state.hydrateFromCloud);
   const rolloverTodayTasks = useFlowStore((state) => state.rolloverTodayTasks);
   const commitments = useFlowStore((state) => state.commitments);
+  const commitmentsRef = useRef(commitments);
   const googleSyncInProgressRef = useRef(false);
 
   useEffect(() => {
@@ -94,6 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    commitmentsRef.current = commitments;
+  }, [commitments]);
+
+  useEffect(() => {
     if (!session?.user.id) return;
     let active = true;
     void (async () => {
@@ -142,7 +147,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshPending = false;
         try {
           await hydrateFromCloud();
-          recordDiagnostic('google-realtime-commitments-refresh-completed');
         } catch(error) {
           recordDiagnostic('google-realtime-commitments-refresh-failed',error,'warn');
         }
@@ -173,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // data after the configured summary time is picked up automatically.
     const recoveryInterval = setInterval(() => {
       void checkAndRecoverMissedDailySummary();
-      if (!googleSyncInProgressRef.current && commitments.some(item => item.resolutionPending)) {
+      if (!googleSyncInProgressRef.current && commitmentsRef.current.some(item => item.resolutionPending)) {
         googleSyncInProgressRef.current = true;
         void syncGoogleWorkspace().then(() => hydrateFromCloud()).catch(error => recordDiagnostic('resolved-conflict-push-retry-failed', error, 'warn')).finally(() => { googleSyncInProgressRef.current = false; });
       }
@@ -194,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearInterval(recoveryInterval);
       clearInterval(remoteSyncInterval);
     };
-  }, [session?.user.id, rolloverTodayTasks, commitments, hydrateFromCloud]);
+  }, [session?.user.id, rolloverTodayTasks, hydrateFromCloud]);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,
