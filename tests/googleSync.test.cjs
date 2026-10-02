@@ -20,5 +20,5 @@ test('normal foreground Google sync does not run the conflict guard on every syn
 test('foreground remote sync is continuously refreshed while the app is active',()=>{
   const source=fs.readFileSync('providers/AuthProvider.tsx','utf8');
   assert.match(source,/syncGoogleRemote\(\)/);
-  assert.match(source,/setInterval\(\(\)=>\{/);
+  assert.match(source,/setInterval\(\(\)\s*=>\s*\{/);
 });
