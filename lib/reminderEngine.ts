@@ -225,11 +225,11 @@ async function syncGroupedNotification(
   const uniqueTasks = Array.from(new Map(tasks.map((task) => [task.id, task])).values());
   const hash = uniqueTasks.map((task) => task.id).sort().join(',');
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  const matchingScheduled = scheduled.filter((notification) => notification.request.content.data?.source === source);
+  const matchingScheduled = scheduled.filter((notification) => notification.content.data?.source === source);
   const presented = NOTIFICATIONS_SUPPORTED_HERE
     ? await Notifications.getPresentedNotificationsAsync().catch(() => [])
     : [];
-  const matchingPresented = presented.filter((notification) => notification.content.data?.source === source);
+  const matchingPresented = presented.filter((notification) => notification.request.content.data?.source === source);
 
   let previousHash: string | null = null;
   try {
