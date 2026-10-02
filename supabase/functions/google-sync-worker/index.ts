@@ -6,6 +6,20 @@ async function internalKey(){if(Deno.env.get("FLOWOS_SYNC_INTERNAL_KEY"))return 
 const admin=createClient(URL,SERVICE,{auth:{persistSession:false}});
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json"}});
 const now=()=>new Date().toISOString();
+function errorMessage(error:unknown){
+  if(error instanceof Error)return error.message;
+  if(error&&typeof error==='object'){
+    const e=error as Record<string,unknown>;
+    const parts=[e.message,e.details,e.hint,e.code,e.status].filter(value=>typeof value==='string'||typeof value==='number').map(String);
+    if(parts.length)return parts.join(' — ');
+    try{return JSON.stringify(error);}
+    catch{return 'Unknown error';}
+  }
+  return String(error??'Unknown error');
+}
+function isWatchUnsupportedCalendar(calendarId:string){
+  return calendarId.includes('#holiday@group.v.calendar.google.com') || calendarId==='addressbook#contacts@group.v.calendar.google.com';
+}
 async function gfetch(url:string,token:string,init:RequestInit={}){const r=await fetch(url,{...init,headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json",...(init.headers??{})}});const text=await r.text();let data:any=null;try{data=text?JSON.parse(text):null}catch{data=text}if(!r.ok){const e:any=new Error(typeof data==="string"?data:(data?.error?.message??JSON.stringify(data)));e.status=r.status;throw e;}return data;}
 async function tokenFor(userId:string,forceRefresh=false){const {data,error}=await admin.schema("private").from("google_oauth_tokens").select("*").eq("user_id",userId).maybeSingle();if(error||!data)throw new Error("Google account is not connected");if(!forceRefresh&&(!data.expires_at||new Date(data.expires_at).getTime()>Date.now()+60000))return data;const clientId=Deno.env.get("GOOGLE_CLIENT_ID")??"";const clientSecret=Deno.env.get("GOOGLE_CLIENT_SECRET")??"";if(!data.refresh_token||!clientId||!clientSecret)throw new Error("Google authorization expired");const r=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:clientId,client_secret:clientSecret,refresh_token:data.refresh_token,grant_type:"refresh_token"})});const p:any=await r.json();if(!r.ok||!p.access_token)throw new Error("Unable to refresh Google token");const next={...data,access_token:p.access_token,expires_at:new Date(Date.now()+Math.max(60,p.expires_in??3600)*1000).toISOString(),token_type:p.token_type??"Bearer"};await admin.schema("private").from("google_oauth_tokens").update({access_token:next.access_token,expires_at:next.expires_at,token_type:next.token_type,updated_at:now()}).eq("user_id",userId);return next;}
 async function gfetchForUser(userId:string,url:string,init:RequestInit={}){let token=(await tokenFor(userId)).access_token;try{return await gfetch(url,token,init);}catch(e:any){if(e?.status!==401)throw e;try{token=(await tokenFor(userId,true)).access_token;}catch(refreshError){const authError:any=new Error("Google authorization expired. Reconnect Google.");authError.code="GOOGLE_AUTH_EXPIRED";authError.cause=refreshError;throw authError;}try{return await gfetch(url,token,init);}catch(retryError:any){if(retryError?.status===401){const authError:any=new Error("Google authorization expired. Reconnect Google.");authError.code="GOOGLE_AUTH_EXPIRED";authError.cause=retryError;throw authError;}throw retryError;}}}
@@ -16,8 +30,9 @@ async function syncTasks(userId:string,listId:string){const {data:state}=await a
 async function ensureCalendarWatches(userId:string){
   const token=(await tokenFor(userId)).access_token;
   const {data:calendars}=await admin.from("google_calendars").select("google_calendar_id").eq("user_id",userId).eq("selected",true).is("deleted_at",null);
+  const watchableCalendars=(calendars??[]).filter((calendar:any)=>!isWatchUnsupportedCalendar(String(calendar.google_calendar_id??"")));
   const webhook=`${URL}/functions/v1/google-push-webhook`;
-  for(const calendar of calendars??[]){
+  for(const calendar of watchableCalendars){
     const {data:state}=await admin.schema("private").from("google_calendar_sync_state").select("*").eq("user_id",userId).eq("google_calendar_id",calendar.google_calendar_id).maybeSingle();
     if(state?.channel_id&&state?.channel_expires_at&&new Date(state.channel_expires_at).getTime()>Date.now()+24*60*60*1000)continue;
     if(state?.channel_id&&state?.resource_id){try{await fetch("https://www.googleapis.com/calendar/v3/channels/stop",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({id:state.channel_id,resourceId:state.resource_id})});}catch{}}
@@ -25,7 +40,8 @@ async function ensureCalendarWatches(userId:string){
     try {
       const response=await gfetchForUser(userId,`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.google_calendar_id)}/events/watch`,{method:"POST",body:JSON.stringify({id:channelId,type:"web_hook",address:webhook,token:channelToken,expiration})});
       await admin.schema("private").from("google_calendar_sync_state").upsert({user_id:userId,google_calendar_id:calendar.google_calendar_id,channel_id:channelId,channel_token:channelToken,resource_id:response.resourceId??null,channel_expires_at:response.expiration?new Date(Number(response.expiration)).toISOString():new Date(expiration).toISOString(),updated_at:now()},{onConflict:"user_id,google_calendar_id"});
-    } catch(error) { console.warn("calendar-watch-create-failed",calendar.google_calendar_id,error); }
+    } catch(error) { const message=errorMessage(error);
+      if(!/Push notifications are not supported by this resource/i.test(message))console.warn("calendar-watch-create-failed",calendar.google_calendar_id,message); }
   }
 }
 async function sendPush(userId:string){const {data:tokens}=await admin.from("device_push_tokens").select("expo_push_token").eq("user_id",userId);if(!tokens?.length)return;const messages=tokens.map((t:any)=>({to:t.expo_push_token,data:{source:"google-sync",timestamp:Date.now()}}));await fetch("https://exp.host/--/api/v2/push/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(messages)});}
@@ -50,4 +66,4 @@ if(channelId&&channelToken){
   if(!state?.user_id)return json({ok:true,ignored:true});
   const changed=await syncUser(state.user_id);return json({ok:true,userId:state.user_id,changed});
 }
-const requestedUserId=typeof body.userId==="string"?body.userId:null;if(requestedUserId){userId=requestedUserId;const changed=await syncUser(userId,{tasksOnly:Boolean(body.tasksOnly),notify:body.notify!==false});return json({ok:true,userId,changed});}const {data:users}=await admin.from("google_connections").select("user_id").neq("last_sync_status","disconnected");const results=[];for(const u of users??[]){try{results.push({userId:u.user_id,changed:await syncUser(u.user_id,{tasksOnly:Boolean(body.tasksOnly)})});}catch(e){results.push({userId:u.user_id,error:e instanceof Error?e.message:String(e)});}}return json({ok:true,results});}catch(e){const message=e instanceof Error?e.message:String(e);const code=(e as any)?.code??null;if(code==="GOOGLE_AUTH_EXPIRED")await admin.from("google_connections").update({last_sync_status:"error",last_sync_error:message,updated_at:now()}).eq("user_id",userId??"");return json({error:message,code},500);}});
+const requestedUserId=typeof body.userId==="string"?body.userId:null;if(requestedUserId){userId=requestedUserId;const changed=await syncUser(userId,{tasksOnly:Boolean(body.tasksOnly),notify:body.notify!==false});return json({ok:true,userId,changed});}const {data:users}=await admin.from("google_connections").select("user_id").neq("last_sync_status","disconnected");const results=[];for(const u of users??[]){try{results.push({userId:u.user_id,changed:await syncUser(u.user_id,{tasksOnly:Boolean(body.tasksOnly)})});}catch(e){results.push({userId:u.user_id,error:e instanceof Error?e.message:String(e)});}}return json({ok:true,results});}catch(e){const message=errorMessage(e);const code=(e as any)?.code??null;if(code==="GOOGLE_AUTH_EXPIRED")await admin.from("google_connections").update({last_sync_status:"error",last_sync_error:message,updated_at:now()}).eq("user_id",userId??"");return json({error:message,code},500);}});
