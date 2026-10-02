@@ -29,7 +29,26 @@ async function pushLocal(userId:string,token:string){const {data:defCal}=await a
             continue;
           }catch(recreateError){console.warn("resolution-recreate-failed",c.id,recreateError);}
         }
-        if(e?.status===412&&c.external_id){let remote:any=null;try{const endpoint=c.kind==="event"?`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(c.google_calendar_id)}/events/${encodeURIComponent(c.external_id)}`:`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(c.google_task_list_id)}/tasks/${encodeURIComponent(c.external_id)}`;remote=await gfetch(endpoint,token);}catch{}await createSyncConflict(userId,c,remote,"remote_changed","Google ha modificato questa attività dopo l’ultima sincronizzazione mentre FlowOS aveva una modifica in sospeso. Nessuna delle due versioni è stata sovrascritta.");}else if((e?.status===404||e?.status===410)&&c.external_id){await createSyncConflict(userId,c,null,"remote_deleted","Google ha eliminato questa attività mentre FlowOS aveva una modifica in sospeso. Nessuna delle due versioni è stata eliminata automaticamente.");}else{await admin.from("commitments").update({sync_status:"error",sync_error:e instanceof Error?e.message:String(e)}).eq("id",c.id).eq("user_id",userId);}}}return count;}
+        if(e?.status===412&&c.external_id){
+          const endpoint=c.kind==="event"
+            ? "https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(c.google_calendar_id??defCal?.google_calendar_id)+"/events/"+encodeURIComponent(c.external_id)
+            : "https://tasks.googleapis.com/tasks/v1/lists/"+encodeURIComponent(c.google_task_list_id??defList?.google_task_list_id)+"/tasks/"+encodeURIComponent(c.external_id);
+          const overwritten:any=await gfetch(endpoint,token,{method:"PATCH",body:JSON.stringify(c.kind==="event"?eventBody(c):taskBody(c))});
+          await admin.from("commitments").update({external_etag:overwritten.etag??null,external_updated_at:overwritten.updated??null,last_sync_origin:"flowos",sync_status:"synced",sync_error:null,resolution_pending:false,updated_at:now()}).eq("id",c.id).eq("user_id",userId);
+        }else if((e?.status===404||e?.status===410)&&c.external_id){
+          const localUpdated=c.updated_at?new Date(c.updated_at).getTime():NaN;
+          const knownRemoteUpdated=c.external_updated_at?new Date(c.external_updated_at).getTime():NaN;
+          const localWins=c.resolution_pending||(Number.isFinite(localUpdated)&&Number.isFinite(knownRemoteUpdated)&&localUpdated>knownRemoteUpdated);
+          if(localWins){
+            const base=c.kind==="event"
+              ? "https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(c.google_calendar_id??defCal?.google_calendar_id)+"/events"
+              : "https://tasks.googleapis.com/tasks/v1/lists/"+encodeURIComponent(c.google_task_list_id??defList?.google_task_list_id)+"/tasks";
+            const recreated:any=await gfetch(base,token,{method:"POST",body:JSON.stringify(c.kind==="event"?eventBody(c):taskBody(c))});
+            await admin.from("commitments").update({external_provider:"google",external_resource_type:c.kind==="event"?"calendar_event":"task",external_id:recreated.id,external_etag:recreated.etag??null,external_updated_at:recreated.updated??null,last_sync_origin:"flowos",sync_status:"synced",sync_error:null,resolution_pending:false,updated_at:now()}).eq("id",c.id).eq("user_id",userId);
+          }else{
+            await admin.from("commitments").delete().eq("id",c.id).eq("user_id",userId);
+          }
+        }else{await admin.from("commitments").update({sync_status:"error",sync_error:e instanceof Error?e.message:String(e)}).eq("id",c.id).eq("user_id",userId);}}}return count;}
 
 async function upsertRemoteRows(userId:string,rows:any[]){if(!rows.length)return 0;const ids=rows.map(r=>r.external_id).filter(Boolean);const {data:existing,error}=await admin.from("commitments").select("id,external_id,updated_at,last_sync_origin,status,kind,ai_metadata,priority").eq("user_id",userId).in("external_id",ids);if(error)throw error;const map=new Map((existing??[]).map((r:any)=>[r.external_id,r]));const prepared=rows.flatMap(row=>{const found:any=map.get(row.external_id);if(found?.last_sync_origin==="flowos"&&new Date(found.updated_at)>new Date(row.external_updated_at??0))return[];const preservedCompletedEvent=found?.kind==="event"&&row.kind==="event"&&(found.status==="done"||found.status==="completed");return[{...row,id:found?.id??crypto.randomUUID(),status:preservedCompletedEvent?found.status:row.status,priority:found?.priority??row.priority??null,ai_metadata:{...(row.ai_metadata??{}),reminders:found?.ai_metadata?.reminders??row.ai_metadata?.reminders,reminderDismissedAt:found?.ai_metadata?.reminderDismissedAt??row.ai_metadata?.reminderDismissedAt}}];});if(!prepared.length)return 0;const {error:upsertError}=await admin.from("commitments").upsert(prepared,{onConflict:"id"});if(upsertError)throw upsertError;return prepared.length;}
 async function getConnectionRange(userId:string){const {data}=await admin.from("google_connections").select("sync_range_start,sync_range_end").eq("user_id",userId).maybeSingle();return syncRange(data);}
