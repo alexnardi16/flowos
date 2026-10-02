@@ -74,7 +74,7 @@ function weekHeight(week: AndroidCalendarWeek) {
   return Math.max(92, ...week.days.map(day => dayHeight(day)));
 }
 
-export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
+export function CalendarWidget({ weeks, heightDp }: AndroidCalendarWidgetProps) {
   return (
     <FlexWidget
       style={{ width: 'match_parent', height: 'match_parent', padding: 8, backgroundColor: BG, borderRadius: 20, flexDirection: 'column' }}
