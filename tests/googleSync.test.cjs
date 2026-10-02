@@ -5,7 +5,7 @@ test('Google Tasks sync imports completed and deleted tasks, including tasks wit
   assert.match(source,/showCompleted:"true"/);
   assert.match(source,/showDeleted:"true"/);
   assert.match(source,/const rows=items\.map\(\(t:any\)=>/);
-  assert.match(source,/status:t\.status==="completed"\?"done":"active"/);
+  assert.match(source,/status:t\.status==="completed"\?"completed":"active"/);
   assert.match(source,/deleted_at:t\.deleted\?now\(\):null/);
 });
 
