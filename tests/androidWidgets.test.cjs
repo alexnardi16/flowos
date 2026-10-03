@@ -18,7 +18,8 @@ test('Android Calendar widget keeps a bottom safety area for the last row',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
   assert.match(source,/WEEK_BOTTOM_PADDING = 10/);
   assert.match(source,/weekContainerHeight = height \+ \(week.title \? 14 : 0\) \+ 4 \+ WEEK_BOTTOM_PADDING/);
-  assert.match(source,/height: heightDp \? Math\.max\(1,heightDp\) : 'match_parent'/);\n  assert.match(source,/height: 96/);
+  assert.match(source,/height: heightDp \? Math\.max\(1,heightDp\) : 'match_parent'/);
+  assert.match(source,/height: 96/);
   assert.match(source,/<ListWidget[^>]*height:listHeight\(heightDp\)/);
 });
 
