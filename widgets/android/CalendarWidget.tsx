@@ -77,7 +77,7 @@ function weekHeight(week: AndroidCalendarWeek) {
 export function CalendarWidget({ weeks, heightDp }: AndroidCalendarWidgetProps) {
   return (
     <FlexWidget
-      style={{ width: 'match_parent', height: 'match_parent', padding: 8, backgroundColor: BG, borderRadius: 20, flexDirection: 'column' }}
+      style={{ width: 'match_parent', height: heightDp ? Math.max(1,heightDp) : 'match_parent', padding: 8, backgroundColor: BG, borderRadius: 20, flexDirection: 'column' }}
       clickAction="OPEN_URI"
       clickActionData={{ uri: 'flowos://calendar' }}
       accessibilityLabel="FlowOS: calendario"
