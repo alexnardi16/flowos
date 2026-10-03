@@ -25,13 +25,11 @@ async function writeCommitments(commitments:Commitment[]){
   parsed.state={...(parsed.state??{}),commitments};
   await AsyncStorage.setItem(STORAGE_KEY,JSON.stringify(parsed));
 }
-async function todayData(raw:string|null):Promise<Omit<AndroidTodayWidgetProps,'heightDp'>>{
+function todayData(raw:string|null):Omit<AndroidTodayWidgetProps,'heightDp'>{
   const commitments=readCommitments(raw),now=new Date();
-  let calendarNames:Map<string,string>|undefined;
-  try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email)])); } catch {}
-  const todayItems=commitments.filter((item:any)=>item&&item.status!=='done'&&!item.deletedAt)
+  const todayItems=commitments.filter((item:any)=>item&&item.status!=='done'&&item.status!=='completed'&&!item.deletedAt)
     .filter((item:any)=>{const date=item.scheduledAt??item.dueAt;if(!date)return false;const d=new Date(date);return item.allDay?d.getUTCFullYear()===now.getFullYear()&&d.getUTCMonth()===now.getMonth()&&d.getUTCDate()===now.getDate():dateKey(d)===dateKey(now);});
-  const items=sortCommitments(todayItems as Commitment[],calendarNames)
+  const items=sortCommitments(todayItems as Commitment[])
     .map((item:any)=>{const date=item.scheduledAt??item.dueAt;return {id:item.id,title:item.title,time:item.allDay?'Tutto il giorno':new Date(date).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),kind:kindLabel(item.kind),priority:item.kind==='task'?item.priority:undefined};});
   return{items};
 }
