@@ -8,6 +8,12 @@ test('Android Today widget reserves space for the list and cannot collapse to ze
   assert.doesNotMatch(source,/style=\{\{ flex:1, height:itemHeight/);
 });
 
+test('Android Today widget data is rendered synchronously from local storage',()=>{
+  const source=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(source,/function todayData\(raw:string\\|null\):Omit<AndroidTodayWidgetProps,'heightDp'>/);
+  assert.doesNotMatch(source,/const data=todayData\(raw\);[\\s\\S]{0,120}<TodayWidget \.\.\.data/);
+});
+
 test('Android Calendar widget keeps a bottom safety area for the last row',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
   assert.match(source,/WEEK_BOTTOM_PADDING = 10/);
