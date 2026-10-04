@@ -121,7 +121,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       try { const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus()); if(status.range?.endDate)syncEnd=new Date(`${status.range.endDate}T23:59:59`); } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
       let calendarNames:Map<string,string>|undefined;
       try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
-      data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames,undefined,language);
+      data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames,language);
       await saveCalendarCache(data,language);
     }
     switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget {...data} language={language}/>);break;default:break;}
@@ -135,7 +135,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
         let calendarNames:Map<string,string>|undefined;
         try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
-        const refreshed=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames,undefined,language);
+        const refreshed=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames,language);
         await saveCalendarCache(refreshed,language);
         props.renderWidget(<CalendarWidget {...refreshed} language={language}/>);
       }catch(error){recordDiagnostic('widget-calendar-background-refresh-failed',error,'warn');}
