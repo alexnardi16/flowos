@@ -11,7 +11,7 @@ export type TodayGlance = { dateKey: string; items: WidgetItem[]; nextEventTitle
 function isActive(item: Commitment): boolean { return item.status !== 'done' && !item.deletedAt; }
 function itemIsToday(item: Commitment, now: Date) { const value=item.scheduledAt??item.dueAt; return Boolean(value&&isSameCalendarDay(item,value,now)); }
 
-export function buildTodayGlance(commitments: Commitment[], now: Date = new Date(), calendarNames?: Map<string,string>, titleMap?: Record<string,string>, language?: Language): TodayGlance {
+export function buildTodayGlance(commitments: Commitment[], now: Date = new Date(), calendarNames?: Map<string,string>, language?: Language): TodayGlance {
   const nowMs=now.getTime();
   const todayItems:Commitment[]=[];
   let nextEvent:Commitment|undefined;
@@ -37,5 +37,5 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
 
   const sortedTodayItems = sortCommitments(todayItems, calendarNames);
 
-  return {dateKey:toDateKey(now),items:sortedTodayItems.map(item=>({id:item.id,title:titleMap?.[item.id]??item.title,time:formatCommitmentTime(item,(item.scheduledAt??item.dueAt)!),kind:item.kind,priority:item.kind==='task'?item.priority:undefined})),nextEventTitle:nextEvent?.title??null,nextEventTime:nextEvent?.scheduledAt?formatCommitmentTime(nextEvent,nextEvent.scheduledAt):null,dueSoonCount,overdueCount,generatedAt:now.toISOString(),language};
+  return {dateKey:toDateKey(now),items:sortedTodayItems.map(item=>({id:item.id,title:item.title,time:formatCommitmentTime(item,(item.scheduledAt??item.dueAt)!),kind:item.kind,priority:item.kind==='task'?item.priority:undefined})),nextEventTitle:nextEvent?.title??null,nextEventTime:nextEvent?.scheduledAt?formatCommitmentTime(nextEvent,nextEvent.scheduledAt):null,dueSoonCount,overdueCount,generatedAt:now.toISOString(),language};
 }
