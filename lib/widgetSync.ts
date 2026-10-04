@@ -15,7 +15,7 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
     let calendarNames:Map<string,string>|undefined;
     try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email)])); } catch {}
     const language=await getLanguage();
-    const glance = buildTodayGlance(commitments, now, calendarNames, undefined, language);
+    const glance = buildTodayGlance(commitments, now, calendarNames, language);
     const labels=widgetStrings(language);
     const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? labels.event : labels.task, priority:item.priority }));
     if (Platform.OS === 'ios') {
@@ -33,7 +33,7 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       try { const cachedRange=await AsyncStorage.getItem('flowos-calendar-widget-range-v1'); if(cachedRange){const parsed=JSON.parse(cachedRange);if(parsed?.endDate)syncEndDate=new Date(`${parsed.endDate}T23:59:59`);} } catch {}
       await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => React.createElement(TodayWidget, { items, language }) });
 
-      const { weeks } = buildCalendarWidgetData(commitments, syncEndDate, now, calendarNames, undefined, language);
+      const { weeks } = buildCalendarWidgetData(commitments, syncEndDate, now, calendarNames, language);
       await AsyncStorage.setItem('flowos-calendar-widget-v2',JSON.stringify({dateKey:glance.dateKey,weeks,language}));
       await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks,language}) });
       await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:weeks.length,calendarDays:weeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
