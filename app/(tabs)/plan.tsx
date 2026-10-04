@@ -110,7 +110,7 @@ export default function Plan(){
               <Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':false?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
-            <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{translatedTitles[item.id]??item.title}</Text></View>
+            <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
             <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item,language)}{overdue?' · '+t('scaduta'):''}</Text>
             <Text style={styles.meta}>{formatStartEnd(item,language)}</Text>
             {item.description?<Text style={styles.description}>{item.description}</Text>:null}
