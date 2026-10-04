@@ -104,7 +104,7 @@ export default function Calendar(){
               </View>
               <View style={styles.dayActivities}>
                 {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),pressed&&styles.itemPressed]}>
-                  {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item)}</Text> : null}
+                  {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
                   <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Text style={styles.itemTitle}>{translatedTitles[item.id]??item.title}</Text></View>
                   {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
                 </Pressable>)}
