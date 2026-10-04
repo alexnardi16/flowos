@@ -1,11 +1,14 @@
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');
 
-test('Android Today widget reserves space for the list and cannot collapse to zero height',()=>{
+test('Android Today widget always sizes root and list to the real launcher bounds',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/height:'match_parent'/);
-  assert.match(source,/<ListWidget[^>]*height:listHeight\(heightDp\)/);
-  assert.match(source,/height:34, flexDirection:'row'/); assert.match(source,/width:'match_parent', height:'match_parent', padding:10/);
-  assert.doesNotMatch(source,/style=\{\{ flex:1, height:itemHeight/);
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(source,/width:'match_parent', height:'match_parent', padding:10/);
+  assert.match(source,/<ListWidget style=\{\{ width:'match_parent', height:'match_parent'/);
+  assert.match(source,/height:34, flexDirection:'row'/);
+  assert.doesNotMatch(source,/listHeight\(/);
+  assert.doesNotMatch(source,/heightDp/);
+  assert.doesNotMatch(handler,/TodayWidget[^>]*heightDp=/);
 });
 
 test('Android Today widget completion stays in the widget handler without opening FlowOS',()=>{
@@ -66,4 +69,23 @@ test('Today widget list rows never use flex for their outer height',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.doesNotMatch(source,/style=\{\{ flex:1, height:itemHeight/);
   assert.match(source,/height:itemHeight\(item\.title/);
+});
+
+test('Android widget controls open the real Add and Voice flows in FlowOS',()=>{
+  const today=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  const calendar=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(today,/clickAction="OPEN_URI" clickActionData=\{\{ uri:'flowos:\/\/capture' \}\}/);
+  assert.match(today,/clickAction="OPEN_URI" clickActionData=\{\{ uri:'flowos:\/\/capture\?voice=1' \}\}/);
+  assert.match(calendar,/clickAction="OPEN_URI" clickActionData=\{\{ uri:'flowos:\/\/capture' \}\}/);
+  assert.match(calendar,/clickAction="OPEN_URI" clickActionData=\{\{ uri:'flowos:\/\/capture\?voice=1' \}\}/);
+  assert.doesNotMatch(handler,/QUICK_ADD|VOICE_COMMAND/);
+});
+
+test('Widget refresh performs Google sync and refreshes both widgets immediately',()=>{
+  const source=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(source,/props\.clickAction==='SYNC_GOOGLE'/);
+  assert.match(source,/const refreshed=await refreshFromGoogle\(\)/);
+  assert.match(source,/syncTodayWidget\(refreshed,new Date\(\)\)/);
+  assert.match(source,/return;/);
 });

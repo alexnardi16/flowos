@@ -15,7 +15,6 @@ import { useFlowStore } from '@/lib/store';
 import { useAuth } from '@/providers/AuthProvider';
 import * as Application from 'expo-application';
 import { LANGUAGES, t, useLanguage } from '@/lib/i18n';
-import { translateActivityTitles } from '@/lib/activityTranslations';
 import { syncTodayWidget } from '@/lib/widgetSync';
 
 function syncDate(value?:string|null){return value?new Date(value).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'mai sincronizzata';}
@@ -238,8 +237,8 @@ export default function Me(){
     <Card>
       <Text style={styles.label}>{t('Lingua')}</Text>
       <Text style={styles.meta}>{t('Lingua app e widget')}</Text>
-      <View style={styles.languageGrid}>{LANGUAGES.map(option=><Pressable key={option.code} onPress={()=>{void (async()=>{if(languageBusy)return;setLanguageBusy(true);try{await setLanguage(option.code);if(translateActivities&&option.code!=='it')await translateActivityTitles(commitments,option.code);await syncTodayWidget(commitments);}finally{setLanguageBusy(false);}})();}} style={[styles.languageOption,language===option.code&&styles.languageOptionActive]}><Text style={[styles.languageOptionText,language===option.code&&styles.languageOptionTextActive]}>{option.label}</Text></Pressable>)}</View>
-      <View style={styles.notificationRow}><View style={{flex:1}}><Text style={styles.item}>{t('Traduci anche le attività')}</Text><Text style={styles.meta}>{t('I titoli originali vengono conservati e non vengono mai ritradotti a partire dalla traduzione.')}</Text></View><Switch value={translateActivities} disabled={languageBusy} onValueChange={value=>{void (async()=>{setLanguageBusy(true);try{await setTranslateActivities(value);if(value&&language!=='it')await translateActivityTitles(commitments,language);await syncTodayWidget(commitments);}finally{setLanguageBusy(false);}})();}}/></View>
+      <View style={styles.languageGrid}>{LANGUAGES.map(option=><Pressable key={option.code} onPress={()=>{void (async()=>{if(languageBusy)return;setLanguageBusy(true);try{await setLanguage(option.code);await syncTodayWidget(commitments);}finally{setLanguageBusy(false);}})();}} style={[styles.languageOption,language===option.code&&styles.languageOptionActive]}><Text style={[styles.languageOptionText,language===option.code&&styles.languageOptionTextActive]}>{option.label}</Text></Pressable>)}</View>
+      <View style={styles.notificationRow}><View style={{flex:1}}><Text style={styles.item}>{t('Traduci anche le attività')}</Text><Text style={styles.meta}>{t('I titoli originali vengono conservati e non vengono mai ritradotti a partire dalla traduzione.')}</Text></View><Switch value={translateActivities} onValueChange={value=>{void (async()=>{setLanguageBusy(true);try{await setTranslateActivities(value);await syncTodayWidget(commitments);}finally{setLanguageBusy(false);}})();}}/></View>
     </Card>
 
     <Card>

@@ -108,7 +108,7 @@ export default function Plan(){
       <Filter label={t('Solo contatti')} active={contactsFilter==='onlyContacts'} onPress={()=>setContactsFilter('onlyContacts')}/>
       <Filter label={t('Escludi contatti')} active={contactsFilter==='excludeContacts'} onPress={()=>setContactsFilter('excludeContacts')}/>
     </View>
-    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>{t('Attività in ritardo')}</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{translatedTitles[item.id]??item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item)} · {item.kind==='event'?'Evento':false?'Reminder':'Task'}</Text></Pressable>)}</Card>:null}
+    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>{t('Attività in ritardo')}</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{translatedTitles[item.id]??item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item)} · {item.kind==='event'?t('Evento'):t('Task')}</Text></Pressable>)}</Card>:null}
     <SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/>
     {groupedItems.length?groupedItems.map(group=><View key={group.label} style={styles.dayGroup}>
       <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={styles.dayDividerText}>{group.label}</Text><View style={styles.dayDividerLine}/></View>
@@ -121,10 +121,10 @@ export default function Plan(){
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{translatedTitles[item.id]??item.title}</Text></View>
-            <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item,language)}{overdue?' · scaduta':''}</Text>
+            <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item,language)}{overdue?' · '+t('scaduta'):''}</Text>
             <Text style={styles.meta}>{formatStartEnd(item)}</Text>
             {item.description?<Text style={styles.description}>{item.description}</Text>:null}
-            {item.location?<Text style={styles.meta}>Luogo: {item.location}</Text>:null}
+            {item.location?<Text style={styles.meta}>{t('Luogo')}: {item.location}</Text>:null}
           </Card>
         </Pressable>;
       })}
