@@ -1,4 +1,5 @@
 import type { Commitment } from '../types';
+import { t } from './i18n';
 
 export type ScheduledReminder = {
   /** Unique per reminder instance (item + offset), not just per item — one item can have several. */
@@ -17,14 +18,14 @@ function baseTime(item: Commitment): string | undefined {
 export function formatReminderOffsetLabel(minutesBefore: number): string {
   if (minutesBefore % 1440 === 0 && minutesBefore >= 1440) {
     const days = minutesBefore / 1440;
-    return `${days} giorn${days === 1 ? 'o' : 'i'} prima`;
+    return `${days} ${t(days === 1 ? 'giorno' : 'giorni')} ${t('prima')}`;
   }
   if (minutesBefore % 60 === 0 && minutesBefore >= 60) {
     const hours = minutesBefore / 60;
-    return `${hours} or${hours === 1 ? 'a' : 'e'} prima`;
+    return `${hours} ${t(hours === 1 ? 'ora' : 'ore')} ${t('prima')}`;
   }
-  if (minutesBefore === 0) return `All'inizio`;
-  return `${minutesBefore} minuti prima`;
+  if (minutesBefore === 0) return t("All'inizio");
+  return `${minutesBefore} ${t('minuti')} ${t('prima')}`;
 }
 
 /**

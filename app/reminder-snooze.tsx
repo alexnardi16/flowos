@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { palette, showAlert } from '@/components/ui';
 import { scheduleSnoozedReminder } from '@/lib/reminderActions';
 import { useFlowStore } from '@/lib/store';
+import { t, useLanguage } from '@/lib/i18n';
 
 function today() {
   const d = new Date();
@@ -28,17 +29,17 @@ export default function ReminderSnooze() {
   const [time, setTime] = useState(timeNowPlusFive());
 
   useEffect(() => {
-    if (!item) showAlert('Promemoria', 'Attività non trovata.');
+    if (!item) showAlert(t('Promemoria'),t('Attività non trovata.'));
   }, [item]);
 
   async function save() {
     if (!commitmentId || !notificationId) {
-      showAlert('Promemoria', 'Dati del promemoria non validi.');
+      showAlert(t('Promemoria'),t('Dati del promemoria non validi.'));
       return;
     }
     const triggerAt = combine(date, time);
     if (!triggerAt || triggerAt.getTime() <= Date.now()) {
-      showAlert('Promemoria', 'Scegli una data e un orario futuri.');
+      showAlert(t('Promemoria'),t('Scegli una data e un orario futuri.'));
       return;
     }
     try {
@@ -53,9 +54,9 @@ export default function ReminderSnooze() {
     <View style={styles.root}>
       <View style={styles.card}>
         <Text style={styles.eyebrow}>PROMEMORIA</Text>
-        <Text style={styles.title}>Rimanda notifica</Text>
+        <Text style={styles.title}>{t('Promemoria')}</Text>
         <Text style={styles.subtitle}>{item?.title ?? 'Attività'}</Text>
-        <Text style={styles.label}>Nuova data</Text>
+        <Text style={styles.label}>{t('Data di inizio')}</Text>
         <TextInput value={date} onChangeText={setDate} placeholder="AAAA-MM-GG" style={styles.input} />
         <Text style={styles.label}>Nuovo orario</Text>
         <TextInput value={time} onChangeText={setTime} placeholder="HH:MM" style={styles.input} keyboardType="numbers-and-punctuation" />

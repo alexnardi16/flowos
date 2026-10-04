@@ -7,6 +7,8 @@ import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceSta
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
+import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
+import { useActivityTitleMap } from '@/lib/activityTranslations';
 
 const DAY_NAMES=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 const MONTH_NAMES=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
@@ -18,10 +20,10 @@ function formatItemTime(item:Commitment){
   if(item.allDay)return '';
   const value=itemDate(item);if(!value)return '';
   const start=new Date(value);
-  const startText=start.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  const startText=start.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});
   if(!item.scheduledAt||!item.durationMinutes)return startText;
   const end=new Date(start.getTime()+item.durationMinutes*60000);
-  return `${startText} - ${end.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}`;
+  return `${startText} - ${end.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'})}`;
 }
 function monthLabelForWeek(week:Date[],weekIndex:number){if(weekIndex===0){const now=new Date();return `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;}const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${MONTH_NAMES[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
 function sourceKey(item:Commitment){if(item.kind==='task'&&item.googleTaskListId)return `task:${item.googleTaskListId}`;if(item.googleCalendarId)return `calendar:${item.googleCalendarId}`;return 'flowos';}
@@ -32,6 +34,7 @@ function sourceStyle(item:Commitment,sourceColors:Map<string,string>){
 }
 
 export default function Calendar(){
+  const { language } = useLanguage();
   const commitments=useFlowStore(state=>state.commitments); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
   const[manageId,setManageId]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
@@ -77,13 +80,14 @@ export default function Calendar(){
   },[commitments]);
 
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
+  const translatedTitles=useActivityTitleMap(commitments);
   const requestedDate=typeof params.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(params.date)?params.date:null;
   const selectedDateKey=requestedDate??dayKey(new Date());
   const selectedWeekIndex=weeks.findIndex(week=>week.some(date=>dayKey(date)===selectedDateKey));
   const scrollToSelectedWeek=useCallback(()=>{if(selectedWeekIndex<0)return;const offset=weekOffsets.current.get(selectedWeekIndex);if(offset===undefined)return;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));},[selectedWeekIndex]);
   useEffect(()=>{scrollToSelectedWeek();},[scrollToSelectedWeek,selectedDateKey]);
 
-  return <ScreenShell title="Calendario" subtitle="Vista mensile in stile Google Calendar. Ogni settimana mostra sempre tutti e sette i giorni." scrollRef={scrollRef}>
+  return <ScreenShell title={t('Calendario')} subtitle={language==='it'?'Vista mensile in stile Google Calendar. Ogni settimana mostra sempre tutti e sette i giorni.':language==='fr'?'Vue mensuelle dans le style de Google Calendar. Chaque semaine affiche toujours les sept jours.':language==='es'?'Vista mensual al estilo de Google Calendar. Cada semana muestra siempre los siete días.':'Monthly Google Calendar-style view. Every week always shows all seven days.'} scrollRef={scrollRef}>
     {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week,index);
       return <Card key={index} style={styles.weekCard} onLayout={(event)=>{weekOffsets.current.set(index,event.nativeEvent.layout.y);if(index===selectedWeekIndex)scrollToSelectedWeek();}}>
@@ -101,7 +105,7 @@ export default function Calendar(){
               <View style={styles.dayActivities}>
                 {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),pressed&&styles.itemPressed]}>
                   {formatItemTime(item) ? <Text style={styles.itemTime}>{formatItemTime(item)}</Text> : null}
-                  <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Text style={styles.itemTitle}>{item.title}</Text></View>
+                  <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Text style={styles.itemTitle}>{translatedTitles[item.id]??item.title}</Text></View>
                   {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
                 </Pressable>)}
               </View>

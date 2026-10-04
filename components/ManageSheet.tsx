@@ -5,6 +5,7 @@ import { Button, palette, showAlert, showConfirm } from '@/components/ui';
 import { formatReminderOffsetLabel } from '@/lib/customReminders';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment, CommitmentKind, ReminderOffset } from '@/types';
+import { t, useLanguage } from '@/lib/i18n';
 
 const REMINDER_PRESETS = [15, 60, 1440];
 
@@ -28,7 +29,7 @@ function combine(dateStr: string, timeStr: string, allDay: boolean): string | un
   return new Date(y, m - 1, d, hh || 0, mm || 0).toISOString();
 }
 
-export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () => void }) {
+export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () => void }) { useLanguage();
   const updateCommitment = useFlowStore((state) => state.updateCommitment);
   const removeOnlyFromFlowOS = useFlowStore((state) => state.removeOnlyFromFlowOS);
   const removeAlsoFromGoogle = useFlowStore((state) => state.removeAlsoFromGoogle);
@@ -101,7 +102,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       await updateCommitment(updated);
       onClose();
     } catch (error) {
-      showAlert('Gestisci', error instanceof Error ? error.message : 'Salvataggio non riuscito.');
+      showAlert(t('Gestisci'), error instanceof Error ? error.message : t('Salvataggio non riuscito.'));
     } finally {
       setBusy(false);
     }
@@ -110,7 +111,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   async function removeLocal() {
     setBusy(true);
     try { await removeOnlyFromFlowOS(item.id); onClose(); }
-    catch (error) { showAlert('Gestisci', error instanceof Error ? error.message : 'Eliminazione non riuscita.'); }
+    catch (error) { showAlert(t('Gestisci'), error instanceof Error ? error.message : t('Eliminazione non riuscita.')); }
     finally { setBusy(false); }
   }
   async function removeGoogle() {
@@ -118,7 +119,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     if (!ok) return;
     setBusy(true);
     try { await removeAlsoFromGoogle(item.id); onClose(); }
-    catch (error) { showAlert('Gestisci', error instanceof Error ? error.message : 'Eliminazione non riuscita.'); }
+    catch (error) { showAlert(t('Gestisci'), error instanceof Error ? error.message : t('Eliminazione non riuscita.')); }
     finally { setBusy(false); }
   }
   async function removeSeries() {
@@ -126,13 +127,13 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     if (!ok) return;
     setBusy(true);
     try { await removeSeriesFromGoogle(item.id); onClose(); }
-    catch (error) { showAlert('Gestisci', error instanceof Error ? error.message : 'Eliminazione non riuscita.'); }
+    catch (error) { showAlert(t('Gestisci'), error instanceof Error ? error.message : t('Eliminazione non riuscita.')); }
     finally { setBusy(false); }
   }
   async function syncNow() {
     setBusy(true);
-    try { await syncItemToGoogleNow(); showAlert('Gestisci', 'Sincronizzazione con Google avviata.'); }
-    catch (error) { showAlert('Gestisci', error instanceof Error ? error.message : 'Sincronizzazione non riuscita.'); }
+    try { await syncItemToGoogleNow(); showAlert(t('Gestisci'), t('Sincronizzazione con Google avviata.')); }
+    catch (error) { showAlert(t('Gestisci'), error instanceof Error ? error.message : t('Sincronizzazione non riuscita.')); }
     finally { setBusy(false); }
   }
 
@@ -140,7 +141,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
 
   return <Modal visible animationType="slide" onRequestClose={onClose}>
     <ScrollView showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.wrap}>
-      <Text style={styles.title}>Gestisci</Text>
+      <Text style={styles.title}>{t('Gestisci')}</Text>
       <Text style={styles.label}>Titolo</Text><TextInput value={title} onChangeText={setTitle} style={styles.input} />
       <Text style={styles.label}>Tipo</Text><View style={styles.row}>{(['event','task'] as const).map((k)=><Pressable key={k} onPress={()=>setKind(k)} style={[styles.choice,kind===k&&styles.choiceActive]}><Text style={[styles.choiceText,kind===k&&styles.choiceTextActive]}>{k==='event'?'Evento':'Task'}</Text></Pressable>)}</View>
       {kind==='task'?<><Text style={styles.label}>Priorità</Text><TextInput value={priority} onChangeText={v=>setPriority(v.replace(/\D/g,''))} keyboardType="number-pad" placeholder="Facoltativa" style={styles.input}/><Text style={styles.help}>Lascia vuoto per nessuna priorità. Le task con priorità esplicita vengono rinumerate automaticamente.</Text></>:null}
@@ -157,8 +158,8 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       {reminders.length?<View style={styles.reminderList}>{reminders.map(r=><View key={r.id} style={styles.reminderChip}><Text style={styles.reminderChipText}>{formatReminderOffsetLabel(r.minutesBefore)}</Text><Pressable onPress={()=>removeReminder(r.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable></View>)}</View>:<Text style={styles.help}>Il rappel all'ora esatta di inizio è automatico.</Text>}
       <View style={styles.row}>{REMINDER_PRESETS.map(minutes=><Pressable key={minutes} onPress={()=>addReminder(minutes)} style={styles.presetButton}><Text style={styles.presetButtonText}>{formatReminderOffsetLabel(minutes)}</Text></Pressable>)}</View>
       <View style={styles.row}><View style={styles.reminderInputField}><Text style={styles.reminderInputLabel}>giorni{`\n`}prima</Text><TextInput value={customDays} onChangeText={v=>setCustomDays(v.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.reminderInputField}><Text style={styles.reminderInputLabel}>ore{`\n`}prima</Text><TextInput value={customHours} onChangeText={v=>setCustomHours(v.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.reminderInputField}><Text style={styles.reminderInputLabel}>minuti{`\n`}prima</Text><TextInput value={customMinutes} onChangeText={v=>setCustomMinutes(v.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><Pressable onPress={()=>{const m=(Number(customDays)||0)*1440+(Number(customHours)||0)*60+(Number(customMinutes)||0);if(m>0){addReminder(m);setCustomDays('');setCustomHours('');setCustomMinutes('');}}} style={styles.presetButton}><Text style={styles.presetButtonText}>Aggiungi</Text></Pressable></View>
-      <View style={styles.actionsRow}><Button secondary label="Annulla" onPress={onClose} disabled={busy}/><Button label="Salva modifiche" onPress={()=>void save()} loading={busy}/></View>
-      {isFlowOSOnly?<View style={styles.section}><Text style={styles.sectionTitle}>Solo su FlowOS</Text><Text style={styles.help}>Questo elemento non è mai stato sincronizzato con Google.</Text><Button secondary label="Sincronizza con Google" onPress={()=>void syncNow()} disabled={busy}/></View>:null}
+      <View style={styles.actionsRow}><Button secondary label={t('Annulla')} onPress={onClose} disabled={busy}/><Button label={t('Salva modifiche')} onPress={()=>void save()} loading={busy}/></View>
+      {isFlowOSOnly?<View style={styles.section}><Text style={styles.sectionTitle}>Solo su FlowOS</Text><Text style={styles.help}>Questo elemento non è mai stato sincronizzato con Google.</Text><Button secondary label={t('Sincronizza con Google')} onPress={()=>void syncNow()} disabled={busy}/></View>:null}
       <View style={styles.section}><Text style={styles.sectionTitle}>Elimina</Text><Pressable disabled={busy} onPress={()=>void removeLocal()} style={styles.localDelete}><Text style={styles.localDeleteText}>Elimina solo da FlowOS</Text></Pressable>{item.externalId?<Pressable disabled={busy} onPress={()=>void removeGoogle()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{item.googleRecurringEventId?'Elimina solo questa occorrenza':'Elimina da FlowOS e Google'}</Text></Pressable>:null}{item.googleRecurringEventId?<Pressable disabled={busy} onPress={()=>void removeSeries()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>Elimina tutta la serie</Text></Pressable>:null}</View>
       {datePickerTarget?<DateTimePicker value={new Date(`${datePickerTarget==='start'?dateStr:endDate}T12:00:00`)} mode="date" presentation="dialog" locale="it-IT" onValueChange={(_,selectedDate)=>handleDatePicked(selectedDate)} onDismiss={()=>setDatePickerTarget(null)}/>:null}
     </ScrollView>

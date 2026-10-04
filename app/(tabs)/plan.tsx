@@ -10,6 +10,8 @@ import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
+import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
+import { useActivityTitleMap } from '@/lib/activityTranslations';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
 type FilterKey='events'|'tasks'|'past'|'overdue';
@@ -26,7 +28,7 @@ function formatDateTime(item:Commitment){
     const d=new Date(value);
     return `${['dom','lun','mar','mer','gio','ven','sab'][d.getUTCDay()]} ${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()} · Tutto il giorno`;
   }
-  return new Date(value).toLocaleString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  return new Date(value).toLocaleString(localeForLanguage(language),{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 function cardKindStyle(kind:Commitment['kind']){
   return kind==='event'?styles.cardEvent:styles.cardTask;
@@ -37,6 +39,7 @@ function searchable(item:Commitment){
 function isGoogleTask(item:Commitment){return item.kind==='task'&&Boolean(item.googleTaskListId);}
 
 export default function Plan(){
+  const { language } = useLanguage();
   const commitments=useFlowStore(state=>state.commitments);
   const[query,setQuery]=useState('');
   const[filters,setFilters]=useState<Filters>(DEFAULT_FILTERS);
@@ -79,8 +82,8 @@ export default function Plan(){
         ? `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`
         : `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
       const label=item.allDay
-        ? date.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'})
-        : date.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+        ? date.toLocaleDateString(localeForLanguage(language),{weekday:'long',day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'})
+        : date.toLocaleDateString(localeForLanguage(language),{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
       const group=groups.get(key)??{label,items:[]};
       group.items.push(item);
       groups.set(key,group);
@@ -88,24 +91,25 @@ export default function Plan(){
     return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([,group])=>({...group,items:sortCommitments(group.items,calendarNames)}));
   },[items,calendarNames]);
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
+  const translatedTitles=useActivityTitleMap(commitments);
   function formatStartEnd(item:Commitment){if(item.allDay)return 'Tutto il giorno';const startValue=item.scheduledAt??item.dueAt;if(!startValue)return 'Data e ora non definite';const start=new Date(startValue);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});const time=(d:Date)=>d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});return `${date(start)} ${time(start)} · ${date(end)===date(start)?time(end):`${date(end)} ${time(end)}`}`;}
   const toggle=(key:FilterKey)=>setFilters(current=>({...current,[key]:!current[key]}));
 
-  return <ScreenShell title="Lista" subtitle="Eventi e attività ordinati nel tempo, con filtri salvati automaticamente.">
-    <TextInput value={query} onChangeText={setQuery} placeholder="Cerca titolo, descrizione, luogo…" placeholderTextColor={palette.muted} style={styles.search}/>
+  return <ScreenShell title={t('Lista')} subtitle={t('Eventi e attività ordinati nel tempo, con filtri salvati automaticamente.')}>
+    <TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca titolo, descrizione, luogo…')} placeholderTextColor={palette.muted} style={styles.search}/>
     <View style={styles.filters}>
-      <Filter label="Eventi" active={filters.events} onPress={()=>toggle('events')}/>
-      <Filter label="Task" active={filters.tasks} onPress={()=>toggle('tasks')}/>
-      <Filter label="Passati e completati" active={filters.past} onPress={()=>toggle('past')}/>
-      <Filter label="Scaduti aperti" active={filters.overdue} onPress={()=>toggle('overdue')}/>
+      <Filter label={t('Eventi')} active={filters.events} onPress={()=>toggle('events')}/>
+      <Filter label={t('Task')} active={filters.tasks} onPress={()=>toggle('tasks')}/>
+      <Filter label={t('Passati e completati')} active={filters.past} onPress={()=>toggle('past')}/>
+      <Filter label={t('Scaduti aperti')} active={filters.overdue} onPress={()=>toggle('overdue')}/>
     </View>
     <View style={styles.filters}>
-      <Filter label="Tutti" active={contactsFilter==='all'} onPress={()=>setContactsFilter('all')}/>
-      <Filter label="Solo contatti" active={contactsFilter==='onlyContacts'} onPress={()=>setContactsFilter('onlyContacts')}/>
-      <Filter label="Escludi contatti" active={contactsFilter==='excludeContacts'} onPress={()=>setContactsFilter('excludeContacts')}/>
+      <Filter label={t('Tutti')} active={contactsFilter==='all'} onPress={()=>setContactsFilter('all')}/>
+      <Filter label={t('Solo contatti')} active={contactsFilter==='onlyContacts'} onPress={()=>setContactsFilter('onlyContacts')}/>
+      <Filter label={t('Escludi contatti')} active={contactsFilter==='excludeContacts'} onPress={()=>setContactsFilter('excludeContacts')}/>
     </View>
-    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>Attività in ritardo</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item)} · {item.kind==='event'?'Evento':false?'Reminder':'Task'}</Text></Pressable>)}</Card>:null}
-    <SectionTitle title="Elementi" subtitle="Tocca una scheda per aprirla."/>
+    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>{t('Attività in ritardo')}</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{translatedTitles[item.id]??item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item)} · {item.kind==='event'?'Evento':false?'Reminder':'Task'}</Text></Pressable>)}</Card>:null}
+    <SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/>
     {groupedItems.length?groupedItems.map(group=><View key={group.label} style={styles.dayGroup}>
       <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={styles.dayDividerText}>{group.label}</Text><View style={styles.dayDividerLine}/></View>
       {group.items.map(item=>{
@@ -116,7 +120,7 @@ export default function Plan(){
               <Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':false?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
-            <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
+            <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{translatedTitles[item.id]??item.title}</Text></View>
             <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item)}{overdue?' · scaduta':''}</Text>
             <Text style={styles.meta}>{formatStartEnd(item)}</Text>
             {item.description?<Text style={styles.description}>{item.description}</Text>:null}
@@ -124,7 +128,7 @@ export default function Plan(){
           </Card>
         </Pressable>;
       })}
-    </View>):<EmptyState title="Nessun risultato" message="Modifica i filtri oppure aggiungi un nuovo elemento."/>}
+    </View>):<EmptyState title={t('Nessun risultato')} message={t('Modifica i filtri oppure aggiungi un nuovo elemento.')}/>}
     {manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}
   </ScreenShell>;
 }

@@ -1,10 +1,11 @@
 import React from 'react';
+import { widgetStrings, type Language } from '../../lib/i18n';
 import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
 export type AndroidCalendarItem = { id: string; title: string; time: string; sourceColor: any; priority?: number };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
-export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[] };
+export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; language?: Language };
 
 const BG = '#F1F4FF';
 const INK = '#172033';
@@ -72,7 +73,8 @@ function weekHeight(week: AndroidCalendarWeek) {
   return Math.max(92, ...week.days.map(day => dayHeight(day)));
 }
 
-export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
+export function CalendarWidget({ weeks, language='it' }: AndroidCalendarWidgetProps) {
+  const labels=widgetStrings(language);
   return (
     <FlexWidget
       style={{ width: 'match_parent', height: 'match_parent', padding: 8, backgroundColor: BG, borderRadius: 20, flexDirection: 'column' }}
@@ -83,13 +85,13 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
       <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 5 }}>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex:1 }}>
           <ImageWidget image={require("../../assets/flowos-app-icon-512-store.png")} imageWidth={26} imageHeight={26} style={{ width:26, height:26, marginRight:7 }} radius={7} resizeMode="contain" />
-          <TextWidget text="Calendario" style={{ fontSize: 19, fontWeight: 'bold', color: INK }} />
+          <TextWidget text={labels.calendar} style={{ fontSize: 19, fontWeight: 'bold', color: INK }} />
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: '#DDE2FF', justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel="Sincronizza FlowOS e Google">
+          <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: '#DDE2FF', justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
             <TextWidget text="↻" style={{ fontSize: 16, fontWeight: 'bold', color: INK }} />
           </FlexWidget>
-          <FlexWidget style={{ width: 30, height: 26, borderRadius: 13, backgroundColor: '#DDE2FF', justifyContent: 'center', alignItems: 'center' }} clickAction="VOICE_COMMAND" accessibilityLabel="Comando vocale">
+          <FlexWidget style={{ width: 30, height: 26, borderRadius: 13, backgroundColor: '#DDE2FF', justifyContent: 'center', alignItems: 'center' }} clickAction="VOICE_COMMAND" accessibilityLabel={labels.voice}>
             <TextWidget text="🎙" style={{ fontSize: 14 }} />
           </FlexWidget>
           <FlexWidget style={{ height: 26, paddingHorizontal: 9, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="QUICK_ADD">
@@ -107,7 +109,7 @@ export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
               <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'flex-start' }}>
                 {Array.from({ length: 7 }, (_, index) => week.days[index] ?? {
                   dateKey: `${week.title}-${index}`,
-                  label: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'][index],
+                  label: labels.dayNames[index],
                   isToday: false,
                   items: [],
                 }).map(day => (

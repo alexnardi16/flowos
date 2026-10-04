@@ -99,22 +99,22 @@ export default function LoginScreen() {
         <Image source={require("../assets/flowos-app-icon-512-store.png")} style={styles.appIcon} resizeMode="contain" accessibilityLabel="Logo FlowOS" />
         <Text style={styles.eyebrow}>FLOWOS</Text>
         <Image source={require("../assets/flowos-feature-graphic-1024x500.jpg")} style={styles.featureGraphic} resizeMode="contain" accessibilityLabel="Feature graphic FlowOS" />
-        <Text style={styles.title}>Il tuo sistema operativo personale.</Text>
-        <Text style={styles.subtitle}>Accedi con Google per usare FlowOS e sincronizzare automaticamente Calendar e Tasks.</Text>
+        <Text style={styles.title}>{t('Il tuo sistema operativo personale.')}</Text>
+        <Text style={styles.subtitle}>{t('Accedi con Google per usare FlowOS e sincronizzare automaticamente Calendar e Tasks.')}</Text>
         <Pressable disabled={googleLoading} onPress={() => { void loginWithGoogle(); }} style={[styles.googleButton, googleLoading && styles.buttonDisabled]}>
-          <Text style={styles.googleText}>{googleLoading ? 'Apertura Google…' : 'Continua con Google'}</Text>
+          <Text style={styles.googleText}>{googleLoading ? t('Apertura Google…') : t('Continua con Google')}</Text>
         </Pressable>
-        <Text style={styles.status}>STATO: {oauthStatus}</Text>
+        <Text style={styles.status}>{t('STATO:')} {oauthStatus}</Text>
         <Text style={styles.permissions}>Dopo la prima autorizzazione, Google normalmente non richiede di nuovo il consenso finché non cambiano i permessi o non revochi l’accesso.</Text>
         {message ? <Text selectable style={styles.error}>{message}</Text> : null}
 
         <View style={styles.diagnosticsCard}>
-          <Text style={styles.diagnosticsTitle}>DIAGNOSTICA ACCESSO</Text>
+          <Text style={styles.diagnosticsTitle}>{t('DIAGNOSTICA ACCESSO')}</Text>
           <BuildInfo inline />
           <ScrollView style={styles.logScroll} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar>
             {diagnostics.length
               ? diagnostics.map((entry, index) => <Text key={`${entry.at}-${index}`} selectable style={[styles.log, entry.level==='error'&&styles.logError, entry.level==='warn'&&styles.logWarn]}>{entry.at} [{entry.level}] {entry.event}{entry.details ? ` · ${entry.details}` : ''}</Text>)
-              : <Text style={styles.log}>Nessun evento diagnostico disponibile.</Text>}
+              : <Text style={styles.log}>{t('Nessun evento diagnostico disponibile.')}</Text>}
           </ScrollView>        </View>
       </View>
     </ScrollView>

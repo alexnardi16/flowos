@@ -3,9 +3,11 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { subscribeToSyncProgress } from '@/lib/googleWorkspace';
 import { palette } from './ui';
+import { useLanguage } from '@/lib/i18n';
 
 export function AppChrome(){
   const insets=useSafeAreaInsets();
+  useLanguage();
   const[progress,setProgress]=useState<{percent:number;stage:string}|null>(null);
   useEffect(()=>subscribeToSyncProgress(value=>setProgress(value.percent>=100?null:value)),[]);
   const tabSafeBottom=insets.bottom;

@@ -21,7 +21,7 @@
     "eas:preview": "eas update --channel preview --message \"FlowOS preview\" --environment preview",
     "eas:build:preview": "npx eas-cli build --profile preview --platform android",
     "test:voice": "rm -rf .test-dist-voice && tsc -p tests/tsconfig.voice.json && node --test tests/voiceCommands.test.cjs",
-    "test:widget": "rm -rf .test-dist-widget && tsc -p tests/tsconfig.widget.json && node --test tests/calendarWidgetData.test.cjs tests/androidWidgets.test.cjs",
+    "test:widget": "rm -rf .test-dist-widget && tsc -p tests/tsconfig.widget.json && node --test tests/calendarWidgetData.test.cjs tests/androidWidgets.test.cjs tests/language.test.cjs",
     "test:mutations": "rm -rf .test-dist-mutations && tsc -p tests/tsconfig.mutations.json && node --test tests/commitmentMutations.test.cjs tests/syncConflictPolicy.test.cjs",
     "lint": "npx expo lint",
     "test:sync": "node tests/googleSync.test.cjs"

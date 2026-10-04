@@ -42,6 +42,8 @@ export default function Me(){
   const[summaryMinute,setSummaryMinute]=useState(DEFAULT_DAILY_SUMMARY_MINUTE);
   const[timePickerOpen,setTimePickerOpen]=useState(false);
   const[timeSaving,setTimeSaving]=useState(false);
+  const { language, setLanguage, translateActivities, setTranslateActivities } = useLanguage();
+  const [languageBusy,setLanguageBusy]=useState(false);
 
   const commitments=useFlowStore(state=>state.commitments);
   const hydrate=useFlowStore(s=>s.hydrateFromCloud);
@@ -229,7 +231,14 @@ export default function Me(){
   const authMissing=missingAuth(google,error);
   const connected=Boolean(google?.connection&&google.connection.last_sync_status!=='disconnected'&&!authMissing);
 
-  return <ScreenShell title="Impostazioni">
+  return <ScreenShell title={t('Impostazioni')}>
+    <Card>
+      <Text style={styles.label}>{t('Lingua')}</Text>
+      <Text style={styles.meta}>{t('Lingua app e widget')}</Text>
+      <View style={styles.languageGrid}>{LANGUAGES.map(option=><Pressable key={option.code} onPress={()=>{void (async()=>{if(languageBusy)return;setLanguageBusy(true);try{await setLanguage(option.code);if(translateActivities&&option.code!=='it')await translateActivityTitles(commitments,option.code);await syncTodayWidget(commitments);}finally{setLanguageBusy(false);}})();}} style={[styles.languageOption,language===option.code&&styles.languageOptionActive]}><Text style={[styles.languageOptionText,language===option.code&&styles.languageOptionTextActive]}>{option.label}</Text></Pressable>)}</View>
+      <View style={styles.notificationRow}><View style={{flex:1}}><Text style={styles.item}>{t('Traduci anche le attività')}</Text><Text style={styles.meta}>{t('I titoli originali vengono conservati e non vengono mai ritradotti a partire dalla traduzione.')}</Text></View><Switch value={translateActivities} disabled={languageBusy} onValueChange={value=>{void (async()=>{setLanguageBusy(true);try{await setTranslateActivities(value);if(value&&language!=='it')await translateActivityTitles(commitments,language);await syncTodayWidget(commitments);}finally{setLanguageBusy(false);}})();}}/></View>
+    </Card>
+
     <Card>
       <Text style={styles.label}>Google Workspace</Text>
       <Text style={styles.meta}>Intervallo importazione: {google?.range?`${google.range.labelStart} → ${google.range.labelEnd}`:'caricamento…'}</Text>
@@ -281,7 +290,7 @@ export default function Me(){
   </ScreenShell>;
 }
 
-const styles=StyleSheet.create({
+const styles=StyleSheet.create({languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageOption:{borderRadius:12,paddingHorizontal:14,paddingVertical:10,backgroundColor:'#ECEEF4',borderWidth:1,borderColor:palette.border},languageOptionActive:{backgroundColor:palette.primary,borderColor:palette.primary},languageOptionText:{fontSize:12,fontWeight:'800',color:palette.muted},languageOptionTextActive:{color:'#FFF'},
   label:{fontSize:17,fontWeight:'900',color:palette.ink,marginBottom:6},
   meta:{fontSize:12,lineHeight:17,color:palette.muted},
   item:{fontSize:14,fontWeight:'800',color:palette.ink},

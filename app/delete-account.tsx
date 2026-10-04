@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, palette, showAlert, showConfirm } from '@/components/ui';
 import { deleteFlowOSAccount } from '@/lib/account';
+import { t, useLanguage } from '@/lib/i18n';
 
-export default function DeleteAccount() {
+export default function DeleteAccount() { useLanguage();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -11,7 +12,7 @@ export default function DeleteAccount() {
     const confirmed = await showConfirm(
       'Eliminare definitivamente l\'account?',
       'Questa operazione elimina irreversibilmente i dati FlowOS, le connessioni Google, i token Google e l\'account di autenticazione. I dati non possono essere recuperati.',
-      'Elimina definitivamente',
+      t('Elimina definitivamente'),
     );
     if (!confirmed || busy) return;
     setBusy(true);
@@ -27,9 +28,9 @@ export default function DeleteAccount() {
 
   return <SafeAreaView style={styles.safe}><ScrollView showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.wrap}>
     <Text style={styles.eyebrow}>FLOWOS</Text>
-    <Text style={styles.title}>Eliminazione account</Text>
-    {done ? <Card><Text style={styles.heading}>Account eliminato</Text><Text style={styles.body}>L'account FlowOS e i dati associati sono stati eliminati definitivamente.</Text></Card> : <>
-      <Card><Text style={styles.heading}>Attenzione</Text><Text style={styles.body}>L'eliminazione è irreversibile. Verranno eliminati i dati FlowOS, le impostazioni e i token di Google salvati da FlowOS, oltre all'account di autenticazione.</Text><View style={styles.spacer}/><Button danger label={busy ? 'Eliminazione…' : 'Elimina definitivamente il mio account'} onPress={() => { void handleDelete(); }} disabled={busy} /></Card>
+    <Text style={styles.title}>{t('Eliminazione account')}</Text>
+    {done ? <Card><Text style={styles.heading}>{t('Account eliminato')}</Text><Text style={styles.body}>L'account FlowOS e i dati associati sono stati eliminati definitivamente.</Text></Card> : <>
+      <Card><Text style={styles.heading}>{t('Attenzione')}</Text><Text style={styles.body}>L'eliminazione è irreversibile. Verranno eliminati i dati FlowOS, le impostazioni e i token di Google salvati da FlowOS, oltre all'account di autenticazione.</Text><View style={styles.spacer}/><Button danger label={busy ? 'Eliminazione…' : t('Elimina definitivamente il mio account')} onPress={() => { void handleDelete(); }} disabled={busy} /></Card>
     </>}
   </ScrollView></SafeAreaView>;
 }

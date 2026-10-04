@@ -11,12 +11,14 @@ import { recordDiagnostic } from './lib/diagnostics';
 import { normalizeTaskPriorities } from './lib/taskPriority';
 import { sortCommitments } from './lib/activityOrdering';
 import { promptWidgetQuickAdd } from './lib/widgetQuickAdd';
+import { getLanguage, getTranslateActivities, widgetStrings } from './lib/i18n';
+import { getDisplayTitleMap } from './lib/activityTranslations';
 
 const STORAGE_KEY='flowos-store-v2';
 const CALENDAR_CACHE_KEY='flowos-calendar-widget-v2';
 
 function dateKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
-function kindLabel(kind:string){return kind==='event'?'Evento':'Task';}
+function kindLabel(kind:string,language='it' as import('./lib/i18n').Language){const labels=widgetStrings(language);return kind==='event'?labels.event:labels.task;}
 function readCommitments(raw:string|null){try{const parsed=raw?JSON.parse(raw):null;return Array.isArray(parsed?.state?.commitments)?parsed.state.commitments:[];}catch{return[];}}
 async function writeCommitments(commitments:Commitment[]){
   const raw=await AsyncStorage.getItem(STORAGE_KEY);
@@ -25,16 +27,16 @@ async function writeCommitments(commitments:Commitment[]){
   parsed.state={...(parsed.state??{}),commitments};
   await AsyncStorage.setItem(STORAGE_KEY,JSON.stringify(parsed));
 }
-function todayData(raw:string|null):Omit<AndroidTodayWidgetProps,'heightDp'>{
+function todayData(raw:string|null,language='it' as import('./lib/i18n').Language,titleMap:Record<string,string>={}):Omit<AndroidTodayWidgetProps,'heightDp'|'language'>{
   const commitments=readCommitments(raw),now=new Date();
   const todayItems=commitments.filter((item:any)=>item&&item.status!=='done'&&item.status!=='completed'&&!item.deletedAt)
     .filter((item:any)=>{const date=item.scheduledAt??item.dueAt;if(!date)return false;const d=new Date(date);return item.allDay?d.getUTCFullYear()===now.getFullYear()&&d.getUTCMonth()===now.getMonth()&&d.getUTCDate()===now.getDate():dateKey(d)===dateKey(now);});
   const items=sortCommitments(todayItems as Commitment[])
-    .map((item:any)=>{const date=item.scheduledAt??item.dueAt;return {id:item.id,title:item.title,time:item.allDay?'Tutto il giorno':new Date(date).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),kind:kindLabel(item.kind),priority:item.kind==='task'?item.priority:undefined};});
+    .map((item:any)=>{const date=item.scheduledAt??item.dueAt;return {id:item.id,title:titleMap[item.id]??item.title,time:item.allDay?widgetStrings(language).allDay:new Date(date).toLocaleTimeString(language==='it'?'it-IT':language==='fr'?'fr-FR':language==='es'?'es-ES':'en-US',{hour:'2-digit',minute:'2-digit'}),kind:kindLabel(item.kind,language),priority:item.kind==='task'?item.priority:undefined};});
   return{items};
 }
-async function loadCalendarCache(){try{const raw=await AsyncStorage.getItem(CALENDAR_CACHE_KEY);if(!raw)return null;const parsed=JSON.parse(raw);return parsed?.dateKey===dateKey(new Date())&&Array.isArray(parsed?.weeks)?{weeks:parsed.weeks as AndroidCalendarWidgetProps['weeks']}:null;}catch{return null;}}
-async function saveCalendarCache(data:Omit<AndroidCalendarWidgetProps,'heightDp'>){try{await AsyncStorage.setItem(CALENDAR_CACHE_KEY,JSON.stringify({dateKey:dateKey(new Date()),...data}));}catch{}}
+async function loadCalendarCache(language:string,translateActivities:boolean){try{const raw=await AsyncStorage.getItem(CALENDAR_CACHE_KEY);if(!raw)return null;const parsed=JSON.parse(raw);return parsed?.dateKey===dateKey(new Date())&&parsed?.language===language&&parsed?.translateActivities===translateActivities&&Array.isArray(parsed?.weeks)?{weeks:parsed.weeks as AndroidCalendarWidgetProps['weeks']}:null;}catch{return null;}}
+async function saveCalendarCache(data:Omit<AndroidCalendarWidgetProps,'heightDp'>,language:string,translateActivities:boolean){try{await AsyncStorage.setItem(CALENDAR_CACHE_KEY,JSON.stringify({dateKey:dateKey(new Date()),language,translateActivities,...data}));}catch{}}
 
 async function refreshFromGoogle(){
   await flushOfflineQueue();
@@ -124,25 +126,29 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     }
   }
   const raw=await AsyncStorage.getItem(STORAGE_KEY);
+  const language=await getLanguage();
+  const translateActivities=await getTranslateActivities();
+  const titleMap=await getDisplayTitleMap(readCommitments(raw));
   const heightDp=props.widgetInfo.height;
   if(props.widgetInfo.widgetName==='TodayAndroidWidget'){
-    const data=todayData(raw);
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} heightDp={heightDp}/>);break;default:break;}
+    const data=todayData(raw,language,titleMap);
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} heightDp={heightDp} language={language}/>);break;default:break;}
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
-    let data=await loadCalendarCache();
+    let data=await loadCalendarCache(language,translateActivities);
     if(!data) {
-      props.renderWidget(<CalendarWidget weeks={[]}/>);
+      props.renderWidget(<CalendarWidget weeks={[]} language={language}/>);
       let syncEnd=new Date(new Date().getFullYear()+1,11,31);
       try { const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus()); if(status.range?.endDate)syncEnd=new Date(`${status.range.endDate}T23:59:59`); } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
       let calendarNames:Map<string,string>|undefined;
       try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
-      data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames);
-      await saveCalendarCache(data);
+      data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames,titleMap,language);
+      await saveCalendarCache(data,language,translateActivities);
     }
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget {...data}/>);break;default:break;}
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget {...data} language={language}/>);break;default:break;}
     if(props.widgetAction==='WIDGET_UPDATE'){
       try{
         const remote=await refreshFromGoogle();
+        const remoteTitleMap=await getDisplayTitleMap(remote);
         let syncEnd=new Date(new Date().getFullYear()+1,11,31);
         try {
           const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus());
@@ -150,9 +156,9 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
         let calendarNames:Map<string,string>|undefined;
         try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
-        const refreshed=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames);
+        const refreshed=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames,remoteTitleMap,language);
         await saveCalendarCache(refreshed);
-        props.renderWidget(<CalendarWidget {...refreshed}/>);
+        props.renderWidget(<CalendarWidget {...refreshed} language={language}/>);
       }catch(error){recordDiagnostic('widget-calendar-background-refresh-failed',error,'warn');}
     }
   }
