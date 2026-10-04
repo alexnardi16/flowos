@@ -6,10 +6,11 @@ import { BuildInfo } from '../components/BuildInfo';
 import { type DiagnosticEntry, subscribeDiagnostics, recordDiagnostic } from '../lib/diagnostics';
 import { finishNativeGoogleOAuth, signInWithGoogleWithoutForcedConsent } from '../lib/googleLogin';
 import { useAuth } from '../providers/AuthProvider';
+import { t, useLanguage } from '../lib/i18n';
 
 const GOOGLE_TIMEOUT_MS = 120_000;
 
-export default function LoginScreen() {
+export default function LoginScreen() { useLanguage();
   const { session, loading } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);

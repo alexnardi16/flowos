@@ -21,7 +21,7 @@ type ContactsFilter='all'|'onlyContacts'|'excludeContacts';
 const CONTACTS_FILTER_KEY='flowos-plan-contacts-filter-v1';
 
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
-function formatDateTime(item:Commitment){
+function formatDateTime(item:Commitment,language:import('@/lib/i18n').Language){
   const value=itemDate(item);
   if(!value)return'Data e ora non definite';
   if(item.allDay){
@@ -121,7 +121,7 @@ export default function Plan(){
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{translatedTitles[item.id]??item.title}</Text></View>
-            <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item)}{overdue?' · scaduta':''}</Text>
+            <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item,language)}{overdue?' · scaduta':''}</Text>
             <Text style={styles.meta}>{formatStartEnd(item)}</Text>
             {item.description?<Text style={styles.description}>{item.description}</Text>:null}
             {item.location?<Text style={styles.meta}>Luogo: {item.location}</Text>:null}

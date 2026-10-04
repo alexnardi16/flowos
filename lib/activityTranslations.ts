@@ -30,7 +30,7 @@ export async function translateActivityTitles(items:Commitment[],language:Langua
       const rows=Array.isArray(data?.translations)?data.translations:[];cache[language]??={};
       for(const row of rows){if(typeof row?.id!=='string'||typeof row?.text!=='string')continue;const original=originals[row.id];if(!original)continue;cache[language][row.id]={original,translated:row.text.trim()||original};result[row.id]=row.text.trim()||original;}
       await writeCache(cache);
-    }catch{for(const item of batch)result[item.id]=item.title;}
+    }catch{for(const item of batch)result[item.id]=item.text;}
   }
   return result;
 }

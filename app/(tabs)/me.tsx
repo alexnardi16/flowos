@@ -14,6 +14,9 @@ import { DEFAULT_DAILY_SUMMARY_HOUR, DEFAULT_DAILY_SUMMARY_MINUTE, disableDailyS
 import { useFlowStore } from '@/lib/store';
 import { useAuth } from '@/providers/AuthProvider';
 import * as Application from 'expo-application';
+import { LANGUAGES, t, useLanguage } from '@/lib/i18n';
+import { translateActivityTitles } from '@/lib/activityTranslations';
+import { syncTodayWidget } from '@/lib/widgetSync';
 
 function syncDate(value?:string|null){return value?new Date(value).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'mai sincronizzata';}
 function logLine(entry:DiagnosticEntry){const time=new Date(entry.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});return `${time} [${entry.level}] ${entry.event}${entry.details?` — ${entry.details}`:''}`;}
