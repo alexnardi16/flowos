@@ -249,15 +249,15 @@ export default function Me(){
         <Text style={styles.meta}>{reconnecting?t('Ricollegamento Google in corso…'):`${t('Stato:')} ${google?.connection?.last_sync_status} · ${t('Ultima:')} ${syncDate(google?.connection?.last_sync_at)}`}</Text>
         {error?<Text style={styles.error}>{error}</Text>:null}
         {progress>0?<><View style={styles.progressHeader}><Text style={styles.meta}>{stage}</Text><Text style={styles.meta}>{progress}%</Text></View><View style={styles.track}><View style={[styles.fill,{width:`${progress}%`}]}/></View></>:null}
-        <View style={styles.actions}><Button label={busy?'Sincronizzazione…':'Sincronizza ora'} onPress={()=>{void sync();}} disabled={busy}/><Button secondary label={t('Scollega Google')} onPress={()=>{void run(disconnectGoogleWorkspace);}} disabled={busy}/></View>
+        <View style={styles.actions}><Button label={busy?t('Sincronizzazione in corso…'):t('Sincronizza ora')} onPress={()=>{void sync();}} disabled={busy}/><Button secondary label={t('Scollega Google')} onPress={()=>{void run(disconnectGoogleWorkspace);}} disabled={busy}/></View>
       </>:<>
         <Text style={styles.error}>{t('L’autorizzazione Google è scaduta o non è più valida. Prima clicca "Scollega Google", poi clicca "Ricollega Google".')}</Text>
         <Button label={t('Ricollega Google')} onPress={()=>{void reconnectGoogle();}} disabled={busy}/>
       </>}
     </Card>
 
-    {connected?<><Card><Text style={styles.label}>{t('Calendari sincronizzati')}</Text>{google?.calendars.map(c=><View key={c.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{friendlyCalendarName(c.summary,google?.connection?.google_email)}</Text><Text style={styles.meta}>{c.access_role}{c.is_default?' · predefinito':''}</Text></View><Switch value={c.selected} onValueChange={v=>{void run(()=>setCalendarSelected(c.id,v));}}/><Pressable disabled={!c.selected||!['owner','writer'].includes(c.access_role)||c.is_default} onPress={()=>{void run(()=>setDefaultCalendar(c.id));}}><Text style={styles.link}>{c.is_default?'Default':'Default'}</Text></Pressable></View>)}</Card>
-    <Card><Text style={styles.label}>{t('Liste Google Tasks')}</Text>{google?.taskLists.map(l=><View key={l.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{l.title}</Text><Text style={styles.meta}>{l.is_default?t('Predefinita'):t('Lista attività')}</Text></View><Switch value={l.selected} onValueChange={v=>{void run(()=>setTaskListSelected(l.id,v));}}/><Pressable disabled={!l.selected||l.is_default} onPress={()=>{void run(()=>setDefaultTaskList(l.id));}}><Text style={styles.link}>{l.is_default?'Default':'Default'}</Text></Pressable></View>)}</Card></>:null}
+    {connected?<><Card><Text style={styles.label}>{t('Calendari sincronizzati')}</Text>{google?.calendars.map(c=><View key={c.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{friendlyCalendarName(c.summary,google?.connection?.google_email)}</Text><Text style={styles.meta}>{c.access_role}{c.is_default?` · ${t('predefinito')}`:''}</Text></View><Switch value={c.selected} onValueChange={v=>{void run(()=>setCalendarSelected(c.id,v));}}/><Pressable disabled={!c.selected||!['owner','writer'].includes(c.access_role)||c.is_default} onPress={()=>{void run(()=>setDefaultCalendar(c.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card>
+    <Card><Text style={styles.label}>{t('Liste Google Tasks')}</Text>{google?.taskLists.map(l=><View key={l.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{l.title}</Text><Text style={styles.meta}>{l.is_default?t('Predefinita'):t('Lista attività')}</Text></View><Switch value={l.selected} onValueChange={v=>{void run(()=>setTaskListSelected(l.id,v));}}/><Pressable disabled={!l.selected||l.is_default} onPress={()=>{void run(()=>setDefaultTaskList(l.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card></>:null}
 
     <Card>
       <Text style={styles.label}>{t('Notifiche')}</Text>
@@ -267,7 +267,7 @@ export default function Me(){
         <Button secondary label={timePickerOpen?t('Nascondi orari'):t('Scegli orario')} onPress={()=>setTimePickerOpen(value=>!value)} disabled={notificationBusy||timeSaving}/>
         {timePickerOpen?<View style={styles.picker}><Text style={styles.pickerLabel}>{t('Ora')}</Text><View style={styles.optionGrid}>{Array.from({length:24},(_,hour)=><Pressable key={hour} onPress={()=>setSummaryHour(hour)} style={[styles.option,summaryHour===hour&&styles.optionActive]}><Text style={[styles.optionText,summaryHour===hour&&styles.optionTextActive]}>{String(hour).padStart(2,'0')}</Text></Pressable>)}</View><Text style={styles.pickerLabel}>{t('Minuti')}</Text><View style={styles.minuteRow}>{[0,15,30,45].map(minute=><Pressable key={minute} onPress={()=>setSummaryMinute(minute)} style={[styles.option,summaryMinute===minute&&styles.optionActive]}><Text style={[styles.optionText,summaryMinute===minute&&styles.optionTextActive]}>{String(minute).padStart(2,'0')}</Text></Pressable>)}</View><Button label={timeSaving?t('Salvataggio…'):`${t('Salva')} ${timeLabel(summaryHour,summaryMinute)}`} onPress={()=>{void saveSummaryTime();}} disabled={timeSaving}/></View>:null}
       </View>
-      {lastRecovery?<Text style={styles.meta}>Ultimo recupero automatico: {lastRecovery}</Text>:null}
+      {lastRecovery?<Text style={styles.meta}>{t('Ultimo recupero automatico:')} {lastRecovery}</Text>:null}
       <View style={styles.actions}><Button secondary label={t('Invia le notifiche adesso')} onPress={()=>{void sendNowNotifications();}} disabled={notificationBusy||!notificationsEnabled}/></View>
       <Text style={styles.note}>{t('L’orario scelto è un’ora locale, non UTC: se cambi fuso orario, il trigger segue l’ora locale del dispositivo.')}</Text>
     </Card>
@@ -281,13 +281,13 @@ export default function Me(){
 
     <Card>
       <Text style={styles.label}>{t('Diagnostica')}</Text>
-      <View style={styles.diagnosticHeader}><Text style={styles.meta}>FlowOS {Application.nativeApplicationVersion??'unknown'} · versionCode {Application.nativeBuildVersion??'unknown'} · {logs.length} eventi</Text></View>
+      <View style={styles.diagnosticHeader}><Text style={styles.meta}>FlowOS {Application.nativeApplicationVersion??'unknown'} · versionCode {Application.nativeBuildVersion??'unknown'} · {logs.length} {t('eventi')}</Text></View>
       <View style={styles.actions}><Button secondary style={styles.actionButton} label={showLogs?t('Nascondi log'):t('Mostra log')} onPress={()=>setShowLogs(v=>!v)}/><Button secondary style={styles.actionButton} label={t('Copia log')} onPress={()=>{void copyLogs();}}/><Button secondary style={styles.actionButton} label={t('Pulisci log')} onPress={()=>{clearDiagnostics();setLogs([]);}}/></View>
       {showLogs?<ScrollView style={styles.logBox} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.logContent}>{logs.length?logs.map((entry,index)=><Text key={`${entry.at}-${index}`} selectable style={[styles.logText,entry.level==='error'&&styles.logError,entry.level==='warn'&&styles.logWarn]}>{logLine(entry)}</Text>):<Text style={styles.logText}>{t('Nessun evento registrato.')}</Text>}</ScrollView>:null}
     </Card>
 
     <Card><Text style={styles.label}>{t('Dati FlowOS')}</Text><Text style={styles.meta}>{t('Puoi cancellare le attività locali in qualsiasi momento, indipendentemente dal collegamento Google.')}</Text><Pressable onPress={()=>{void wipe();}} style={styles.dangerButton}><Text style={styles.danger}>{t('Elimina ogni attività su FlowOS senza alcun impatto su Google')}</Text></Pressable></Card>
-    <Card><Text style={styles.label}>{t('Account FlowOS')}</Text><Button secondary label={t('Esci da FlowOS')} onPress={()=>{void logout();}} disabled={busy}/><Pressable onPress={()=>{void deleteAccount();}} style={styles.delete}><Text style={styles.danger}>{t('Elimina definitivamente l’account FlowOS')}</Pressable></Card>
+    <Card><Text style={styles.label}>{t('Account FlowOS')}</Text><Button secondary label={t('Esci da FlowOS')} onPress={()=>{void logout();}} disabled={busy}/><Pressable onPress={()=>{void deleteAccount();}} style={styles.delete}><Text style={styles.danger}>{t('Elimina definitivamente l’account FlowOS')}</Text></Pressable></Card>
   </ScreenShell>;
 }
 
