@@ -20,7 +20,7 @@ assert.match(me,/Traduci anche le attività/);
 assert.match(me,/I titoli originali vengono conservati/);
 assert.match(activity,/flowos-original-titles-v1/);
 assert.match(activity,/flowos-activity-translations-v1/);
-assert.match(activity,/entry\.original===original/);
+assert.match(activity,/entry\?\.original===original/);
 assert.match(edge,/Preserve meaning, names, acronyms, dates, numbers/);
 assert.match(edge,/allowed=new Map/);
 assert.match(today,/useActivityTitleMap/);
