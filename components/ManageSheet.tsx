@@ -5,7 +5,7 @@ import { Button, palette, showAlert, showConfirm } from '@/components/ui';
 import { formatReminderOffsetLabel } from '@/lib/customReminders';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment, CommitmentKind, ReminderOffset } from '@/types';
-import { t, useLanguage } from '@/lib/i18n';
+import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 
 const REMINDER_PRESETS = [15, 60, 1440];
 
@@ -29,7 +29,7 @@ function combine(dateStr: string, timeStr: string, allDay: boolean): string | un
   return new Date(y, m - 1, d, hh || 0, mm || 0).toISOString();
 }
 
-export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () => void }) { useLanguage();
+export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () => void }) { const { language } = useLanguage();
   const updateCommitment = useFlowStore((state) => state.updateCommitment);
   const removeOnlyFromFlowOS = useFlowStore((state) => state.removeOnlyFromFlowOS);
   const removeAlsoFromGoogle = useFlowStore((state) => state.removeAlsoFromGoogle);
@@ -123,7 +123,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     finally { setBusy(false); }
   }
   async function removeSeries() {
-    const ok = await showConfirm('Eliminare tutta la serie ricorrente?', `"${item.title}" e TUTTE le altre occorrenze verranno eliminate da Google e da FlowOS. Questa operazione non può essere annullata.`, 'Elimina tutta la serie');
+    const ok = await showConfirm('Eliminare tutta la serie ricorrente?', `"${item.title}" e TUTTE le altre occorrenze verranno eliminate da Google e da FlowOS. Questa operazione non può essere annullata.`, t('Elimina tutta la serie'));
     if (!ok) return;
     setBusy(true);
     try { await removeSeriesFromGoogle(item.id); onClose(); }
@@ -160,8 +160,8 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       <View style={styles.row}><View style={styles.reminderInputField}><Text style={styles.reminderInputLabel}>giorni{`\n`}prima</Text><TextInput value={customDays} onChangeText={v=>setCustomDays(v.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.reminderInputField}><Text style={styles.reminderInputLabel}>ore{`\n`}prima</Text><TextInput value={customHours} onChangeText={v=>setCustomHours(v.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.reminderInputField}><Text style={styles.reminderInputLabel}>minuti{`\n`}prima</Text><TextInput value={customMinutes} onChangeText={v=>setCustomMinutes(v.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><Pressable onPress={()=>{const m=(Number(customDays)||0)*1440+(Number(customHours)||0)*60+(Number(customMinutes)||0);if(m>0){addReminder(m);setCustomDays('');setCustomHours('');setCustomMinutes('');}}} style={styles.presetButton}><Text style={styles.presetButtonText}>{t('Aggiungi')}</Text></Pressable></View>
       <View style={styles.actionsRow}><Button secondary label={t('Annulla')} onPress={onClose} disabled={busy}/><Button label={t('Salva modifiche')} onPress={()=>void save()} loading={busy}/></View>
       {isFlowOSOnly?<View style={styles.section}><Text style={styles.sectionTitle}>{t('Solo su FlowOS')}</Text><Text style={styles.help}>{t('Questo elemento non è mai stato sincronizzato con Google.')}</Text><Button secondary label={t('Sincronizza con Google')} onPress={()=>void syncNow()} disabled={busy}/></View>:null}
-      <View style={styles.section}><Text style={styles.sectionTitle}>{t('Elimina')}</Text><Pressable disabled={busy} onPress={()=>void removeLocal()} style={styles.localDelete}><Text style={styles.localDeleteText}>{t('Elimina solo da FlowOS')}</Text></Pressable>{item.externalId?<Pressable disabled={busy} onPress={()=>void removeGoogle()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{item.googleRecurringEventId?'Elimina solo questa occorrenza':'Elimina da FlowOS e Google'}</Text></Pressable>:null}{item.googleRecurringEventId?<Pressable disabled={busy} onPress={()=>void removeSeries()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>Elimina tutta la serie</Text></Pressable>:null}</View>
-      {datePickerTarget?<DateTimePicker value={new Date(`${datePickerTarget==='start'?dateStr:endDate}T12:00:00`)} mode="date" presentation="dialog" locale="it-IT" onValueChange={(_,selectedDate)=>handleDatePicked(selectedDate)} onDismiss={()=>setDatePickerTarget(null)}/>:null}
+      <View style={styles.section}><Text style={styles.sectionTitle}>{t('Elimina')}</Text><Pressable disabled={busy} onPress={()=>void removeLocal()} style={styles.localDelete}><Text style={styles.localDeleteText}>{t('Elimina solo da FlowOS')}</Text></Pressable>{item.externalId?<Pressable disabled={busy} onPress={()=>void removeGoogle()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{item.googleRecurringEventId?'Elimina solo questa occorrenza':t('Elimina da FlowOS e Google')}</Text></Pressable>:null}{item.googleRecurringEventId?<Pressable disabled={busy} onPress={()=>void removeSeries()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>Elimina tutta la serie</Text></Pressable>:null}</View>
+      {datePickerTarget?<DateTimePicker value={new Date(`${datePickerTarget==='start'?dateStr:endDate}T12:00:00`)} mode="date" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_,selectedDate)=>handleDatePicked(selectedDate)} onDismiss={()=>setDatePickerTarget(null)}/>:null}
     </ScrollView>
   </Modal>}
 

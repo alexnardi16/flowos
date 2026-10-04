@@ -89,3 +89,29 @@ test('Widget refresh performs Google sync and refreshes both widgets immediately
   assert.match(source,/syncTodayWidget\(refreshed,new Date\(\)\)/);
   assert.match(source,/return;/);
 });
+
+test('Activity translation keeps originals and can be disabled without reverse translation',()=>{
+  const source=fs.readFileSync('lib/activityTranslations.ts','utf8');
+  const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
+  assert.match(source,/ORIGINAL_KEY='flowos-original-titles-v1'/);
+  assert.match(source,/originals\[item\.id\]\?\?item\.title/);
+  assert.match(source,/entry\.original===original/);
+  assert.match(settings,/Switch value=\{translateActivities\}/);
+  assert.doesNotMatch(settings,/Switch[^\n]*disabled=\{languageBusy\}/);
+});
+
+test('Core macrosection labels and activity-card labels are localized',()=>{
+  const i18n=fs.readFileSync('lib/i18n.ts','utf8');
+  const capture=fs.readFileSync('app/(tabs)/capture.tsx','utf8');
+  const plan=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
+  assert.match(i18n,/Language = 'it' \| 'en' \| 'fr' \| 'es'/);
+  assert.match(i18n,/extraEn/);
+  assert.match(i18n,/extraFr/);
+  assert.match(i18n,/extraEs/);
+  assert.match(capture,/t\('Ripeti'\)/);
+  assert.match(capture,/t\('Tutto il giorno'\)/);
+  assert.match(plan,/t\('Tutto il giorno'/);
+  assert.match(plan,/t\('Data e ora non definite'/);
+  assert.doesNotMatch(plan,/return 'Tutto il giorno'/);
+  assert.doesNotMatch(plan,/return 'Data e ora non definite'/);
+});
