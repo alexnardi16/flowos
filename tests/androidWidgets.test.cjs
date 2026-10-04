@@ -95,7 +95,7 @@ test('Activity translation keeps originals and can be disabled without reverse t
   const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
   assert.match(source,/ORIGINAL_KEY='flowos-original-titles-v1'/);
   assert.match(source,/originals\[item\.id\]\?\?item\.title/);
-  assert.match(source,/entry\.original===original/);
+  assert.match(source,/entry\??\.original===original/);
   assert.match(settings,/Switch value=\{translateActivities\}/);
   assert.doesNotMatch(settings,/Switch[^\n]*disabled=\{languageBusy\}/);
 });
