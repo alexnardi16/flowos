@@ -32,14 +32,14 @@ export function TodayWidget({ items, heightDp }: AndroidTodayWidgetProps) {
   return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel={`FlowOS: attività di oggi, ${items.length} attività`}>
     <FlexWidget style={{ width:'match_parent', height:34, flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingBottom:5 }}>
       <FlexWidget style={{ flexDirection:'row', alignItems:'center', flex:1 }}><ImageWidget image={require("../../assets/flowos-app-icon-512-store.png")} imageWidth={26} imageHeight={26} style={{ width:26, height:26, marginRight:7 }} radius={7} resizeMode="contain" /><TextWidget text="Oggi" style={{ fontSize:19, fontWeight:'bold', color:INK,marginRight:5 }}/><TextWidget text={`${items.length}`} style={{ fontSize:10,fontWeight:'bold',color:MUTED }}/></FlexWidget>
-      <FlexWidget style={{ flexDirection:'row', alignItems:'center' }}>
+      <FlexWidget style={{ flexDirection:'row', alignItems:'center', width:'match_parent' }}>
         <FlexWidget style={{ width:30, height:26, marginRight:4, borderRadius:13, backgroundColor:'#DDE2FF', justifyContent:'center', alignItems:'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel="Sincronizza FlowOS e Google"><TextWidget text="↻" style={{ fontSize:16, fontWeight:'bold', color:INK }}/></FlexWidget>
         <FlexWidget style={{ width:30, height:26, borderRadius:13, backgroundColor:'#DDE2FF', justifyContent:'center', alignItems:'center' }} clickAction="VOICE_COMMAND" accessibilityLabel="Comando vocale"><TextWidget text="🎙" style={{ fontSize:14 }}/></FlexWidget>
         <FlexWidget style={{ height:26, paddingHorizontal:9, borderRadius:13, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="QUICK_ADD"><TextWidget text="+" style={{ fontSize:10, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
       </FlexWidget>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:listHeight(heightDp), backgroundColor:BG }}>
-      {items.length ? items.map((item)=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{ height:itemHeight(item.title,Boolean(item.priority)), marginVertical:2, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:'#FFFFFF', flexDirection:'row', alignItems:'center' }}>
+      {items.length ? items.map((item)=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:2, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:'#FFFFFF', flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:4, height:28, marginRight:7, borderRadius:2, backgroundColor:item.kind==='Evento'?'#6C7BE8':item.kind==='Task'?'#E5A73B':'#45B887' }}/>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'column', justifyContent:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           <FlexWidget style={{ width:'match_parent', flexDirection:'row', alignItems:'flex-start' }}>
@@ -49,7 +49,7 @@ export function TodayWidget({ items, heightDp }: AndroidTodayWidgetProps) {
           <TextWidget text={`${item.time} · ${item.kind}`} style={{ fontSize:9, lineHeight:12, color:MUTED }}/>
         </FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:'#ECEEF4', justifyContent:'center', alignItems:'center' }} clickAction="POSTPONE" clickActionData={{ id:item.id }}><TextWidget text="+1g" style={{ fontSize:9, fontWeight:'bold', color:INK }}/></FlexWidget>
-        <FlexWidget style={{ width:28, height:28, marginLeft:4, borderRadius:9, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('complete',item.id) }}><TextWidget text="✓" style={{ fontSize:11, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
+        <FlexWidget style={{ width:28, height:28, marginLeft:4, borderRadius:9, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="COMPLETE" clickActionData={{ id:item.id }}><TextWidget text="✓" style={{ fontSize:11, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
       </FlexWidget>}) : <FlexWidget style={{ flex:1, height:50, justifyContent:'center', alignItems:'center' }}><TextWidget text="Nessuna attività oggi" style={{ fontSize:12, color:MUTED }}/></FlexWidget>}
       <FlexWidget style={{ width:'match_parent',height:18 }}/>
     </ListWidget>
