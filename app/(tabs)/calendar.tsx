@@ -7,11 +7,7 @@ import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceSta
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
-import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
-import { useActivityTitleMap } from '@/lib/activityTranslations';
-
-const DAY_NAMES=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
-const MONTH_NAMES=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+import { localeForLanguage, t, useLanguage, widgetStrings } from '@/lib/i18n';
 const SOURCE_COLORS=['#E8F0FF','#E9F8EF','#FFF0D9','#F3E9FF','#FFE8EE','#E7F6F5','#F1F1E8','#EDEAFF'];
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
@@ -25,7 +21,7 @@ function formatItemTime(item:Commitment,language:import('@/lib/i18n').Language){
   const end=new Date(start.getTime()+item.durationMinutes*60000);
   return `${startText} - ${end.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'})}`;
 }
-function monthLabelForWeek(week:Date[],weekIndex:number){if(weekIndex===0){const now=new Date();return `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;}const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${MONTH_NAMES[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
+function monthLabelForWeek(week:Date[],weekIndex:number,months:string[]){if(weekIndex===0){const now=new Date();return `${months[now.getMonth()]} ${now.getFullYear()}`;}const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${months[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
 function sourceKey(item:Commitment){if(item.kind==='task'&&item.googleTaskListId)return `task:${item.googleTaskListId}`;if(item.googleCalendarId)return `calendar:${item.googleCalendarId}`;return 'flowos';}
 function sourceStyle(item:Commitment,sourceColors:Map<string,string>){
   const key=sourceKey(item);
@@ -80,7 +76,6 @@ export default function Calendar(){
   },[commitments]);
 
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
-  const translatedTitles=useActivityTitleMap(commitments);
   const requestedDate=typeof params.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(params.date)?params.date:null;
   const selectedDateKey=requestedDate??dayKey(new Date());
   const selectedWeekIndex=weeks.findIndex(week=>week.some(date=>dayKey(date)===selectedDateKey));
@@ -88,8 +83,8 @@ export default function Calendar(){
   useEffect(()=>{scrollToSelectedWeek();},[scrollToSelectedWeek,selectedDateKey]);
 
   return <ScreenShell title={t('Calendario')} subtitle={t('Vista mensile in stile Google Calendar. Ogni settimana mostra sempre tutti e sette i giorni.')} scrollRef={scrollRef}>
-    {weeks.map((week,index)=>{
-      const monthTitle=monthLabelForWeek(week,index);
+    {weeks.map((week,index)=>{const strings=widgetStrings(language);
+      const monthTitle=monthLabelForWeek(week,index,strings.months);
       return <Card key={index} style={styles.weekCard} onLayout={(event)=>{weekOffsets.current.set(index,event.nativeEvent.layout.y);if(index===selectedWeekIndex)scrollToSelectedWeek();}}>
         {monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}
         <View style={styles.grid}>
@@ -99,13 +94,13 @@ export default function Calendar(){
             const selected=dayKey(date)===selectedDateKey;
             return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox,selected&&styles.selectedBox]}>
               <View style={styles.dayHeader}>
-                <Text style={[styles.dayName,today&&styles.todayText]}>{DAY_NAMES[dayIndex]}</Text>
+                <Text style={[styles.dayName,today&&styles.todayText]}>{strings.dayNames[dayIndex]}</Text>
                 <Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text>
               </View>
               <View style={styles.dayActivities}>
                 {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),pressed&&styles.itemPressed]}>
                   {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
-                  <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Text style={styles.itemTitle}>{translatedTitles[item.id]??item.title}</Text></View>
+                  <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Text style={styles.itemTitle}>{item.title}</Text></View>
                   {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
                 </Pressable>)}
               </View>
