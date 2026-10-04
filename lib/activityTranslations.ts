@@ -34,7 +34,7 @@ export async function translateActivityTitles(items:Commitment[],language:Langua
   }
   return result;
 }
-export async function getDisplayTitleMap(items:Commitment[]){await rememberOriginalTitles(items);return getCachedTranslatedTitles(items);}
+export async function getDisplayTitleMap(items:Commitment[]){await rememberOriginalTitles(items);const language=await getLanguage();if(language==='it'||!(await getTranslateActivities()))return{};return translateActivityTitles(items,language);}
 
 export function useActivityTitleMap(items: Commitment[]) {
   const { language, translateActivities } = useLanguage();
