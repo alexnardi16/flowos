@@ -4,7 +4,7 @@ import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-an
 export type AndroidCalendarItem = { id: string; title: string; time: string; sourceColor: any; priority?: number };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
-export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; heightDp?: number };
+export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[] };
 
 const BG = '#F1F4FF';
 const INK = '#172033';
@@ -56,8 +56,6 @@ const ITEM_PADDING = 7;
 const DAY_HEADER_HEIGHT = 11;
 const ITEM_GAP = 3;
 const WEEK_BOTTOM_PADDING = 10;
-function listHeight(heightDp:number|undefined){return Math.max(120,(heightDp??300)-48);}
-
 function itemHeight(item: AndroidCalendarItem) {
   const lines = titleLines(item.title).length;
   const timeHeight = item.time ? ITEM_TIME_HEIGHT : 0;
@@ -74,10 +72,10 @@ function weekHeight(week: AndroidCalendarWeek) {
   return Math.max(92, ...week.days.map(day => dayHeight(day)));
 }
 
-export function CalendarWidget({ weeks, heightDp }: AndroidCalendarWidgetProps) {
+export function CalendarWidget({ weeks }: AndroidCalendarWidgetProps) {
   return (
     <FlexWidget
-      style={{ width: 'match_parent', height: heightDp ? Math.max(1,heightDp) : 'match_parent', padding: 8, backgroundColor: BG, borderRadius: 20, flexDirection: 'column' }}
+      style={{ width: 'match_parent', height: 'match_parent', padding: 8, backgroundColor: BG, borderRadius: 20, flexDirection: 'column' }}
       clickAction="OPEN_URI"
       clickActionData={{ uri: 'flowos://calendar' }}
       accessibilityLabel="FlowOS: calendario"
@@ -100,7 +98,7 @@ export function CalendarWidget({ weeks, heightDp }: AndroidCalendarWidgetProps) 
         </FlexWidget>
       </FlexWidget>
 
-      <ListWidget style={{ width: 'match_parent', height:listHeight(heightDp), backgroundColor: BG }}>
+      <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
         {weeks.slice(0, 8).map(week => {
           const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
           return (
