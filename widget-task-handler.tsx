@@ -131,7 +131,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
     let data=await loadCalendarCache();
     if(!data) {
-      props.renderWidget(<CalendarWidget weeks={[]} heightDp={heightDp}/>);
+      props.renderWidget(<CalendarWidget weeks={[]}/>);
       let syncEnd=new Date(new Date().getFullYear()+1,11,31);
       try { const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus()); if(status.range?.endDate)syncEnd=new Date(`${status.range.endDate}T23:59:59`); } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
       let calendarNames:Map<string,string>|undefined;
@@ -139,7 +139,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames);
       await saveCalendarCache(data);
     }
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget {...data} heightDp={heightDp}/>);break;default:break;}
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget {...data}/>);break;default:break;}
     if(props.widgetAction==='WIDGET_UPDATE'){
       try{
         const remote=await refreshFromGoogle();
@@ -152,7 +152,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
         const refreshed=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames);
         await saveCalendarCache(refreshed);
-        props.renderWidget(<CalendarWidget {...refreshed} heightDp={heightDp}/>);
+        props.renderWidget(<CalendarWidget {...refreshed}/>);
       }catch(error){recordDiagnostic('widget-calendar-background-refresh-failed',error,'warn');}
     }
   }
