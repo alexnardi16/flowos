@@ -28,13 +28,17 @@ test('Android Today widget data is rendered synchronously from local storage',()
   assert.doesNotMatch(source,/async function todayData/);
 });
 
-test('Android Calendar widget keeps a bottom safety area for the last row',()=>{
+test('Android Calendar widget always sizes root and list to the real launcher bounds',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
   assert.match(source,/WEEK_BOTTOM_PADDING = 10/);
   assert.match(source,/weekContainerHeight = height \+ \(week.title \? 14 : 0\) \+ 4 \+ WEEK_BOTTOM_PADDING/);
-  assert.match(source,/height: heightDp \? Math\.max\(1,heightDp\) : 'match_parent'/);
+  assert.match(source,/width: 'match_parent', height: 'match_parent', padding: 8/);
+  assert.match(source,/<ListWidget style=\{\{ width: 'match_parent', height: 'match_parent'/);
   assert.match(source,/height: 96/);
-  assert.match(source,/<ListWidget[^>]*height:listHeight\(heightDp\)/);
+  assert.doesNotMatch(source,/listHeight\(/);
+  assert.doesNotMatch(source,/heightDp/);
+  assert.doesNotMatch(handler,/CalendarWidget[^>]*heightDp=/);
 });
 
 test('vertical app scrolling keeps its indicator persistent',()=>{
