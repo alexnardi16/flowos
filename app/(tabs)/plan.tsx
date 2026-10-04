@@ -11,7 +11,6 @@ import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
-import { useActivityTitleMap } from '@/lib/activityTranslations';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
 type FilterKey='events'|'tasks'|'past'|'overdue';
@@ -83,7 +82,6 @@ export default function Plan(){
     return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([,group])=>({...group,items:sortCommitments(group.items,calendarNames)}));
   },[items,calendarNames]);
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
-  const translatedTitles=useActivityTitleMap(commitments);
   function formatStartEnd(item:Commitment,language:import('@/lib/i18n').Language){if(item.allDay)return t('Tutto il giorno',undefined,language);const startValue=item.scheduledAt??item.dueAt;if(!startValue)return t('Data e ora non definite',undefined,language);const start=new Date(startValue);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),{day:'2-digit',month:'2-digit',year:'numeric'});const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} ${time(start)} · ${date(end)===date(start)?time(end):`${date(end)} ${time(end)}`}`;}
   const toggle=(key:FilterKey)=>setFilters(current=>({...current,[key]:!current[key]}));
 
@@ -100,7 +98,7 @@ export default function Plan(){
       <Filter label={t('Solo contatti')} active={contactsFilter==='onlyContacts'} onPress={()=>setContactsFilter('onlyContacts')}/>
       <Filter label={t('Escludi contatti')} active={contactsFilter==='excludeContacts'} onPress={()=>setContactsFilter('excludeContacts')}/>
     </View>
-    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>{t('Attività in ritardo')}</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{translatedTitles[item.id]??item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item,language)} · {item.kind==='event'?t('Evento'):t('Task')}</Text></Pressable>)}</Card>:null}
+    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>{t('Attività in ritardo')}</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item,language)} · {item.kind==='event'?t('Evento'):t('Task')}</Text></Pressable>)}</Card>:null}
     <SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/>
     {groupedItems.length?groupedItems.map(group=><View key={group.label} style={styles.dayGroup}>
       <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={styles.dayDividerText}>{group.label}</Text><View style={styles.dayDividerLine}/></View>
