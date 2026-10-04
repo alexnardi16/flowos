@@ -8,6 +8,20 @@ test('Android Today widget reserves space for the list and cannot collapse to ze
   assert.doesNotMatch(source,/style=\{\{ flex:1, height:itemHeight/);
 });
 
+test('Android Today widget completion stays in the widget handler without opening FlowOS',()=>{
+  const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(widget,/clickAction="COMPLETE" clickActionData=\{\{ id:item\.id \}\}/);
+  assert.doesNotMatch(widget,/uri\('complete',item\.id\)/);
+  assert.match(handler,/props\.clickAction==='COMPLETE'/);
+  assert.match(handler,/runWidgetComplete\(id\)/);
+});
+
+test('Android Today widget task cards fill the available list width',()=>{
+  const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  assert.match(source,/width:'match_parent', height:itemHeight\(item\.title,Boolean\(item\.priority\)\)/);
+});
+
 test('Android Today widget data is rendered synchronously from local storage',()=>{
   const source=fs.readFileSync('widget-task-handler.tsx','utf8');
   assert.match(source,/function todayData\(raw:string/);
