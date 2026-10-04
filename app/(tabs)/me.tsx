@@ -243,9 +243,9 @@ export default function Me(){
     <Card>
       <Text style={styles.label}>{t('Google Workspace')}</Text>
       <Text style={styles.meta}>{t('Intervallo importazione:')} {google?.range?`${google.range.labelStart} → ${google.range.labelEnd}`:t('caricamento…')}</Text>
-      <View style={styles.inline}><TextInput value={rangeStart} onChangeText={setRangeStart} placeholder="GG-MM-AAAA" style={styles.input}/><TextInput value={rangeEnd} onChangeText={setRangeEnd} placeholder="GG-MM-AAAA" style={styles.input}/><Button secondary label={t('Salva')} onPress={()=>{void saveRange();}}/></View>
+      <View style={styles.inline}><TextInput value={rangeStart} onChangeText={setRangeStart} placeholder={t('GG-MM-AAAA')} style={styles.input}/><TextInput value={rangeEnd} onChangeText={setRangeEnd} placeholder="GG-MM-AAAA" style={styles.input}/><Button secondary label={t('Salva')} onPress={()=>{void saveRange();}}/></View>
       {(connected||reconnecting)?<>
-        <Text style={styles.item}>{friendlyCalendarName(google?.connection?.google_email??'Account Google',google?.connection?.google_email)}</Text>
+        <Text style={styles.item}>{friendlyCalendarName(google?.connection?.google_email??t('Account Google'),google?.connection?.google_email)}</Text>
         <Text style={styles.meta}>{reconnecting?t('Ricollegamento Google in corso…'):`${t('Stato:')} ${google?.connection?.last_sync_status} · ${t('Ultima:')} ${syncDate(google?.connection?.last_sync_at)}`}</Text>
         {error?<Text style={styles.error}>{error}</Text>:null}
         {progress>0?<><View style={styles.progressHeader}><Text style={styles.meta}>{stage}</Text><Text style={styles.meta}>{progress}%</Text></View><View style={styles.track}><View style={[styles.fill,{width:`${progress}%`}]}/></View></>:null}
