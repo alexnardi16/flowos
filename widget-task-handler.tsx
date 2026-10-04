@@ -43,6 +43,15 @@ async function refreshFromGoogle(){
   await writeCommitments(remote);
   return remote;
 }
+async function runWidgetComplete(id:string){
+  const items=await loadCommitments();
+  const item=items.find(candidate=>candidate.id===id);
+  if(!item)return;
+  await saveCommitment({...item,status:'done' as const});
+  await pushPendingToGoogle();
+  const refreshed=await loadCommitments();
+  await writeCommitments(normalizeTaskPriorities(refreshed));
+}
 async function runWidgetPostpone(id:string){
   const items=await loadCommitments();
   const item=items.find(candidate=>candidate.id===id);
@@ -104,7 +113,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
   if(props.widgetAction==='WIDGET_CLICK'){
     if(props.clickAction==='SYNC_GOOGLE')await runWidgetSync();
     else if(props.clickAction==='VOICE_COMMAND')await runWidgetVoice();
-    else if(props.clickAction==='POSTPONE'){
+    else if(props.clickAction==='COMPLETE'){\n      const id=String((props.clickActionData as Record<string,unknown>|undefined)?.id??'');\n      if(id)try{await runWidgetComplete(id);recordDiagnostic('widget-complete-completed',{id});}catch(error){recordDiagnostic('widget-complete-failed',error,'warn');}\n    }else if(props.clickAction==='POSTPONE'){
       const id=String((props.clickActionData as Record<string,unknown>|undefined)?.id??'');
       if(id)try{await runWidgetPostpone(id);recordDiagnostic('widget-postpone-completed',{id});}catch(error){recordDiagnostic('widget-postpone-failed',error,'warn');}
     }else if(props.clickAction==='QUICK_ADD'){
