@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import { createContext, createElement, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 
 export type Language = 'it' | 'en' | 'fr' | 'es';
 export const LANGUAGES: Array<{ code: Language; label: string }> = [
@@ -62,6 +62,6 @@ export function LanguageProvider({children}:PropsWithChildren){
   const[language,setLanguageState]=useState<Language>('it');const[translateActivities,setTranslateActivitiesState]=useState(false);
   useEffect(()=>{void getLanguage().then(setLanguageState);void getTranslateActivities().then(setTranslateActivitiesState);},[]);
   const value=useMemo(()=>({language,translateActivities,setLanguage:async(next:Language)=>{await setLanguage(next);setLanguageState(next);},setTranslateActivities:async(next:boolean)=>{await setTranslateActivities(next);setTranslateActivitiesState(next);}}),[language,translateActivities]);
-  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+  return createElement(LanguageContext.Provider,{value},children);
 }
 export function useLanguage(){const value=useContext(LanguageContext);if(!value)throw new Error('useLanguage must be used inside LanguageProvider');return value;}
