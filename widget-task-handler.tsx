@@ -107,6 +107,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     }else if(props.clickAction==='POSTPONE'){
       const id=String((props.clickActionData as Record<string,unknown>|undefined)?.id??'');
       if(id)try{await runWidgetPostpone(id);recordDiagnostic('widget-postpone-completed',{id});}catch(error){recordDiagnostic('widget-postpone-failed',error,'warn');}
+    }
   }
   const raw=await AsyncStorage.getItem(STORAGE_KEY);
   const language=await getLanguage();
