@@ -251,7 +251,7 @@ export default function Me(){
         {progress>0?<><View style={styles.progressHeader}><Text style={styles.meta}>{stage}</Text><Text style={styles.meta}>{progress}%</Text></View><View style={styles.track}><View style={[styles.fill,{width:`${progress}%`}]}/></View></>:null}
         <View style={styles.actions}><Button label={busy?t('Sincronizzazione in corso…'):t('Sincronizza ora')} onPress={()=>{void sync();}} disabled={busy}/><Button secondary label={t('Scollega Google')} onPress={()=>{void run(disconnectGoogleWorkspace);}} disabled={busy}/></View>
       </>:<>
-        <Text style={styles.error}>{t('L’autorizzazione Google è scaduta o non è più valida. Prima clicca "Scollega Google", poi clicca "Ricollega Google".')}</Text>
+        <Text style={styles.error}>{t('Autorizzazione Google scaduta')}</Text>
         <Button label={t('Ricollega Google')} onPress={()=>{void reconnectGoogle();}} disabled={busy}/>
       </>}
     </Card>
