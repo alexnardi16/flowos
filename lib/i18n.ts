@@ -56,8 +56,6 @@ export function widgetStrings(language:Language=currentLanguage){
 }
 export async function getLanguage():Promise<Language>{try{const value=await AsyncStorage.getItem(LANGUAGE_KEY);if(value==='it'||value==='en'||value==='fr'||value==='es')currentLanguage=value;}catch{}return currentLanguage;}
 export async function setLanguage(value:Language){currentLanguage=value;await AsyncStorage.setItem(LANGUAGE_KEY,value);}
-export async function getTranslateActivities(){try{return(await AsyncStorage.getItem(TRANSLATE_ACTIVITIES_KEY))==='true';}catch{return false;}}
-export async function setTranslateActivities(value:boolean){await AsyncStorage.setItem(TRANSLATE_ACTIVITIES_KEY,String(value));}
 type Ctx={language:Language;setLanguage:(value:Language)=>Promise<void>};
 const LanguageContext=createContext<Ctx|null>(null);
 export function LanguageProvider({children}:PropsWithChildren){
