@@ -184,8 +184,7 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
           : {
               type: Notifications.SchedulableTriggerInputTypes.DATE,
               date: new Date(reminder.triggerAt),
-              delivery: 'bestEffort',
-              ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
+                ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
             },
       });
       kept.add(reminder.id);
