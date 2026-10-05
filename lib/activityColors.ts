@@ -11,7 +11,7 @@ export function activitySourceKey(item: Commitment){
 export function buildActivitySourceColors(commitments: Commitment[]){
   const map=new Map<string,string>();
   let next=0;
-  for(const item of commitments.filter(item=>!item.deletedAt)){
+  for(const item of commitments.filter(item=>!item.deletedAt&&item.status!=='done')){
     const key=activitySourceKey(item);
     if(key==='flowos'||map.has(key))continue;
     map.set(key,ACTIVITY_SOURCE_COLORS[next%ACTIVITY_SOURCE_COLORS.length]);
