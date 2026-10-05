@@ -164,29 +164,39 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
   for (const reminder of reminders) {
     if (kept.has(reminder.id)) continue;
 
-    const identifier = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: reminder.title,
-        body: new Date(reminder.triggerAt).getTime() <= now.getTime() && allReminders.some((item) => item.id === reminder.id && new Date(item.triggerAt).getTime() < now.getTime())
-          ? `Promemoria recuperato · ${formatReminderOffsetLabel(reminder.minutesBefore)}`
-          : `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
-        data: {
-          source: 'reminder',
-          commitmentId: reminder.commitmentId,
-          reminderKey: reminder.id,
-          reminderId: reminder.id.split(':').slice(1).join(':'),
-        },
-        categoryIdentifier: REMINDER_ACTION_CATEGORY,
-      },
-      trigger: new Date(reminder.triggerAt).getTime() <= now.getTime()
-        ? (Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null)
-        : {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: new Date(reminder.triggerAt),
-            ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
+    try {
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: reminder.title,
+          body: new Date(reminder.triggerAt).getTime() <= now.getTime() && allReminders.some((item) => item.id === reminder.id && new Date(item.triggerAt).getTime() < now.getTime())
+            ? `Promemoria recuperato · ${formatReminderOffsetLabel(reminder.minutesBefore)}`
+            : `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
+          data: {
+            source: 'reminder',
+            commitmentId: reminder.commitmentId,
+            reminderKey: reminder.id,
+            reminderId: reminder.id.split(':').slice(1).join(':'),
           },
-    });
-    kept.add(reminder.id);
+          categoryIdentifier: REMINDER_ACTION_CATEGORY,
+        },
+        trigger: new Date(reminder.triggerAt).getTime() <= now.getTime()
+          ? (Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null)
+          : {
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: new Date(reminder.triggerAt),
+              delivery: 'bestEffort',
+              ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
+            },
+      });
+      kept.add(reminder.id);
+    } catch (error) {
+      await logNotificationEvent('event-reminder-schedule-failed', {
+        reminderId: reminder.id,
+        commitmentId: reminder.commitmentId,
+        triggerAt: reminder.triggerAt,
+        error,
+      }, 'error');
+    }
   }
 
   // Final reconciliation closes the race window between two independent
