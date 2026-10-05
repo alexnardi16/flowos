@@ -12,6 +12,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
+import { eventEnd, isCompletedMultiDayVisible } from '@/lib/commitmentVisibility';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
 type FilterKey='events'|'tasks'|'past'|'overdue';
@@ -49,12 +50,12 @@ export default function Plan(){
   const items=useMemo(()=>{
     const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     return commitments.filter(item=>{
-      const event=item.kind==='event',task=item.kind==='task',flexible=task,date=itemDate(item),past=Boolean(date&&new Date(date).getTime()<now),open=item.status!=='done';
+      const event=item.kind==='event',task=item.kind==='task',flexible=task,date=itemDate(item),past=Boolean(date&&new Date(date).getTime()<now),open=item.status!=='done',completedMultiDay=isCompletedMultiDayVisible(item,new Date(now));
       if(event&&!filters.events)return false;
       if(task&&!filters.tasks)return false;
       if(!event&&!flexible)return false;
-      if(past&&!filters.past&&!(flexible&&open&&filters.overdue))return false;
-      if(item.status==='done'&&!filters.past)return false;
+      if(past&&!filters.past&&!completedMultiDay&&!(flexible&&open&&filters.overdue))return false;
+      if(item.status==='done'&&!filters.past&&!completedMultiDay)return false;
       if(contactsFilter==='onlyContacts'&&(!isContactEvent(item)||isGoogleTask(item)))return false;
       if(contactsFilter==='excludeContacts'&&isContactEvent(item))return false;
       return!normalized||searchable(item).includes(normalized);
