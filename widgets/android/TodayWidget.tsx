@@ -2,7 +2,7 @@ import React from 'react';
 import { widgetStrings, type Language } from '../../lib/i18n';
 import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
-export type AndroidWidgetItem = { id: string; title: string; time: string; kind: string; priority?: number };
+export type AndroidWidgetItem = { id: string; title: string; time: string; kind: string; priority?: number; sourceColor?: string };
 export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; language?: Language };
 const BG = '#F1F4FF'; const INK = '#172033'; const MUTED = '#697386'; const PRIMARY = '#4254C5'; const BORDER = '#C8CEDA';
 const uri=(action:string,id:string)=>`flowos://today?widgetAction=${action}&id=${encodeURIComponent(id)}`;
@@ -41,7 +41,7 @@ export function TodayWidget({ items, language='it' }: AndroidTodayWidgetProps) {
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:BG }}>
       {items.length ? items.map((item)=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:2, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:'#FFFFFF', flexDirection:'row', alignItems:'center' }}>
-        <FlexWidget style={{ width:4, height:28, marginRight:7, borderRadius:2, backgroundColor:item.kind===labels.event?'#6C7BE8':item.kind===labels.task?'#E5A73B':'#45B887' }}/>
+        <FlexWidget style={{ width:4, height:28, marginRight:7, borderRadius:2, backgroundColor:item.sourceColor??'#F3F4F7' }}/>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'column', justifyContent:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           <FlexWidget style={{ width:'match_parent', flexDirection:'row', alignItems:'flex-start' }}>
             {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
