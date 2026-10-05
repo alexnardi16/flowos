@@ -48,10 +48,18 @@ test('an item can have several configured reminders at once', () => {
   assert.deepEqual(reminders.map((r) => r.id).sort(), ['ev1:a', 'ev1:b', 'ev1:automatic-start'].sort());
 });
 
-test('a reminder whose trigger time has already passed is not scheduled', () => {
+test('a reminder whose trigger time has already passed is excluded from the normal plan', () => {
   const now = new Date(2026, 6, 23, 9, 5);
   const commitments = [commitment({ id: 'ev1', scheduledAt: new Date(2026, 6, 23, 9, 10).toISOString(), reminders: [{ id: 'a', minutesBefore: 10 }] })];
   assert.equal(buildCustomReminders(commitments, now).length, 1);
+});
+
+test('missed reminders can be explicitly included for recovery', () => {
+  const now = new Date(2026, 6, 23, 9, 5);
+  const commitments = [commitment({ id: 'ev1', scheduledAt: new Date(2026, 6, 23, 9, 10).toISOString(), reminders: [{ id: 'a', minutesBefore: 10 }] })];
+  const reminders = buildCustomReminders(commitments, now, true);
+  assert.deepEqual(reminders.map((r) => r.id).sort(), ['ev1:a', 'ev1:automatic-start'].sort());
+  assert.equal(reminders.find((r) => r.id === 'ev1:a').triggerAt, new Date(2026, 6, 23, 9, 0).toISOString());
 });
 
 test('all-day items never produce reminders (a "minutes before midnight" reminder is not meaningful)', () => {
