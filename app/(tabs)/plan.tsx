@@ -62,7 +62,7 @@ export default function Plan(){
   },[commitments,filters,query,contactsFilter,now]);
 
   const overdueItems=items.filter(item=>item.status!=='done'&&isExpired(item));
-  const calendarNames=new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email)]));
+  const calendarNames=new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)]));
   const groupedItems=useMemo(()=>{
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
