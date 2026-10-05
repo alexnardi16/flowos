@@ -3,7 +3,7 @@ import { isSameCalendarDay, formatCommitmentTime } from './allDayDate';
 import { isExpired } from './itemTiming';
 import { toDateKey } from './dailySummary';
 import { sortCommitments } from './activityOrdering';
-import type { Language } from './i18n';
+import { t, type Language } from './i18n';
 
 export type WidgetItem = { id: string; title: string; time: string; kind: Commitment['kind']; priority?: number };
 export type TodayGlance = { dateKey: string; items: WidgetItem[]; nextEventTitle: string | null; nextEventTime: string | null; dueSoonCount: number; overdueCount: number; generatedAt: string; language?: Language };
@@ -37,5 +37,5 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
 
   const sortedTodayItems = sortCommitments(todayItems, calendarNames);
 
-  return {dateKey:toDateKey(now),items:sortedTodayItems.map(item=>{const value=(item.scheduledAt??item.dueAt)!;if(item.allDay)return{id:item.id,title:item.title,time:formatCommitmentTime(item,value),kind:item.kind,priority:item.kind==='task'?item.priority:undefined};const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const locale=language==='fr'?'fr-FR':language==='es'?'es-ES':language==='en'?'en-US':'it-IT';const fmt=(d:Date)=>d.toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});return{id:item.id,title:item.title,time:`${fmt(start)} - ${fmt(end)}`,kind:item.kind,priority:item.kind==='task'?item.priority:undefined};}),nextEventTitle:nextEvent?.title??null,nextEventTime:nextEvent?.scheduledAt?formatCommitmentTime(nextEvent,nextEvent.scheduledAt):null,dueSoonCount,overdueCount,generatedAt:now.toISOString(),language};
+  return {dateKey:toDateKey(now),items:sortedTodayItems.map(item=>{const value=(item.scheduledAt??item.dueAt)!;if(item.allDay)return{id:item.id,title:item.title,time:t('Tutto il giorno',undefined,language??'it'),,kind:item.kind,priority:item.kind==='task'?item.priority:undefined};const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const locale=language==='fr'?'fr-FR':language==='es'?'es-ES':language==='en'?'en-US':'it-IT';const fmt=(d:Date)=>d.toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});return{id:item.id,title:item.title,time:`${fmt(start)} - ${fmt(end)}`,kind:item.kind,priority:item.kind==='task'?item.priority:undefined};}),nextEventTitle:nextEvent?.title??null,nextEventTime:nextEvent?.scheduledAt?formatCommitmentTime(nextEvent,nextEvent.scheduledAt):null,dueSoonCount,overdueCount,generatedAt:now.toISOString(),language};
 }
