@@ -126,6 +126,7 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
   }
   const { error } = await supabase.from('commitments').upsert(row, { onConflict: 'id' });
   if (!error) return true;
+  await logNotificationEvent('commitment-persist-failed', { id: item.id, title: item.title, error: error.message, code: error.code ?? null, details: error.details ?? null, hint: error.hint ?? null }, 'error');
   await enqueueMutation({ id: `${Date.now()}-${item.id}`, table: 'commitments', action: 'upsert', payload: row, createdAt: new Date().toISOString(), lastError: error.message });
   await logNotificationEvent('commitment-persist-queued', { id: item.id, error: error.message }, 'warn');
   return false;
