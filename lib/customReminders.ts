@@ -1,5 +1,5 @@
 import type { Commitment } from '../types';
-import { t } from './i18n';
+import { t, type Language } from './i18n';
 
 export type ScheduledReminder = {
   /** Unique per reminder instance (item + offset), not just per item — one item can have several. */
@@ -15,17 +15,17 @@ function baseTime(item: Commitment): string | undefined {
 }
 
 /** "10 minuti prima" / "1 ora prima" / "1 giorno prima" / "3 giorni prima" — used both for notification copy and for the reminder-picker UI. */
-export function formatReminderOffsetLabel(minutesBefore: number): string {
+export function formatReminderOffsetLabel(minutesBefore: number, language?: Language): string {
   if (minutesBefore % 1440 === 0 && minutesBefore >= 1440) {
     const days = minutesBefore / 1440;
-    return `${days} ${t(days === 1 ? 'giorno' : 'giorni')} ${t('prima')}`;
+    return `${days} ${t(days === 1 ? 'giorno' : 'giorni',undefined,language)} ${t('prima',undefined,language)}`;
   }
   if (minutesBefore % 60 === 0 && minutesBefore >= 60) {
     const hours = minutesBefore / 60;
-    return `${hours} ${t(hours === 1 ? 'ora' : 'ore')} ${t('prima')}`;
+    return `${hours} ${t(hours === 1 ? 'ora' : 'ore',undefined,language)} ${t('prima',undefined,language)}`;
   }
-  if (minutesBefore === 0) return t("All'inizio");
-  return `${minutesBefore} ${t('minuti')} ${t('prima')}`;
+  if (minutesBefore === 0) return t("All'inizio",undefined,language);
+  return `${minutesBefore} ${t('minuti',undefined,language)} ${t('prima',undefined,language)}`;
 }
 
 /**
