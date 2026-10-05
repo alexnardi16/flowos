@@ -120,7 +120,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       let syncEnd=new Date(new Date().getFullYear()+1,11,31);
       try { const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus()); if(status.range?.endDate)syncEnd=new Date(`${status.range.endDate}T23:59:59`); } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
       let calendarNames:Map<string,string>|undefined;
-      try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
+      try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email,language)])); } catch {}
       data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames,language);
       await saveCalendarCache(data,language);
     }
