@@ -245,18 +245,18 @@ export default function Me(){
       <Text style={styles.meta}>{t('Intervallo importazione:')} {google?.range?`${google.range.labelStart} → ${google.range.labelEnd}`:t('caricamento…')}</Text>
       <View style={styles.inline}><TextInput value={rangeStart} onChangeText={setRangeStart} placeholder={t('GG-MM-AAAA')} style={styles.input}/><TextInput value={rangeEnd} onChangeText={setRangeEnd} placeholder="GG-MM-AAAA" style={styles.input}/><Button secondary label={t('Salva')} onPress={()=>{void saveRange();}}/></View>
       {(connected||reconnecting)?<>
-        <Text style={styles.item}>{friendlyCalendarName(google?.connection?.google_email??t('Account Google'),google?.connection?.google_email)}</Text>
-        <Text style={styles.meta}>{reconnecting?t('Ricollegamento Google in corso…'):`${t('Stato:')} ${google?.connection?.last_sync_status} · ${t('Ultima:')} ${syncDate(google?.connection?.last_sync_at)}`}</Text>
+        <Text style={styles.item}>{friendlyCalendarName(google?.connection?.google_email??t('Account Google'),google?.connection?.google_email,language)}</Text>
+        <Text style={styles.meta}>{reconnecting?t('Ricollegamento Google in corso…'):`${t('Stato:')} ${google?.connection?.last_sync_status?t(google.connection.last_sync_status):''} · ${t('Ultima:')} ${syncDate(google?.connection?.last_sync_at)}`}</Text>
         {error?<Text style={styles.error}>{error}</Text>:null}
-        {progress>0?<><View style={styles.progressHeader}><Text style={styles.meta}>{stage}</Text><Text style={styles.meta}>{progress}%</Text></View><View style={styles.track}><View style={[styles.fill,{width:`${progress}%`}]}/></View></>:null}
-        <View style={styles.actions}><Button label={busy?t('Sincronizzazione in corso…'):t('Sincronizza ora')} onPress={()=>{void sync();}} disabled={busy}/><Button secondary label={t('Scollega Google')} onPress={()=>{void run(disconnectGoogleWorkspace);}} disabled={busy}/></View>
+        {progress>0?<><View style={styles.progressHeader}><Text style={styles.meta}>{t(stage)}</Text><Text style={styles.meta}>{progress}%</Text></View><View style={styles.track}><View style={[styles.fill,{width:`${progress}%`}]}/></View></>:null}
+        <View style={styles.actions}><Button style={styles.actionButton} label={busy?t('Sincronizzazione in corso…'):t('Sincronizza ora')} onPress={()=>{void sync();}} disabled={busy}/><Button style={styles.actionButton} secondary label={t('Scollega Google')} onPress={()=>{void run(disconnectGoogleWorkspace);}} disabled={busy}/></View>
       </>:<>
         <Text style={styles.error}>{t('Autorizzazione Google scaduta')}</Text>
         <Button label={t('Ricollega Google')} onPress={()=>{void reconnectGoogle();}} disabled={busy}/>
       </>}
     </Card>
 
-    {connected?<><Card><Text style={styles.label}>{t('Calendari sincronizzati')}</Text>{google?.calendars.map(c=><View key={c.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{friendlyCalendarName(c.summary,google?.connection?.google_email)}</Text><Text style={styles.meta}>{c.access_role}{c.is_default?` · ${t('predefinito')}`:''}</Text></View><Switch value={c.selected} onValueChange={v=>{void run(()=>setCalendarSelected(c.id,v));}}/><Pressable disabled={!c.selected||!['owner','writer'].includes(c.access_role)||c.is_default} onPress={()=>{void run(()=>setDefaultCalendar(c.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card>
+    {connected?<><Card><Text style={styles.label}>{t('Calendari sincronizzati')}</Text>{google?.calendars.map(c=><View key={c.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{friendlyCalendarName(c.summary,google?.connection?.google_email,language)}</Text><Text style={styles.meta}>{c.access_role}{c.is_default?` · ${t('predefinito')}`:''}</Text></View><Switch value={c.selected} onValueChange={v=>{void run(()=>setCalendarSelected(c.id,v));}}/><Pressable disabled={!c.selected||!['owner','writer'].includes(c.access_role)||c.is_default} onPress={()=>{void run(()=>setDefaultCalendar(c.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card>
     <Card><Text style={styles.label}>{t('Liste Google Tasks')}</Text>{google?.taskLists.map(l=><View key={l.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{l.title}</Text><Text style={styles.meta}>{l.is_default?t('Predefinita'):t('Lista attività')}</Text></View><Switch value={l.selected} onValueChange={v=>{void run(()=>setTaskListSelected(l.id,v));}}/><Pressable disabled={!l.selected||l.is_default} onPress={()=>{void run(()=>setDefaultTaskList(l.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card></>:null}
 
     <Card>
