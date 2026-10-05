@@ -22,10 +22,11 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
   let overdueCount=0;
 
   for(const item of commitments){
-    if(!isActive(item))continue;
+    const completedMultiDayVisible=isVisibleCompletedMultiDayForDate(item,now);
+    if(!isActive(item)&&!completedMultiDayVisible)continue;
     const value=item.scheduledAt??item.dueAt;
     if(value&&itemIsToday(item,now))todayItems.push(item);
-    else if(isVisibleCompletedMultiDayForDate(item,now))todayItems.push(item);
+    else if(completedMultiDayVisible)todayItems.push(item);
 
     if(item.kind==='event'&&item.scheduledAt){
       const eventMs=new Date(item.scheduledAt).getTime();
