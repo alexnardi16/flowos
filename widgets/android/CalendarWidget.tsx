@@ -53,14 +53,14 @@ function titleLines(text: string, maxChars = 12) {
 
 const ITEM_TIME_HEIGHT = 9;
 const ITEM_TITLE_LINE_HEIGHT = 9;
-const ITEM_PADDING = 7;
+const ITEM_VERTICAL_PADDING = 2;
 const DAY_HEADER_HEIGHT = 11;
 const ITEM_GAP = 3;
 const WEEK_BOTTOM_PADDING = 10;
 function itemHeight(item: AndroidCalendarItem) {
   const lines = titleLines(item.title).length;
   const timeHeight = item.time ? ITEM_TIME_HEIGHT : 0;
-  return ITEM_PADDING + timeHeight + lines * ITEM_TITLE_LINE_HEIGHT + 2;
+  return ITEM_VERTICAL_PADDING * 2 + timeHeight + lines * ITEM_TITLE_LINE_HEIGHT;
 }
 
 function dayHeight(day: AndroidCalendarDay) {
