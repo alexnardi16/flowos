@@ -12,7 +12,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
-import { eventEnd, isCompletedMultiDayVisible } from '@/lib/commitmentVisibility';
+import { isCompletedMultiDayVisible } from '@/lib/commitmentVisibility';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
 type FilterKey='events'|'tasks'|'past'|'overdue';
