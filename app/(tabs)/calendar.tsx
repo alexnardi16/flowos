@@ -8,7 +8,7 @@ import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage, widgetStrings } from '@/lib/i18n';
-const SOURCE_COLORS=['#E8F0FF','#E9F8EF','#FFF0D9','#F3E9FF','#FFE8EE','#E7F6F5','#F1F1E8','#EDEAFF'];
+import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -22,12 +22,7 @@ function formatItemTime(item:Commitment,language:import('@/lib/i18n').Language){
   return `${startText} - ${end.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'})}`;
 }
 function monthLabelForWeek(week:Date[],weekIndex:number,months:string[]){if(weekIndex===0){const now=new Date();return `${months[now.getMonth()]} ${now.getFullYear()}`;}const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${months[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
-function sourceKey(item:Commitment){if(item.kind==='task'&&item.googleTaskListId)return `task:${item.googleTaskListId}`;if(item.googleCalendarId)return `calendar:${item.googleCalendarId}`;return 'flowos';}
-function sourceStyle(item:Commitment,sourceColors:Map<string,string>){
-  const key=sourceKey(item);
-  if(key==='flowos')return styles.flowosItem;
-  return {backgroundColor:sourceColors.get(key)??SOURCE_COLORS[0],borderColor:'#D9DDE7'};
-}
+function sourceStyle(item:Commitment,sourceColors:Map<string,string>){return {backgroundColor:activitySourceColor(item,sourceColors),borderColor:item.googleCalendarId||item.googleTaskListId?'#D9DDE7':'#E0E2E8'};}
 
 export default function Calendar(){
   const { language } = useLanguage();
@@ -55,14 +50,7 @@ export default function Calendar(){
     return result;
   },[google]);
 
-  const sourceColors=useMemo(()=>{
-    const map=new Map<string,string>();let next=0;
-    for(const item of commitments.filter(item=>!item.deletedAt&&item.status!=='done')){
-      const key=sourceKey(item);if(key==='flowos'||map.has(key))continue;
-      map.set(key,SOURCE_COLORS[next%SOURCE_COLORS.length]);next+=1;
-    }
-    return map;
-  },[commitments]);
+  const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
 
   const byDay=useMemo(()=>{
     const map=new Map<string,Commitment[]>();
@@ -126,7 +114,6 @@ const styles=StyleSheet.create({
   todayText:{color:palette.primary},
   dayActivities:{gap:2,paddingTop:3},
   item:{borderRadius:5,padding:2,borderWidth:1,gap:0},
-  flowosItem:{backgroundColor:'#F3F4F7',borderColor:'#E0E2E8'},
   itemTime:{fontSize:4,lineHeight:7,fontWeight:'800',color:palette.muted},
   itemTitleRow:{flexDirection:'row',alignItems:'flex-start',gap:2,minWidth:0},itemPriority:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.primary},itemTitle:{flex:1,minWidth:0,flexShrink:1,fontSize:5,lineHeight:7,fontWeight:'900',color:palette.ink},
   itemMeta:{fontSize:6,lineHeight:8,color:palette.muted},
