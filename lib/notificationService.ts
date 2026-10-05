@@ -294,7 +294,7 @@ export async function sendImmediateSummaryNotification(summary: DailySummary, te
         body: summary.body,
         data: { source: test ? 'daily-summary-test' : 'daily-summary-recovered', dateKey: summary.dateKey },
       },
-      trigger: null,
+      trigger: Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null,
     });
     await logNotificationEvent(test ? 'daily-summary-test-scheduled' : 'daily-summary-recovered-scheduled', {
       dateKey: summary.dateKey,
