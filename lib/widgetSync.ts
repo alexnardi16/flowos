@@ -17,7 +17,7 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
     try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email,language)])); } catch {}
     const glance = buildTodayGlance(commitments, now, calendarNames, language);
     const labels=widgetStrings(language);
-    const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? labels.event : labels.task, priority:item.priority }));
+    const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? labels.event : labels.task, priority:item.priority, sourceColor:item.sourceColor }));
     if (Platform.OS === 'ios') {
       const { default: TodayWidget } = await import('../widgets/TodayWidget');
       TodayWidget.updateSnapshot(glance);
