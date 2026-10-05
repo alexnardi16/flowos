@@ -33,7 +33,7 @@ export function formatReminderOffsetLabel(minutesBefore: number, language?: Lang
  * for every commitment's own configured `reminders`.
  * All-day events are skipped because they have no meaningful reminder time; all-day tasks may still use their due date as the reminder anchor.
  */
-export function buildCustomReminders(commitments: Commitment[], now: Date = new Date()): ScheduledReminder[] {
+export function buildCustomReminders(commitments: Commitment[], now: Date = new Date(), includeMissed = false): ScheduledReminder[] {
   const result: ScheduledReminder[] = [];
   for (const item of commitments) {
     if (item.status === 'done' || item.deletedAt || (item.allDay && item.kind === 'event')) continue;
@@ -52,7 +52,7 @@ export function buildCustomReminders(commitments: Commitment[], now: Date = new 
         if (!Number.isFinite(createdAt) || createdAt <= dismissedAt) continue;
       }
       const triggerAt = new Date(new Date(base).getTime() - offset.minutesBefore * 60000);
-      if (triggerAt.getTime() < now.getTime()) continue;
+      if (!includeMissed && triggerAt.getTime() < now.getTime()) continue;
       result.push({
         id: `${item.id}:${offset.id}`,
         commitmentId: item.id,
