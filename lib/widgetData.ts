@@ -4,6 +4,7 @@ import { isExpired } from './itemTiming';
 import { toDateKey } from './dailySummary';
 import { sortCommitments } from './activityOrdering';
 import { activitySourceColor, buildActivitySourceColors } from './activityColors';
+import { isVisibleCompletedMultiDayForDate } from './commitmentVisibility';
 import { t, type Language } from './i18n';
 
 export type WidgetItem = { id: string; title: string; time: string; kind: Commitment['kind']; priority?: number; sourceColor?: string };
@@ -24,6 +25,7 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
     if(!isActive(item))continue;
     const value=item.scheduledAt??item.dueAt;
     if(value&&itemIsToday(item,now))todayItems.push(item);
+    else if(isVisibleCompletedMultiDayForDate(item,now))todayItems.push(item);
 
     if(item.kind==='event'&&item.scheduledAt){
       const eventMs=new Date(item.scheduledAt).getTime();
