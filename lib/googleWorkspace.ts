@@ -68,7 +68,7 @@ export async function disconnectGoogleWorkspace(){return invoke({action:'disconn
     'jours fériés en france':{it:'Festività in Francia',en:'Holidays in France',fr:'Jours fériés en France',es:'Días festivos en Francia'},
     'jours fériés en italie':{it:'Festività in Italia',en:'Holidays in Italy',fr:'Jours fériés en Italie',es:'Días festivos en Italia'},
     'holidays in france':{it:'Festività in Francia',en:'Holidays in France',fr:'Jours fériés en France',es:'Días festivos en Francia'},
-    'holidays in italy':{it:'Festività in Italia',en:'Holidays in Italy',fr:'Jours fériés en Italie',es:'Días festivos in Italia'},
+    'holidays in italy':{it:'Festività in Italia',en:'Holidays in Italy',fr:'Jours fériés en Italie',es:'Días festivos en Italia'},
     'festività in francia':{it:'Festività in Francia',en:'Holidays in France',fr:'Jours fériés en France',es:'Días festivos en Francia'},
     'festività in italia':{it:'Festività in Italia',en:'Holidays in Italy',fr:'Jours fériés en Italie',es:'Días festivos en Italia'},
     'días festivos en francia':{it:'Festività in Francia',en:'Holidays in France',fr:'Jours fériés en France',es:'Días festivos en Francia'},
