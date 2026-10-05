@@ -222,12 +222,13 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     };
   }
 
+  let recoveredCount = 0;
   for (const reminder of missed) {
-    if (desiredByKey.has(reminder.id) && desiredByKey.get(reminder.id)?.triggerAt === now.toISOString()) {
+    if (desiredByKey.has(reminder.id) && desiredByKey.get(reminder.id)?.triggerAt === now.toISOString() && recovered[reminder.id] !== reminder.triggerAt) {
       recovered[reminder.id] = reminder.triggerAt;
+      recoveredCount += 1;
     }
   }
-  const activeRecoveryKeys = new Set(allReminders.map((reminder) => reminder.id));
   for (const key of Object.keys(recovered)) {
     const current = allReminders.find((reminder) => reminder.id === key);
     if (!current || current.triggerAt !== recovered[key]) delete recovered[key];
@@ -238,7 +239,7 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     count: reminders.length,
     scheduled: finalKept.size,
     removed: Math.max(0, finalScheduled.filter((notification) => getReminderKey(notification)).length - finalKept.size),
-    recovered: missed.length,
+    recovered: recoveredCount,
   });
 }
 /**
