@@ -9,6 +9,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage, widgetStrings } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
+import { isVisibleCompletedMultiDayForDate } from '@/lib/commitmentVisibility';
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -60,8 +61,7 @@ export default function Calendar(){
       const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dayKey(d);
       const list=map.get(key)??[];list.push(item);map.set(key,list);
     }
-    return map;
-  },[commitments]);
+    for(const item of commitments.filter(item=>!item.deletedAt&&item.status==='done')){\n      const end=item.scheduledAt&&item.durationMinutes?new Date(new Date(item.scheduledAt).getTime()+Math.max(1,item.durationMinutes)*60000):null;\n      if(!end||item.durationMinutes<=24*60)continue;\n      const key=dayKey(end);\n      if(!isVisibleCompletedMultiDayForDate(item,end))continue;\n      const list=map.get(key)??[];list.push(item);map.set(key,list);\n    }\n    return map;\n  },[commitments]);
 
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   const requestedDate=typeof params.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(params.date)?params.date:null;
