@@ -12,9 +12,9 @@ import { getLanguage, widgetStrings } from './i18n';
 async function performWidgetSync(commitments: Commitment[], now: Date = new Date()) {
   const startedAt=Date.now();
   try {
-    let calendarNames:Map<string,string>|undefined;
-    try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email)])); } catch {}
     const language=await getLanguage();
+    let calendarNames:Map<string,string>|undefined;
+    try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email,language)])); } catch {}
     const glance = buildTodayGlance(commitments, now, calendarNames, language);
     const labels=widgetStrings(language);
     const items = glance.items.map((item) => ({ id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? labels.event : labels.task, priority:item.priority }));
