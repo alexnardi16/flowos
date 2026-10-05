@@ -4,6 +4,7 @@ import { sortCommitments } from './activityOrdering';
 import { activitySourceColor, buildActivitySourceColors } from './activityColors';
 import type { Language } from './i18n';
 import { localeForLanguage, widgetStrings } from './i18n';
+import { isVisibleCompletedMultiDayForDate } from './commitmentVisibility';
 
 export type CalendarWidgetData = { weeks: AndroidCalendarWeek[] };
 const MONTHS=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
@@ -23,6 +24,7 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
   const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
   const active=commitments.filter(item=>item.status!=='done'&&!item.deletedAt);const sourceColors=buildActivitySourceColors(commitments);const byDate=new Map<string,Commitment[]>();
   for(const item of active){const value=item.scheduledAt??item.dueAt;if(!value)continue;const d=new Date(value);const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dateKey(d);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}
+  for(const item of commitments.filter(item=>item.status==='done'&&!item.deletedAt)){const end=item.scheduledAt&&item.durationMinutes?new Date(new Date(item.scheduledAt).getTime()+Math.max(1,item.durationMinutes)*60000):null;if(!end||item.durationMinutes<=24*60||!isVisibleCompletedMultiDayForDate(item,end))continue;const key=dateKey(end);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}
   for(const [key, list] of byDate) byDate.set(key, sortCommitments(list,calendarNames));
   const weeks:AndroidCalendarWeek[]=[];
   for(let w=0;;w++){const start=new Date(monday);start.setDate(monday.getDate()+w*7);if(start.getTime()>syncEndDate.getTime())break;const days:AndroidCalendarDay[]=[];
