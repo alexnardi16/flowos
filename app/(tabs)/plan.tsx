@@ -11,6 +11,7 @@ import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
+import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
 type FilterKey='events'|'tasks'|'past'|'overdue';
@@ -21,9 +22,7 @@ const CONTACTS_FILTER_KEY='flowos-plan-contacts-filter-v1';
 
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
 function formatDateTime(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);if(item.allDay){const d=new Date(value);return `${d.toLocaleDateString(localeForLanguage(language),{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}return new Date(value).toLocaleString(localeForLanguage(language),{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
-function cardKindStyle(kind:Commitment['kind']){
-  return kind==='event'?styles.cardEvent:styles.cardTask;
-}
+function cardSourceStyle(item:Commitment,sourceColors:Map<string,string>){return {backgroundColor:activitySourceColor(item,sourceColors),borderColor:item.googleCalendarId||item.googleTaskListId?'#D9DDE7':'#E0E2E8',borderWidth:1};}
 function searchable(item:Commitment){
   return[item.title,item.description,item.notes,item.location,item.context,item.outcome,item.kind].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 }
@@ -38,6 +37,7 @@ export default function Plan(){
   const[contactsFilter,setContactsFilter]=useState<ContactsFilter>('all');
   const[now,setNow]=useState(()=>Date.now());
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
+  const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
   useEffect(()=>{const i=setInterval(()=>setNow(Date.now()),60000);return()=>clearInterval(i);},[]);
@@ -105,7 +105,7 @@ export default function Plan(){
       {group.items.map(item=>{
         const overdue=item.status!=='done'&&isExpired(item);
         return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
-          <Card style={[styles.itemCard,cardKindStyle(item.kind)]}>
+          <Card style={[styles.itemCard,cardSourceStyle(item,sourceColors)]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
               <Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':false?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
               <CommitmentSourceTag item={item} google={google}/>
@@ -144,9 +144,6 @@ const styles=StyleSheet.create({
   overdueItemTitle:{fontSize:15,fontWeight:'900',color:palette.ink},
   overdueItemMeta:{fontSize:12,lineHeight:16,color:palette.muted,marginTop:1},dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:12,fontWeight:'900',color:palette.primary,textTransform:'capitalize'},
   itemCard:{padding:9,gap:4},
-  cardEvent:{backgroundColor:'#EEF1FE',borderColor:'#C7D0FB',borderWidth:1},
-  cardTask:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1},
-  cardReminder:{backgroundColor:'#EAFBF3',borderColor:'#B9EAD4',borderWidth:1},
   tagRow:{alignItems:'center',gap:6,paddingRight:4},
   titleRow:{flexDirection:'row',alignItems:'flex-start',gap:7,minWidth:0},priorityBadge:{fontSize:12,lineHeight:18,fontWeight:'900',color:palette.primary,backgroundColor:palette.soft,borderRadius:8,paddingHorizontal:6},item:{flex:1,minWidth:0,flexShrink:1,fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
   date:{fontSize:13,lineHeight:17,fontWeight:'800',color:palette.primary},
