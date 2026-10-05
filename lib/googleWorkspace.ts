@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import { recordDiagnostic } from './diagnostics';
 import { supabase } from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentLanguage, type Language } from './i18n';
 export const GOOGLE_SCOPES=['openid','email','profile','https://www.googleapis.com/auth/calendar.events','https://www.googleapis.com/auth/calendar.calendarlist.readonly','https://www.googleapis.com/auth/tasks'].join(' ');
 export type GoogleSyncRange={startYear:number;endYear:number;labelStart:string;labelEnd:string;years:number[];startDate:string;endDate:string};
 export type GoogleCalendar={id:string;google_calendar_id:string;summary:string;description?:string|null;background_color?:string|null;foreground_color?:string|null;access_role:string;primary_calendar:boolean;selected:boolean;is_default:boolean};
@@ -60,4 +61,18 @@ export async function syncGoogleRemote(){
   }
   return syncGoogleTasksIncremental();
 }export async function syncGoogleTasksIncremental(){if(syncInFlight){recordDiagnostic('google-tasks-background-sync-skipped-full-sync-in-flight');return null;}if(taskIncrementalInFlight)return taskIncrementalInFlight;taskIncrementalInFlight=invoke({action:'sync-tasks-incremental'}).finally(()=>{taskIncrementalInFlight=null;});return taskIncrementalInFlight;}
-export async function disconnectGoogleWorkspace(){return invoke({action:'disconnect'});}export async function setSyncRange(startDate:string|null,endDate:string|null){return invoke({action:'set-sync-range',startDate,endDate});}export function friendlyCalendarName(name:string,ownEmail?:string|null){return ownEmail&&name.trim().toLowerCase()===ownEmail.trim().toLowerCase()?'Alex':name;}export async function setDefaultCalendar(id:string){const{error}=await supabase.rpc('set_default_google_calendar',{p_calendar_id:id});if(error)throw error;}export async function setDefaultTaskList(id:string){const{error}=await supabase.rpc('set_default_google_task_list',{p_task_list_id:id});if(error)throw error;}export async function setCalendarSelected(id:string,selected:boolean){const{error}=await supabase.from('google_calendars').update({selected}).eq('id',id);if(error)throw error;}export async function setTaskListSelected(id:string,selected:boolean){const{error}=await supabase.from('google_task_lists').update({selected}).eq('id',id);if(error)throw error;}
+export async function disconnectGoogleWorkspace(){return invoke({action:'disconnect'});}export async function setSyncRange(startDate:string|null,endDate:string|null){return invoke({action:'set-sync-range',startDate,endDate});}export function friendlyCalendarName(name:string,ownEmail?:string|null,language:Language=getCurrentLanguage()){
+  if(ownEmail&&name.trim().toLowerCase()===ownEmail.trim().toLowerCase())return 'Alex';
+  const normalized=name.trim().toLowerCase();
+  const names:Record<string,Record<Language,string>>={
+    'jours fériés en france':{it:'Festività in Francia',en:'Holidays in France',fr:'Jours fériés en France',es:'Días festivos en Francia'},
+    'jours fériés en italie':{it:'Festività in Italia',en:'Holidays in Italy',fr:'Jours fériés en Italie',es:'Días festivos en Italia'},
+    'holidays in france':{it:'Festività in Francia',en:'Holidays in France',fr:'Jours fériés en France',es:'Días festivos en Francia'},
+    'holidays in italy':{it:'Festività in Italia',en:'Holidays in Italy',fr:'Jours fériés en Italie',es:'Días festivos in Italia'},
+    'festività in francia':{it:'Festività in Francia',en:'Holidays in France',fr:'Jours fériés en France',es:'Días festivos en Francia'},
+    'festività in italia':{it:'Festività in Italia',en:'Holidays in Italy',fr:'Jours fériés en Italie',es:'Días festivos en Italia'},
+    'días festivos en francia':{it:'Festività in Francia',en:'Holidays in France',fr:'Jours fériés en France',es:'Días festivos en Francia'},
+    'días festivos en italia':{it:'Festività in Italia',en:'Holidays in Italy',fr:'Jours fériés en Italie',es:'Días festivos en Italia'}
+  };
+  return names[normalized]?.[language]??name;
+}export async function setDefaultCalendar(id:string){const{error}=await supabase.rpc('set_default_google_calendar',{p_calendar_id:id});if(error)throw error;}export async function setDefaultTaskList(id:string){const{error}=await supabase.rpc('set_default_google_task_list',{p_task_list_id:id});if(error)throw error;}export async function setCalendarSelected(id:string,selected:boolean){const{error}=await supabase.from('google_calendars').update({selected}).eq('id',id);if(error)throw error;}export async function setTaskListSelected(id:string,selected:boolean){const{error}=await supabase.from('google_task_lists').update({selected}).eq('id',id);if(error)throw error;}
