@@ -21,6 +21,12 @@ assert.doesNotMatch(plan,/useActivityTitleMap/);
 assert.doesNotMatch(calendar,/useActivityTitleMap/);
 assert.match(calendar,/widgetStrings\(language\)/);
 assert.match(widget,/widgetStrings/);
+assert.match(i18n,/giorni prima/);
+assert.match(i18n,/ore prima/);
+assert.match(i18n,/minuti prima/);
+assert.match(i18n,/Sincronizzazione completata/);
+assert.match(i18n,/owner/);
+assert.match(i18n,/Jours fériés en France/);
 assert.match(calWidget,/height: 'match_parent'/);
 assert.doesNotMatch(handler,/getDisplayTitleMap|getTranslateActivities|translateActivities/);
 
