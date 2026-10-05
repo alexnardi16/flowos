@@ -12,7 +12,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
-import { isCompletedMultiDayVisible } from '@/lib/commitmentVisibility';
+import { eventEnd, isCompletedMultiDayVisible } from '@/lib/commitmentVisibility';
 
 const FILTERS_KEY='flowos-plan-filters-v1';
 type FilterKey='events'|'tasks'|'past'|'overdue';
@@ -67,7 +67,8 @@ export default function Plan(){
   const groupedItems=useMemo(()=>{
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
-      const value=itemDate(item);
+      const completedMultiDay=isCompletedMultiDayVisible(item,new Date(now));
+      const value=completedMultiDay?eventEnd(item)?.toISOString():itemDate(item);
       if(!value)continue;
       const date=new Date(value);
       const key=item.allDay
