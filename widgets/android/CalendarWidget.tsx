@@ -89,7 +89,7 @@ export function CalendarWidget({ weeks, language='it' }: AndroidCalendarWidgetPr
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
-            <TextWidget text="↻" style={{ fontSize: 16, fontWeight: 'bold', color: INK }} />
+            <TextWidget text="↻" style={{ fontSize: 16, fontWeight: 'bold', color: '#FFFFFF' }} />
           </FlexWidget>
           <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}>
             <TextWidget text="🎙" style={{ fontSize: 14 }} />
