@@ -53,6 +53,7 @@ function toRow(item: Commitment, userId: string) {
     resolution_pending: item.resolutionPending ?? false,
     sync_status: resourceType && !(item.kind === 'event' && item.status === 'done') ? 'pending' : resourceType ? 'synced' : 'local_only',
     sync_error: null,
+    completed_at: item.completedAt ?? null,
     deleted_at: item.deletedAt ?? null,
     updated_at: new Date().toISOString(),
   };
@@ -98,6 +99,7 @@ function fromRow(row: any): Commitment {
     syncStatus: row.sync_status ?? undefined,
     resolutionPending: Boolean(row.resolution_pending),
     syncError: row.sync_error ?? undefined,
+    completedAt: row.completed_at ?? undefined,
     deletedAt: row.deleted_at ?? undefined,
   };
 }
