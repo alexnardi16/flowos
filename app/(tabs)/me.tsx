@@ -14,10 +14,10 @@ import { DEFAULT_DAILY_SUMMARY_HOUR, DEFAULT_DAILY_SUMMARY_MINUTE, disableDailyS
 import { useFlowStore } from '@/lib/store';
 import { useAuth } from '@/providers/AuthProvider';
 import * as Application from 'expo-application';
-import { LANGUAGES, t, useLanguage } from '@/lib/i18n';
+import { LANGUAGES, localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { syncTodayWidget } from '@/lib/widgetSync';
 
-function syncDate(value?:string|null){return value?new Date(value).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'mai sincronizzata';}
+function syncDate(value?:string|null,language:import('@/lib/i18n').Language='it'){return value?new Date(value).toLocaleString(localeForLanguage(language),{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):t('mai sincronizzata',undefined,language);}
 function logLine(entry:DiagnosticEntry){const time=new Date(entry.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});return `${time} [${entry.level}] ${entry.event}${entry.details?` — ${entry.details}`:''}`;}
 function notificationLogLine(entry:NotificationLogEntry){const time=new Date(entry.at).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});return `${time} [${entry.level}] ${entry.event}${entry.details?` — ${entry.details}`:''}`;}
 function timeLabel(hour:number,minute:number){return `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;}
@@ -246,7 +246,7 @@ export default function Me(){
       <View style={styles.inline}><TextInput value={rangeStart} onChangeText={setRangeStart} placeholder={t('GG-MM-AAAA')} style={styles.input}/><TextInput value={rangeEnd} onChangeText={setRangeEnd} placeholder="GG-MM-AAAA" style={styles.input}/><Button secondary label={t('Salva')} onPress={()=>{void saveRange();}}/></View>
       {(connected||reconnecting)?<>
         <Text style={styles.item}>{friendlyCalendarName(google?.connection?.google_email??t('Account Google'),google?.connection?.google_email,language)}</Text>
-        <Text style={styles.meta}>{reconnecting?t('Ricollegamento Google in corso…'):`${t('Stato:')} ${google?.connection?.last_sync_status?t(google.connection.last_sync_status):''} · ${t('Ultima:')} ${syncDate(google?.connection?.last_sync_at)}`}</Text>
+        <Text style={styles.meta}>{reconnecting?t('Ricollegamento Google in corso…'):`${t('Stato:')} ${google?.connection?.last_sync_status?t(google.connection.last_sync_status):''} · ${t('Ultima:')} ${syncDate(google?.connection?.last_sync_at,language)}`}</Text>
         {error?<Text style={styles.error}>{error}</Text>:null}
         {progress>0?<><View style={styles.progressHeader}><Text style={styles.meta}>{t(stage)}</Text><Text style={styles.meta}>{progress}%</Text></View><View style={styles.track}><View style={[styles.fill,{width:`${progress}%`}]}/></View></>:null}
         <View style={styles.actions}><Button style={styles.actionButton} label={busy?t('Sincronizzazione in corso…'):t('Sincronizza ora')} onPress={()=>{void sync();}} disabled={busy}/><Button style={styles.actionButton} secondary label={t('Scollega Google')} onPress={()=>{void run(disconnectGoogleWorkspace);}} disabled={busy}/></View>
