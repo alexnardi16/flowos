@@ -11,3 +11,4 @@ test('every rendered calendar week has seven complete day slots',()=>{
   const data=buildCalendarWidgetData([],new Date('2026-12-31T23:59:59'),new Date('2026-09-28T10:00:00'));
   for(const week of data.weeks){assert.equal(week.days.length,7);}
 });
+test('calendar widget uses the same activity colors as the Today widget',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'event',title:'Event',kind:'event',status:'active',scheduledAt:'2026-09-21T15:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1},{id:'task',title:'Task',kind:'task',status:'active',dueAt:'2026-09-21T16:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1}],new Date('2026-09-30T23:59:59'),now);const items=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21').items;assert.equal(items.find(item=>item.id==='event').sourceColor,'#6C7BE8');assert.equal(items.find(item=>item.id==='task').sourceColor,'#E5A73B');});
