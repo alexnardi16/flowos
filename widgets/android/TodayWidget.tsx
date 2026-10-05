@@ -41,7 +41,7 @@ export function TodayWidget({ items, language='it' }: AndroidTodayWidgetProps) {
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:BG }}>
       {items.length ? items.map((item)=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:2, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:'#FFFFFF', flexDirection:'row', alignItems:'center' }}>
-        <FlexWidget style={{ width:4, height:28, marginRight:7, borderRadius:2, backgroundColor:item.sourceColor??'#F3F4F7' }}/>
+        <FlexWidget style={{ width:4, height:28, marginRight:7, borderRadius:2, backgroundColor:(item.sourceColor??'#F3F4F7') as any }}/>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'column', justifyContent:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           <FlexWidget style={{ width:'match_parent', flexDirection:'row', alignItems:'flex-start' }}>
             {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
