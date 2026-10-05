@@ -18,6 +18,7 @@ export const OVERDUE_CHANNEL = 'flowos-overdue';
 const EVENT_REMINDER_MAP_KEY = 'flowos:notifications:event-reminder-map';
 const DUE_SOON_ID_KEY = 'flowos:notifications:due-soon-scheduled-id';
 const OVERDUE_ID_KEY = 'flowos:notifications:overdue-scheduled-id';
+const RECOVERED_REMINDER_KEY = 'flowos:notifications:recovered-reminders-v1';
 
 let reminderEngineInFlight: Promise<ReminderPlan | null> | null = null;
 
@@ -90,7 +91,23 @@ async function writeReminderMap(map: ReminderMap) {
  *    to one notification per logical reminder.
  */
 async function syncEventReminders(commitments: Commitment[], now: Date) {
-  const reminders = dedupeScheduledReminders(buildCustomReminders(commitments, now));
+  const allReminders = dedupeScheduledReminders(buildCustomReminders(commitments, now, true));
+  let recovered: Record<string, string> = {};
+  try {
+    recovered = JSON.parse((await AsyncStorage.getItem(RECOVERED_REMINDER_KEY)) ?? '{}') as Record<string, string>;
+  } catch {
+    recovered = {};
+  }
+  const reminders: typeof allReminders = [];
+  const missed = allReminders.filter((reminder) => new Date(reminder.triggerAt).getTime() < now.getTime());
+  for (const reminder of allReminders) {
+    if (new Date(reminder.triggerAt).getTime() >= now.getTime()) {
+      reminders.push(reminder);
+      continue;
+    }
+    if (recovered[reminder.id] === reminder.triggerAt) continue;
+    reminders.push({ ...reminder, triggerAt: now.toISOString() });
+  }
   const desiredByKey = new Map(reminders.map((reminder) => [reminder.id, reminder]));
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   const kept = new Set<string>();
@@ -150,7 +167,9 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
         title: reminder.title,
-        body: `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
+        body: new Date(reminder.triggerAt).getTime() <= now.getTime() && allReminders.some((item) => item.id === reminder.id && new Date(item.triggerAt).getTime() < now.getTime())
+          ? `Promemoria recuperato · ${formatReminderOffsetLabel(reminder.minutesBefore)}`
+          : `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
         data: {
           source: 'reminder',
           commitmentId: reminder.commitmentId,
@@ -159,11 +178,13 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
         },
         categoryIdentifier: REMINDER_ACTION_CATEGORY,
       },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: new Date(reminder.triggerAt),
-        ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
-      },
+      trigger: new Date(reminder.triggerAt).getTime() <= now.getTime()
+        ? (Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null)
+        : {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: new Date(reminder.triggerAt),
+            ...(Platform.OS === 'android' ? { channelId: EVENT_REMINDER_CHANNEL } : null),
+          },
     });
     kept.add(reminder.id);
   }
@@ -201,11 +222,23 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     };
   }
 
+  for (const reminder of missed) {
+    if (desiredByKey.has(reminder.id) && desiredByKey.get(reminder.id)?.triggerAt === now.toISOString()) {
+      recovered[reminder.id] = reminder.triggerAt;
+    }
+  }
+  const activeRecoveryKeys = new Set(allReminders.map((reminder) => reminder.id));
+  for (const key of Object.keys(recovered)) {
+    const current = allReminders.find((reminder) => reminder.id === key);
+    if (!current || current.triggerAt !== recovered[key]) delete recovered[key];
+  }
+  await AsyncStorage.setItem(RECOVERED_REMINDER_KEY, JSON.stringify(recovered));
   await writeReminderMap(next);
   await logNotificationEvent('event-reminders-synced', {
     count: reminders.length,
     scheduled: finalKept.size,
     removed: Math.max(0, finalScheduled.filter((notification) => getReminderKey(notification)).length - finalKept.size),
+    recovered: missed.length,
   });
 }
 /**
