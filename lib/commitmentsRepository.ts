@@ -115,8 +115,8 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
   let userId:string|undefined;
   try {
-    const { data: auth } = await supabase.auth.getUser();
-    userId = auth.user?.id;
+    const { data: auth } = await supabase.auth.getSession();
+    userId = auth.session?.user?.id;
   } catch (error) {
     await logNotificationEvent('commitment-auth-read-failed', {
       id:item.id,title:item.title,
