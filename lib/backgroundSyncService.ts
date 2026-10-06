@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
 import { buildDailySummary, toDateKey } from './dailySummary';
-import { loadCommitments, pushPendingToGoogle, saveCommitment } from './commitmentsRepository';
+import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment } from './commitmentsRepository';
 import { getGoogleWorkspaceStatus, syncGoogleTasksIncremental, syncGoogleWorkspace } from './googleWorkspace';
 import { syncTodayWidget } from './widgetSync';
 import { runReminderEngine } from './reminderEngine';
@@ -16,6 +16,7 @@ import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, reconci
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
 export const GOOGLE_TASKS_BACKGROUND_TASK = 'flowos-google-tasks-sync';
 export const TASK_ROLLOVER_BACKGROUND_TASK = 'flowos-task-rollover';
+export const GOOGLE_PUSH_RETRY_BACKGROUND_TASK = 'flowos-google-push-retry';
 async function isPastDailySummaryTime(now: Date): Promise<boolean> {
   const { hour, minute } = await getDailySummaryTime();
   return now.getHours() > hour || (now.getHours() === hour && now.getMinutes() >= minute);
@@ -160,6 +161,19 @@ TaskManager.defineTask(TASK_ROLLOVER_BACKGROUND_TASK, async () => {
   }
 });
 
+TaskManager.defineTask(GOOGLE_PUSH_RETRY_BACKGROUND_TASK, async () => {
+  try {
+    if (!(await hasAuthenticatedSession())) return BackgroundTask.BackgroundTaskResult.Success;
+    await flushOfflineQueue();
+    await pushPendingToGoogle();
+    await logNotificationEvent('google-push-retry-background-completed');
+    return BackgroundTask.BackgroundTaskResult.Success;
+  } catch (error) {
+    await logNotificationEvent('google-push-retry-background-failed', error, 'warn');
+    return BackgroundTask.BackgroundTaskResult.Failed;
+  }
+});
+
 TaskManager.defineTask(GOOGLE_TASKS_BACKGROUND_TASK, async () => {
   try {
     if (!(await hasAuthenticatedSession())) return BackgroundTask.BackgroundTaskResult.Success;
@@ -199,11 +213,14 @@ export async function registerBackgroundSync() {
     if (!(await TaskManager.isTaskRegisteredAsync(TASK_ROLLOVER_BACKGROUND_TASK))) {
       await BackgroundTask.registerTaskAsync(TASK_ROLLOVER_BACKGROUND_TASK, { minimumInterval: 15 });
     }
+    if (!(await TaskManager.isTaskRegisteredAsync(GOOGLE_PUSH_RETRY_BACKGROUND_TASK))) {
+      await BackgroundTask.registerTaskAsync(GOOGLE_PUSH_RETRY_BACKGROUND_TASK, { minimumInterval: 15 });
+    }
     await logNotificationEvent('background-task-registered');
   } catch (error) { await logNotificationEvent('background-task-register-failed', error, 'error'); }
 }
 export async function unregisterBackgroundSync() {
   if (Platform.OS === 'web') return;
-  try { const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK); if (already) await BackgroundTask.unregisterTaskAsync(DAILY_SUMMARY_TASK); const tasksAlready = await TaskManager.isTaskRegisteredAsync(GOOGLE_TASKS_BACKGROUND_TASK); if (tasksAlready) await BackgroundTask.unregisterTaskAsync(GOOGLE_TASKS_BACKGROUND_TASK); const rolloverAlready = await TaskManager.isTaskRegisteredAsync(TASK_ROLLOVER_BACKGROUND_TASK); if (rolloverAlready) await BackgroundTask.unregisterTaskAsync(TASK_ROLLOVER_BACKGROUND_TASK); await logNotificationEvent('background-task-unregistered'); }
+  try { const already = await TaskManager.isTaskRegisteredAsync(DAILY_SUMMARY_TASK); if (already) await BackgroundTask.unregisterTaskAsync(DAILY_SUMMARY_TASK); const tasksAlready = await TaskManager.isTaskRegisteredAsync(GOOGLE_TASKS_BACKGROUND_TASK); if (tasksAlready) await BackgroundTask.unregisterTaskAsync(GOOGLE_TASKS_BACKGROUND_TASK); const rolloverAlready = await TaskManager.isTaskRegisteredAsync(TASK_ROLLOVER_BACKGROUND_TASK); if (rolloverAlready) await BackgroundTask.unregisterTaskAsync(TASK_ROLLOVER_BACKGROUND_TASK); const pushRetryAlready = await TaskManager.isTaskRegisteredAsync(GOOGLE_PUSH_RETRY_BACKGROUND_TASK); if (pushRetryAlready) await BackgroundTask.unregisterTaskAsync(GOOGLE_PUSH_RETRY_BACKGROUND_TASK); await logNotificationEvent('background-task-unregistered'); }
   catch (error) { await logNotificationEvent('background-task-unregister-failed', error, 'warn'); }
 }
