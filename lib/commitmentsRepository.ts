@@ -212,9 +212,10 @@ export async function flushOfflineQueue() {
 }
 
 /** Forces an immediate push of any pending local changes to Google (saveCommitment already marks Google-syncable items as pending; this is what actually sends them). */
-export async function pushPendingToGoogle() {
+export async function pushPendingToGoogle(commitmentId?: string) {
   if (!isSupabaseConfigured) return;
-  const { data, error } = await supabase.functions.invoke('google-workspace', { body: { action: 'sync-push' } });
+  const body = commitmentId ? { action: 'sync-push', commitmentId } : { action: 'sync-push' };
+  const { data, error } = await supabase.functions.invoke('google-workspace', { body });
   if (error) throw error;
   if (data?.error) throw new Error(String(data.error));
   await logAnyPushErrors();
