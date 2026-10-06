@@ -30,12 +30,12 @@ export default function Calendar(){
   const commitments=useFlowStore(state=>state.commitments); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
   const[manageId,setManageId]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
-  const params=useLocalSearchParams<{widgetAction?:string;date?:string}>();
+  const params=useLocalSearchParams<{widgetAction?:string;date?:string;id?:string}>();
   const scrollRef=useRef<import('react-native').ScrollView|null>(null);
   const weekOffsets=useRef(new Map<number,number>());
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
-  useEffect(()=>{const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;if(action==='sync')void syncWithGoogle();},[params.widgetAction,syncWithGoogle]);
+  useEffect(()=>{const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;const id=typeof params.id==='string'?params.id:null;if(action==='sync')void syncWithGoogle();if(action==='manage'&&id) setManageId(id);},[params.widgetAction,params.id,syncWithGoogle]);
 
   const weeks=useMemo(()=>{
     const now=new Date();
