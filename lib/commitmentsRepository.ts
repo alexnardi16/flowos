@@ -113,23 +113,57 @@ export async function loadCommitments(): Promise<Commitment[]> {
 
 export async function saveCommitment(item: Commitment): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
-  const { data: auth } = await supabase.auth.getUser();
-  const userId = auth.user?.id;
-  if (!userId) throw new Error('Sessione FlowOS scaduta. Esci e accedi nuovamente.');
-  const row = toRow(item, userId);
-  const { data: existing, error: existingError } = await supabase.from('commitments').select('*').eq('id', item.id).eq('user_id', userId).maybeSingle();
-  if (existingError) throw existingError;
-  if (existing) {
-    const comparableKeys = Object.keys(row).filter(key => key !== 'updated_at');
-    const unchanged = comparableKeys.every(key => JSON.stringify(existing[key]) === JSON.stringify((row as Record<string, unknown>)[key]));
-    if (unchanged) return true;
+  let userId:string|undefined;
+  try {
+    const { data: auth } = await supabase.auth.getUser();
+    userId = auth.user?.id;
+  } catch (error) {
+    await logNotificationEvent('commitment-auth-read-failed', {
+      id:item.id,title:item.title,
+      error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack??null}:error
+    }, 'warn');
+    return false;
   }
-  const { error } = await supabase.from('commitments').upsert(row, { onConflict: 'id' });
-  if (!error) return true;
-  await logNotificationEvent('commitment-persist-failed', { id: item.id, title: item.title, error: error.message, code: error.code ?? null, details: error.details ?? null, hint: error.hint ?? null }, 'error');
-  await enqueueMutation({ id: `${Date.now()}-${item.id}`, table: 'commitments', action: 'upsert', payload: row, createdAt: new Date().toISOString(), lastError: error.message });
-  await logNotificationEvent('commitment-persist-queued', { id: item.id, error: error.message }, 'warn');
-  return false;
+  if (!userId) {
+    await logNotificationEvent('commitment-save-skipped-no-session', {id:item.id,title:item.title}, 'warn');
+    return false;
+  }
+  const row = toRow(item, userId);
+  try {
+    const { data: existing, error: existingError } = await supabase.from('commitments').select('*').eq('id', item.id).eq('user_id', userId).maybeSingle();
+    if (existingError) {
+      await logNotificationEvent('commitment-existing-read-failed', {
+        id:item.id,title:item.title,
+        error:{message:existingError.message,code:existingError.code??null,details:existingError.details??null,hint:existingError.hint??null}
+      }, 'warn');
+    } else if (existing) {
+      const comparableKeys = Object.keys(row).filter(key => key !== 'updated_at');
+      const unchanged = comparableKeys.every(key => JSON.stringify(existing[key]) === JSON.stringify((row as Record<string, unknown>)[key]));
+      if (unchanged) return true;
+    }
+    const { error } = await supabase.from('commitments').upsert(row, { onConflict: 'id' });
+    if (!error) return true;
+    await logNotificationEvent('commitment-persist-failed', { id:item.id,title:item.title,error:error.message,code:error.code??null,details:error.details??null,hint:error.hint??null }, 'error');
+    await enqueueMutation({id:`${Date.now()}-${item.id}`,table:'commitments',action:'upsert',payload:row,createdAt:new Date().toISOString(),lastError:error.message});
+    await logNotificationEvent('commitment-persist-queued', {id:item.id,error:error.message}, 'warn');
+    return false;
+  } catch (error) {
+    const message=error instanceof Error?error.message:'Persistenza non riuscita.';
+    await logNotificationEvent('commitment-persist-exception', {
+      id:item.id,title:item.title,
+      error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack??null}:error
+    }, 'error');
+    try {
+      await enqueueMutation({id:`${Date.now()}-${item.id}`,table:'commitments',action:'upsert',payload:row,createdAt:new Date().toISOString(),lastError:message});
+      await logNotificationEvent('commitment-persist-queued', {id:item.id,error:message}, 'warn');
+    } catch (queueError) {
+      await logNotificationEvent('commitment-persist-queue-failed', {
+        id:item.id,title:item.title,
+        error:queueError instanceof Error?{name:queueError.name,message:queueError.message,stack:queueError.stack??null}:queueError
+      }, 'error');
+    }
+    return false;
+  }
 }
 
 export async function removeCommitmentOnlyFromFlowOS(id: string) {
