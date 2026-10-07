@@ -5,3 +5,5 @@ Deploy requested 2026-07-20
 # Re-run deployment after commitment push validation hardening
 
 # Fix google-workspace parser error
+
+# Tombstone and targeted sync hardening
