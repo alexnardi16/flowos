@@ -49,6 +49,6 @@ test('Google pull loads deleted_at before applying FlowOS tombstone protection',
 });
 
 test('manual sync from Manage is targeted to the exact commitment',()=>{
-  assert.match(storeSource,/syncItemToGoogleNow:\(id\)=>/);
+  assert.match(storeSource,/syncItemToGoogleNow:\(id:string\)=>/);
   assert.match(manageSource,/syncItemToGoogleNow\(item\.id\)/);
 });
