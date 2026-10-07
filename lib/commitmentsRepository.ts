@@ -5,7 +5,7 @@ import { logNotificationEvent } from './notificationLog';
 import { recordDiagnostic } from './diagnostics';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { normalizeTaskPriorities } from './taskPriority';
-import { initialSyncStatus, shouldPreserveLocalTombstone } from './commitmentSyncPolicy';
+import { initialSyncStatus } from './commitmentSyncPolicy';
 
 function googleDescription(item: Commitment) {
   const parts = [
