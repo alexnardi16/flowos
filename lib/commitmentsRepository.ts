@@ -5,6 +5,7 @@ import { logNotificationEvent } from './notificationLog';
 import { recordDiagnostic } from './diagnostics';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { normalizeTaskPriorities } from './taskPriority';
+import { initialSyncStatus, shouldPreserveLocalTombstone } from './commitmentSyncPolicy';
 
 function googleDescription(item: Commitment) {
   const parts = [
@@ -51,7 +52,7 @@ function toRow(item: Commitment, userId: string) {
     // as a Google write. Tasks can still use pending because Google Tasks has
     // an explicit completed status.
     resolution_pending: item.resolutionPending ?? false,
-    sync_status: resourceType && !(item.kind === 'event' && item.status === 'done') ? 'pending' : resourceType ? 'synced' : 'local_only',
+    sync_status: initialSyncStatus(item),
     sync_error: null,
     completed_at: item.completedAt ?? null,
     deleted_at: item.deletedAt ?? null,
@@ -167,8 +168,10 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
 }
 
 export async function removeCommitmentOnlyFromFlowOS(id: string) {
-  const { error } = await supabase.from('commitments').delete().eq('id', id);
+  if (!isSupabaseConfigured) return;
+  const { data, error } = await supabase.from('commitments').update({ deleted_at: new Date().toISOString(), last_sync_origin: 'flowos', sync_status: 'synced', sync_error: null, updated_at: new Date().toISOString() }).eq('id', id).select('id').maybeSingle();
   if (error) throw error;
+  if (!data) throw new Error('Attività non trovata o non eliminabile da FlowOS.');
 }
 
 export async function deleteCommitmentAlsoFromGoogle(item: Commitment) {
@@ -226,7 +229,7 @@ export async function pushPendingToGoogle(commitmentId?: string) {
 async function logAnyPushErrors() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return;
-  const { data: errored } = await supabase.from('commitments').select('title,sync_error').eq('user_id', auth.user.id).eq('sync_status', 'error').limit(10);
+  const { data: errored } = await supabase.from('commitments').select('title,sync_error').eq('user_id', auth.user.id).eq('sync_status', 'error').is('deleted_at', null).limit(10);
   if (!errored?.length) return;
   await logNotificationEvent('push-to-google-item-failed', { items: errored.map((item) => ({ title: item.title, error: item.sync_error })) }, 'warn');
 }
