@@ -1,3 +1,5 @@
+const fs=require('node:fs');
+const path=require('node:path');
 const test=require('node:test');const assert=require('node:assert/strict');const{upsertCommitmentState,removeCommitmentState,mergeRemoteCommitments}=require('../.test-dist-mutations/lib/commitmentState.js');
 const{initialSyncStatus,shouldPushToGoogle,shouldPreserveLocalTombstone}=require('../.test-dist-mutations/lib/commitmentSyncPolicy.js');
 function item(id,kind,title=id){return{id,title,kind,status:kind==='event'?'scheduled':'active',durationMinutes:30,energy:'medium',context:kind==='event'?'Calendario':'Google Tasks',confidence:1};}
@@ -27,4 +29,26 @@ test('a newly created commitment without a Google ID must always be pushed',()=>
 test('a FlowOS-only deletion is represented as a tombstone and is preserved across Google pulls',()=>{
   assert.equal(shouldPreserveLocalTombstone({deletedAt:'2026-10-07T12:00:00.000Z',lastSyncOrigin:'flowos'}),true);
   assert.equal(shouldPreserveLocalTombstone({deletedAt:'2026-10-07T12:00:00.000Z',lastSyncOrigin:'google'}),false);
+});
+
+const repoSource=fs.readFileSync(path.join(__dirname,'..','lib','commitmentsRepository.ts'),'utf8');
+const storeSource=fs.readFileSync(path.join(__dirname,'..','lib','store.ts'),'utf8');
+const manageSource=fs.readFileSync(path.join(__dirname,'..','components','ManageSheet.tsx'),'utf8');
+const serverSource=fs.readFileSync(path.join(__dirname,'..','supabase','functions','google-workspace','index.ts'),'utf8');
+
+test('local-only deletion uses the server-side FlowOS tombstone action',()=>{
+  assert.match(repoSource,/action:\s*['"]hide-from-flowos['"]/);
+  assert.match(serverSource,/action===["']hide-from-flowos["']/);
+  assert.match(serverSource,/deleted_at:now\(\)/);
+  assert.match(serverSource,/last_sync_origin:"flowos"/);
+});
+
+test('Google pull loads deleted_at before applying FlowOS tombstone protection',()=>{
+  assert.match(serverSource,/select\(["']id,external_id,updated_at,last_sync_origin,status,kind,ai_metadata,priority,deleted_at["']\)/);
+  assert.match(serverSource,/found\?\.deleted_at&&found\.last_sync_origin===["']flowos["']/);
+});
+
+test('manual sync from Manage is targeted to the exact commitment',()=>{
+  assert.match(storeSource,/syncItemToGoogleNow:\(id\)=>/);
+  assert.match(manageSource,/syncItemToGoogleNow\(item\.id\)/);
 });
