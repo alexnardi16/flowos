@@ -132,7 +132,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   }
   async function syncNow() {
     setBusy(true);
-    try { await syncItemToGoogleNow(); showAlert(t('Gestisci'), t('Sincronizzazione con Google avviata.')); }
+    try { await syncItemToGoogleNow(item.id); showAlert(t('Gestisci'), t('Sincronizzazione con Google avviata.')); }
     catch (error) { showAlert(t('Gestisci'), error instanceof Error ? error.message : t('Sincronizzazione non riuscita.')); }
     finally { setBusy(false); }
   }
