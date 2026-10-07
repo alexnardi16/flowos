@@ -21,7 +21,8 @@ test('an existing Google-linked completed event does not require a Google comple
 });
 test('a newly created commitment without a Google ID must always be pushed',()=>{
   assert.equal(initialSyncStatus({kind:'event',status:'scheduled'}),'pending');
-  assert.equal(shouldPushToGoogle({}),'true'==='true');
+  assert.equal(shouldPushToGoogle({}),true);
+  assert.equal(shouldPushToGoogle({deletedAt:'2026-10-07T12:00:00.000Z'}),false);
 });
 test('a FlowOS-only deletion is represented as a tombstone and is preserved across Google pulls',()=>{
   assert.equal(shouldPreserveLocalTombstone({deletedAt:'2026-10-07T12:00:00.000Z',lastSyncOrigin:'flowos'}),true);
