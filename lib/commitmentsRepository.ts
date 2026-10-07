@@ -169,9 +169,14 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
 
 export async function removeCommitmentOnlyFromFlowOS(id: string) {
   if (!isSupabaseConfigured) return;
-  const { data, error } = await supabase.from('commitments').update({ deleted_at: new Date().toISOString(), last_sync_origin: 'flowos', sync_status: 'synced', sync_error: null, updated_at: new Date().toISOString() }).eq('id', id).select('id').maybeSingle();
+  const { data, error } = await supabase.functions.invoke('google-workspace', {
+    body: { action: 'hide-from-flowos', commitmentId: id },
+  });
   if (error) throw error;
-  if (!data) throw new Error('Attività non trovata o non eliminabile da FlowOS.');
+  if (data?.error) throw new Error(String(data.error));
+  if (!data?.ok || data.commitmentId !== id) {
+    throw new Error('Attività non trovata o non eliminabile da FlowOS.');
+  }
 }
 
 export async function deleteCommitmentAlsoFromGoogle(item: Commitment) {
@@ -214,7 +219,7 @@ export async function flushOfflineQueue() {
   return failed;
 }
 
-/** Forces an immediate push of any pending local changes to Google (saveCommitment already marks Google-syncable items as pending; this is what actually sends them). */
+/** Forces an immediate push of one specific local change when an id is supplied, or all pending changes otherwise. */
 export async function pushPendingToGoogle(commitmentId?: string) {
   if (!isSupabaseConfigured) return;
   const body = commitmentId ? { action: 'sync-push', commitmentId } : { action: 'sync-push' };
