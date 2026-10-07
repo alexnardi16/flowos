@@ -1,3 +1,5 @@
 Deploy requested 2026-07-20
 
 # Commitment sync hardening
+
+# Re-run deployment after commitment push validation hardening
