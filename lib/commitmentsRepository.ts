@@ -113,7 +113,12 @@ export async function loadCommitments(): Promise<Commitment[]> {
 }
 
 export async function saveCommitment(item: Commitment): Promise<boolean> {
-  if (!isSupabaseConfigured) return false;
+  const startedAt=Date.now();
+  await logNotificationEvent('commitment-save-stage-start',{id:item.id,kind:item.kind,title:item.title,status:item.status,hasExternalId:Boolean(item.externalId),supabaseConfigured:isSupabaseConfigured});
+  if (!isSupabaseConfigured) {
+    await logNotificationEvent('commitment-save-stage-aborted',{id:item.id,stage:'configuration',reason:'supabase-not-configured'},'error');
+    return false;
+  }
   let userId:string|undefined;
   try {
     const { data: auth } = await supabase.auth.getSession();
@@ -129,8 +134,11 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
     await logNotificationEvent('commitment-save-skipped-no-session', {id:item.id,title:item.title}, 'warn');
     return false;
   }
+  await logNotificationEvent('commitment-save-stage-authenticated',{id:item.id,userIdPresent:Boolean(userId)});
   const row = toRow(item, userId);
+  await logNotificationEvent('commitment-save-stage-row-built',{id:item.id,kind:row.kind,status:row.status,startsAt:row.starts_at,deadlineAt:row.deadline_at,syncStatus:row.sync_status,externalIdPresent:Boolean(row.external_id),titleLength:String(row.title??'').length});
   try {
+    await logNotificationEvent('commitment-save-stage-existing-read-start',{id:item.id});
     const { data: existing, error: existingError } = await supabase.from('commitments').select('*').eq('id', item.id).eq('user_id', userId).maybeSingle();
     if (existingError) {
       await logNotificationEvent('commitment-existing-read-failed', {
@@ -140,16 +148,30 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
     } else if (existing) {
       const comparableKeys = Object.keys(row).filter(key => key !== 'updated_at');
       const unchanged = comparableKeys.every(key => JSON.stringify(existing[key]) === JSON.stringify((row as Record<string, unknown>)[key]));
-      if (unchanged) return true;
+      if (unchanged) {
+        await logNotificationEvent('commitment-save-stage-no-change',{id:item.id,elapsedMs:Date.now()-startedAt});
+        return true;
+      }
     }
-    const { error } = await supabase.from('commitments').upsert(row, { onConflict: 'id' });
-    if (!error) return true;
+    await logNotificationEvent('commitment-save-stage-upsert-start',{id:item.id,existingRow:Boolean(existing),existingReadFailed:Boolean(existingError)});
+    const { data: persistedRows, error } = await supabase.from('commitments').upsert(row, { onConflict: 'id' }).select('id,kind,status,sync_status,external_id,updated_at').limit(1);
+    if (!error) {
+      const persisted=persistedRows?.[0];
+      await logNotificationEvent('commitment-save-stage-upsert-result',{id:item.id,success:true,returnedRow:Boolean(persisted),returnedIdMatches:persisted?.id===item.id,persistedKind:persisted?.kind??null,persistedStatus:persisted?.status??null,persistedSyncStatus:persisted?.sync_status??null,externalIdPresent:Boolean(persisted?.external_id),elapsedMs:Date.now()-startedAt},persisted?'info':'warn');
+      if (!persisted||persisted.id!==item.id) {
+        await logNotificationEvent('commitment-save-stage-readback-missing',{id:item.id,returnedRows:persistedRows?.length??0},'error');
+        return false;
+      }
+      return true;
+    }
+    await logNotificationEvent('commitment-save-stage-upsert-result',{id:item.id,success:false,elapsedMs:Date.now()-startedAt,error:{message:error.message,code:error.code??null,details:error.details??null,hint:error.hint??null}},'error');
     await logNotificationEvent('commitment-persist-failed', { id:item.id,title:item.title,error:error.message,code:error.code??null,details:error.details??null,hint:error.hint??null }, 'error');
     await enqueueMutation({id:`${Date.now()}-${item.id}`,table:'commitments',action:'upsert',payload:row,createdAt:new Date().toISOString(),lastError:error.message});
     await logNotificationEvent('commitment-persist-queued', {id:item.id,error:error.message}, 'warn');
     return false;
   } catch (error) {
     const message=error instanceof Error?error.message:'Persistenza non riuscita.';
+    await logNotificationEvent('commitment-save-stage-exception',{id:item.id,elapsedMs:Date.now()-startedAt,error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack??null}:error},'error');
     await logNotificationEvent('commitment-persist-exception', {
       id:item.id,title:item.title,
       error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack??null}:error
@@ -221,10 +243,20 @@ export async function flushOfflineQueue() {
 
 /** Forces an immediate push of one specific local change when an id is supplied, or all pending changes otherwise. */
 export async function pushPendingToGoogle(commitmentId?: string) {
-  if (!isSupabaseConfigured) return;
+  const startedAt=Date.now();
+  await logNotificationEvent('google-push-stage-client-start',{commitmentId:commitmentId??null,supabaseConfigured:isSupabaseConfigured});
+  if (!isSupabaseConfigured) {
+    await logNotificationEvent('google-push-stage-client-aborted',{commitmentId:commitmentId??null,reason:'supabase-not-configured'},'error');
+    throw new Error('Supabase non è configurato: impossibile sincronizzare con Google.');
+  }
   const body = commitmentId ? { action: 'sync-push', commitmentId } : { action: 'sync-push' };
+  await logNotificationEvent('google-push-stage-function-invoke',{commitmentId:commitmentId??null,action:body.action});
   const { data, error } = await supabase.functions.invoke('google-workspace', { body });
-  if (error) throw error;
+  if (error) {
+    await logNotificationEvent('google-push-stage-function-error',{commitmentId:commitmentId??null,elapsedMs:Date.now()-startedAt,error:{name:error.name,message:error.message,context:(error as any).context??null}},'error');
+    throw error;
+  }
+  await logNotificationEvent('google-push-stage-function-response',{commitmentId:commitmentId??null,elapsedMs:Date.now()-startedAt,responseOk:data?.ok??null,pushed:data?.pushed??null,responseCommitmentId:data?.commitmentId??null,responseError:data?.error??null},data?.ok===false?'error':'info');
   if (data?.error) throw new Error(String(data.error));
   await logAnyPushErrors();
   return data;
