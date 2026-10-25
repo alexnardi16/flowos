@@ -1,5 +1,5 @@
 import type { Commitment } from '../types';
-import { isSameCalendarDay, formatCommitmentTime } from './allDayDate';
+import { isSameCalendarDay } from './allDayDate';
 import { isExpired } from './itemTiming';
 
 export type DailySummaryItem = {
@@ -47,10 +47,21 @@ export function buildDailySummary(commitments: Commitment[], now: Date = new Dat
 
   const items: DailySummaryItem[] = scheduledToday.map((item) => {
     const value = item.scheduledAt ?? item.dueAt;
+    let time: string | undefined;
+    // All-day commitments should show only their title, never "Tutto il giorno".
+    // For timed commitments, show the interval using the item's configured duration.
+    if (value && !item.allDay) {
+      const start = new Date(value);
+      if (!Number.isNaN(start.getTime())) {
+        const end = new Date(start.getTime() + Math.max(1, item.durationMinutes || 1) * 60_000);
+        const formatTime = (date: Date) => date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        time = `${formatTime(start)} - ${formatTime(end)}`;
+      }
+    }
     return {
       id: item.id,
       title: item.title,
-      time: value ? formatCommitmentTime(item, value) : undefined,
+      time,
       kind: item.kind,
     };
   });
