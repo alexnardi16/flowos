@@ -220,6 +220,7 @@ export async function scheduleDailySummaryNotification(summary: DailySummary): P
     content: {
       title: summary.title,
       body: summary.body,
+      sticky: Platform.OS === 'android',
       data: { source: 'daily-summary', dateKey: summary.dateKey, hour, minute, timeZone },
     },
     trigger: {
@@ -255,6 +256,7 @@ export async function scheduleTomorrowMorningSummary(summary: DailySummary, now:
     content: {
       title: `Domani mattina · ${summary.title.replace(/^Domani /, '')}`,
       body: summary.body,
+      sticky: Platform.OS === 'android',
       data: { source: 'tomorrow-morning', dateKey: summary.dateKey },
     },
     trigger: {
@@ -297,6 +299,7 @@ export async function sendImmediateSummaryNotification(summary: DailySummary, te
       content: {
         title: test ? `[Prova] ${summary.title}` : summary.title,
         body: summary.body,
+        sticky: Platform.OS === 'android',
         data: { source: test ? 'daily-summary-test' : 'daily-summary-manual', dateKey: summary.dateKey },
       },
       trigger: Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null,
