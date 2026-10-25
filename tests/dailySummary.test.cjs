@@ -72,3 +72,35 @@ test('a due date later today does not count as overdue', () => {
   const summary = buildDailySummary(commitments, now);
   assert.equal(summary.overdueCount, 0);
 });
+
+
+test('all-day commitments are listed without the phrase "Tutto il giorno"', () => {
+  const now = new Date(2026, 6, 23, 7, 30);
+  const summary = buildDailySummary([
+    commitment({
+      id: 'all-day',
+      title: 'Festa nazionale',
+      kind: 'event',
+      allDay: true,
+      scheduledAt: '2026-07-23T00:00:00.000Z',
+      durationMinutes: 1440,
+    }),
+  ], now);
+  assert.equal(summary.items[0].time, undefined);
+  assert.match(summary.body, /Festa nazionale/);
+  assert.doesNotMatch(summary.body, /Tutto il giorno/);
+});
+
+test('timed commitments show start and end times based on duration', () => {
+  const now = new Date(2026, 6, 23, 7, 30);
+  const summary = buildDailySummary([
+    commitment({
+      id: 'timed',
+      title: 'Riunione',
+      kind: 'event',
+      scheduledAt: new Date(2026, 6, 23, 9, 15).toISOString(),
+      durationMinutes: 45,
+    }),
+  ], now);
+  assert.match(summary.body, /09:15 - 10:00 · Riunione/);
+});
