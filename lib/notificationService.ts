@@ -16,6 +16,22 @@ Notifications.setNotificationHandler({
 
 export { hasRecoveredToday };
 
+// Capture notification delivery while the native service is loaded. These
+// events are persisted so we can distinguish a banner timeout from a real
+// removal from Android's notification drawer.
+Notifications.addNotificationReceivedListener((notification) => {
+  const content = notification.request.content;
+  const data = (content.data ?? {}) as Record<string, unknown>;
+  void logNotificationEvent('notification-received-in-foreground', {
+    identifier: notification.request.identifier,
+    title: content.title ?? null,
+    source: typeof data.source === 'string' ? data.source : null,
+    dateKey: typeof data.dateKey === 'string' ? data.dateKey : null,
+    platform: Platform.OS,
+    receivedAt: new Date().toISOString(),
+  });
+});
+
 export const NOTIFICATIONS_SUPPORTED_HERE = Platform.OS !== 'web';
 export const DAILY_SUMMARY_CHANNEL = 'flowos-daily-summary';
 export const DEFAULT_DAILY_SUMMARY_HOUR = 7;
@@ -166,6 +182,15 @@ export async function reconcilePresentedDailySummary(summary: DailySummary): Pro
   try {
     const presented = await Notifications.getPresentedNotificationsAsync();
     const matching = presented.filter(isFlowOSDailySummary);
+    await logNotificationEvent('presented-summary-reconcile-snapshot', {
+      presentedCount: presented.length,
+      presented: presented.map((notification) => ({
+        identifier: notification.request.identifier,
+        title: notification.request.content.title ?? null,
+        source: notificationSource(notification),
+      })),
+      matchingFlowOSSummaryCount: matching.length,
+    });
 
     if (
       matching.length === 1 &&
@@ -179,8 +204,13 @@ export async function reconcilePresentedDailySummary(summary: DailySummary): Pro
     // This is important after upgrades: old scheduled notifications may have
     // been created before the current source/dateKey metadata existed.
     for (const notification of matching) {
+      await logNotificationEvent('dismiss-stale-summary-requested', {
+        identifier: notification.request.identifier,
+        title: notification.request.content.title ?? null,
+        source: notificationSource(notification),
+      }, 'warn');
       await Notifications.dismissNotificationAsync(notification.request.identifier).catch((error) =>
-        logNotificationEvent('dismiss-stale-summary-failed', error, 'warn'),
+        logNotificationEvent('dismiss-stale-summary-failed', { identifier: notification.request.identifier, error }, 'warn'),
       );
     }
     return false;
@@ -293,23 +323,80 @@ export async function sendImmediateSummaryNotification(summary: DailySummary, te
   }
 
   await ensureDailySummaryChannel();
-  await logNotificationEvent('send-immediate-summary-scheduling', { test, foreground: true });
+  const before = await Notifications.getPresentedNotificationsAsync().catch(() => []);
+  await logNotificationEvent('send-immediate-summary-scheduling', {
+    test,
+    foreground: true,
+    platform: Platform.OS,
+    title: test ? `[Prova] ${summary.title}` : summary.title,
+    bodyLength: summary.body.length,
+    dateKey: summary.dateKey,
+    channelId: DAILY_SUMMARY_CHANNEL,
+    presentedBeforeCount: before.length,
+    presentedBefore: before.map((notification) => ({
+      identifier: notification.request.identifier,
+      title: notification.request.content.title ?? null,
+      source: notificationSource(notification),
+    })),
+  });
   try {
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
         title: test ? `[Prova] ${summary.title}` : summary.title,
         body: summary.body,
         sticky: Platform.OS === 'android',
+        autoDismiss: false,
+        priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
         data: { source: test ? 'daily-summary-test' : 'daily-summary-manual', dateKey: summary.dateKey },
       },
       trigger: Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null,
     });
-    await logNotificationEvent(test ? 'daily-summary-test-scheduled' : 'daily-summary-recovered-scheduled', {
+    await logNotificationEvent(test ? 'daily-summary-test-scheduled' : 'daily-summary-manual-scheduled', {
       dateKey: summary.dateKey,
       identifier,
+      platform: Platform.OS,
+      sticky: Platform.OS === 'android',
+      autoDismiss: false,
+      priority: Platform.OS === 'android' ? 'MAX' : null,
     });
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    await logNotificationEvent('send-immediate-summary-verified', { identifier, scheduledCount: scheduled.length });
+    const presented = await Notifications.getPresentedNotificationsAsync().catch(() => []);
+    await logNotificationEvent('send-immediate-summary-post-schedule-snapshot', {
+      identifier,
+      scheduledCount: scheduled.length,
+      matchingScheduled: scheduled.some((notification) => notification.identifier === identifier),
+      presentedCount: presented.length,
+      matchingPresented: presented.some((notification) => notification.request.identifier === identifier),
+      presented: presented.map((notification) => ({
+        identifier: notification.request.identifier,
+        title: notification.request.content.title ?? null,
+        source: notificationSource(notification),
+      })),
+    });
+    // Android's heads-up banner normally disappears after a few seconds. Check
+    // whether the underlying notification is still in the notification drawer.
+    for (const delayMs of [1500, 5000, 15000]) {
+      setTimeout(() => {
+        void (async () => {
+          try {
+            const current = await Notifications.getPresentedNotificationsAsync();
+            const matching = current.find((notification) => notification.request.identifier === identifier);
+            await logNotificationEvent('send-immediate-summary-presence-probe', {
+              identifier,
+              delayMs,
+              elapsedMsApprox: delayMs,
+              present: Boolean(matching),
+              presentedCount: current.length,
+              matchingTitle: matching?.request.content.title ?? null,
+              matchingSource: matching ? notificationSource(matching) : null,
+              platform: Platform.OS,
+            }, matching ? 'info' : 'warn');
+          } catch (error) {
+            await logNotificationEvent('send-immediate-summary-presence-probe-failed', { identifier, delayMs, error }, 'warn');
+          }
+        })();
+      }, delayMs);
+    }
     return identifier;
   } catch (error) {
     await logNotificationEvent('send-immediate-summary-schedule-failed', error, 'error');
