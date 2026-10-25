@@ -40,7 +40,7 @@ test('items scheduled today are included and sorted chronologically', () => {
   const summary = buildDailySummary(commitments, now);
   assert.equal(summary.scheduledCount, 2);
   assert.deepEqual(summary.items.map((item) => item.id), ['b', 'a']);
-  assert.match(summary.body, /09:00 · Palestra/);
+  assert.match(summary.body, /09:00 - 09:30 · Palestra/);
 });
 
 test('completed and deleted commitments never appear in the summary', () => {
