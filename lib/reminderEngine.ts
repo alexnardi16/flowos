@@ -168,6 +168,7 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
       const identifier = await Notifications.scheduleNotificationAsync({
         content: {
           title: reminder.title,
+          sticky: Platform.OS === 'android',
           body: new Date(reminder.triggerAt).getTime() <= now.getTime() && allReminders.some((item) => item.id === reminder.id && new Date(item.triggerAt).getTime() < now.getTime())
             ? `Promemoria recuperato · ${formatReminderOffsetLabel(reminder.minutesBefore)}`
             : `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
@@ -330,6 +331,7 @@ async function syncGroupedNotification(
     content: {
       title: title(uniqueTasks.length),
       body,
+      sticky: Platform.OS === 'android',
       data: { source, hash, taskIds: uniqueTasks.map((task) => task.id) },
       ...(Platform.OS === 'ios' ? { threadIdentifier: source } : null),
     },
