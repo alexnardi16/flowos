@@ -8,6 +8,7 @@ import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment
 import { findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
 import type { Commitment } from './types';
 import { recordDiagnostic } from './lib/diagnostics';
+import { createUuid } from './lib/uuid';
 import { normalizeTaskPriorities } from './lib/taskPriority';
 import { sortCommitments } from './lib/activityOrdering';
 import { getLanguage, widgetStrings } from './lib/i18n';
@@ -81,7 +82,7 @@ async function executeVoice(command:VoiceCommand,items:Commitment[]){
     const calendar=writable.find(c=>c.is_default)||writable[0];
     const list=lists.find(l=>l.is_default)||lists[0];
     if((command.kind==='event'&&!calendar)||(command.kind!=='event'&&!list))throw new Error('Nessuna destinazione Google scrivibile configurata.');
-    const id=`widget-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
+    const id=createUuid();
     const item:Commitment={id,title:command.title,kind:command.kind,status:command.kind==='event'?'scheduled':'active',durationMinutes:60,allDay:false,energy:'medium',context:command.kind==='event'?'Calendario':'Google Tasks',scheduledAt:command.kind==='event'&&when?when.toISOString():undefined,dueAt:command.kind==='task'&&when?when.toISOString():undefined,fixed:command.kind==='event',confidence:1,googleCalendarId:command.kind==='event'?calendar?.google_calendar_id:undefined,googleTaskListId:command.kind==='task'?list?.google_task_list_id:undefined,syncStatus:'pending'};
     await saveCommitment(item);await refreshFromGoogle();return;
   }
