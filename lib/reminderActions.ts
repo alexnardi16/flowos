@@ -69,6 +69,7 @@ export async function scheduleSnoozedReminder(commitmentId: string, notification
     content: {
       title: item.title,
       body: 'Promemoria FlowOS rimandato',
+      sticky: Platform.OS === 'android',
       data: {
         source: 'reminder-snoozed',
         commitmentId,
