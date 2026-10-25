@@ -7,6 +7,7 @@ import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment
 import { syncTodayWidget } from './widgetSync';
 import type { Commitment } from '../types';
 import { recordDiagnostic } from './diagnostics';
+import { createUuid } from './uuid';
 
 export const WIDGET_QUICK_ADD_CATEGORY='flowos_widget_quick_add';
 export const WIDGET_QUICK_ADD_ACTION='widget_quick_add_submit';
@@ -45,7 +46,7 @@ async function createFromText(text:string){
   const list=status?.taskLists?.find((l:any)=>l.selected&&l.is_default)??status?.taskLists?.find((l:any)=>l.selected);
   const when=command.when;
   const item:Commitment={
-    id:`widget-quick-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    id:createUuid(),
     title:command.title,
     kind:command.kind,
     status:command.kind==='event'?'scheduled':'active',
