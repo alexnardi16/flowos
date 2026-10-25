@@ -406,7 +406,17 @@ export async function sendImmediateSummaryNotification(summary: DailySummary, te
         priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
         data: { source: test ? 'daily-summary-test' : 'daily-summary-manual', dateKey: summary.dateKey },
       },
-      trigger: Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null,
+      // Use an explicit one-second Android time-interval trigger rather than an empty channel-only trigger.
+      // This follows the same native scheduling path used by FlowOS grouped alerts and avoids an
+      // immediate notification being briefly reported as presented and then disappearing.
+      trigger: Platform.OS === 'android'
+        ? {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: 1,
+            repeats: false,
+            channelId: DAILY_SUMMARY_CHANNEL,
+          }
+        : null,
     });
     await logNotificationEvent(test ? 'daily-summary-test-scheduled' : 'daily-summary-manual-scheduled', {
       dateKey: summary.dateKey,
