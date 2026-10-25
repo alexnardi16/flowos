@@ -142,7 +142,12 @@ async function cancelScheduledNotificationsBySource(sources: string[]) {
 
 function isFlowOSDailySummary(notification: Notifications.Notification): boolean {
   const source = notificationSource(notification);
-  if (source === 'daily-summary' || source === 'daily-summary-recovered' || source === 'tomorrow-morning') return true;
+  // A notification with an explicit source must be reconciled by that source.
+  // In particular, a manually requested summary must not be mistaken for an
+  // automatic recovery merely because its title matches the legacy format.
+  if (source) {
+    return source === 'daily-summary' || source === 'daily-summary-recovered' || source === 'tomorrow-morning';
+  }
 
   // Older FlowOS builds did not always attach a source to the notification.
   // Recognize their stable Italian summary titles so an app upgrade can
@@ -292,7 +297,7 @@ export async function sendImmediateSummaryNotification(summary: DailySummary, te
       content: {
         title: test ? `[Prova] ${summary.title}` : summary.title,
         body: summary.body,
-        data: { source: test ? 'daily-summary-test' : 'daily-summary-recovered', dateKey: summary.dateKey },
+        data: { source: test ? 'daily-summary-test' : 'daily-summary-manual', dateKey: summary.dateKey },
       },
       trigger: Platform.OS === 'android' ? { channelId: DAILY_SUMMARY_CHANNEL } : null,
     });
