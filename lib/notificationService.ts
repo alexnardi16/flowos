@@ -65,8 +65,8 @@ AppState.addEventListener('change', (nextState) => {
           identifier: item.request.identifier,
           title: item.request.content.title ?? null,
           source: notificationSource(item),
-          sticky: item.request.content.sticky ?? null,
-          autoDismiss: item.request.content.autoDismiss ?? null,
+          sticky: (item.request.content as unknown as { sticky?: boolean }).sticky ?? null,
+          autoDismiss: (item.request.content as unknown as { autoDismiss?: boolean }).autoDismiss ?? null,
         })),
       });
     } catch (error) {
