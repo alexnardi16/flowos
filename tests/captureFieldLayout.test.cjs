@@ -44,3 +44,8 @@ test('reminder label translations are single phrase pairs suitable for the same 
     assert.match(i18n,new RegExp('"'+key+'"\\s*:\\s*"(?:días|horas|minutos) antes"'));
   }
 });
+
+test('start-time field does not add a second outer margin',()=>{
+  assert.match(capture,/<View style=\{styles\.flex\}><Field fixedLabel singleLineLabel required label=\{t\('Orario di inizio'\)\}/);
+  assert.doesNotMatch(capture,/<View style=\{\[styles\.flex,styles\.field\]\}><Field fixedLabel singleLineLabel required label=\{t\('Orario di inizio'\)\}/);
+});
