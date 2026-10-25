@@ -52,3 +52,35 @@ test('manual sync from Manage is targeted to the exact commitment',()=>{
   assert.match(storeSource,/syncItemToGoogleNow:\(id:string\)=>/);
   assert.match(manageSource,/syncItemToGoogleNow\(item\.id\)/);
 });
+
+
+test('creating an activity immediately persists it and starts a targeted Google push',()=>{
+  const add=storeSource.slice(storeSource.indexOf('addCommitment:async'),storeSource.indexOf('rolloverTodayTasks:async'));
+  assert.ok(add.indexOf('await saveCommitment(changed)')>=0);
+  assert.ok(add.indexOf('await pushGoogleAndRefresh(commitment.id)')>add.indexOf('await saveCommitment(changed)'));
+  assert.match(add,/store-add-commitment-google-push-start/);
+  assert.match(add,/store-add-commitment-google-push-success/);
+  assert.match(add,/store-add-commitment-google-push-failed/);
+});
+test('editing an activity immediately persists the edit and triggers Google push',()=>{
+  const start=storeSource.indexOf('updateCommitment:async');
+  const end=storeSource.indexOf('removeOnlyFromFlowOS:async',start);
+  const edit=storeSource.slice(start,end);
+  assert.ok(edit.indexOf('await saveCommitment(changed)')>=0);
+  assert.ok(edit.indexOf('await pushGoogleAndRefresh()')>edit.indexOf('await saveCommitment(changed)'));
+});
+test('deleting an activity from both FlowOS and Google invokes the Google deletion repository',()=>{
+  const start=storeSource.indexOf('removeAlsoFromGoogle:async');
+  const end=storeSource.indexOf('removeSeriesFromGoogle:async',start);
+  const remove=storeSource.slice(start,end);
+  assert.match(remove,/await deleteCommitmentAlsoFromGoogle\(item\)/);
+  assert.ok(remove.indexOf('await deleteCommitmentAlsoFromGoogle(item)')<remove.indexOf('set({commitments:next})'));
+});
+test('FlowOS-only deletion keeps a tombstone so Google refresh cannot recreate the item',()=>{
+  const start=storeSource.indexOf('removeOnlyFromFlowOS:async');
+  const end=storeSource.indexOf('removeAlsoFromGoogle:async',start);
+  const remove=storeSource.slice(start,end);
+  assert.match(remove,/await removeCommitmentOnlyFromFlowOS\(id\)/);
+  assert.match(repoSource,/action:\s*['"]hide-from-flowos['"]/);
+  assert.match(serverSource,/last_sync_origin:"flowos"/);
+});
