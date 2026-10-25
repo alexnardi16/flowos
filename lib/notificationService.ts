@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DailySummary } from './dailySummary';
 import { logNotificationEvent } from './notificationLog';
@@ -30,6 +30,52 @@ Notifications.addNotificationReceivedListener((notification) => {
     platform: Platform.OS,
     receivedAt: new Date().toISOString(),
   });
+});
+
+// Record app lifecycle and notification interactions around disappearing-notification
+// reports. These listeners deliberately do not dismiss or otherwise mutate alerts.
+Notifications.addNotificationResponseReceivedListener((response) => {
+  const content = response.notification.request.content;
+  const data = (content.data ?? {}) as Record<string, unknown>;
+  void logNotificationEvent('notification-response-received', {
+    identifier: response.notification.request.identifier,
+    title: content.title ?? null,
+    source: typeof data.source === 'string' ? data.source : null,
+    actionIdentifier: response.actionIdentifier,
+    platform: Platform.OS,
+    at: new Date().toISOString(),
+  });
+});
+
+AppState.addEventListener('change', (nextState) => {
+  void logNotificationEvent('app-state-changed', {
+    nextState,
+    platform: Platform.OS,
+    at: new Date().toISOString(),
+  });
+  if (Platform.OS !== 'android') return;
+  // Capture the notification tray immediately after lifecycle transitions.
+  void (async () => {
+    try {
+      const presented = await Notifications.getPresentedNotificationsAsync();
+      await logNotificationEvent('presented-notifications-after-app-state-change', {
+        appState: nextState,
+        count: presented.length,
+        notifications: presented.map((item) => ({
+          identifier: item.request.identifier,
+          title: item.request.content.title ?? null,
+          source: notificationSource(item),
+          sticky: item.request.content.sticky ?? null,
+          autoDismiss: item.request.content.autoDismiss ?? null,
+        })),
+      });
+    } catch (error) {
+      await logNotificationEvent('presented-notifications-after-app-state-change-failed', {
+        appState: nextState,
+        error,
+      }, 'warn');
+    }
+  })();
 });
 
 export const NOTIFICATIONS_SUPPORTED_HERE = Platform.OS !== 'web';
@@ -324,6 +370,9 @@ export async function sendImmediateSummaryNotification(summary: DailySummary, te
 
   await ensureDailySummaryChannel();
   const before = await Notifications.getPresentedNotificationsAsync().catch(() => []);
+  const channel = Platform.OS === 'android'
+    ? await Notifications.getNotificationChannelAsync(DAILY_SUMMARY_CHANNEL).catch(() => null)
+    : null;
   await logNotificationEvent('send-immediate-summary-scheduling', {
     test,
     foreground: true,
@@ -332,6 +381,14 @@ export async function sendImmediateSummaryNotification(summary: DailySummary, te
     bodyLength: summary.body.length,
     dateKey: summary.dateKey,
     channelId: DAILY_SUMMARY_CHANNEL,
+    channelState: channel ? {
+      id: channel.id,
+      name: channel.name,
+      importance: channel.importance,
+      lockscreenVisibility: channel.lockscreenVisibility ?? null,
+      sound: channel.sound ?? null,
+      vibrationPattern: channel.vibrationPattern ?? null,
+    } : null,
     presentedBeforeCount: before.length,
     presentedBefore: before.map((notification) => ({
       identifier: notification.request.identifier,
