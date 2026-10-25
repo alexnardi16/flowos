@@ -146,12 +146,37 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
         error:{message:existingError.message,code:existingError.code??null,details:existingError.details??null,hint:existingError.hint??null}
       }, 'warn');
     } else if (existing) {
-      const comparableKeys = Object.keys(row).filter(key => key !== 'updated_at');
+      // Compare user-editable commitment data, not synchronization bookkeeping.
+      // Otherwise every save compares an existing "synced" row with the newly
+      // constructed "pending" row and re-queues an unchanged Google item.
+      const syncMetadataKeys = new Set([
+        'updated_at', 'sync_status', 'sync_error', 'last_sync_origin',
+        'external_provider', 'external_resource_type', 'external_id',
+        'external_etag', 'external_updated_at', 'google_calendar_id',
+        'google_task_list_id',
+      ]);
+      const comparableKeys = Object.keys(row).filter(key => !syncMetadataKeys.has(key));
       const unchanged = comparableKeys.every(key => JSON.stringify(existing[key]) === JSON.stringify((row as Record<string, unknown>)[key]));
       if (unchanged) {
         await logNotificationEvent('commitment-save-stage-no-change',{id:item.id,elapsedMs:Date.now()-startedAt});
         return true;
       }
+
+      // Keep the freshest server-side Google identity and ETag when this device
+      // edits an item from a potentially stale local cache. The actual content
+      // change still sets sync_status=pending below so it is pushed to Google.
+      const mutableRow = row as Record<string, unknown>;
+      for (const key of [
+        'external_provider', 'external_resource_type', 'external_id',
+        'external_etag', 'external_updated_at', 'google_calendar_id',
+        'google_task_list_id',
+      ]) {
+        if (existing[key] !== null && existing[key] !== undefined) mutableRow[key] = existing[key];
+      }
+      mutableRow.sync_status = 'pending';
+      mutableRow.sync_error = null;
+      mutableRow.last_sync_origin = 'flowos';
+      mutableRow.updated_at = new Date().toISOString();
     }
     await logNotificationEvent('commitment-save-stage-upsert-start',{id:item.id,existingRow:Boolean(existing),existingReadFailed:Boolean(existingError)});
     const { data: persistedRows, error } = await supabase.from('commitments').upsert(row, { onConflict: 'id' }).select('id,kind,status,sync_status,external_id,updated_at').limit(1);
