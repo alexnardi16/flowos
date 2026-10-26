@@ -16,3 +16,14 @@ test('calendar widget uses the same activity colors as the Today widget',()=>{co
 test('Calendar and Today use the same source color for the same activity source',()=>{const commitments=[{id:'event',title:'Event',kind:'event',status:'active',scheduledAt:'2026-09-21T15:00:00',durationMinutes:30,googleCalendarId:'calendar-a'},{id:'task',title:'Task',kind:'task',status:'active',dueAt:'2026-09-21T16:00:00',durationMinutes:30,googleTaskListId:'tasks-a'}];const data=buildCalendarWidgetData(commitments,new Date('2026-09-30T23:59:59'),new Date('2026-09-19T10:00:00'));const day=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21');const colors=buildActivitySourceColors(commitments);assert.equal(day.items.find(item=>item.id==='event').sourceColor,activitySourceColor(commitments[0],colors));assert.equal(day.items.find(item=>item.id==='task').sourceColor,activitySourceColor(commitments[1],colors));});
 
 test('completed multi-day events stay visible on the final day only when completed earlier',()=>{const start='2026-09-20T10:00:00';const early={id:'early',title:'Early done',kind:'event',status:'done',scheduledAt:start,durationMinutes:72*60,completedAt:'2026-09-21T12:00:00',energy:'medium',context:'test',confidence:1};const late={...early,id:'late',title:'Late done',completedAt:'2026-09-23T09:00:00'};const finalDay=new Date('2026-09-23T10:00:00');const beforeFinal=new Date('2026-09-22T10:00:00');const finalData=buildCalendarWidgetData([early,late],new Date('2026-09-30T23:59:59'),finalDay);const finalItems=finalData.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-23').items;assert.equal(finalItems.some(item=>item.id==='early'),true);assert.equal(finalItems.some(item=>item.id==='late'),false);const beforeData=buildCalendarWidgetData([early],new Date('2026-09-30T23:59:59'),beforeFinal);const beforeFinalDay=beforeData.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-23');assert.equal(beforeFinalDay.items.some(item=>item.id==='early'),true);assert.equal(beforeData.weeks.flatMap(w=>w.days).filter(d=>d.dateKey!=='2026-09-23').some(d=>d.items.some(item=>item.id==='early')),false);});
+
+test('calendar widget timeline includes dated activities before the current year and beyond the sync horizon',()=>{
+  const now=new Date('2026-10-20T10:00:00');
+  const data=buildCalendarWidgetData([
+    {id:'past',title:'Old activity',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2023-02-10T10:00:00'},
+    {id:'future',title:'Far future',kind:'event',status:'scheduled',durationMinutes:60,energy:'medium',context:'test',confidence:1,scheduledAt:'2032-07-14T10:00:00'}
+  ],new Date('2027-12-31T23:59:59'),now);
+  const days=data.weeks.flatMap(week=>week.days);
+  assert.equal(days.find(day=>day.dateKey==='2023-02-10').items.some(item=>item.id==='past'),true);
+  assert.equal(days.find(day=>day.dateKey==='2032-07-14').items.some(item=>item.id==='future'),true);
+});
