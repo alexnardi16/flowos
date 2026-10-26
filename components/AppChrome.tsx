@@ -11,11 +11,11 @@ export function AppChrome(){
   const[progress,setProgress]=useState<{percent:number;stage:string}|null>(null);
   useEffect(()=>subscribeToSyncProgress(value=>setProgress(value.percent>=100?null:value)),[]);
   const tabSafeBottom=insets.bottom;
-  return <>{progress?<View pointerEvents="none" style={[styles.sync,{bottom:66+tabSafeBottom+6}]}><View style={[styles.syncFill,{width:`${progress.percent}%`}]}/><Text style={styles.syncText}>{t(progress.stage,undefined,language)} · {progress.percent}%</Text></View>:null}</>;
+  return <><View pointerEvents="none" style={[styles.sync,{bottom:66+tabSafeBottom+6}]}><View style={[styles.syncFill,{width:progress?`${progress.percent}%`:'0%'}]}/><Text style={styles.syncText}>{progress?`${t(progress.stage,undefined,language)} · ${progress.percent}%`:t('Tutto sincronizzato',undefined,language)}</Text></View></>;
 }
 
 const styles=StyleSheet.create({
-  sync:{position:'absolute',left:12,right:12,height:25,borderRadius:13,overflow:'hidden',justifyContent:'center',backgroundColor:'#ECEEF4',zIndex:9998,elevation:20},
+  sync:{position:'absolute',left:12,right:12,height:25,borderRadius:13,borderWidth:1,borderColor:'#A8B1CE',overflow:'hidden',justifyContent:'center',backgroundColor:'#ECEEF4',zIndex:9998,elevation:20},
   syncFill:{position:'absolute',left:0,top:0,bottom:0,backgroundColor:palette.soft},
   syncText:{textAlign:'center',fontSize:10,fontWeight:'800',color:palette.primary},
 });
