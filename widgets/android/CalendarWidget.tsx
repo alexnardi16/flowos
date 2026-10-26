@@ -101,10 +101,10 @@ export function CalendarWidget({ weeks, language='it' }: AndroidCalendarWidgetPr
       </FlexWidget>
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
-        {weeks.slice(0, 8).map(week => {
+        {weeks.map(week => {
           const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
           return (
-            <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width: 'match_parent', height: weekContainerHeight, flexDirection: 'column', marginVertical: 2 }}>
+            <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?week=${week.days[0]?.dateKey}` }} style={{ width: 'match_parent', height: weekContainerHeight, flexDirection: 'column', marginVertical: 2 }}>
               {week.title ? <TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize: 10, fontWeight: 'bold', color: PRIMARY, marginBottom: 3 }} /> : null}
               <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'flex-start' }}>
                 {Array.from({ length: 7 }, (_, index) => week.days[index] ?? {
