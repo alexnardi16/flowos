@@ -147,7 +147,7 @@ const styles=StyleSheet.create({
   overdueTitle:{fontSize:16,fontWeight:'900',color:palette.ink},
   overdueItem:{paddingTop:6,borderTopWidth:1,borderTopColor:'#F3DCA8'},
   overdueItemTitle:{fontSize:15,fontWeight:'900',color:palette.ink},
-  overdueItemMeta:{fontSize:12,lineHeight:16,color:palette.muted,marginTop:1},dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:12,fontWeight:'900',color:palette.primary,textTransform:'capitalize'},
+  overdueItemMeta:{fontSize:12,lineHeight:16,fontWeight:'800',color:palette.primary,marginTop:1},dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:12,fontWeight:'900',color:palette.primary,textTransform:'capitalize'},
   itemCard:{padding:7,gap:2},
   tagRow:{alignItems:'center',gap:6,paddingRight:4},
   titleRow:{flexDirection:'row',alignItems:'flex-start',gap:7,minWidth:0},priorityBadge:{fontSize:12,lineHeight:18,fontWeight:'900',color:palette.primary,backgroundColor:palette.soft,borderRadius:8,paddingHorizontal:6},item:{flex:1,minWidth:0,flexShrink:1,fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
