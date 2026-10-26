@@ -4,8 +4,9 @@ test('calendar widget data excludes completed and deleted items',()=>{const now=
 test('the week that starts in September and contains October 1 is titled October',()=>{
   const now=new Date('2026-09-28T10:00:00');
   const data=buildCalendarWidgetData([],new Date('2026-10-31T23:59:59'),now);
-  assert.equal(data.weeks[0].title,'Ottobre 2026');
-  assert.equal(data.weeks[0].days.length,7);
+  const octoberWeek=data.weeks.find(week=>week.days.some(day=>day.dateKey==='2026-10-01'));
+  assert.equal(octoberWeek.title,'Ottobre 2026');
+  assert.equal(octoberWeek.days.length,7);
 });
 test('every rendered calendar week has seven complete day slots',()=>{
   const data=buildCalendarWidgetData([],new Date('2026-12-31T23:59:59'),new Date('2026-09-28T10:00:00'));
@@ -26,4 +27,15 @@ test('calendar widget timeline includes dated activities before the current year
   const days=data.weeks.flatMap(week=>week.days);
   assert.equal(days.find(day=>day.dateKey==='2023-02-10').items.some(item=>item.id==='past'),true);
   assert.equal(days.find(day=>day.dateKey==='2032-07-14').items.some(item=>item.id==='future'),true);
+});
+
+test('calendar widget weeks remain chronological around the current week',()=>{
+  const now=new Date('2026-10-20T10:00:00');
+  const data=buildCalendarWidgetData([],new Date('2027-12-31T23:59:59'),now);
+  const current=data.weeks.findIndex(week=>week.days.some(day=>day.isToday));
+  assert.ok(current>0);
+  assert.ok(current<data.weeks.length-1);
+  assert.equal(data.weeks[current-1].days[0].dateKey,'2026-10-12');
+  assert.equal(data.weeks[current].days[0].dateKey,'2026-10-19');
+  assert.equal(data.weeks[current+1].days[0].dateKey,'2026-10-26');
 });
