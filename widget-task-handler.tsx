@@ -3,6 +3,7 @@ import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { TodayWidget, type AndroidTodayWidgetProps } from './widgets/android/TodayWidget';
 import { CalendarWidget, type AndroidCalendarWidgetProps } from './widgets/android/CalendarWidget';
 import { buildCalendarWidgetData } from './lib/calendarWidgetData';
+import { CALENDAR_WIDGET_PAGE_OVERLAP, CALENDAR_WIDGET_PAGE_SIZE, getCalendarWidgetPage } from './lib/calendarWidgetPaging';
 import { getGoogleWorkspaceStatus, syncGoogleWorkspace } from './lib/googleWorkspace';
 import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment, deleteCommitmentAlsoFromGoogle, removeCommitmentOnlyFromFlowOS } from './lib/commitmentsRepository';
 import { findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
@@ -15,6 +16,7 @@ import { getLanguage, widgetStrings } from './lib/i18n';
 
 const STORAGE_KEY='flowos-store-v2';
 const CALENDAR_CACHE_KEY='flowos-calendar-widget-v2';
+const CALENDAR_PAGE_KEY='flowos-calendar-widget-page-v1';
 
 function dateKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function kindLabel(kind:string,language='it' as import('./lib/i18n').Language){const labels=widgetStrings(language);return kind==='event'?labels.event:labels.task;}
@@ -125,7 +127,14 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames,language);
       await saveCalendarCache(data,language);
     }
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget {...data} language={language}/>);break;default:break;}
+    let requestedStart:number|undefined;
+    try { const saved=await AsyncStorage.getItem(CALENDAR_PAGE_KEY); if(saved!==null&&Number.isFinite(Number(saved)))requestedStart=Number(saved); } catch {}
+    const pageShift=CALENDAR_WIDGET_PAGE_SIZE-CALENDAR_WIDGET_PAGE_OVERLAP;
+    if(props.widgetAction==='WIDGET_CLICK'&&props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,(requestedStart??getCalendarWidgetPage(data.weeks).startIndex)-pageShift);
+    if(props.widgetAction==='WIDGET_CLICK'&&props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=(requestedStart??getCalendarWidgetPage(data.weeks).startIndex)+pageShift;
+    let page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
+    try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language}/>);break;default:break;}
     if(props.widgetAction==='WIDGET_UPDATE'){
       try{
         const remote=await refreshFromGoogle();
@@ -138,7 +147,9 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
         const refreshed=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames,language);
         await saveCalendarCache(refreshed,language);
-        props.renderWidget(<CalendarWidget {...refreshed} language={language}/>);
+        page=getCalendarWidgetPage(refreshed.weeks,page.startIndex,new Date());
+        try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
+        props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language}/>);
       }catch(error){recordDiagnostic('widget-calendar-background-refresh-failed',error,'warn');}
     }
   }
