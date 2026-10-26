@@ -22,7 +22,7 @@ type ContactsFilter='all'|'onlyContacts'|'excludeContacts';
 const CONTACTS_FILTER_KEY='flowos-plan-contacts-filter-v1';
 
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
-function formatDateTime(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);if(item.allDay){const d=new Date(value);return `${d.toLocaleDateString(localeForLanguage(language),{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}return new Date(value).toLocaleString(localeForLanguage(language),{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function formatDateTime(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);if(item.allDay){const d=new Date(value);return `${d.toLocaleDateString(localeForLanguage(language),{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=start.toLocaleDateString(localeForLanguage(language),{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date} ${time(start)} - ${date} ${time(end)}`;}
 function cardSourceStyle(item:Commitment,sourceColors:Map<string,string>){return {backgroundColor:activitySourceColor(item,sourceColors),borderColor:item.googleCalendarId||item.googleTaskListId?'#D9DDE7':'#E0E2E8',borderWidth:1};}
 function searchable(item:Commitment){
   return[item.title,item.description,item.notes,item.location,item.context,item.outcome,item.kind].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -109,12 +109,11 @@ export default function Plan(){
         return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
           <Card style={[styles.itemCard,cardSourceStyle(item,sourceColors)]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
-              <Chip tone={item.status==='done'?'success':overdue?'warning':'primary'}>{item.kind==='event'?'EVENTO':false?'REMINDER':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
+              <Chip tone={item.status==='done'?'success':'primary'}>{item.kind==='event'?'EVENTO':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
             <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item,language)}{overdue?' · '+t('scaduta'):''}</Text>
-            <Text style={styles.meta}>{formatStartEnd(item,language)}</Text>
             {item.description?<Text style={styles.description}>{item.description}</Text>:null}
             {item.location?<Text style={styles.meta}>{t('Luogo')}: {item.location}</Text>:null}
           </Card>
@@ -145,7 +144,7 @@ const styles=StyleSheet.create({
   overdueItem:{paddingTop:6,borderTopWidth:1,borderTopColor:'#F3DCA8'},
   overdueItemTitle:{fontSize:15,fontWeight:'900',color:palette.ink},
   overdueItemMeta:{fontSize:12,lineHeight:16,color:palette.muted,marginTop:1},dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:12,fontWeight:'900',color:palette.primary,textTransform:'capitalize'},
-  itemCard:{padding:9,gap:4},
+  itemCard:{padding:7,gap:2},
   tagRow:{alignItems:'center',gap:6,paddingRight:4},
   titleRow:{flexDirection:'row',alignItems:'flex-start',gap:7,minWidth:0},priorityBadge:{fontSize:12,lineHeight:18,fontWeight:'900',color:palette.primary,backgroundColor:palette.soft,borderRadius:8,paddingHorizontal:6},item:{flex:1,minWidth:0,flexShrink:1,fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
   date:{fontSize:13,lineHeight:17,fontWeight:'800',color:palette.primary},
