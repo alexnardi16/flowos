@@ -45,7 +45,7 @@ module.exports = function withCalendarWidgetInitialPosition(config) {
 
     if (!source.includes('flowosInitialScrollPosition')) {
       const methodStart = source.indexOf(marker);
-      const returnPattern = /\\n\\s*return intent;\\s*\\n\\s*}\\s*\\n/g;
+      const returnPattern = /\n\s*return intent;\s*\n\s*}\s*\n/g;
       returnPattern.lastIndex = methodStart;
       const match = returnPattern.exec(source);
       if (!match) throw new Error('Calendar widget native patch: adapter return point not found');
@@ -77,7 +77,7 @@ module.exports = function withCalendarWidgetInitialPosition(config) {
         intent.putExtra("flowosInitialScrollPosition", initialScrollPosition);
 
 `;
-      source = source.slice(0, match.index) + '\\n' + positionCode + source.slice(match.index);
+      source = source.slice(0, match.index) + '\n' + positionCode + source.slice(match.index);
     }
 
     fs.writeFileSync(javaPath, source);
