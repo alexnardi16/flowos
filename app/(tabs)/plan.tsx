@@ -14,7 +14,7 @@ import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
 import { eventEnd, isCompletedMultiDayVisible } from '@/lib/commitmentVisibility';
 
-const FILTERS_KEY='flowos-plan-filters-v1';
+const FILTERS_KEY='flowos-plan-filters-v2';
 type FilterKey='events'|'tasks'|'past'|'overdue';
 type Filters=Record<FilterKey,boolean>;
 const DEFAULT_FILTERS:Filters={events:true,tasks:true,past:true,overdue:true};
@@ -39,6 +39,7 @@ export default function Plan(){
   const[now,setNow]=useState(()=>Date.now());
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const scrollRef=useRef<import('react-native').ScrollView|null>(null);
+  const didInitialScroll=useRef(false);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
@@ -105,7 +106,7 @@ export default function Plan(){
     </View>
     {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>{t('Attività in ritardo')}</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item,language)} · {item.kind==='event'?t('Evento'):t('Task')}</Text></Pressable>)}</Card>:null}
     <SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/>
-    {groupedItems.length?groupedItems.map(group=><View key={group.key} onLayout={event=>{if(group.key===initialScrollKey)requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,event.nativeEvent.layout.y-8),animated:false}));}} style={styles.dayGroup}>
+    {groupedItems.length?groupedItems.map(group=><View key={group.key} onLayout={event=>{if(group.key===initialScrollKey&&!didInitialScroll.current){didInitialScroll.current=true;const y=event.nativeEvent.layout.y;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,y-8),animated:false}));}}} style={styles.dayGroup}>
       <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={styles.dayDividerText}>{group.label}</Text><View style={styles.dayDividerLine}/></View>
       {group.items.map(item=>{
         const overdue=item.status!=='done'&&isExpired(item);
