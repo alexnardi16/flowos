@@ -113,9 +113,9 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(source,/weeks\.map\(week =>/);
   assert.doesNotMatch(source,/weeks\.slice\(0, 8\)/);
   assert.match(source,/flowos:\/\/calendar\?week=/);
-  assert.match(source,/MAX_VISIBLE_ITEMS_PER_DAY = 6/);
-  assert.ok(source.includes('day.items.slice(0, MAX_VISIBLE_ITEMS_PER_DAY)'));
-  assert.ok(source.includes('day.items.length > MAX_VISIBLE_ITEMS_PER_DAY'));
+  assert.match(source,/day\.items\.reduce\(\(total, item\) => total \+ itemHeight\(item\), 0\)/);
+  assert.match(source,/\{day\.items\.map\(item =>/);
+  assert.doesNotMatch(source,/MAX_VISIBLE_ITEMS_PER_DAY|day\.items\.slice\(0,/);
   assert.match(nativePatch,/setScrollPosition/);
   assert.match(nativePatch,/flowosInitialScrollPosition/);
   assert.match(handler,/flowos-calendar-widget-v2/);
