@@ -32,6 +32,6 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
     const monthStart=days.find(day=>day.dateKey.endsWith('-01'));const firstDayMonth=days[0] ? Number(days[0].dateKey.slice(5,7))-1 : start.getMonth();const firstDayYear=days[0] ? Number(days[0].dateKey.slice(0,4)) : start.getFullYear();const title=monthStart?monthTitle(Number(monthStart.dateKey.slice(5,7))-1,Number(monthStart.dateKey.slice(0,4)),language):w===0?monthTitle(firstDayMonth,firstDayYear,language):'';weeks.push({title,days});
   }
   const currentIndex=weeks.findIndex(week=>week.days.some(day=>day.isToday));
-  if(currentIndex>0){const current=weeks[currentIndex];const past=weeks.slice(0,currentIndex).reverse();const future=weeks.slice(currentIndex+1);return {weeks:[current,...past,...future]};}
+  if(currentIndex>0){const current=weeks[currentIndex];const currentWeek={...current,title:current.title||monthTitle(now.getMonth(),now.getFullYear(),language)};const past=weeks.slice(0,currentIndex).reverse();const future=weeks.slice(currentIndex+1);return {weeks:[currentWeek,...past,...future]};}
   return {weeks};
 }
