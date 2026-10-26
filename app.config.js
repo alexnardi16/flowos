@@ -46,6 +46,7 @@ module.exports = {
     'expo-web-browser',
     './plugins/withNativeAccessJvmArgs.js',
     './plugins/withSingleTaskMainActivity.js',
+    './plugins/withCalendarWidgetInitialPosition.js',
     ['expo-notifications', { defaultChannel: 'flowos-reminders', enableBackgroundRemoteNotifications: true }],
     'expo-task-manager',
     'expo-background-task',
