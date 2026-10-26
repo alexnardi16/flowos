@@ -5,7 +5,7 @@ import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-an
 export type AndroidCalendarItem = { id: string; title: string; time: string; sourceColor: any; priority?: number };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
-export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; language?: Language };
+export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; language?: Language };
 
 const BG = '#F1F4FF';
 const INK = '#172033';
@@ -73,7 +73,7 @@ function weekHeight(week: AndroidCalendarWeek) {
   return Math.max(92, ...week.days.map(day => dayHeight(day)));
 }
 
-export function CalendarWidget({ weeks, language='it' }: AndroidCalendarWidgetProps) {
+export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, language='it' }: AndroidCalendarWidgetProps) {
   const labels=widgetStrings(language);
   return (
     <FlexWidget
@@ -101,6 +101,7 @@ export function CalendarWidget({ weeks, language='it' }: AndroidCalendarWidgetPr
       </FlexWidget>
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
+        {hasOlderWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:'#E8ECFF', borderRadius:8, marginVertical:2 }}><TextWidget text="← Settimane precedenti" style={{ fontSize:10, fontWeight:'bold', color:PRIMARY }} /></FlexWidget> : null}
         {weeks.map(week => {
           const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
           return (
@@ -146,6 +147,7 @@ export function CalendarWidget({ weeks, language='it' }: AndroidCalendarWidgetPr
             </FlexWidget>
           );
         })}
+        {hasNewerWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_NEWER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:'#E8ECFF', borderRadius:8, marginVertical:2 }}><TextWidget text="Settimane successive →" style={{ fontSize:10, fontWeight:'bold', color:PRIMARY }} /></FlexWidget> : null}
         <FlexWidget style={{ width: 'match_parent', height: 96 }} />
       </ListWidget>
     </FlexWidget>
