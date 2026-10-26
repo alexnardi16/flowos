@@ -57,6 +57,7 @@ const ITEM_VERTICAL_PADDING = 2;
 const DAY_HEADER_HEIGHT = 11;
 const ITEM_GAP = 3;
 const WEEK_BOTTOM_PADDING = 10;
+const MAX_VISIBLE_ITEMS_PER_DAY = 6;
 function itemHeight(item: AndroidCalendarItem) {
   const lines = titleLines(item.title).length;
   const timeHeight = item.time ? ITEM_TIME_HEIGHT : 0;
@@ -64,9 +65,11 @@ function itemHeight(item: AndroidCalendarItem) {
 }
 
 function dayHeight(day: AndroidCalendarDay) {
-  const itemsHeight = day.items.reduce((total, item) => total + itemHeight(item), 0);
-  const gaps = Math.max(0, day.items.length - 1) * ITEM_GAP;
-  return Math.max(92, DAY_HEADER_HEIGHT + itemsHeight + gaps + WEEK_BOTTOM_PADDING);
+  const visibleItems = day.items.slice(0, MAX_VISIBLE_ITEMS_PER_DAY);
+  const itemsHeight = visibleItems.reduce((total, item) => total + itemHeight(item), 0);
+  const gaps = Math.max(0, visibleItems.length - 1) * ITEM_GAP;
+  const overflowHeight = day.items.length > MAX_VISIBLE_ITEMS_PER_DAY ? 12 : 0;
+  return Math.max(92, DAY_HEADER_HEIGHT + itemsHeight + gaps + overflowHeight + WEEK_BOTTOM_PADDING);
 }
 
 function weekHeight(week: AndroidCalendarWeek) {
@@ -124,7 +127,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                     <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
                       <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: day.isToday ? PRIMARY : MUTED }} />
                     </FlexWidget>
-                    {day.items.map(item => {
+                    {day.items.slice(0, MAX_VISIBLE_ITEMS_PER_DAY).map(item => {
                       const lines = titleLines(item.title);
                       return (
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
@@ -140,6 +143,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                         </FlexWidget>
                       );
                     })}
+                    {day.items.length > MAX_VISIBLE_ITEMS_PER_DAY ? <FlexWidget clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?date=${day.dateKey}` }} style={{ width:'match_parent', height:12, marginTop:2, justifyContent:'center' }}><TextWidget text={`+${day.items.length - MAX_VISIBLE_ITEMS_PER_DAY} altre`} style={{ fontSize:6, fontWeight:'bold', color:PRIMARY }} /></FlexWidget> : null}
                     {!day.items.length ? <TextWidget text="·" style={{ fontSize: 9, color: '#B8BFCC', marginTop: 3 }} /> : null}
                   </FlexWidget>
                 ))}
