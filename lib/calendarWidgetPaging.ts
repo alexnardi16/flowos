@@ -13,6 +13,7 @@ export function getCalendarWidgetPage(
   requestedStartIndex?: number | null,
   now: Date = new Date(),
 ) {
+  void now;
   const currentIndex = allWeeks.findIndex(week => week.days.some(day => day.isToday));
   const defaultStart = Math.max(0, (currentIndex < 0 ? 0 : currentIndex) - 4);
   const maxStart = Math.max(0, allWeeks.length - CALENDAR_WIDGET_PAGE_SIZE);
