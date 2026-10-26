@@ -8,14 +8,23 @@ export function activitySourceKey(item: Commitment){
   return 'flowos';
 }
 
+function stableColorIndex(key:string){
+  // Derive each source color from its stable identifier, never from array order.
+  // Adding or removing another event/task therefore cannot recolor existing sources.
+  let hash=2166136261;
+  for(let index=0;index<key.length;index+=1){
+    hash^=key.charCodeAt(index);
+    hash=Math.imul(hash,16777619);
+  }
+  return (hash>>>0)%ACTIVITY_SOURCE_COLORS.length;
+}
+
 export function buildActivitySourceColors(commitments: Commitment[]){
   const map=new Map<string,string>();
-  let next=0;
   for(const item of commitments.filter(item=>!item.deletedAt&&item.status!=='done')){
     const key=activitySourceKey(item);
     if(key==='flowos'||map.has(key))continue;
-    map.set(key,ACTIVITY_SOURCE_COLORS[next%ACTIVITY_SOURCE_COLORS.length]);
-    next+=1;
+    map.set(key,ACTIVITY_SOURCE_COLORS[stableColorIndex(key)]);
   }
   return map;
 }
