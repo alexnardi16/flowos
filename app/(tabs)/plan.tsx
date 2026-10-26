@@ -53,6 +53,7 @@ export default function Plan(){
     const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     return commitments.filter(item=>{
       const event=item.kind==='event',task=item.kind==='task',flexible=task,date=itemDate(item),past=Boolean(date&&new Date(date).getTime()<now),open=item.status!=='done',completedMultiDay=isCompletedMultiDayVisible(item,new Date(now));
+      if(date&&Number(date.slice(0,4))<new Date(now).getFullYear()&&!completedMultiDay)return false;
       if(event&&!filters.events)return false;
       if(task&&!filters.tasks)return false;
       if(!event&&!flexible)return false;
