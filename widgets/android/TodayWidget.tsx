@@ -26,7 +26,8 @@ function titleLines(text:string,maxChars=32){
   return lines;
 }
 function itemHeight(title:string,hasPriority=false){
-  return Math.max(44,8+titleLines(title).length*15+10+6);
+  const lines=titleLines(title,hasPriority?27:32).length;
+  return Math.max(48,12+lines*17+16+8);
 }
 export function TodayWidget({ items, language='it' }: AndroidTodayWidgetProps) {
   const labels=widgetStrings(language);
@@ -40,13 +41,13 @@ export function TodayWidget({ items, language='it' }: AndroidTodayWidgetProps) {
       </FlexWidget>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:BG }}>
-      {items.length ? items.map((item)=>{const lines=titleLines(item.title);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:1, paddingHorizontal:8, paddingVertical:3, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:(item.sourceColor??'#F3F4F7') as any, flexDirection:'row', alignItems:'center' }}>
+      {items.length ? items.map((item)=>{const lines=titleLines(item.title,item.priority?27:32);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:1, paddingHorizontal:8, paddingVertical:6, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:(item.sourceColor??'#F3F4F7') as any, flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'column', justifyContent:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           <FlexWidget style={{ width:'match_parent', flexDirection:'row', alignItems:'flex-start' }}>
             {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
-            <FlexWidget style={{ flex:1, flexDirection:'column' }}>{lines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:12, lineHeight:15, fontWeight:'bold', color:INK }}/>)}</FlexWidget>
+            <FlexWidget style={{ flex:1, flexDirection:'column' }}>{lines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:12, lineHeight:17, fontWeight:'bold', color:INK }}/>)}</FlexWidget>
           </FlexWidget>
-          <TextWidget text={`${item.time} · ${item.kind}`} style={{ fontSize:9, lineHeight:12, color:MUTED }}/>
+          <TextWidget text={`${item.time} · ${item.kind}`} style={{ fontSize:9, lineHeight:16, color:MUTED }}/>
         </FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="POSTPONE" clickActionData={{ id:item.id }}><TextWidget text={language==='it'?'+1g':language==='fr'?'+1j':'+1d'} style={{ fontSize:9, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:4, borderRadius:9, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="COMPLETE" clickActionData={{ id:item.id }}><TextWidget text="✓" style={{ fontSize:11, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
