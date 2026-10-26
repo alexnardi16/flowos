@@ -105,3 +105,8 @@ test('Core macrosection labels and activity-card labels are localized',()=>{
   assert.doesNotMatch(plan,/return 'Tutto il giorno'/);
   assert.doesNotMatch(plan,/return 'Data e ora non definite'/);
 });
+
+test('Android Calendar widget renders a bounded number of weeks to avoid blank RemoteViews',()=>{
+  const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
+  assert.match(source,/weeks\.slice\(0, 8\)\.map\(week =>/);
+});
