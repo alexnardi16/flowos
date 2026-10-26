@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, Chip, EmptyState, ScreenShell, palette } from '@/components/ui';
 import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';
 import { ManageSheet } from '@/components/ManageSheet';
-import { formatCommitmentTime } from '@/lib/allDayDate';
+
 import { isContactEvent } from '@/lib/contactEvents';
 import { recordDiagnostic } from '@/lib/diagnostics';
 import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
