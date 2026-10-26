@@ -22,7 +22,7 @@ function formatItemTime(item:Commitment,language:import('@/lib/i18n').Language){
   const end=new Date(start.getTime()+item.durationMinutes*60000);
   return `${startText} - ${end.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'})}`;
 }
-function monthLabelForWeek(week:Date[],weekIndex:number,months:string[]){if(weekIndex===0){const now=new Date();return `${months[now.getMonth()]} ${now.getFullYear()}`;}const firstDay=week.find(day=>day.getDate()===1);return firstDay?`${months[firstDay.getMonth()]} ${firstDay.getFullYear()}`:'';}
+function monthLabelForWeek(week:Date[],weekIndex:number,months:string[]){const firstDay=week.find(day=>day.getDate()===1);if(firstDay)return `${months[firstDay.getMonth()]} ${firstDay.getFullYear()}`;if(weekIndex===0&&week[0])return `${months[week[0].getMonth()]} ${week[0].getFullYear()}`;return '';}
 function sourceStyle(item:Commitment,sourceColors:Map<string,string>){return {backgroundColor:activitySourceColor(item,sourceColors),borderColor:item.googleCalendarId||item.googleTaskListId?'#D9DDE7':'#E0E2E8'};}
 
 export default function Calendar(){
@@ -39,7 +39,7 @@ export default function Calendar(){
 
   const weeks=useMemo(()=>{
     const now=new Date();
-    const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    const monday=new Date(now.getFullYear(),0,1);
     monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
     const end=google?.range?.endDate?new Date(`${google.range.endDate}T23:59:59`):new Date(now.getFullYear()+1,11,31);
     const result:Date[][]=[];
