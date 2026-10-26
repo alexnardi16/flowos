@@ -36,7 +36,7 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
 
       const { weeks: allWeeks } = buildCalendarWidgetData(commitments, syncEndDate, now, calendarNames, language);
       await AsyncStorage.setItem('flowos-calendar-widget-v2',JSON.stringify({dateKey:glance.dateKey,weeks:allWeeks,language}));
-      const page = getCalendarWidgetPage(allWeeks, undefined, now);
+      const page = getCalendarWidgetPage(allWeeks);
       await AsyncStorage.setItem('flowos-calendar-widget-page-v1',String(page.startIndex));
       await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks:page.weeks,hasOlderWeeks:page.hasOlderWeeks,hasNewerWeeks:page.hasNewerWeeks,language}) });
       await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:allWeeks.length,calendarRenderedWeeks:page.weeks.length,calendarDays:allWeeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
