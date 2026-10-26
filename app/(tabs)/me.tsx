@@ -39,7 +39,7 @@ export default function Me(){
   const[notificationBusy,setNotificationBusy]=useState(false);
   const[lastRecovery,setLastRecovery]=useState<string|null>(null);
   const[notificationLogs,setNotificationLogs]=useState<NotificationLogEntry[]>([]);
-  const[showNotificationLogs,setShowNotificationLogs]=useState(false);
+  const[showNotificationLogs,setShowNotificationLogs]=useState(true);
   const[summaryHour,setSummaryHour]=useState(DEFAULT_DAILY_SUMMARY_HOUR);
   const[summaryMinute,setSummaryMinute]=useState(DEFAULT_DAILY_SUMMARY_MINUTE);
   const[timePickerOpen,setTimePickerOpen]=useState(false);
