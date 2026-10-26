@@ -7,6 +7,7 @@ import { logNotificationEvent } from './notificationLog';
 import { recordDiagnostic } from './diagnostics';
 import type { Commitment } from '../types';
 import { buildCalendarWidgetData } from './calendarWidgetData';
+import { getCalendarWidgetPage } from './calendarWidgetPaging';
 import { getLanguage, widgetStrings } from './i18n';
 
 async function performWidgetSync(commitments: Commitment[], now: Date = new Date()) {
@@ -33,11 +34,13 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       try { const cachedRange=await AsyncStorage.getItem('flowos-calendar-widget-range-v1'); if(cachedRange){const parsed=JSON.parse(cachedRange);if(parsed?.endDate)syncEndDate=new Date(`${parsed.endDate}T23:59:59`);} } catch {}
       await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => React.createElement(TodayWidget, { items, language }) });
 
-      const { weeks } = buildCalendarWidgetData(commitments, syncEndDate, now, calendarNames, language);
-      await AsyncStorage.setItem('flowos-calendar-widget-v2',JSON.stringify({dateKey:glance.dateKey,weeks,language}));
-      await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks,language}) });
-      await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:weeks.length,calendarDays:weeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
-      recordDiagnostic('widget-sync-completed',{platform:'android',durationMs:Date.now()-startedAt,count:items.length,calendarWeeks:weeks.length});
+      const { weeks: allWeeks } = buildCalendarWidgetData(commitments, syncEndDate, now, calendarNames, language);
+      await AsyncStorage.setItem('flowos-calendar-widget-v2',JSON.stringify({dateKey:glance.dateKey,weeks:allWeeks,language}));
+      const page = getCalendarWidgetPage(allWeeks, undefined, now);
+      await AsyncStorage.setItem('flowos-calendar-widget-page-v1',String(page.startIndex));
+      await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks:page.weeks,hasOlderWeeks:page.hasOlderWeeks,hasNewerWeeks:page.hasNewerWeeks,language}) });
+      await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:allWeeks.length,calendarRenderedWeeks:page.weeks.length,calendarDays:allWeeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
+      recordDiagnostic('widget-sync-completed',{platform:'android',durationMs:Date.now()-startedAt,count:items.length,calendarWeeks:allWeeks.length,calendarRenderedWeeks:page.weeks.length});
     }
   } catch (error) {
     recordDiagnostic('widget-sync-failed',{durationMs:Date.now()-startedAt,error},'warn');
