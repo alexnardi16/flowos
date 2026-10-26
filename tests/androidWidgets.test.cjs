@@ -109,9 +109,13 @@ test('Core macrosection labels and activity-card labels are localized',()=>{
 test('Android Calendar widget renders bounded pages without truncating the full cached timeline',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
   const nativePatch=fs.readFileSync('plugins/withCalendarWidgetInitialPosition.js','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
   assert.match(source,/weeks\.map\(week =>/);
   assert.doesNotMatch(source,/weeks\.slice\(0, 8\)/);
   assert.match(source,/flowos:\/\/calendar\?week=/);
+  assert.match(source,/MAX_VISIBLE_ITEMS_PER_DAY = 6/);
+  assert.match(source,/day\\.items\\.slice\\(0, MAX_VISIBLE_ITEMS_PER_DAY\\)/);
+  assert.match(source,/day\\.items\\.length > MAX_VISIBLE_ITEMS_PER_DAY/);
   assert.match(nativePatch,/setScrollPosition/);
   assert.match(nativePatch,/flowosInitialScrollPosition/);
   assert.match(handler,/flowos-calendar-widget-v2/);
