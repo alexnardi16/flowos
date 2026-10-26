@@ -21,7 +21,7 @@ function formatItemTime(item:Commitment,language:Language='it'){
   return `${startText} - ${end.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'})}`;
 }
 export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Date,now:Date=new Date(),calendarNames?:Map<string,string>,language:Language='it'):CalendarWidgetData{
-  const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
+  const monday=new Date(now.getFullYear(),0,1);monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
   const active=commitments.filter(item=>item.status!=='done'&&!item.deletedAt);const sourceColors=buildActivitySourceColors(commitments);const byDate=new Map<string,Commitment[]>();
   for(const item of active){const value=item.scheduledAt??item.dueAt;if(!value)continue;const d=new Date(value);const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dateKey(d);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}
   for(const item of commitments.filter(item=>item.status==='done'&&!item.deletedAt)){const end=item.scheduledAt&&item.durationMinutes?new Date(new Date(item.scheduledAt).getTime()+Math.max(1,item.durationMinutes)*60000):null;if(!end||item.durationMinutes<=24*60||!isVisibleCompletedMultiDayForDate(item,end))continue;const key=dateKey(end);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}
@@ -30,5 +30,8 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
   for(let w=0;;w++){const start=new Date(monday);start.setDate(monday.getDate()+w*7);if(start.getTime()>syncEndDate.getTime())break;const days:AndroidCalendarDay[]=[];
     for(let i=0;i<7;i++){const day=new Date(start);day.setDate(start.getDate()+i);const key=dateKey(day);const items=(byDate.get(key)??[]).map(item=>({id:item.id,title:item.title,time:formatItemTime(item,language),sourceColor:activitySourceColor(item,sourceColors),priority:item.kind==='task'?item.priority:undefined}));days.push({label:`${widgetStrings(language).dayNames[i]} ${day.getDate()}`,dateKey:key,isToday:key===dateKey(now),items});}
     const monthStart=days.find(day=>day.dateKey.endsWith('-01'));const firstDayMonth=days[0] ? Number(days[0].dateKey.slice(5,7))-1 : start.getMonth();const firstDayYear=days[0] ? Number(days[0].dateKey.slice(0,4)) : start.getFullYear();const title=monthStart?monthTitle(Number(monthStart.dateKey.slice(5,7))-1,Number(monthStart.dateKey.slice(0,4)),language):w===0?monthTitle(firstDayMonth,firstDayYear,language):'';weeks.push({title,days});
-  } return {weeks};
+  }
+  const currentIndex=weeks.findIndex(week=>week.days.some(day=>day.isToday));
+  if(currentIndex>0){const current=weeks[currentIndex];const past=weeks.slice(0,currentIndex).reverse();const future=weeks.slice(currentIndex+1);return {weeks:[current,...past,...future]};}
+  return {weeks};
 }
