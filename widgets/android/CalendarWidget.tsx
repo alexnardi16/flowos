@@ -101,7 +101,7 @@ export function CalendarWidget({ weeks, language='it' }: AndroidCalendarWidgetPr
       </FlexWidget>
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
-        {weeks.map(week => {
+        {weeks.slice(0, 8).map(week => {
           const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
           return (
             <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} style={{ width: 'match_parent', height: weekContainerHeight, flexDirection: 'column', marginVertical: 2 }}>
