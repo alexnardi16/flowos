@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card, Chip, EmptyState, ScreenShell, SectionTitle, palette } from '@/components/ui';
 import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';
@@ -38,6 +38,7 @@ export default function Plan(){
   const[contactsFilter,setContactsFilter]=useState<ContactsFilter>('all');
   const[now,setNow]=useState(()=>Date.now());
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
+  const scrollRef=useRef<import('react-native').ScrollView|null>(null);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
@@ -81,13 +82,15 @@ export default function Plan(){
       group.items.push(item);
       groups.set(key,group);
     }
-    return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([,group])=>({...group,items:sortCommitments(group.items,calendarNames)}));
+    return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([key,group])=>({key,...group,items:sortCommitments(group.items,calendarNames)}));
   },[items,calendarNames]);
+  const todayKey=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+  const initialScrollKey=groupedItems.find(group=>group.key>=todayKey)?.key??groupedItems[groupedItems.length-1]?.key;
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   function formatStartEnd(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);const options={weekday:'short' as const,day:'2-digit' as const,month:'2-digit' as const,year:'numeric' as const};if(item.allDay){const date=new Date(value);return `${date.toLocaleDateString(localeForLanguage(language),{...options,timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),options);const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} · ${time(start)} - ${date(end)===date(start)?time(end):`${date(end)} · ${time(end)}`}`;}
   const toggle=(key:FilterKey)=>setFilters(current=>({...current,[key]:!current[key]}));
 
-  return <ScreenShell title={t('Lista')} subtitle={t('Eventi e attività ordinati nel tempo, con filtri salvati automaticamente.')}>
+  return <ScreenShell title={t('Lista')} subtitle={t('Eventi e attività ordinati nel tempo, con filtri salvati automaticamente.')} scrollRef={scrollRef}>
     <TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca titolo, descrizione, luogo…')} placeholderTextColor={palette.muted} style={styles.search}/>
     <View style={styles.filters}>
       <Filter label={t('Eventi')} active={filters.events} onPress={()=>toggle('events')}/>
@@ -102,7 +105,7 @@ export default function Plan(){
     </View>
     {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>{t('Attività in ritardo')}</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item,language)} · {item.kind==='event'?t('Evento'):t('Task')}</Text></Pressable>)}</Card>:null}
     <SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/>
-    {groupedItems.length?groupedItems.map(group=><View key={group.label} style={styles.dayGroup}>
+    {groupedItems.length?groupedItems.map(group=><View key={group.key} onLayout={event=>{if(group.key===initialScrollKey)requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,event.nativeEvent.layout.y-8),animated:false}));}} style={styles.dayGroup}>
       <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={styles.dayDividerText}>{group.label}</Text><View style={styles.dayDividerLine}/></View>
       {group.items.map(item=>{
         const overdue=item.status!=='done'&&isExpired(item);
