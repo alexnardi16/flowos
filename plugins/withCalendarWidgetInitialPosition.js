@@ -10,7 +10,7 @@ const path = require('path');
 module.exports = function withCalendarWidgetInitialPosition(config) {
   return withDangerousMod(config, ['android', async (config) => {
     const javaPath = path.join(
-      config.modRequest.platformProjectRoot,
+      config.modRequest.projectRoot,
       'node_modules',
       'react-native-android-widget',
       'android',
@@ -37,7 +37,8 @@ module.exports = function withCalendarWidgetInitialPosition(config) {
         // Other widgets retain the library default scroll position.
         int initialScrollPosition = -1;
         java.util.Calendar today = java.util.Calendar.getInstance();
-        today.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY);
+        int daysSinceMonday = (today.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7;
+        today.add(java.util.Calendar.DAY_OF_MONTH, -daysSinceMonday);
         today.set(java.util.Calendar.HOUR_OF_DAY, 0);
         today.set(java.util.Calendar.MINUTE, 0);
         today.set(java.util.Calendar.SECOND, 0);
