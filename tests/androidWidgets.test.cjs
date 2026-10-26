@@ -106,7 +106,12 @@ test('Core macrosection labels and activity-card labels are localized',()=>{
   assert.doesNotMatch(plan,/return 'Data e ora non definite'/);
 });
 
-test('Android Calendar widget renders a bounded number of weeks to avoid blank RemoteViews',()=>{
+test('Android Calendar widget renders the complete timeline and marks the current-week anchor',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
-  assert.match(source,/weeks\.slice\(0, 8\)\.map\(week =>/);
+  const nativePatch=fs.readFileSync('plugins/withCalendarWidgetInitialPosition.js','utf8');
+  assert.match(source,/weeks\.map\(week =>/);
+  assert.doesNotMatch(source,/weeks\.slice\(0, 8\)/);
+  assert.match(source,/flowos:\/\/calendar\?week=/);
+  assert.match(nativePatch,/setScrollPosition/);
+  assert.match(nativePatch,/flowosInitialScrollPosition/);
 });
