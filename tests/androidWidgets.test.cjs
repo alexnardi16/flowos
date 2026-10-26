@@ -106,7 +106,7 @@ test('Core macrosection labels and activity-card labels are localized',()=>{
   assert.doesNotMatch(plan,/return 'Data e ora non definite'/);
 });
 
-test('Android Calendar widget renders the complete timeline and marks the current-week anchor',()=>{
+test('Android Calendar widget renders bounded pages without truncating the full cached timeline',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
   const nativePatch=fs.readFileSync('plugins/withCalendarWidgetInitialPosition.js','utf8');
   assert.match(source,/weeks\.map\(week =>/);
@@ -114,4 +114,10 @@ test('Android Calendar widget renders the complete timeline and marks the curren
   assert.match(source,/flowos:\/\/calendar\?week=/);
   assert.match(nativePatch,/setScrollPosition/);
   assert.match(nativePatch,/flowosInitialScrollPosition/);
+  assert.match(handler,/flowos-calendar-widget-v2/);
+  assert.match(handler,/CALENDAR_PAGE_OLDER/);
+  assert.match(handler,/CALENDAR_PAGE_NEWER/);
+  assert.match(handler,/getCalendarWidgetPage/);
+  assert.match(source,/Settimane precedenti/);
+  assert.match(source,/Settimane successive/);
 });
