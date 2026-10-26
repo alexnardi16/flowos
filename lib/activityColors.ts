@@ -21,7 +21,7 @@ function stableColorIndex(key:string){
 
 export function buildActivitySourceColors(commitments: Commitment[]){
   const map=new Map<string,string>();
-  for(const item of commitments.filter(item=>!item.deletedAt&&item.status!=='done')){
+  for(const item of commitments.filter(item=>!item.deletedAt)){
     const key=activitySourceKey(item);
     if(key==='flowos'||map.has(key))continue;
     map.set(key,ACTIVITY_SOURCE_COLORS[stableColorIndex(key)]);
