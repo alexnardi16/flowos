@@ -174,3 +174,23 @@ test('All macrosection headers remain outside the scrollable content',()=>{
   assert.match(source,/screenHeader:\{[^}]*backgroundColor:palette\.bg/);
   assert.match(fs.readFileSync('app/(tabs)/plan.tsx','utf8'),/stickyHeaderIndices:\[0\]/);
 });
+
+test('Today tab badge uses the same visibility policy as the Today screen',()=>{
+  const layout=fs.readFileSync('app/(tabs)/_layout.tsx','utf8');
+  const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
+  assert.match(layout,/commitments\.filter\(item=>isVisibleInToday\(item\)\)\.length/);
+  assert.match(today,/commitments\.filter\(item=>isVisibleInToday\(item\)\)/);
+  assert.doesNotMatch(layout,/function isTodayItem/);
+});
+test('Calendar app and widget use the same shared timeline range',()=>{
+  const app=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
+  const widget=fs.readFileSync('lib/calendarWidgetData.ts','utf8');
+  assert.match(app,/buildCalendarTimeline\(commitments,syncEnd,now\)/);
+  assert.match(widget,/buildCalendarTimeline\(commitments,syncEndDate,now\)/);
+  assert.doesNotMatch(app,/const monday=new Date\(now\.getFullYear\(\),0,1\)/);
+});
+test('List memoizes calendar labels and empty state refers to search, not removed filters',()=>{
+  const plan=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
+  assert.match(plan,/const calendarNames=useMemo\(\(\)=>new Map/);
+  assert.doesNotMatch(plan,/Modifica i filtri/);
+});
