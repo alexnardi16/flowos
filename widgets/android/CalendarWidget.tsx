@@ -5,7 +5,7 @@ import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-an
 export type AndroidCalendarItem = { id: string; title: string; time: string; sourceColor: any; priority?: number };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
-export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; language?: Language };
+export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; language?: Language };
 
 const BG = '#F1F4FF';
 const INK = '#172033';
@@ -73,7 +73,7 @@ function weekHeight(week: AndroidCalendarWeek) {
   return Math.max(92, ...week.days.map(day => dayHeight(day)));
 }
 
-export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, language='it' }: AndroidCalendarWidgetProps) {
+export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, isLoading=false, language='it' }: AndroidCalendarWidgetProps) {
   const labels=widgetStrings(language);
   return (
     <FlexWidget
@@ -88,6 +88,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
           <TextWidget text={labels.calendar} style={{ fontSize: 19, fontWeight: 'bold', color: INK }} />
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <FlexWidget style={{ height: 26, paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: '#E8ECFF', justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel="Torna alla settimana corrente"><TextWidget text="Oggi" style={{ fontSize: 9, fontWeight: 'bold', color: PRIMARY }} /></FlexWidget>
           <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
             <TextWidget text="↻" style={{ fontSize: 16, fontWeight: 'bold', color: '#FFFFFF' }} />
           </FlexWidget>
@@ -101,6 +102,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
       </FlexWidget>
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
+        {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 4, backgroundColor: '#D9DFF8', borderRadius: 2, marginVertical: 2, flexDirection: 'row' }}><FlexWidget style={{ width: '40%', height: 4, backgroundColor: PRIMARY, borderRadius: 2 }} /></FlexWidget> : null}
         {hasOlderWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:'#E8ECFF', borderRadius:8, marginVertical:2 }}><TextWidget text="← Settimane precedenti" style={{ fontSize:10, fontWeight:'bold', color:PRIMARY }} /></FlexWidget> : null}
         {weeks.map(week => {
           const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
