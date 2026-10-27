@@ -130,9 +130,16 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     let requestedStart:number|undefined;
     try { const saved=await AsyncStorage.getItem(CALENDAR_PAGE_KEY); if(saved!==null&&Number.isFinite(Number(saved)))requestedStart=Number(saved); } catch {}
     const pageShift=CALENDAR_WIDGET_PAGE_SIZE-CALENDAR_WIDGET_PAGE_OVERLAP;
-    if(props.widgetAction==='WIDGET_CLICK'&&props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,(requestedStart??getCalendarWidgetPage(data.weeks).startIndex)-pageShift);
-    if(props.widgetAction==='WIDGET_CLICK'&&props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=(requestedStart??getCalendarWidgetPage(data.weeks).startIndex)+pageShift;
+    const isCalendarNavigation=props.widgetAction==='WIDGET_CLICK'&&['CALENDAR_PAGE_OLDER','CALENDAR_PAGE_NEWER','CALENDAR_PAGE_TODAY'].includes(String(props.clickAction));
     let page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
+    if(isCalendarNavigation) {
+      // Immediately show feedback while the requested page is being prepared.
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading language={language}/>);
+      if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,page.startIndex-pageShift);
+      if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=page.startIndex+pageShift;
+      if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=undefined;
+      page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
+    }
     try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
     switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language}/>);break;default:break;}
     if(props.widgetAction==='WIDGET_UPDATE'){
