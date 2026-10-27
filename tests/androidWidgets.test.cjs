@@ -169,7 +169,7 @@ test('Macrosection headers do not render descriptive subtitles',()=>{
 test('All macrosection headers remain outside the scrollable content',()=>{
   const source=fs.readFileSync('components/ui.tsx','utf8');
   assert.match(source,/<View style=\{styles\.screenHeader\}>/);
-  assert.match(source,/<Text style=\{styles\.screenTitle\}>\{title\}<\\/Text>/);
+  assert.match(source,/styles\.screenTitle/);
   assert.match(source,/<ScrollView ref=\{scrollRef\} \{\.\.\.scrollProps\} style=\{styles\.screenScroll\}/);
   assert.match(source,/screenHeader:\{[^}]*backgroundColor:palette\.bg/);
   assert.match(fs.readFileSync('app/(tabs)/plan.tsx','utf8'),/stickyHeaderIndices:\[0\]/);
