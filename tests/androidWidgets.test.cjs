@@ -67,7 +67,7 @@ test('Settings diagnostics uses a visible light log surface and severity colors'
 });
 test('Today widget reduces the trailing blank space while keeping list rows content-sized',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/width:'match_parent',height:30/);
+  assert.match(source,/width:'match_parent',height:20/);
   assert.doesNotMatch(source,/width:'match_parent',height:72/);
 });
 
@@ -128,8 +128,8 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(handler,/CALENDAR_PAGE_OLDER/);
   assert.match(handler,/CALENDAR_PAGE_NEWER/);
   assert.match(handler,/getCalendarWidgetPage/);
-  assert.match(source,/Settimane precedenti/);
-  assert.match(source,/Settimane successive/);
+  assert.match(source,/labels\.olderWeeks/);
+  assert.match(source,/labels\.newerWeeks/);
   assert.match(source,/CALENDAR_PAGE_TODAY/);
   assert.match(source,/isLoading\?/);
   assert.match(source,/isLoading=false, loadingProgress=0/);
@@ -138,6 +138,7 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(source,/paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY/);
   assert.match(source,/flex: Math\.max\(1, loadingProgress\)/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/CALENDAR_WIDGET_PAGE_SIZE = 8/);
+  assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/CALENDAR_WIDGET_PAGE_OVERLAP = 0/);
   assert.match(handler,/loadingProgress=\{15\}/);
   assert.match(handler,/loadingProgress=\{55\}/);
   assert.match(handler,/loadingProgress=\{90\}/);
