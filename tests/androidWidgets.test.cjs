@@ -146,3 +146,21 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(handler,/isLoading loadingProgress=\{15\} language=\{language\}/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/const defaultStart = Math\.max\(0, currentIndex < 0 \? 0 : currentIndex\)/);
 });
+
+test('List and Today macrosections have no filters and List search stays sticky',()=>{
+  const plan=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
+  const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
+  assert.match(plan,/stickyHeaderIndices:\[2\]/);
+  assert.match(plan,/<TextInput value=\{query\} onChangeText=\{setQuery\}/);
+  assert.doesNotMatch(plan,/Solo contatti|Escludi contatti|Passati e completati|Scaduti aperti|FILTERS_KEY|CONTACTS_FILTER_KEY/);
+  assert.doesNotMatch(today,/Solo contatti|Escludi contatti|CONTACTS_FILTER_KEY|contactsFilter/);
+  assert.match(plan,/commitments\.filter\(item=>!normalized\|\|searchable\(item\)\.includes\(normalized\)\)/);
+  assert.match(today,/commitments\.filter\(item=>isVisibleInToday\(item\)\)/);
+});
+
+test('Macrosection headers do not render descriptive subtitles',()=>{
+  for(const path of ['app/(tabs)/today.tsx','app/(tabs)/plan.tsx','app/(tabs)/calendar.tsx','app/(tabs)/capture.tsx','app/(tabs)/me.tsx']){
+    const source=fs.readFileSync(path,'utf8');
+    assert.doesNotMatch(source,/<ScreenShell[^>]*subtitle=/,path);
+  }
+});
