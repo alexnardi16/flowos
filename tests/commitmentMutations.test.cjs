@@ -84,3 +84,39 @@ test('FlowOS-only deletion keeps a tombstone so Google refresh cannot recreate t
   assert.match(repoSource,/action:\s*['"]hide-from-flowos['"]/);
   assert.match(serverSource,/last_sync_origin:"flowos"/);
 });
+
+const { parsePendingQueue, reconcileQueueAfterFlush } = require('../.test-dist-mutations/lib/offlineQueueState.js');
+function queueMutation(mutationId, commitmentId, title = commitmentId, createdAt = '2026-10-27T10:00:00.000Z') {
+  return { id: mutationId, table: 'commitments', action: 'upsert', payload: { id: commitmentId, title }, createdAt };
+}
+test('offline queue rejects corrupt JSON instead of silently treating it as empty', () => {
+  assert.throws(() => parsePendingQueue('{broken'), /danneggiata/);
+});
+test('offline queue rejects malformed entries without discarding stored data', () => {
+  assert.throws(() => parsePendingQueue(JSON.stringify([{ id: 7, action: 'upsert' }])), /non valida/);
+});
+test('offline queue accepts an empty queue and valid mutations', () => {
+  assert.deepEqual(parsePendingQueue('[]'), []);
+  const pending = queueMutation('mutation-1', 'task-1');
+  assert.deepEqual(parsePendingQueue(JSON.stringify([pending])), [pending]);
+});
+test('flush reconciliation preserves a mutation enqueued while network requests were running', () => {
+  const snapshot = [queueMutation('old', 'task-1')];
+  const concurrent = queueMutation('new', 'task-2');
+  assert.deepEqual(reconcileQueueAfterFlush(snapshot, [], [...snapshot, concurrent]), [concurrent]);
+});
+test('flush reconciliation keeps the newest edit when an older edit fails', () => {
+  const oldEdit = queueMutation('old', 'task-1', 'Old');
+  const newEdit = queueMutation('new', 'task-1', 'New', '2026-10-27T10:01:00.000Z');
+  assert.deepEqual(reconcileQueueAfterFlush([oldEdit], [oldEdit], [newEdit]), [newEdit]);
+});
+test('flush reconciliation retains failed mutations that have not been superseded', () => {
+  const failed = queueMutation('failed', 'task-1');
+  const unrelated = queueMutation('other', 'task-2');
+  assert.deepEqual(reconcileQueueAfterFlush([failed], [failed], [failed, unrelated]), [unrelated, failed]);
+});
+test('flush reconciliation removes successful snapshot entries but keeps unrelated current entries', () => {
+  const succeeded = queueMutation('successful', 'task-1');
+  const concurrent = queueMutation('concurrent', 'task-2');
+  assert.deepEqual(reconcileQueueAfterFlush([succeeded], [], [succeeded, concurrent]), [concurrent]);
+});

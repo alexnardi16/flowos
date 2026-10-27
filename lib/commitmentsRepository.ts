@@ -1,6 +1,6 @@
 import type { Commitment } from '../types';
 import { toRRuleString } from './recurrence';
-import { enqueueMutation, readQueue, replaceQueue } from './offlineQueue';
+import { enqueueMutation, readQueue, reconcileFlushedQueue } from './offlineQueue';
 import { logNotificationEvent } from './notificationLog';
 import { recordDiagnostic } from './diagnostics';
 import { isSupabaseConfigured, supabase } from './supabase';
@@ -262,7 +262,7 @@ export async function flushOfflineQueue() {
     const result = mutation.action === 'upsert' ? await supabase.from(mutation.table).upsert(mutation.payload) : await supabase.from(mutation.table).delete().eq('id', mutation.payload.id);
     if (result.error) failed.push(mutation);
   }
-  await replaceQueue(failed);
+  await reconcileFlushedQueue(queue, failed);
   return failed;
 }
 
