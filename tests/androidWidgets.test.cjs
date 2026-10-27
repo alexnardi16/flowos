@@ -67,7 +67,7 @@ test('Settings diagnostics uses a visible light log surface and severity colors'
 });
 test('Today widget reduces the trailing blank space while keeping list rows content-sized',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/width:'match_parent',height:44/);
+  assert.match(source,/width:'match_parent',height:30/);
   assert.doesNotMatch(source,/width:'match_parent',height:72/);
 });
 
