@@ -102,7 +102,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
       </FlexWidget>
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
-        {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 4, backgroundColor: '#D9DFF8', borderRadius: 2, marginVertical: 2, flexDirection: 'row' }}><FlexWidget style={{ width: '40%', height: 4, backgroundColor: PRIMARY, borderRadius: 2 }} /></FlexWidget> : null}
+        {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 4, backgroundColor: '#D9DFF8', borderRadius: 2, marginVertical: 2, flexDirection: 'row' }}><FlexWidget style={{ width: 40, height: 4, backgroundColor: PRIMARY, borderRadius: 2 }} /></FlexWidget> : null}
         {hasOlderWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:'#E8ECFF', borderRadius:8, marginVertical:2 }}><TextWidget text="← Settimane precedenti" style={{ fontSize:10, fontWeight:'bold', color:PRIMARY }} /></FlexWidget> : null}
         {weeks.map(week => {
           const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
