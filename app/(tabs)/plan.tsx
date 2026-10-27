@@ -92,7 +92,7 @@ export default function Plan(){
   function formatStartEnd(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);const options={weekday:'short' as const,day:'2-digit' as const,month:'2-digit' as const,year:'numeric' as const};if(item.allDay){const date=new Date(value);return `${date.toLocaleDateString(localeForLanguage(language),{...options,timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),options);const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} · ${time(start)} - ${date(end)===date(start)?time(end):`${date(end)} · ${time(end)}`}`;}
   const toggle=(key:FilterKey)=>setFilters(current=>({...current,[key]:!current[key]}));
 
-  return <ScreenShell title={t('Lista')} subtitle={t('Eventi e attività ordinati nel tempo, con filtri salvati automaticamente.')} scrollRef={scrollRef}>
+  return <ScreenShell title={t('Lista')} subtitle={t('Eventi e attività ordinati nel tempo, con filtri salvati automaticamente.')} scrollRef={scrollRef} scrollProps={{stickyHeaderIndices:[3,4,5]}}>
     <TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca titolo, descrizione, luogo…')} placeholderTextColor={palette.muted} style={styles.search}/>
     <View style={styles.filters}>
       <Filter label={t('Eventi')} active={filters.events} onPress={()=>toggle('events')}/>
