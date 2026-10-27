@@ -1,7 +1,7 @@
 import type { AndroidCalendarWeek } from '../widgets/android/CalendarWidget';
 
 export const CALENDAR_WIDGET_PAGE_SIZE = 8;
-export const CALENDAR_WIDGET_PAGE_OVERLAP = 2;
+export const CALENDAR_WIDGET_PAGE_OVERLAP = 0;
 
 /**
  * Keep the complete timeline in local cache, but send only one bounded page to
