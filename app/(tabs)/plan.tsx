@@ -37,9 +37,8 @@ export default function Plan(){
   const items=useMemo(()=>{
     const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     return commitments.filter(item=>{
-      const event=item.kind==='event',task=item.kind==='task',flexible=task,date=itemDate(item),past=Boolean(date&&new Date(date).getTime()<now),open=item.status!=='done',completedMultiDay=isCompletedMultiDayVisible(item,new Date(now));
+      const date=itemDate(item),completedMultiDay=isCompletedMultiDayVisible(item,new Date(now));
       if(date&&Number(date.slice(0,4))<new Date(now).getFullYear()&&!completedMultiDay)return false;
-      if(!event&&!flexible)return false;
       return!normalized||searchable(item).includes(normalized);
     });
   },[commitments,query,now]);
