@@ -88,7 +88,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
           <TextWidget text={labels.calendar} style={{ fontSize: 19, fontWeight: 'bold', color: INK }} />
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <FlexWidget style={{ width: 38, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel={labels.today}><TextWidget text={labels.today} style={{ fontSize: 9, fontWeight: 'bold', color: '#FFFFFF' }} /></FlexWidget>
+          <FlexWidget style={{ height: 26, paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel={labels.today}><TextWidget text={labels.today} style={{ fontSize: 9, fontWeight: 'bold', color: '#FFFFFF' }} /></FlexWidget>
           <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
             <TextWidget text="↻" style={{ fontSize: 16, fontWeight: 'bold', color: '#FFFFFF' }} />
           </FlexWidget>
@@ -102,7 +102,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
       </FlexWidget>
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
-        {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 16, flexDirection: 'row', alignItems: 'center', marginVertical: 2 }}><FlexWidget style={{ flex: 1, height: 5, backgroundColor: '#D9DFF8', borderRadius: 3, flexDirection: 'row' }}><FlexWidget style={{ width: Math.max(1, Math.min(100, loadingProgress)), height: 5, backgroundColor: PRIMARY, borderRadius: 3 }} /></FlexWidget><TextWidget text={`${Math.round(loadingProgress)}%`} style={{ width: 32, marginLeft: 6, fontSize: 9, fontWeight: 'bold', color: PRIMARY }} /></FlexWidget> : null}
+        {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 16, flexDirection: 'row', alignItems: 'center', marginVertical: 2 }}><FlexWidget style={{ flex: 1, height: 5, backgroundColor: '#D9DFF8', borderRadius: 3, flexDirection: 'row' }}><FlexWidget style={{ flex: Math.max(1, loadingProgress), height: 5, backgroundColor: PRIMARY, borderRadius: 3 }} /><FlexWidget style={{ flex: Math.max(1, 100 - loadingProgress), height: 5 }} /></FlexWidget><TextWidget text={`${Math.round(loadingProgress)}%`} style={{ width: 32, marginLeft: 6, fontSize: 9, fontWeight: 'bold', color: PRIMARY }} /></FlexWidget> : null}
         {hasOlderWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:'#E8ECFF', borderRadius:8, marginVertical:2 }}><TextWidget text="← Settimane precedenti" style={{ fontSize:10, fontWeight:'bold', color:PRIMARY }} /></FlexWidget> : null}
         {weeks.map(week => {
           const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
