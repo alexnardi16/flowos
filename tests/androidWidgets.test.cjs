@@ -65,6 +65,12 @@ test('Settings diagnostics uses a visible light log surface and severity colors'
   assert.match(source,/logWarn:\{color:palette.warning\}/);
   assert.match(source,/logError:\{color:palette.danger\}/);
 });
+test('Today widget reduces the trailing blank space while keeping list rows content-sized',()=>{
+  const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  assert.match(source,/width:'match_parent',height:44/);
+  assert.doesNotMatch(source,/width:'match_parent',height:72/);
+});
+
 test('Today widget list rows never use flex for their outer height',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.doesNotMatch(source,/style=\{\{ flex:1, height:itemHeight/);
@@ -124,4 +130,10 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(handler,/getCalendarWidgetPage/);
   assert.match(source,/Settimane precedenti/);
   assert.match(source,/Settimane successive/);
+  assert.match(source,/CALENDAR_PAGE_TODAY/);
+  assert.match(source,/isLoading\?/);
+  assert.match(source,/width: '40%', height: 4/);
+  assert.match(handler,/CALENDAR_PAGE_TODAY/);
+  assert.match(handler,/isLoading language=/);
+  assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/const defaultStart = Math\.max\(0, currentIndex < 0 \? 0 : currentIndex\)/);
 });
