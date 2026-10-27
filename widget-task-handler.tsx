@@ -135,6 +135,8 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     if(isCalendarNavigation) {
       // Immediately show feedback while the requested page is being prepared.
       props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading language={language}/>);
+      // Give the launcher time to display the progress bar before replacing the page.
+      await new Promise<void>(resolve=>setTimeout(resolve,180));
       if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,page.startIndex-pageShift);
       if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=page.startIndex+pageShift;
       if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=undefined;
