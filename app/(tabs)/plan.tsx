@@ -1,10 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card, Chip, EmptyState, ScreenShell, SectionTitle, palette } from '@/components/ui';
 import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';
 import { ManageSheet } from '@/components/ManageSheet';
-import { isContactEvent } from '@/lib/contactEvents';
 import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
@@ -14,12 +12,6 @@ import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
 import { eventEnd, isCompletedMultiDayVisible } from '@/lib/commitmentVisibility';
 
-const FILTERS_KEY='flowos-plan-filters-v2';
-type FilterKey='events'|'tasks'|'past'|'overdue';
-type Filters=Record<FilterKey,boolean>;
-const DEFAULT_FILTERS:Filters={events:true,tasks:true,past:true,overdue:true};
-type ContactsFilter='all'|'onlyContacts'|'excludeContacts';
-const CONTACTS_FILTER_KEY='flowos-plan-contacts-filter-v1';
 
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
 function formatDateTime(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);const options={weekday:'short' as const,day:'2-digit' as const,month:'2-digit' as const,year:'numeric' as const};if(item.allDay){const d=new Date(value);return `${d.toLocaleDateString(localeForLanguage(language),{...options,timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),options);const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} · ${time(start)} - ${date(end)===date(start)?time(end):`${date(end)} · ${time(end)}`}`;}
@@ -27,15 +19,12 @@ function cardSourceStyle(item:Commitment,sourceColors:Map<string,string>){return
 function searchable(item:Commitment){
   return[item.title,item.description,item.notes,item.location,item.context,item.outcome,item.kind].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 }
-function isGoogleTask(item:Commitment){return item.kind==='task'&&Boolean(item.googleTaskListId);}
 
 export default function Plan(){
   const { language } = useLanguage();
   const commitments=useFlowStore(state=>state.commitments);
   const[query,setQuery]=useState('');
-  const[filters,setFilters]=useState<Filters>(DEFAULT_FILTERS);
   const[manageId,setManageId]=useState<string|null>(null);
-  const[contactsFilter,setContactsFilter]=useState<ContactsFilter>('all');
   const[now,setNow]=useState(()=>Date.now());
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const scrollRef=useRef<import('react-native').ScrollView|null>(null);
@@ -44,26 +33,16 @@ export default function Plan(){
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
   useEffect(()=>{const i=setInterval(()=>setNow(Date.now()),60000);return()=>clearInterval(i);},[]);
-  useEffect(()=>{void AsyncStorage.getItem(FILTERS_KEY).then(raw=>{if(raw){try{setFilters({...DEFAULT_FILTERS,...JSON.parse(raw)});}catch{setFilters(DEFAULT_FILTERS);}}}).catch(()=>undefined);},[]);
-  useEffect(()=>{void AsyncStorage.setItem(FILTERS_KEY,JSON.stringify(filters));},[filters]);
-  useEffect(()=>{void AsyncStorage.getItem(CONTACTS_FILTER_KEY).then(raw=>{if(raw==='onlyContacts'||raw==='excludeContacts'||raw==='all')setContactsFilter(raw);}).catch(()=>undefined);},[]);
-  useEffect(()=>{void AsyncStorage.setItem(CONTACTS_FILTER_KEY,contactsFilter);},[contactsFilter]);
 
   const items=useMemo(()=>{
     const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     return commitments.filter(item=>{
       const event=item.kind==='event',task=item.kind==='task',flexible=task,date=itemDate(item),past=Boolean(date&&new Date(date).getTime()<now),open=item.status!=='done',completedMultiDay=isCompletedMultiDayVisible(item,new Date(now));
       if(date&&Number(date.slice(0,4))<new Date(now).getFullYear()&&!completedMultiDay)return false;
-      if(event&&!filters.events)return false;
-      if(task&&!filters.tasks)return false;
       if(!event&&!flexible)return false;
-      if(past&&!filters.past&&!completedMultiDay&&!(flexible&&open&&filters.overdue))return false;
-      if(item.status==='done'&&!filters.past&&!completedMultiDay)return false;
-      if(contactsFilter==='onlyContacts'&&(!isContactEvent(item)||isGoogleTask(item)))return false;
-      if(contactsFilter==='excludeContacts'&&isContactEvent(item))return false;
       return!normalized||searchable(item).includes(normalized);
     });
-  },[commitments,filters,query,contactsFilter,now]);
+  },[commitments,query,now]);
 
   const overdueItems=items.filter(item=>item.status!=='done'&&isExpired(item));
   const calendarNames=new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)]));
@@ -90,21 +69,9 @@ export default function Plan(){
   const initialScrollKey=groupedItems.find(group=>group.key>=todayKey)?.key??groupedItems[groupedItems.length-1]?.key;
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   function formatStartEnd(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);const options={weekday:'short' as const,day:'2-digit' as const,month:'2-digit' as const,year:'numeric' as const};if(item.allDay){const date=new Date(value);return `${date.toLocaleDateString(localeForLanguage(language),{...options,timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),options);const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} · ${time(start)} - ${date(end)===date(start)?time(end):`${date(end)} · ${time(end)}`}`;}
-  const toggle=(key:FilterKey)=>setFilters(current=>({...current,[key]:!current[key]}));
 
-  return <ScreenShell title={t('Lista')} subtitle={t('Eventi e attività ordinati nel tempo, con filtri salvati automaticamente.')} scrollRef={scrollRef} scrollProps={{stickyHeaderIndices:[3,4,5]}}>
+  return <ScreenShell title={t('Lista')} scrollRef={scrollRef} scrollProps={{stickyHeaderIndices:[2]}}>
     <TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca titolo, descrizione, luogo…')} placeholderTextColor={palette.muted} style={styles.search}/>
-    <View style={styles.filters}>
-      <Filter label={t('Eventi')} active={filters.events} onPress={()=>toggle('events')}/>
-      <Filter label={t('Task')} active={filters.tasks} onPress={()=>toggle('tasks')}/>
-      <Filter label={t('Passati e completati')} active={filters.past} onPress={()=>toggle('past')}/>
-      <Filter label={t('Scaduti aperti')} active={filters.overdue} onPress={()=>toggle('overdue')}/>
-    </View>
-    <View style={styles.filters}>
-      <Filter label={t('Tutti')} active={contactsFilter==='all'} onPress={()=>setContactsFilter('all')}/>
-      <Filter label={t('Solo contatti')} active={contactsFilter==='onlyContacts'} onPress={()=>setContactsFilter('onlyContacts')}/>
-      <Filter label={t('Escludi contatti')} active={contactsFilter==='excludeContacts'} onPress={()=>setContactsFilter('excludeContacts')}/>
-    </View>
     {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>{t('Attività in ritardo')}</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item,language)} · {item.kind==='event'?t('Evento'):t('Task')}</Text></Pressable>)}</Card>:null}
     <SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/>
     {groupedItems.length?groupedItems.map(group=><View key={group.key} onLayout={event=>{if(group.key===initialScrollKey&&!didInitialScroll.current){didInitialScroll.current=true;const y=event.nativeEvent.layout.y;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,y-8),animated:false}));}}} style={styles.dayGroup}>
@@ -129,20 +96,9 @@ export default function Plan(){
   </ScreenShell>;
 }
 
-function Filter({label,active,onPress}:{label:string;active:boolean;onPress:()=>void}){
-  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{selected:active}} style={[styles.filter,active&&styles.filterActive]}>
-    <Text style={[styles.filterText,active&&styles.filterTextActive]}>{label}</Text>
-  </Pressable>;
-}
-
 const styles=StyleSheet.create({
   warning:{color:palette.warning},
   search:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:15,paddingHorizontal:15,paddingVertical:13,fontSize:15,color:palette.ink},
-  filters:{flexDirection:'row',flexWrap:'wrap',gap:8},
-  filter:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#ECEEF4'},
-  filterActive:{backgroundColor:palette.primary},
-  filterText:{fontSize:12,fontWeight:'800',color:palette.muted},
-  filterTextActive:{color:'#FFF'},
   overdueCard:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1,gap:8,padding:13},
   overdueHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   overdueTitle:{fontSize:16,fontWeight:'900',color:palette.ink},
