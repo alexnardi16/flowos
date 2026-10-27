@@ -142,6 +142,6 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(handler,/loadingProgress=\{55\}/);
   assert.match(handler,/loadingProgress=\{90\}/);
   assert.match(handler,/CALENDAR_PAGE_TODAY/);
-  assert.match(handler,/isLoading language=/);
+  assert.match(handler,/isLoading loadingProgress=\{15\} language=\{language\}/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/const defaultStart = Math\.max\(0, currentIndex < 0 \? 0 : currentIndex\)/);
 });
