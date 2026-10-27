@@ -15,7 +15,8 @@ export function getCalendarWidgetPage(
 ) {
   void now;
   const currentIndex = allWeeks.findIndex(week => week.days.some(day => day.isToday));
-  const defaultStart = Math.max(0, (currentIndex < 0 ? 0 : currentIndex) - 4);
+  // Start at the current week, not several weeks before it.
+  const defaultStart = Math.max(0, currentIndex < 0 ? 0 : currentIndex);
   const maxStart = Math.max(0, allWeeks.length - CALENDAR_WIDGET_PAGE_SIZE);
   const requested = Number.isFinite(requestedStartIndex) ? Number(requestedStartIndex) : defaultStart;
   const startIndex = Math.max(0, Math.min(Math.floor(requested), maxStart));
