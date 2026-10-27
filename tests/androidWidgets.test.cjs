@@ -150,7 +150,7 @@ test('Android Calendar widget renders bounded pages without truncating the full 
 test('List and Today macrosections have no filters and List search stays sticky',()=>{
   const plan=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
   const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
-  assert.match(plan,/stickyHeaderIndices:\[2\]/);
+  assert.match(plan,/stickyHeaderIndices:\[0\]/);
   assert.match(plan,/<TextInput value=\{query\} onChangeText=\{setQuery\}/);
   assert.doesNotMatch(plan,/Solo contatti|Escludi contatti|Passati e completati|Scaduti aperti|FILTERS_KEY|CONTACTS_FILTER_KEY/);
   assert.doesNotMatch(today,/Solo contatti|Escludi contatti|CONTACTS_FILTER_KEY|contactsFilter/);
@@ -163,4 +163,14 @@ test('Macrosection headers do not render descriptive subtitles',()=>{
     const source=fs.readFileSync(path,'utf8');
     assert.doesNotMatch(source,/<ScreenShell[^>]*subtitle=/,path);
   }
+});
+
+
+test('All macrosection headers remain outside the scrollable content',()=>{
+  const source=fs.readFileSync('components/ui.tsx','utf8');
+  assert.match(source,/<View style=\{styles\.screenHeader\}>/);
+  assert.match(source,/<Text style=\{styles\.screenTitle\}>\{title\}<\\/Text>/);
+  assert.match(source,/<ScrollView ref=\{scrollRef\} \{\.\.\.scrollProps\} style=\{styles\.screenScroll\}/);
+  assert.match(source,/screenHeader:\{[^}]*backgroundColor:palette\.bg/);
+  assert.match(fs.readFileSync('app/(tabs)/plan.tsx','utf8'),/stickyHeaderIndices:\[0\]/);
 });
