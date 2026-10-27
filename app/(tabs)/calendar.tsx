@@ -10,6 +10,7 @@ import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage, widgetStrings } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
 import { isVisibleCompletedMultiDayForDate } from '@/lib/commitmentVisibility';
+import { buildCalendarTimeline } from '@/lib/calendarTimeline';
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -39,19 +40,12 @@ export default function Calendar(){
 
   const weeks=useMemo(()=>{
     const now=new Date();
-    const monday=new Date(now.getFullYear(),0,1);
-    monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
-    const end=google?.range?.endDate?new Date(`${google.range.endDate}T23:59:59`):new Date(now.getFullYear()+1,11,31);
-    const result:Date[][]=[];
-    for(let i=0;;i+=1){
-      const start=new Date(monday);start.setDate(monday.getDate()+i*7);
-      if(start.getTime()>end.getTime())break;
-      result.push(Array.from({length:7},(_,j)=>{const d=new Date(start);d.setDate(start.getDate()+j);return d;}));
-    }
-    return result;
-  },[google]);
+    const syncEnd=google?.range?.endDate?new Date(`${google.range.endDate}T23:59:59`):new Date(now.getFullYear()+1,11,31);
+    return buildCalendarTimeline(commitments,syncEnd,now).weeks;
+  },[commitments,google?.range?.endDate]);
 
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
+  const calendarNames=useMemo(()=>new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)])),[google?.calendars,google?.connection?.google_email,language]);
 
   const byDay=useMemo(()=>{
     const map=new Map<string,Commitment[]>();
@@ -85,7 +79,7 @@ export default function Calendar(){
         {monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}
         <View style={styles.grid}>
           {week.map((date,dayIndex)=>{
-            const items=sortCommitments(byDay.get(dayKey(date))??[],new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email)])));
+            const items=sortCommitments(byDay.get(dayKey(date))??[],calendarNames);
             const today=dayKey(date)===dayKey(new Date());
             const selected=dayKey(date)===selectedDateKey;
             return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox,selected&&styles.selectedBox]}>

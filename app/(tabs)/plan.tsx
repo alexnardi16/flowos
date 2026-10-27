@@ -40,7 +40,7 @@ export default function Plan(){
   },[commitments,query]);
 
   const overdueItems=items.filter(item=>item.status!=='done'&&isExpired(item));
-  const calendarNames=new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)]));
+  const calendarNames=useMemo(()=>new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)])),[google?.calendars,google?.connection?.google_email,language]);
   const groupedItems=useMemo(()=>{
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
@@ -86,7 +86,7 @@ export default function Plan(){
           </Card>
         </Pressable>;
       })}
-    </View>):<EmptyState title={t('Nessun risultato')} message={t('Modifica i filtri oppure aggiungi un nuovo elemento.')}/>}
+    </View>):<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento.':'Aggiungi un nuovo elemento per iniziare.')}/>}
     {manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}
   </ScreenShell>;
 }

@@ -1,4 +1,25 @@
 {
-  "compilerOptions":{"target":"ES2020","module":"CommonJS","moduleResolution":"Node","rootDir":"..","outDir":"../.test-dist-widget","strict":true,"esModuleInterop":true,"skipLibCheck":true,"ignoreDeprecations":"6.0","types":[],"jsx":"react-jsx"},
-  "include":["../lib/calendarWidgetData.ts","../widgets/android/CalendarWidget.tsx","../types/index.ts"]
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "rootDir": "..",
+    "outDir": "../.test-dist-widget",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
+    "types": [],
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "../lib/calendarWidgetData.ts",
+    "../widgets/android/CalendarWidget.tsx",
+    "../types/index.ts",
+    "../lib/calendarTimeline.ts",
+    "../lib/commitmentVisibility.ts",
+    "../lib/activityOrdering.ts",
+    "../lib/activityColors.ts",
+    "../lib/i18n.ts"
+  ]
 }

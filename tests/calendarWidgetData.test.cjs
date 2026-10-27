@@ -39,3 +39,24 @@ test('calendar widget weeks remain chronological around the current week',()=>{
   assert.equal(data.weeks[current].days[0].dateKey,'2026-10-19');
   assert.equal(data.weeks[current+1].days[0].dateKey,'2026-10-26');
 });
+
+const { buildCalendarTimeline } = require('../.test-dist-widget/lib/calendarTimeline.js');
+test('shared calendar timeline includes local activities before current year and beyond Google sync range',()=>{
+  const now=new Date('2026-10-20T10:00:00');
+  const items=[
+    {id:'past',title:'Past',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2023-02-10T10:00:00'},
+    {id:'future',title:'Future',kind:'event',status:'scheduled',durationMinutes:60,energy:'medium',context:'test',confidence:1,scheduledAt:'2032-07-14T10:00:00'},
+    {id:'deleted',title:'Deleted',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2020-01-01T10:00:00',deletedAt:'2025-01-01T00:00:00'}
+  ];
+  const timeline=buildCalendarTimeline(items,new Date('2027-12-31T23:59:59'),now);
+  const keys=timeline.weeks.flatMap(week=>week.map(day=>day.getFullYear()+'-'+String(day.getMonth()+1).padStart(2,'0')+'-'+String(day.getDate()).padStart(2,'0')));
+  assert.ok(keys.includes('2023-02-10'));
+  assert.ok(keys.includes('2032-07-14'));
+  assert.ok(keys.includes('2026-10-20'));
+  assert.ok(!keys.includes('2019-12-30'));
+});
+test('shared calendar timeline always includes the current week if sync range ends in the past',()=>{
+  const now=new Date('2026-10-20T10:00:00');
+  const timeline=buildCalendarTimeline([],new Date('2025-01-01T00:00:00'),now);
+  assert.ok(timeline.weeks.some(week=>week.some(day=>day.getFullYear()===2026&&day.getMonth()===9&&day.getDate()===20));
+});
