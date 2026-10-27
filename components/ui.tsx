@@ -34,7 +34,7 @@ export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef 
   const insets = useSafeAreaInsets();
   const contentPaddingBottom = Math.max(118, insets.bottom + 112);
   return <SafeAreaView edges={['top','bottom']} style={styles.screenSafe}>
-    <ScrollView ref={scrollRef} {...scrollProps} showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
+    <View style={styles.screenHeader}>
       <View style={styles.screenBrandRow}>
         <View style={styles.screenBrandLeft}>
           <Image source={require("../assets/flowos-app-icon-512-store.png")} style={styles.screenLogo} resizeMode="contain" accessibilityLabel="Logo FlowOS" />
@@ -44,6 +44,8 @@ export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef 
       </View>
       <Text style={styles.screenTitle}>{title}</Text>
       {subtitle ? <Text style={styles.screenSubtitle}>{subtitle}</Text> : null}
+    </View>
+    <ScrollView ref={scrollRef} {...scrollProps} style={styles.screenScroll} showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
       {children}
     </ScrollView>
   </SafeAreaView>;
@@ -78,6 +80,8 @@ export function EmptyState({ title, message, actionLabel, onAction }: {title:str
 
 const styles=StyleSheet.create({
   screenSafe:{flex:1,backgroundColor:palette.bg},
+  screenHeader:{paddingHorizontal:20,paddingTop:8,paddingBottom:4,gap:14,backgroundColor:palette.bg,zIndex:1},
+  screenScroll:{flex:1},
   screenContent:{paddingHorizontal:20,paddingTop:8,gap:14},
   screenBrandRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:38},
   screenBrandLeft:{flexDirection:'row',alignItems:'center',gap:9},
