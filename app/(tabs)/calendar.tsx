@@ -42,7 +42,7 @@ export default function Calendar(){
     const now=new Date();
     const syncEnd=google?.range?.endDate?new Date(`${google.range.endDate}T23:59:59`):new Date(now.getFullYear()+1,11,31);
     return buildCalendarTimeline(commitments,syncEnd,now).weeks;
-  },[commitments,google?.range?.endDate]);
+  },[commitments,google]);
 
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
   const calendarNames=useMemo(()=>new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)])),[google?.calendars,google?.connection?.google_email,language]);
