@@ -36,12 +36,8 @@ export default function Plan(){
 
   const items=useMemo(()=>{
     const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-    return commitments.filter(item=>{
-      const date=itemDate(item),completedMultiDay=isCompletedMultiDayVisible(item,new Date(now));
-      if(date&&Number(date.slice(0,4))<new Date(now).getFullYear()&&!completedMultiDay)return false;
-      return!normalized||searchable(item).includes(normalized);
-    });
-  },[commitments,query,now]);
+    return commitments.filter(item=>!normalized||searchable(item).includes(normalized));
+  },[commitments,query]);
 
   const overdueItems=items.filter(item=>item.status!=='done'&&isExpired(item));
   const calendarNames=new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)]));
