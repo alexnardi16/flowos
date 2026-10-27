@@ -78,7 +78,7 @@ export default function Calendar(){
   const scrollToSelectedWeek=useCallback(()=>{if(selectedWeekIndex<0)return;const offset=weekOffsets.current.get(selectedWeekIndex);if(offset===undefined)return;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));},[selectedWeekIndex]);
   useEffect(()=>{scrollToSelectedWeek();},[scrollToSelectedWeek,selectedDateKey]);
 
-  return <ScreenShell title={t('Calendario')} subtitle={t('Vista mensile in stile Google Calendar. Ogni settimana mostra sempre tutti e sette i giorni.')} scrollRef={scrollRef}>
+  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef}>
     {weeks.map((week,index)=>{const strings=widgetStrings(language);
       const monthTitle=monthLabelForWeek(week,index,strings.months);
       return <Card key={index} style={styles.weekCard} onLayout={(event)=>{weekOffsets.current.set(index,event.nativeEvent.layout.y);if(index===selectedWeekIndex)scrollToSelectedWeek();}}>
