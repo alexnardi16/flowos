@@ -133,14 +133,17 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     const isCalendarNavigation=props.widgetAction==='WIDGET_CLICK'&&['CALENDAR_PAGE_OLDER','CALENDAR_PAGE_NEWER','CALENDAR_PAGE_TODAY'].includes(String(props.clickAction));
     let page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
     if(isCalendarNavigation) {
-      // Immediately show feedback while the requested page is being prepared.
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading language={language}/>);
-      // Give the launcher time to display the progress bar before replacing the page.
-      await new Promise<void>(resolve=>setTimeout(resolve,180));
+      // Show staged progress while the launcher prepares the new bounded page.
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={15} language={language}/>);
+      await new Promise<void>(resolve=>setTimeout(resolve,90));
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={55} language={language}/>);
       if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,page.startIndex-pageShift);
       if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=page.startIndex+pageShift;
       if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=undefined;
       page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
+      await new Promise<void>(resolve=>setTimeout(resolve,90));
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={90} language={language}/>);
+      await new Promise<void>(resolve=>setTimeout(resolve,70));
     }
     try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
     switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language}/>);break;default:break;}
