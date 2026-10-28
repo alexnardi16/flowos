@@ -3,7 +3,7 @@ import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
 import { buildDailySummary, toDateKey } from './dailySummary';
 import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment } from './commitmentsRepository';
-import { getGoogleWorkspaceStatus, syncGoogleTasksIncremental, syncGoogleWorkspace } from './googleWorkspace';
+import { getGoogleWorkspaceStatus, syncGoogleWorkspace } from './googleWorkspace';
 import { syncTodayWidget } from './widgetSync';
 import { runReminderEngine } from './reminderEngine';
 import { runIntelligentReplan } from './replanEngine';
