@@ -51,3 +51,19 @@ test('Google push background delivery also refreshes locally scheduled reminders
   assert.match(source,/await runReminderEngine\(commitments,now\)/);
   assert.match(source,/remindersRefreshed:true/);
 });
+
+
+test('Google updates newer than the last synced remote version override a stale local FlowOS copy',()=>{
+  const source=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  assert.ok(source.includes('select("id,external_id,updated_at,external_updated_at,last_sync_origin,sync_status,status,kind,ai_metadata")'));
+  assert.ok(source.includes('remoteChangedSinceLastSync=Boolean(found?.external_updated_at&&row.external_updated_at&&new Date(row.external_updated_at).getTime()>new Date(found.external_updated_at).getTime())'));
+  assert.ok(source.includes('&&!remoteChangedSinceLastSync)return[]'));
+});
+
+test('foreground sync imports Google changes before attempting a push',()=>{
+  const source=fs.readFileSync('lib/googleWorkspace.ts','utf8');
+  const start=source.indexOf('async function syncGoogleWorkspaceInternal');
+  const end=source.indexOf('let taskIncrementalInFlight',start);
+  const body=source.slice(start,end);
+  assert.ok(body.indexOf("invoke({action:'sync-incremental'})") < body.indexOf("invoke({action:'sync-push'})"));
+});
