@@ -177,13 +177,20 @@ TaskManager.defineTask(GOOGLE_PUSH_RETRY_BACKGROUND_TASK, async () => {
 TaskManager.defineTask(GOOGLE_TASKS_BACKGROUND_TASK, async () => {
   try {
     if (!(await hasAuthenticatedSession())) return BackgroundTask.BackgroundTaskResult.Success;
-    await syncGoogleTasksIncremental();
+    // Refresh Calendar and Tasks together: Calendar changes made outside FlowOS
+    // must not wait for the next app launch or a manual widget refresh.
+    await syncGoogleWorkspace();
+    const now = new Date();
     const commitments = await loadCommitments();
-    await syncTodayWidget(commitments, new Date());
-    await logNotificationEvent('google-tasks-background-sync-completed');
+    await syncTodayWidget(commitments, now);
+    await safeRunReminderEngine(commitments, now);
+    await logNotificationEvent('google-workspace-background-sync-completed', {
+      commitments: commitments.length,
+      platform: Platform.OS,
+    });
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch (error) {
-    await logNotificationEvent('google-tasks-background-sync-failed', error, 'warn');
+    await logNotificationEvent('google-workspace-background-sync-failed', error, 'warn');
     return BackgroundTask.BackgroundTaskResult.Failed;
   }
 });
