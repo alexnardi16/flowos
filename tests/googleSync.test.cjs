@@ -45,3 +45,9 @@ test('scheduled custom reminders are sticky and not auto-dismissed on Android',(
   assert.match(source,/sticky: Platform\.OS === 'android',[\s\S]*?autoDismiss: false/);
   assert.match(source,/priority: Platform\.OS === 'android' \? Notifications\.AndroidNotificationPriority\.MAX/);
 });
+
+test('Google push background delivery also refreshes locally scheduled reminders',()=>{
+  const source=fs.readFileSync('lib/googlePushSync.ts','utf8');
+  assert.match(source,/await runReminderEngine\(commitments,now\)/);
+  assert.match(source,/remindersRefreshed:true/);
+});
