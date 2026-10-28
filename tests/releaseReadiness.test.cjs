@@ -75,7 +75,7 @@ test('account exit clears the diagnostic session and auth subscriptions are clea
 test('release checklist explicitly separates automated checks from physical-device acceptance', () => {
   const checklist = read('docs/RELEASE_1.0.0_CHECKLIST.md');
   assert.match(checklist, /Functional acceptance on a physical Android device/);
-  assert.match(checklist, /Google Calendar and Google Tasks/);
+  assert.match(checklist, /Google Calendar \/ Tasks synchronization/);
   assert.match(checklist, /Offline recovery/);
   assert.match(checklist, /Timezone and daylight-saving transition/);
   assert.match(checklist, /Notifications and widgets/);
