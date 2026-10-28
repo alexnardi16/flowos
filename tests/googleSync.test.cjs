@@ -22,3 +22,26 @@ test('foreground remote sync is continuously refreshed while the app is active',
   assert.match(source,/syncGoogleRemote\(\)/);
   assert.match(source,/setInterval\(\(\)\s*=>\s*\{/);
 });
+
+
+test('Google pulls preserve FlowOS-only metadata such as custom reminders',()=>{
+  const source=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  assert.match(source,/select\("id,external_id,updated_at,last_sync_origin,status,kind,ai_metadata"\)/);
+  assert.match(source,/ai_metadata:\{\.\.\.\(found\?\.ai_metadata\?\?\{\}\),\.\.\.\(row\.ai_metadata\?\?\{\}\)\}/);
+});
+
+test('background sync refreshes both Google Calendar and Google Tasks and replans local reminders',()=>{
+  const source=fs.readFileSync('lib/backgroundSyncService.ts','utf8');
+  const start=source.indexOf('TaskManager.defineTask(GOOGLE_TASKS_BACKGROUND_TASK');
+  const end=source.indexOf('TaskManager.defineTask(DAILY_SUMMARY_TASK',start);
+  const body=source.slice(start,end);
+  assert.match(body,/syncGoogleWorkspace\(\)/);
+  assert.match(body,/safeRunReminderEngine\(commitments, now\)/);
+  assert.doesNotMatch(body,/syncGoogleTasksIncremental\(\)/);
+});
+
+test('scheduled custom reminders are sticky and not auto-dismissed on Android',()=>{
+  const source=fs.readFileSync('lib/reminderEngine.ts','utf8');
+  assert.match(source,/sticky: Platform\.OS === 'android',[\s\S]*?autoDismiss: false/);
+  assert.match(source,/priority: Platform\.OS === 'android' \? Notifications\.AndroidNotificationPriority\.MAX/);
+});
