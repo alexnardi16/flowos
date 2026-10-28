@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
+import { redactLogDetails } from './logRedaction';
 
 export type DiagnosticLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -12,6 +13,7 @@ export type DiagnosticEntry = {
 
 const STORAGE_KEY = 'flowos-diagnostics-v3';
 const SESSION_USER_KEY = 'flowos-diagnostics-session-user';
+const MAX_ENTRIES = 300;
 const listeners = new Set<(entries: DiagnosticEntry[]) => void>();
 let cache: DiagnosticEntry[] = [];
 let sessionUser: string | null = null;
@@ -29,9 +31,10 @@ const storageReady = AsyncStorage.multiGet([STORAGE_KEY, SESSION_USER_KEY])
 
 function serializeDetails(details: unknown): string | undefined {
   if (details === undefined) return undefined;
-  if (details instanceof Error) return `${details.name}: ${details.message}\n${details.stack ?? ''}`.trim();
-  if (typeof details === 'string') return details;
-  try { return JSON.stringify(details); }
+  const safeDetails = redactLogDetails(details);
+  if (safeDetails instanceof Error) return `${safeDetails.name}: ${safeDetails.message}\n${safeDetails.stack ?? ''}`.trim();
+  if (typeof safeDetails === 'string') return safeDetails;
+  try { return JSON.stringify(safeDetails); }
   catch { return String(details); }
 }
 
@@ -46,19 +49,20 @@ function persist() {
 }
 
 export function recordDiagnostic(event: string, details?: unknown, level: DiagnosticLevel = 'info') {
+  const safeDetails = redactLogDetails(details);
   const entry: DiagnosticEntry = {
     at: new Date().toISOString(),
     level,
     event,
-    details: serializeDetails(details),
+    details: serializeDetails(safeDetails),
   };
 
-  if (level === 'error') console.error(`[FlowOS] ${event}`, details ?? '');
-  else if (level === 'warn') console.warn(`[FlowOS] ${event}`, details ?? '');
-  else if (level === 'debug') console.debug(`[FlowOS] ${event}`, details ?? '');
-  else console.info(`[FlowOS] ${event}`, details ?? '');
+  if (level === 'error') console.error(`[FlowOS] ${event}`, safeDetails ?? '');
+  else if (level === 'warn') console.warn(`[FlowOS] ${event}`, safeDetails ?? '');
+  else if (level === 'debug') console.debug(`[FlowOS] ${event}`, safeDetails ?? '');
+  else console.info(`[FlowOS] ${event}`, safeDetails ?? '');
 
-  cache = [...cache, entry];
+  cache = [...cache, entry].slice(-MAX_ENTRIES);
   persist();
   notify();
 }

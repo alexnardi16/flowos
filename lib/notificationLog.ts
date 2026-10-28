@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { redactLogDetails } from './logRedaction';
 
 export type NotificationLogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -16,9 +17,10 @@ let cache: NotificationLogEntry[] | null = null;
 
 function serializeDetails(details: unknown): string | undefined {
   if (details === undefined) return undefined;
-  if (details instanceof Error) return `${details.name}: ${details.message}`.trim();
-  if (typeof details === 'string') return details;
-  try { return JSON.stringify(details); }
+  const safeDetails = redactLogDetails(details);
+  if (safeDetails instanceof Error) return `${safeDetails.name}: ${safeDetails.message}`.trim();
+  if (typeof safeDetails === 'string') return safeDetails;
+  try { return JSON.stringify(safeDetails); }
   catch { return String(details); }
 }
 
@@ -46,10 +48,11 @@ function notify(entries: NotificationLogEntry[]) {
  * persists on web. This log survives across sessions on every platform.
  */
 export async function logNotificationEvent(event: string, details?: unknown, level: NotificationLogLevel = 'info') {
-  const entry: NotificationLogEntry = { at: new Date().toISOString(), level, event, details: serializeDetails(details) };
-  if (level === 'error') console.error(`[FlowOS:notifications] ${event}`, details ?? '');
-  else if (level === 'warn') console.warn(`[FlowOS:notifications] ${event}`, details ?? '');
-  else console.info(`[FlowOS:notifications] ${event}`, details ?? '');
+  const safeDetails = redactLogDetails(details);
+  const entry: NotificationLogEntry = { at: new Date().toISOString(), level, event, details: serializeDetails(safeDetails) };
+  if (level === 'error') console.error(`[FlowOS:notifications] ${event}`, safeDetails ?? '');
+  else if (level === 'warn') console.warn(`[FlowOS:notifications] ${event}`, safeDetails ?? '');
+  else console.info(`[FlowOS:notifications] ${event}`, safeDetails ?? '');
 
   const previous = await readAll();
   const next = [...previous, entry].slice(-MAX_ENTRIES);
