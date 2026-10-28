@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { redactLogDetails } = require('../.test-dist-notifications/lib/logRedaction.js');
+const { redactLogDetails, redactSerializedLogDetails } = require('../.test-dist-notifications/lib/logRedaction.js');
 
 test('redacts private activity content while retaining safe diagnostic fields', () => {
   const result = redactLogDetails({ event: 'activity-created', title: 'Medical appointment', description: 'Private details', location: '12 Rue Example', count: 3, kind: 'event' });
@@ -30,4 +30,17 @@ test('redacts nested arrays and objects and bounds recursion depth', () => {
   const result = redactLogDetails({ items: [{ userText: 'private command', ok: true }] });
   assert.equal(result.items[0].userText, '[REDACTED]');
   assert.equal(result.items[0].ok, true);
+});
+
+test('migrates historical JSON-serialized details by redacting sensitive fields', () => {
+  const result = redactSerializedLogDetails('{"title":"old private title","status":"scheduled","access_token":"old-secret"}');
+  assert.doesNotMatch(result, /old private title|old-secret/);
+  assert.match(result, /"title":"\[REDACTED\]"/);
+  assert.match(result, /"status":"scheduled"/);
+});
+
+test('redacts credentials embedded in historical plain-text details', () => {
+  const result = redactSerializedLogDetails('request failed with Bearer old.secret.value');
+  assert.doesNotMatch(result, /old\.secret\.value/);
+  assert.match(result, /Bearer \[REDACTED\]/);
 });

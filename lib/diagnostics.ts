@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
-import { redactLogDetails } from './logRedaction';
+import { redactLogDetails, redactSerializedLogDetails } from './logRedaction';
 
 export type DiagnosticLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -19,23 +19,32 @@ let cache: DiagnosticEntry[] = [];
 let sessionUser: string | null = null;
 let storageGeneration = 0;
 
+function sanitizeEntry(value: DiagnosticEntry): DiagnosticEntry {
+  return {
+    ...value,
+    event: String(redactLogDetails(value.event)),
+    details: redactSerializedLogDetails(value.details),
+  };
+}
+
 const storageReady = AsyncStorage.multiGet([STORAGE_KEY, SESSION_USER_KEY])
   .then(([logEntry, userEntry]) => {
     if (storageGeneration !== 0) return;
-    try { cache = logEntry[1] ? JSON.parse(logEntry[1]) as DiagnosticEntry[] : []; }
-    catch { cache = []; }
+    let parsed: DiagnosticEntry[] = [];
+    try { parsed = logEntry[1] ? JSON.parse(logEntry[1]) as DiagnosticEntry[] : []; }
+    catch { parsed = []; }
+    cache = Array.isArray(parsed) ? parsed.filter((entry) => entry && typeof entry === 'object').map(sanitizeEntry).slice(-MAX_ENTRIES) : [];
     sessionUser = userEntry[1] ?? null;
+    if (logEntry[1] && JSON.stringify(cache) !== logEntry[1]) {
+      void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cache))
+        .catch((error) => console.error('[FlowOS] diagnostics-migration-failed', error));
+    }
     notify();
   })
   .catch((error) => console.error('[FlowOS] diagnostics-storage-load-failed', error));
 
 function serializeDetails(details: unknown): string | undefined {
-  if (details === undefined) return undefined;
-  const safeDetails = redactLogDetails(details);
-  if (safeDetails instanceof Error) return `${safeDetails.name}: ${safeDetails.message}\n${safeDetails.stack ?? ''}`.trim();
-  if (typeof safeDetails === 'string') return safeDetails;
-  try { return JSON.stringify(safeDetails); }
-  catch { return String(details); }
+  return redactSerializedLogDetails(details);
 }
 
 function notify() {
@@ -50,17 +59,18 @@ function persist() {
 
 export function recordDiagnostic(event: string, details?: unknown, level: DiagnosticLevel = 'info') {
   const safeDetails = redactLogDetails(details);
+  const safeEvent = String(redactLogDetails(event));
   const entry: DiagnosticEntry = {
     at: new Date().toISOString(),
     level,
-    event,
+    event: safeEvent,
     details: serializeDetails(safeDetails),
   };
 
-  if (level === 'error') console.error(`[FlowOS] ${event}`, safeDetails ?? '');
-  else if (level === 'warn') console.warn(`[FlowOS] ${event}`, safeDetails ?? '');
-  else if (level === 'debug') console.debug(`[FlowOS] ${event}`, safeDetails ?? '');
-  else console.info(`[FlowOS] ${event}`, safeDetails ?? '');
+  if (level === 'error') console.error(`[FlowOS] ${safeEvent}`, safeDetails ?? '');
+  else if (level === 'warn') console.warn(`[FlowOS] ${safeEvent}`, safeDetails ?? '');
+  else if (level === 'debug') console.debug(`[FlowOS] ${safeEvent}`, safeDetails ?? '');
+  else console.info(`[FlowOS] ${safeEvent}`, safeDetails ?? '');
 
   cache = [...cache, entry].slice(-MAX_ENTRIES);
   persist();

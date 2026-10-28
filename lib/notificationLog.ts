@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { redactLogDetails } from './logRedaction';
+import { redactLogDetails, redactSerializedLogDetails } from './logRedaction';
 
 export type NotificationLogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -15,20 +15,29 @@ const MAX_ENTRIES = 200;
 const listeners = new Set<(entries: NotificationLogEntry[]) => void>();
 let cache: NotificationLogEntry[] | null = null;
 
+function sanitizeEntry(value: NotificationLogEntry): NotificationLogEntry {
+  return {
+    ...value,
+    event: String(redactLogDetails(value.event)),
+    details: redactSerializedLogDetails(value.details),
+  };
+}
+
 function serializeDetails(details: unknown): string | undefined {
-  if (details === undefined) return undefined;
-  const safeDetails = redactLogDetails(details);
-  if (safeDetails instanceof Error) return `${safeDetails.name}: ${safeDetails.message}`.trim();
-  if (typeof safeDetails === 'string') return safeDetails;
-  try { return JSON.stringify(safeDetails); }
-  catch { return String(details); }
+  return redactSerializedLogDetails(details);
 }
 
 async function readAll(): Promise<NotificationLogEntry[]> {
   if (cache) return cache;
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    cache = raw ? (JSON.parse(raw) as NotificationLogEntry[]) : [];
+    const parsed = raw ? JSON.parse(raw) as NotificationLogEntry[] : [];
+    cache = Array.isArray(parsed)
+      ? parsed.filter((entry) => entry && typeof entry === 'object').map(sanitizeEntry).slice(-MAX_ENTRIES)
+      : [];
+    if (raw && JSON.stringify(cache) !== raw) {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+    }
   } catch {
     cache = [];
   }
@@ -43,16 +52,15 @@ function notify(entries: NotificationLogEntry[]) {
  * Records one entry for the notification subsystem specifically (daily
  * summary scheduling, background sync, permission issues). Kept separate
  * from lib/diagnostics.ts on purpose: notification bugs are usually reported
- * by the person days after the fact ("non ho ricevuto il riepilogo di
- * martedì"), while diagnostics.ts is cleared on every login/logout, and only
- * persists on web. This log survives across sessions on every platform.
+ * by the person days after the fact, while diagnostics.ts is cleared on login/logout.
  */
 export async function logNotificationEvent(event: string, details?: unknown, level: NotificationLogLevel = 'info') {
   const safeDetails = redactLogDetails(details);
-  const entry: NotificationLogEntry = { at: new Date().toISOString(), level, event, details: serializeDetails(safeDetails) };
-  if (level === 'error') console.error(`[FlowOS:notifications] ${event}`, safeDetails ?? '');
-  else if (level === 'warn') console.warn(`[FlowOS:notifications] ${event}`, safeDetails ?? '');
-  else console.info(`[FlowOS:notifications] ${event}`, safeDetails ?? '');
+  const safeEvent = String(redactLogDetails(event));
+  const entry: NotificationLogEntry = { at: new Date().toISOString(), level, event: safeEvent, details: serializeDetails(safeDetails) };
+  if (level === 'error') console.error(`[FlowOS:notifications] ${safeEvent}`, safeDetails ?? '');
+  else if (level === 'warn') console.warn(`[FlowOS:notifications] ${safeEvent}`, safeDetails ?? '');
+  else console.info(`[FlowOS:notifications] ${safeEvent}`, safeDetails ?? '');
 
   const previous = await readAll();
   const next = [...previous, entry].slice(-MAX_ENTRIES);
