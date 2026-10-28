@@ -169,6 +169,8 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
         content: {
           title: reminder.title,
           sticky: Platform.OS === 'android',
+          autoDismiss: false,
+          priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
           body: new Date(reminder.triggerAt).getTime() <= now.getTime() && allReminders.some((item) => item.id === reminder.id && new Date(item.triggerAt).getTime() < now.getTime())
             ? `Promemoria recuperato · ${formatReminderOffsetLabel(reminder.minutesBefore)}`
             : `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,

@@ -7,6 +7,7 @@ import { recordDiagnostic } from './diagnostics';
 import { supabase } from './supabase';
 import { requestNotificationPermission } from './notificationService';
 import { useFlowStore } from './store';
+import { runReminderEngine } from './reminderEngine';
 
 export const GOOGLE_SYNC_PUSH_TASK='flowos-google-sync-push';
 const EXPO_PROJECT_ID='95803fab-e55e-48a0-8e48-f8b504f6aeac';
@@ -18,9 +19,11 @@ TaskManager.defineTask<Notifications.NotificationTaskPayload>(GOOGLE_SYNC_PUSH_T
     if (payload?.source!=='google-sync') return;
     try {
       const commitments=await loadCommitments();
-      await syncTodayWidget(commitments,new Date());
+      const now=new Date();
+      await syncTodayWidget(commitments,now);
+      await runReminderEngine(commitments,now);
       await useFlowStore.getState().hydrateFromCloud();
-      recordDiagnostic('google-push-background-sync-completed',{count:commitments.length});
+      recordDiagnostic('google-push-background-sync-completed',{count:commitments.length,remindersRefreshed:true});
     } catch (syncError) {
       recordDiagnostic('google-push-background-sync-failed',syncError,'warn');
     }
