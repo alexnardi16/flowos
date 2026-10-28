@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 const { buildDailySummary, toDateKey } = require('../.test-dist-notifications/lib/dailySummary.js');
 
 function commitment(overrides) {
@@ -103,4 +104,40 @@ test('timed commitments show start and end times based on duration', () => {
     }),
   ], now);
   assert.match(summary.body, /09:15 - 10:00 · Riunione/);
+});
+
+test('all-day and timed commitments keep their intended local date around the Europe/Paris DST transition', () => {
+  const { spawnSync } = require('node:child_process');
+  const script = String.raw`
+    const assert = require('node:assert/strict');
+    const { buildDailySummary } = require('./.test-dist-notifications/lib/dailySummary.js');
+    const commitment = (overrides) => ({
+      id: 'c1', title: 'Commitment', kind: 'event', status: 'active',
+      durationMinutes: 30, energy: 'medium', context: 'work', confidence: 0.5, ...overrides,
+    });
+    // 29 March 2026 is the spring DST transition in Europe/Paris.
+    const now = new Date(2026, 2, 29, 8, 0);
+    const allDay = commitment({
+      id: 'all-day', title: 'All-day event', allDay: true,
+      scheduledAt: '2026-03-29T00:00:00.000Z', durationMinutes: 1440,
+    });
+    const timed = commitment({
+      id: 'timed', title: 'Timed event',
+      scheduledAt: new Date(2026, 2, 29, 9, 15).toISOString(), durationMinutes: 45,
+    });
+    const summary = buildDailySummary([allDay, timed], now);
+    assert.deepEqual(summary.items.map((item) => item.id), ['all-day', 'timed']);
+    assert.equal(summary.items[0].time, undefined);
+    assert.match(summary.body, /All-day event/);
+    assert.doesNotMatch(summary.body, /Tutto il giorno/);
+    assert.match(summary.body, /09:15 - 10:00 · Timed event/);
+    console.log('timezone-dst-ok');
+  `;
+  const result = spawnSync(process.execPath, ['-e', script], {
+    cwd: path.join(__dirname, '..'),
+    encoding: 'utf8',
+    env: { ...process.env, TZ: 'Europe/Paris' },
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /timezone-dst-ok/);
 });
