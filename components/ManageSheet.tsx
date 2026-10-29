@@ -5,9 +5,11 @@ import { Button, Card, SectionTitle, palette, showAlert, showConfirm } from '@/c
 import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleCalendar, type GoogleTaskList } from '@/lib/googleWorkspace';
 import { formatReminderOffsetLabel } from '@/lib/customReminders';
 import { useFlowStore } from '@/lib/store';
-import type { Commitment, CommitmentKind, ReminderOffset } from '@/types';
+import type { Commitment, CommitmentKind, ReminderOffset, RecurrenceFrequency } from '@/types';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 
+type RepeatOption = 'none' | RecurrenceFrequency;
+const REPEAT_KEYS: Record<RepeatOption, string> = { none: 'Non ripetere', daily: 'Ogni giorno', weekly: 'Ogni settimana', monthly: 'Ogni mese' };
 const REMINDER_PRESETS = [0, 15, 60, 1440];
 
 function toDateInput(iso?: string, allDay?: boolean): string {
@@ -58,6 +60,8 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const [dateStr, setDateStr] = useState(toDateInput(item[dateField], item.allDay));
   const [timeStr, setTimeStr] = useState(toTimeInput(item[dateField], item.allDay));
   const [durationMode, setDurationMode] = useState<'duration'|'end'>('duration');
+  const [repeat, setRepeat] = useState<RepeatOption>(item.recurrenceRule?.frequency ?? 'none');
+  const [showDetails, setShowDetails] = useState(Boolean(item.description || item.notes || item.location || item.link));
   const [days, setDays] = useState(String(Math.floor(item.durationMinutes / 1440)));
   const [hours, setHours] = useState(String(Math.floor((item.durationMinutes % 1440) / 60)));
   const [minutes, setMinutes] = useState(String(item.durationMinutes % 60));
@@ -121,6 +125,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         link: link.trim() || undefined,
         description: description.trim() || undefined,
         reminders: reminders.length ? reminders : undefined,
+        recurrenceRule: repeat !== 'none' ? { frequency: repeat, interval: item.recurrenceRule?.frequency === repeat ? item.recurrenceRule.interval ?? 1 : 1, ...(item.recurrenceRule?.frequency === repeat && item.recurrenceRule.until ? { until: item.recurrenceRule.until } : {}), ...(item.recurrenceRule?.frequency === repeat && item.recurrenceRule.count ? { count: item.recurrenceRule.count } : {}) } : undefined,
         googleCalendarId: kind === 'event' ? calendarId : undefined,
         googleTaskListId: kind === 'task' ? taskListId : undefined,
         scheduledAt: kind === 'event' ? when : undefined,
@@ -182,36 +187,20 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         {!destinationName ? <Text style={styles.help}>{t('Configura almeno una destinazione scrivibile nella sezione Io.')}</Text> : null}
       </Card>
 
-      <SectionTitle title={t('3. Informazioni essenziali')}/>
-      <Card>
-        <Field label={t('Titolo')} value={title} onChangeText={setTitle} required/>
-        {kind === 'task' ? <Field label={t('Priorità')} value={priority} onChangeText={(value) => setPriority(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder={t('Facoltativa')}/> : null}
+      <SectionTitle title={t('3. Informazioni essenziali')}/><Card>
+        <Field required label={t('Titolo')} value={title} onChangeText={setTitle} placeholder={kind === 'event' ? t('Es. Visita pediatrica') : t('Es. Preparare il budget')}/>
         <View style={styles.rowBetween}><Text style={styles.fieldLabel}>{t('Giornata intera')}</Text><Switch value={allDay} onValueChange={setAllDay}/></View>
-        <View style={styles.row}>
-          <View style={styles.flexField}><Text style={styles.fieldLabel}>{t('Data di inizio')} *</Text><Pressable onPress={() => setDatePickerTarget('start')} style={styles.dateButton}><Text style={styles.dateButtonText}>{dateStr}</Text></Pressable></View>
-          {!allDay ? <View style={styles.flexField}><Text style={styles.fieldLabel}>{t('Orario di inizio')} *</Text><Pressable accessibilityRole="button" onPress={() => setTimePickerTarget('start')} style={styles.dateButton}><Text style={styles.dateButtonText}>{timeStr}</Text></Pressable></View> : null}
-        </View>
-        {!allDay ? <><Text style={styles.fieldLabel}>{t('Fine o durata')}</Text><View style={styles.rowWrap}>
-          <Choice label={t('Durata')} active={durationMode === 'duration'} onPress={() => setDurationMode('duration')}/>
-          <Choice label={t('Data e ora di fine')} active={durationMode === 'end'} onPress={() => { setEndFromDuration(); setDurationMode('end'); }}/>
-        </View></> : null}
-        {durationMode === 'end' && !allDay ? <View style={styles.row}>
-          <View style={styles.flexField}><Text style={styles.fieldLabel}>{t('Data di fine')}</Text><Pressable onPress={() => setDatePickerTarget('end')} style={styles.dateButton}><Text style={styles.dateButtonText}>{endDate}</Text></Pressable></View>
-          <View style={styles.flexField}><Text style={styles.fieldLabel}>{t('Orario di fine')}</Text><Pressable accessibilityRole="button" onPress={() => setTimePickerTarget('end')} style={styles.dateButton}><Text style={styles.dateButtonText}>{endTime}</Text></Pressable></View>
-        </View> : null}
-        {durationMode === 'duration' || allDay ? <><Text style={styles.fieldLabel}>{t('Durata')}{allDay ? ` (${t('giorni')})` : ''} *</Text><View style={styles.row}>
-          <View style={styles.flexField}><Text style={styles.durationLabel}>{t('giorni')}</Text><TextInput value={days} onChangeText={(value) => setDays(value.replace(/\D/g,''))} keyboardType="number-pad" style={[styles.input, styles.durationInput]}/></View>
-          {!allDay ? <><View style={styles.flexField}><Text style={styles.durationLabel}>{t('ore')}</Text><TextInput value={hours} onChangeText={(value) => setHours(value.replace(/\D/g,''))} keyboardType="number-pad" style={[styles.input, styles.durationInput]}/></View><View style={styles.flexField}><Text style={styles.durationLabel}>{t('minuti')}</Text><TextInput value={minutes} onChangeText={(value) => setMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" style={[styles.input, styles.durationInput]}/></View></> : null}
-        </View></> : null}
-        <Field label={t('Descrizione')} value={description} onChangeText={setDescription} multiline placeholder={t('Informazioni principali')}/>
-        <Field label={t('Note private')} value={notes} onChangeText={setNotes} multiline placeholder={t('Dettagli utili per te')}/>
-        <Field label={t('Luogo')} value={location} onChangeText={setLocation} placeholder={t('Indirizzo o luogo')}/>
-        <Field label={t('Link')} value={link} onChangeText={setLink} autoCapitalize="none" keyboardType="url" placeholder="https://…"/>
-        <Text style={[styles.fieldLabel, styles.spacedLabel]}>{t('Notifiche di rappel')}</Text>
-        {reminders.length ? <View style={styles.reminderList}>{reminders.map((reminder) => <View key={reminder.id} style={styles.reminderChip}><Text style={styles.reminderChipText}>{formatReminderOffsetLabel(reminder.minutesBefore, language)}</Text><Pressable onPress={() => removeReminder(reminder.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable></View>)}</View> : <Text style={styles.help}>Il rappel all'ora esatta di inizio è automatico.</Text>}
-        <View style={styles.rowWrap}>{REMINDER_PRESETS.map((offset) => <Choice key={offset} label={formatReminderOffsetLabel(offset, language)} active={reminders.some((reminder) => reminder.minutesBefore === offset)} onPress={() => addReminder(offset)}/>)}</View>
-        <View style={styles.row}><View style={styles.flexField}><Text style={styles.durationLabel}>{t('giorni prima')}</Text><TextInput value={customDays} onChangeText={(value) => setCustomDays(value.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.flexField}><Text style={styles.durationLabel}>{t('ore prima')}</Text><TextInput value={customHours} onChangeText={(value) => setCustomHours(value.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.flexField}><Text style={styles.durationLabel}>{t('minuti prima')}</Text><TextInput value={customMinutes} onChangeText={(value) => setCustomMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><Pressable onPress={() => { const offset = (Number(customDays)||0)*1440+(Number(customHours)||0)*60+(Number(customMinutes)||0); if (customDays !== '' || customHours !== '' || customMinutes !== '') { addReminder(offset); setCustomDays(''); setCustomHours(''); setCustomMinutes(''); } }} style={styles.presetButton}><Text style={styles.presetButtonText}>{t('Aggiungi')}</Text></Pressable></View>
+        <View style={styles.inline}><View style={[styles.flex, styles.field]}><Text numberOfLines={1} style={styles.fieldLabelFixed}>{t('Data di inizio')}<Text style={styles.required}> *</Text></Text><Pressable onPress={() => setDatePickerTarget('start')} style={styles.dateButton}><Text style={styles.dateButtonText}>{dateStr}</Text></Pressable></View>{!allDay ? <View style={styles.flex}><Field fixedLabel singleLineLabel required label={t('Orario di inizio')} value={timeStr} onChangeText={updateStartTime} placeholder="HH:MM"/></View> : null}</View>
+        {kind === 'task' && !allDay ? <><Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Fine o durata')}</Text><View style={styles.choices}><Choice label={t('Durata')} active={durationMode === 'duration'} onPress={() => setDurationMode('duration')}/><Choice label={t('Data e ora di fine')} active={durationMode === 'end'} onPress={() => { setEndFromDuration(); setDurationMode('end'); }}/></View></> : null}
+        {kind === 'task' && durationMode === 'end' && !allDay ? <View style={styles.inline}><View style={[styles.flex, styles.field]}><Text style={styles.fieldLabelFixed}>{t('Data di fine')}</Text><Pressable onPress={() => setDatePickerTarget('end')} style={styles.dateButton}><Text style={styles.dateButtonText}>{endDate}</Text></Pressable></View><View style={styles.flex}><Field fixedLabel singleLineLabel required label={t('Orario di fine')} value={endTime} onChangeText={updateEndTime} placeholder="HH:MM"/></View></View> : null}
+        {kind !== 'task' || allDay || durationMode === 'duration' ? <><Text style={styles.fieldLabel}>{t('Durata')}{allDay ? ' (' + t('giorni') + ')' : ''}<Text style={styles.required}> *</Text></Text><View style={styles.inline}><View style={styles.flex}><Field label={t('giorni')} value={days} onChangeText={(value) => setDays(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View>{!allDay ? <><View style={styles.flex}><Field label={t('ore')} value={hours} onChangeText={(value) => setHours(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field label={t('minuti')} value={minutes} onChangeText={(value) => setMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View></> : null}</View></> : null}
+        {kind === 'task' ? <><Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Priorità')}</Text><Field label={t('Ordine di esecuzione')} value={priority} onChangeText={(value) => setPriority(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder={t('Facoltativa')}/></> : null}
+        <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Ripeti')}{kind === 'task' ? ' (' + t('Ripetizione task gestita da FlowOS: Google Tasks non supporta la ricorrenza.') + ')' : ''}</Text><View style={styles.choices}>{(['none','daily','weekly','monthly'] as const).map((option) => <Choice key={option} label={t(REPEAT_KEYS[option])} active={repeat === option} onPress={() => setRepeat(option)}/>)}</View>
+        <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Notifiche di rappel')}</Text>{reminders.length ? <View style={styles.remindersList}>{reminders.map((reminder) => <View key={reminder.id} style={styles.reminderChip}><Text style={styles.reminderChipText}>{formatReminderOffsetLabel(reminder.minutesBefore, language)}</Text><Pressable onPress={() => removeReminder(reminder.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable></View>)}</View> : null}
+        <View style={styles.choices}>{REMINDER_PRESETS.map((offset) => <Choice key={offset} label={formatReminderOffsetLabel(offset, language)} active={false} onPress={() => addReminder(offset)}/>)}</View>
+        <View style={styles.inline}><View style={styles.flex}><Field fixedLabel label={t('giorni prima').replace(/\s+/, '\n')} value={customDays} onChangeText={(value) => setCustomDays(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field fixedLabel label={t('ore prima').replace(/\s+/, '\n')} value={customHours} onChangeText={(value) => setCustomHours(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field fixedLabel label={t('minuti prima').replace(/\s+/, '\n')} value={customMinutes} onChangeText={(value) => setCustomMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><Pressable onPress={() => { const offset = (Number(customDays)||0)*1440+(Number(customHours)||0)*60+(Number(customMinutes)||0); if(customDays !== '' || customHours !== '' || customMinutes !== '') { addReminder(offset); setCustomDays(''); setCustomHours(''); setCustomMinutes(''); } }} style={styles.addReminderButton}><Text style={styles.addReminderButtonText}>{t('Aggiungi')}</Text></Pressable></View>
       </Card>
+      <Pressable onPress={() => setShowDetails((value) => !value)} style={styles.detailsToggle}><Text style={styles.detailsToggleText}>{showDetails ? t('Nascondi dettagli facoltativi') : t('Aggiungi descrizione, note, luogo o link')}</Text><Text style={styles.chevron}>{showDetails ? '−' : '+'}</Text></Pressable>{showDetails ? <Card><Field label={t('Descrizione')} value={description} onChangeText={setDescription} multiline placeholder={t('Informazioni principali')}/><Field label={t('Note private')} value={notes} onChangeText={setNotes} multiline placeholder={t('Dettagli utili per te')}/><Field label={t('Luogo')} value={location} onChangeText={setLocation} placeholder={t('Indirizzo o luogo')}/><Field label={t('Link')} value={link} onChangeText={setLink} keyboardType="url" autoCapitalize="none" placeholder="https://…"/></Card> : null}
 
       <View style={styles.actionsRow}><Button secondary label={t('Annulla')} onPress={onClose} disabled={busy}/><Button label={t('Salva modifiche')} onPress={() => void save()} loading={busy}/></View>
       {isFlowOSOnly ? <View style={styles.section}><Text style={styles.sectionTitle}>{t('Solo su FlowOS')}</Text><Text style={styles.help}>{t('Questo elemento non è mai stato sincronizzato con Google.')}</Text><Button secondary label={t('Sincronizza con Google')} onPress={() => void syncNow()} disabled={busy}/></View> : null}
@@ -226,8 +215,8 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     </ScrollView>
   </Modal>}
 function Choice({label, active, onPress}:{label:string;active:boolean;onPress:()=>void}) { return <Pressable onPress={onPress} style={[styles.choice, active && styles.choiceActive]}><Text style={[styles.choiceText, active && styles.choiceTextActive]}>{label}</Text></Pressable>; }
-type FieldProps = {label:string; value:string; onChangeText:(value:string)=>void; required?:boolean; multiline?:boolean; placeholder?:string; keyboardType?:'default'|'number-pad'|'url'; autoCapitalize?:'none'|'sentences'};
-function Field({label,value,onChangeText,required,multiline,placeholder,keyboardType,autoCapitalize}:FieldProps) { return <View style={styles.field}><Text style={styles.fieldLabel}>{label}{required ? <Text style={styles.required}> *</Text> : null}</Text><TextInput value={value} onChangeText={onChangeText} multiline={multiline} placeholder={placeholder} placeholderTextColor="#979DAE" keyboardType={keyboardType} autoCapitalize={autoCapitalize} style={[styles.input,multiline&&styles.multiline]}/></View>; }
+type FieldProps = {label:string; value:string; onChangeText:(value:string)=>void; required?:boolean; multiline?:boolean; placeholder?:string; keyboardType?:'default'|'number-pad'|'url'; autoCapitalize?:'none'|'sentences'; fixedLabel?:boolean; singleLineLabel?:boolean};
+function Field({label,value,onChangeText,required,multiline,placeholder,keyboardType,autoCapitalize,fixedLabel,singleLineLabel}:FieldProps) { return <View style={styles.field}><Text numberOfLines={singleLineLabel ? 1 : undefined} style={fixedLabel ? styles.fieldLabelFixed : styles.fieldLabel}>{label}{required ? <Text style={styles.required}> *</Text> : null}</Text><TextInput value={value} onChangeText={onChangeText} multiline={multiline} placeholder={placeholder} placeholderTextColor="#979DAE" keyboardType={keyboardType} autoCapitalize={autoCapitalize} style={[styles.input,multiline&&styles.multiline]}/></View>; }
 
 const styles = StyleSheet.create({
   wrap:{padding:20,paddingTop:50,paddingBottom:60,gap:8,backgroundColor:palette.bg},
@@ -272,4 +261,4 @@ const styles = StyleSheet.create({
   presetButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:10,paddingVertical:12,flexGrow:1,flexBasis:'40%',alignItems:'center'},
   presetButtonText:{fontSize:12,fontWeight:'800',color:palette.ink},
   spacedLabel:{marginTop:16},
-});
+,inline:{flexDirection:'row',gap:10},flex:{flex:1},fieldLabelFixed:{fontSize:12,fontWeight:'800',color:palette.muted,marginBottom:6,minHeight:26,lineHeight:13},fieldLabelSpaced:{marginTop:18},choices:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:12},choice:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},choiceActive:{backgroundColor:palette.primary,borderColor:palette.primary},choiceText:{fontSize:13,fontWeight:'700',color:palette.ink},choiceTextActive:{color:'#FFF'},remindersList:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:6},addReminderButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:12,justifyContent:'center'},addReminderButtonText:{fontSize:12,fontWeight:'800',color:palette.ink},detailsToggle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:13},detailsToggleText:{fontSize:15,fontWeight:'800',color:palette.primary},chevron:{fontSize:24,color:palette.primary}});
