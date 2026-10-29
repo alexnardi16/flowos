@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7fc">
+  <meta name="description" content="FlowOS brings tasks, events and reminders together in one clear daily planning system, with optional Google Calendar and Google Tasks sync.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="FlowOS — Make room for what matters">
+  <meta property="og:description" content="One place for tasks, events, reminders and your daily plan.">
+  <title>FlowOS — Make room for what matters</title>
+  <style>
+    :root{color-scheme:light;--ink:#172033;--muted:#5e667b;--brand:#6658d3;--soft:#eeebff;--line:#e5e7f0;--paper:#fff;--bg:#f7f7fc;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}a{color:inherit}
+    .wrap{width:min(1080px,calc(100% - 40px));margin:0 auto}
+    header{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+    .brand{display:flex;align-items:center;gap:11px;text-decoration:none;font-weight:800;font-size:20px;letter-spacing:-.5px}
+    .mark{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--brand);color:white;font-size:20px;font-weight:900}
+    nav{display:flex;gap:22px;align-items:center;font-size:14px;color:var(--muted)}nav a{text-decoration:none}nav a:hover{color:var(--brand)}
+    .hero{padding:82px 0 70px;display:grid;grid-template-columns:1.15fr .85fr;gap:55px;align-items:center}
+    .eyebrow{display:inline-flex;padding:7px 11px;border-radius:99px;background:var(--soft);color:var(--brand);font-size:12px;font-weight:800;letter-spacing:.7px;text-transform:uppercase}
+    h1{font-size:clamp(44px,6vw,72px);line-height:1.02;letter-spacing:-3px;margin:22px 0 20px;max-width:680px}
+    .lead{font-size:19px;line-height:1.7;color:var(--muted);max-width:600px;margin:0}
+    .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+    .button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 17px;border-radius:13px;text-decoration:none;font-weight:750;font-size:14px}
+    .primary{background:var(--brand);color:white}.secondary{border:1px solid var(--line);background:white}
+    .preview{padding:22px;border:1px solid var(--line);border-radius:26px;background:white;box-shadow:0 24px 70px #25204a12;transform:rotate(1deg)}
+    .preview-top{display:flex;justify-content:space-between;align-items:center;padding-bottom:18px;border-bottom:1px solid var(--line);font-weight:800}
+    .day{font-size:12px;color:var(--muted);font-weight:600}
+    .task{display:flex;gap:12px;align-items:flex-start;padding:16px 0;border-bottom:1px solid #f0f1f6}
+    .check{flex:none;width:19px;height:19px;border:2px solid #c8c5e7;border-radius:6px;margin-top:2px}
+    .task strong{display:block;font-size:14px;margin-bottom:5px}.task small{font-size:12px;color:var(--muted)}
+    .tag{margin-left:auto;padding:5px 8px;border-radius:7px;background:var(--soft);color:var(--brand);font-size:10px;font-weight:800}
+    .features{padding:42px 0 86px}.section-heading{max-width:650px;margin-bottom:28px}.section-heading h2{font-size:clamp(28px,4vw,40px);letter-spacing:-1.4px;margin:0 0 12px}.section-heading p{font-size:16px;line-height:1.7;color:var(--muted);margin:0}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.feature{padding:24px;border:1px solid var(--line);border-radius:20px;background:var(--paper)}.feature-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:var(--soft);color:var(--brand);font-weight:900;font-size:18px}.feature h3{font-size:17px;margin:18px 0 8px}.feature p{font-size:14px;line-height:1.7;color:var(--muted);margin:0}
+    .closing{padding:32px;border-radius:24px;background:#211c48;color:white;display:flex;justify-content:space-between;align-items:center;gap:25px;margin-bottom:72px}.closing h2{font-size:26px;letter-spacing:-.7px;margin:0 0 8px}.closing p{color:#d4d1ee;margin:0;line-height:1.6}.closing .button{background:white;color:#211c48;white-space:nowrap}
+    footer{border-top:1px solid var(--line);padding:24px 0 34px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;color:var(--muted);font-size:13px}footer nav{gap:18px;font-size:13px}
+    @media(max-width:760px){.hero{grid-template-columns:1fr;padding:48px 0 50px;gap:35px}h1{letter-spacing:-2px}.preview{transform:none}.grid{grid-template-columns:1fr}.closing{align-items:flex-start;flex-direction:column}.wrap{width:min(100% - 32px,1080px)}nav{gap:12px}header nav a:first-child{display:none}}
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <a class="brand" href="/" aria-label="FlowOS home"><span class="mark" aria-hidden="true">F</span><span>FlowOS</span></a>
+    <nav aria-label="Main navigation"><a href="#features">Features</a><a href="https://github.com/alexnardi16/flowos">GitHub</a><a href="/privacy-policy/">Privacy</a></nav>
+  </header>
+  <main>
+    <section class="hero wrap">
+      <div>
+        <span class="eyebrow">Your day, in focus</span>
+        <h1>Make room for what matters.</h1>
+        <p class="lead">FlowOS brings tasks, events and reminders together in one clear daily planning system—so you can see what is ahead, decide what comes first and keep moving.</p>
+        <div class="actions"><a class="button primary" href="https://github.com/alexnardi16/flowos">Explore FlowOS on GitHub</a><a class="button secondary" href="#features">Discover the features</a></div>
+      </div>
+      <div class="preview" aria-label="Illustration of a daily task list">
+        <div class="preview-top"><span>Today</span><span class="day">YOUR DAILY PLAN</span></div>
+        <div class="task"><span class="check"></span><div><strong>Prepare the day</strong><small>Review your priorities</small></div><span class="tag">FOCUS</span></div>
+        <div class="task"><span class="check"></span><div><strong>Project check-in</strong><small>10:00 · Calendar event</small></div></div>
+        <div class="task"><span class="check"></span><div><strong>Finish the next task</strong><small>45 min · Reminder set</small></div></div>
+        <div class="task" style="border-bottom:0"><span class="check"></span><div><strong>Plan tomorrow</strong><small>Make the next step clear</small></div></div>
+      </div>
+    </section>
+    <section class="features wrap" id="features">
+      <div class="section-heading"><h2>Everything you need to plan with clarity.</h2><p>A practical workspace for commitments, with the tools to organize your time and stay on top of the details.</p></div>
+      <div class="grid">
+        <article class="feature"><span class="feature-icon" aria-hidden="true">✓</span><h3>One place for commitments</h3><p>Bring tasks, events and reminders into a unified view, then review them in Today, Calendar and List.</p></article>
+        <article class="feature"><span class="feature-icon" aria-hidden="true">↗</span><h3>Plan around your day</h3><p>Set dates, times, durations, priorities, recurring activities and custom reminders to make your plan actionable.</p></article>
+        <article class="feature"><span class="feature-icon" aria-hidden="true">⟳</span><h3>Google sync when you choose</h3><p>Connect Google Calendar and Google Tasks to synchronize supported activities across your tools.</p></article>
+        <article class="feature"><span class="feature-icon" aria-hidden="true">◷</span><h3>Timely reminders</h3><p>Use local notifications and a daily summary to keep important commitments in view.</p></article>
+        <article class="feature"><span class="feature-icon" aria-hidden="true">▦</span><h3>At a glance</h3><p>Android widgets bring today's activities and your calendar to your home screen.</p></article>
+        <article class="feature"><span class="feature-icon" aria-hidden="true">◎</span><h3>Focus on the next step</h3><p>Use Focus mode to narrow your attention and work through what matters now.</p></article>
+      </div>
+    </section>
+    <section class="closing wrap"><div><h2>A clearer plan starts with one commitment.</h2><p>Explore the project, follow its development and find the latest source code.</p></div><a class="button" href="https://github.com/alexnardi16/flowos">View the project on GitHub</a></section>
+  </main>
+  <footer class="wrap"><span>© 2026 FlowOS</span><nav aria-label="Legal links"><a href="/privacy-policy/">Privacy Policy</a><a href="/terms/">Terms of Service</a><a href="/delete-account/">Delete account</a><a href="mailto:alex16nardi@gmail.com">Contact</a></nav></footer>
+</body>
+</html>
