@@ -1,46 +1,46 @@
 # FlowOS 1.0.0 — Release notes
 
-Use the matching language block in Google Play Console. Keep the locale tags exactly as shown.
+Use the matching language block in Google Play Console. Keep the locale tags exactly as shown. Each block is intended for the Google Play “What's new” field.
 
 ## Italian (it-IT)
 
 <it-IT>
 Prima versione di FlowOS per Android.
 
-* Gestione unificata di task, eventi e reminder tramite il modello Commitment
+* Task, eventi e promemoria in un unico spazio
 * Inserimento rapido in linguaggio naturale
-* Pianificazione giornaliera, vista Oggi e modalità Focus
-* Sincronizzazione con Google Calendar e Google Tasks
-* Reminder e notifiche locali
-* Autenticazione e sincronizzazione dei dati
+* Viste Oggi, Calendario ed Elenco, con modalità Focus
+* Priorità, attività ricorrenti e promemoria personalizzabili
+* Sincronizzazione opzionale con Google Calendar e Google Tasks
+* Notifiche locali e riepilogo giornaliero
 * Widget Android per Oggi e Calendario
 </it-IT>
 
 ## English (en-US)
 
 <en-US>
-First release of FlowOS for Android.
+First Android release of FlowOS.
 
-* Unified management of tasks, events and reminders through the Commitment model
+* Tasks, events and reminders in one place
 * Quick natural-language entry
-* Daily planning, Today view and Focus mode
-* Sync with Google Calendar and Google Tasks
-* Local reminders and notifications
-* Authentication and data synchronization
+* Today, Calendar and List views, plus Focus mode
+* Priorities, recurring activities and customizable reminders
+* Optional sync with Google Calendar and Google Tasks
+* Local notifications and a daily summary
 * Android widgets for Today and Calendar
 </en-US>
 
 ## Français (fr-FR)
 
 <fr-FR>
-Première version de FlowOS pour Android.
+Première version Android de FlowOS.
 
-* Gestion unifiée des tâches, événements et rappels grâce au modèle Commitment
+* Tâches, événements et rappels réunis au même endroit
 * Saisie rapide en langage naturel
-* Planification quotidienne, vue Aujourd’hui et mode Focus
-* Synchronisation avec Google Calendar et Google Tasks
-* Rappels et notifications locales
-* Authentification et synchronisation des données
+* Vues Aujourd’hui, Calendrier et Liste, avec le mode Focus
+* Priorités, activités récurrentes et rappels personnalisables
+* Synchronisation facultative avec Google Calendar et Google Tasks
+* Notifications locales et récapitulatif quotidien
 * Widgets Android pour Aujourd’hui et le Calendrier
 </fr-FR>
 
@@ -49,11 +49,11 @@ Première version de FlowOS pour Android.
 <es-ES>
 Primera versión de FlowOS para Android.
 
-* Gestión unificada de tareas, eventos y recordatorios mediante el modelo Commitment
+* Tareas, eventos y recordatorios en un solo lugar
 * Entrada rápida en lenguaje natural
-* Planificación diaria, vista Hoy y modo Focus
-* Sincronización con Google Calendar y Google Tasks
-* Recordatorios y notificaciones locales
-* Autenticación y sincronización de datos
+* Vistas Hoy, Calendario y Lista, además del modo Focus
+* Prioridades, actividades recurrentes y recordatorios personalizables
+* Sincronización opcional con Google Calendar y Google Tasks
+* Notificaciones locales y resumen diario
 * Widgets de Android para Hoy y Calendario
 </es-ES>
