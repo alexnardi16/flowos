@@ -41,7 +41,12 @@ export function buildCustomReminders(commitments: Commitment[], now: Date = new 
     if (!base) continue;
 
     const configured = item.reminders && item.reminders.length ? item.reminders : [];
-    const offsets = [...configured, { id: 'automatic-start', minutesBefore: 0, createdAt: undefined }];
+    // Start-time reminders are automatic by default. If the user explicitly
+    // adds a 0-minute reminder, use that configured reminder instead of
+    // scheduling a second notification for the same instant.
+    const offsets = configured.some((offset) => offset.minutesBefore === 0)
+      ? [...configured]
+      : [...configured, { id: 'automatic-start', minutesBefore: 0, createdAt: undefined }];
     const dismissedAt = item.reminderDismissedAt ? new Date(item.reminderDismissedAt).getTime() : null;
 
     for (const offset of offsets) {
