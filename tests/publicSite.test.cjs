@@ -11,10 +11,10 @@ function readPublic(relativePath) {
 
 test('public landing and legal pages exist and expose the required FlowOS identity', () => {
   const home = readPublic('index.html');
-  assert.match(home, /<title>FlowOS — Make room for what matters<\\/title>/);
+  assert.ok(home.includes('<title>FlowOS — Make room for what matters</title>'));
   assert.match(home, /tasks, events and reminders/i);
-  assert.match(home, /href=\"\\/privacy-policy\\/\"/);
-  assert.match(home, /href=\"\\/delete-account\\/\"/);
+  assert.ok(home.includes('href=\"/privacy-policy/\"'));
+  assert.ok(home.includes('href=\"/delete-account/\"'));
   const privacy = readPublic(path.join('privacy-policy', 'index.html'));
   const deletion = readPublic(path.join('delete-account', 'index.html'));
   const terms = readPublic(path.join('terms', 'index.html'));
