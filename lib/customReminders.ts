@@ -24,7 +24,7 @@ export function formatReminderOffsetLabel(minutesBefore: number, language?: Lang
     const hours = minutesBefore / 60;
     return `${hours} ${t(hours === 1 ? 'ora' : 'ore',undefined,language)} ${t('prima',undefined,language)}`;
   }
-  if (minutesBefore === 0) return t("All'inizio",undefined,language);
+  if (minutesBefore === 0) return t("All'ora di inizio dell'attività",undefined,language);
   return `${minutesBefore} ${t('minuti',undefined,language)} ${t('prima',undefined,language)}`;
 }
 
