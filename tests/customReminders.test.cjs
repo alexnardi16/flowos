@@ -125,6 +125,10 @@ test('Add and Manage show the activity start-time reminder enabled by default wi
   assert.match(addSource, /useState<ReminderOffset\[\]>\(\(\)=>\[\{id:'default-start',minutesBefore:0/);
   assert.match(addSource, /\[0,15,60,1440\]\.map\(m=>/);
   assert.match(manageSource, /minutesBefore: 0/);
+  assert.match(manageSource, /t\('Durata'\)/);
+  assert.match(manageSource, /t\('Data e ora di fine'\)/);
+  assert.match(manageSource, /setTimePickerTarget\('start'\)/);
+  assert.match(manageSource, /setTimePickerTarget\('end'\)/);
   assert.match(manageSource, /rowWrap: \{ flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'wrap' \}/);
   assert.match(reminderSource, /All'ora di inizio dell'attività/);
 });
