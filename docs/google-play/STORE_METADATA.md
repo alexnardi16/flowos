@@ -37,7 +37,7 @@ FlowOS helps you organize your commitments; it does not make changes to your sch
 Productivity
 
 ## Developer website
-https://getflowos.netlify.app/
+https://getflowos.netlify.app/about/
 
 ## Privacy policy URL
 https://getflowos.netlify.app/privacy-policy/
