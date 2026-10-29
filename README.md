@@ -2,7 +2,7 @@
 
 **FlowOS** is a mobile-first productivity app that brings tasks, events and reminders together in one daily planning system.
 
-**Website:** https://getflowos.netlify.app/  
+**Website:** https://getflowos.netlify.app/about/  
 **Privacy policy:** https://getflowos.netlify.app/privacy-policy/  
 **Account deletion:** https://getflowos.netlify.app/delete-account/  
 **Source code:** https://github.com/alexnardi16/flowos
