@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
   kindCard:{flex:1,minWidth:0,borderWidth:1,borderColor:palette.border,borderRadius:16,padding:14,backgroundColor:'#FFF',gap:5},
   kindCardActive:{borderColor:palette.primary,backgroundColor:palette.soft},
   kindTitle:{fontSize:15,fontWeight:'900',color:palette.ink},
+  kindTitleActive:{color:palette.primary},
   kindHelp:{fontSize:12,color:palette.muted},
   destination:{fontSize:13,color:palette.muted,marginBottom:8},
   destinationStrong:{fontWeight:'900',color:palette.ink},
