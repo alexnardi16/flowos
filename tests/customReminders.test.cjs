@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const { buildCustomReminders, formatReminderOffsetLabel } = require('../.test-dist-notifications/lib/customReminders.js');
 
 function commitment(overrides) {
@@ -108,10 +109,22 @@ test('done and deleted items never produce reminders', () => {
 });
 
 test('formatReminderOffsetLabel renders minutes, hours, and days naturally', () => {
-  assert.equal(formatReminderOffsetLabel(0), 'All\'inizio');
+  assert.equal(formatReminderOffsetLabel(0), 'All\'ora di inizio dell\'attività');
   assert.equal(formatReminderOffsetLabel(15), '15 minuti prima');
   assert.equal(formatReminderOffsetLabel(60), '1 ora prima');
   assert.equal(formatReminderOffsetLabel(120), '2 ore prima');
   assert.equal(formatReminderOffsetLabel(1440), '1 giorno prima');
   assert.equal(formatReminderOffsetLabel(2880), '2 giorni prima');
+});
+
+
+test('Add and Manage show the activity start-time reminder enabled by default with a wrapped preset layout', () => {
+  const addSource = fs.readFileSync('app/(tabs)/capture.tsx', 'utf8');
+  const manageSource = fs.readFileSync('components/ManageSheet.tsx', 'utf8');
+  const reminderSource = fs.readFileSync('lib/customReminders.ts', 'utf8');
+  assert.match(addSource, /useState<ReminderOffset\[\]>\(\(\)=>\[\{id:'default-start',minutesBefore:0/);
+  assert.match(addSource, /\[0,15,60,1440\]\.map\(m=>/);
+  assert.match(manageSource, /minutesBefore: 0/);
+  assert.match(manageSource, /rowWrap: \{ flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'wrap' \}/);
+  assert.match(reminderSource, /All'ora di inizio dell'attività/);
 });
