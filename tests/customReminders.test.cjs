@@ -127,6 +127,9 @@ test('Add and Manage show the activity start-time reminder enabled by default wi
   assert.match(manageSource, /minutesBefore: 0/);
   assert.match(manageSource, /t\('Durata'\)/);
   assert.match(manageSource, /t\('Data e ora di fine'\)/);
+  assert.match(manageSource, /\{!allDay\?<><Text style=\{styles\.label\}>\{t\('Fine o durata'\)\}/);
+  assert.match(manageSource, /\{durationMode==='end'&&!allDay\?<View style=\{styles\.row\}>/);
+  assert.doesNotMatch(manageSource, /\{kind==='task'&&!allDay\?<><Text style=\{styles\.label\}>\{t\('Fine o durata'\)\}/);
   assert.match(manageSource, /setTimePickerTarget\('start'\)/);
   assert.match(manageSource, /setTimePickerTarget\('end'\)/);
   assert.match(manageSource, /rowWrap: \{ flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'wrap' \}/);
