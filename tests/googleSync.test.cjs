@@ -67,3 +67,17 @@ test('foreground sync imports Google changes before attempting a push',()=>{
   const body=source.slice(start,end);
   assert.ok(body.indexOf("invoke({action:'sync-incremental'})") < body.indexOf("invoke({action:'sync-push'})"));
 });
+
+
+test('Google change pushes request high-priority background delivery',()=>{
+  const source=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  assert.ok(source.includes('priority:"high",ttl:60,_contentAvailable:true'));
+});
+
+test('Manage sheet exposes native start and end time pickers plus a zero-minute reminder option',()=>{
+  const source=fs.readFileSync('components/ManageSheet.tsx','utf8');
+  assert.ok(source.includes("const REMINDER_PRESETS = [0, 15, 60, 1440]"));
+  assert.ok(source.includes("mode=\"time\""));
+  assert.ok(source.includes("setTimePickerTarget('start')"));
+  assert.ok(source.includes("setTimePickerTarget('end')"));
+});
