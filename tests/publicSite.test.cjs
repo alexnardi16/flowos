@@ -10,7 +10,7 @@ function readPublic(relativePath) {
 }
 
 test('public landing and legal pages exist and expose the required FlowOS identity', () => {
-  const home = readPublic('index.html');
+  const home = readPublic(path.join('about', 'index.html'));
   assert.ok(home.includes('<title>FlowOS — Make room for what matters</title>'));
   assert.match(home, /tasks, events and reminders/i);
   assert.ok(home.includes('href=\"/privacy-policy/\"'));
@@ -65,7 +65,7 @@ test('optional live-site smoke test validates all legal URLs', async (t) => {
   }
 
   const base = (process.env.FLOWOS_SITE_URL || 'https://getflowos.netlify.app').replace(/\/$/, '');
-  for (const route of ['/', '/privacy-policy/', '/delete-account/', '/terms/']) {
+  for (const route of ['/about/', '/privacy-policy/', '/delete-account/', '/terms/']) {
     const response = await fetch(`${base}${route}`, { redirect: 'follow' });
     assert.equal(response.status, 200, `${route} should return HTTP 200`);
     const html = await response.text();
