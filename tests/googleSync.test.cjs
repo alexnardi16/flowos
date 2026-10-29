@@ -74,10 +74,10 @@ test('Google change pushes request high-priority background delivery',()=>{
   assert.ok(source.includes('priority:"high",ttl:60,_contentAvailable:true'));
 });
 
-test('Manage sheet exposes native start and end time pickers plus a zero-minute reminder option',()=>{
+test('Manage sheet matches Add time inputs and keeps a zero-minute reminder option',()=>{
   const source=fs.readFileSync('components/ManageSheet.tsx','utf8');
   assert.ok(source.includes("const REMINDER_PRESETS = [0, 15, 60, 1440]"));
-  assert.ok(source.includes("mode=\"time\""));
-  assert.ok(source.includes("setTimePickerTarget('start')"));
-  assert.ok(source.includes("setTimePickerTarget('end')"));
+  assert.ok(source.includes("label={t('Orario di inizio')} value={timeStr} onChangeText={updateStartTime} placeholder=\"HH:MM\""));
+  assert.ok(source.includes("label={t('Orario di fine')} value={endTime} onChangeText={updateEndTime} placeholder=\"HH:MM\""));
+
 });
