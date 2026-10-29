@@ -69,7 +69,6 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const [endDate, setEndDate] = useState(initialEnd.toISOString().slice(0,10));
   const [endTime, setEndTime] = useState(initialEnd.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
   const [datePickerTarget, setDatePickerTarget] = useState<'start'|'end'|null>(null);
-  const [timePickerTarget, setTimePickerTarget] = useState<'start'|'end'|null>(null);
   const [priority, setPriority] = useState(String(item.priority ?? ''));
   const [location, setLocation] = useState(item.location ?? '');
   const [notes, setNotes] = useState(item.notes ?? '');
@@ -104,7 +103,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   function updateEndDate(value:string){setEndDate(value);const start=combine(dateStr,timeStr,allDay),end=combine(value,endTime,allDay);if(durationMode==='end'&&start&&end)setDurationFields(Math.max(1,Math.round((new Date(end).getTime()-new Date(start).getTime())/60000)));}
   function updateEndTime(value:string){setEndTime(value);const start=combine(dateStr,timeStr,allDay),end=combine(endDate,value,allDay);if(durationMode==='end'&&start&&end)setDurationFields(Math.max(1,Math.round((new Date(end).getTime()-new Date(start).getTime())/60000)));}
   function handleDatePicked(selected:Date){const value=`${selected.getFullYear()}-${String(selected.getMonth()+1).padStart(2,'0')}-${String(selected.getDate()).padStart(2,'0')}`;if(datePickerTarget==='start')updateStartDate(value);else if(datePickerTarget==='end')updateEndDate(value);setDatePickerTarget(null);}
-  function handleTimePicked(selected:Date){const value=`${String(selected.getHours()).padStart(2,'0')}:${String(selected.getMinutes()).padStart(2,'0')}`;if(timePickerTarget==='start')updateStartTime(value);else if(timePickerTarget==='end')updateEndTime(value);setTimePickerTarget(null);}
+
   async function save() {
     setBusy(true);
     try {
@@ -211,7 +210,6 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         {item.googleRecurringEventId ? <Pressable disabled={busy} onPress={() => void removeSeries()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{t('Elimina tutta la serie')}</Text></Pressable> : null}
       </View>
       {datePickerTarget ? <DateTimePicker value={new Date(`${datePickerTarget === 'start' ? dateStr : endDate}T12:00:00`)} mode="date" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_, selectedDate) => handleDatePicked(selectedDate)} onDismiss={() => setDatePickerTarget(null)}/> : null}
-      {timePickerTarget ? <DateTimePicker value={new Date(`${timePickerTarget === 'start' ? dateStr : endDate}T${timePickerTarget === 'start' ? timeStr : endTime}:00`)} mode="time" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_, selectedDate) => handleTimePicked(selectedDate)} onDismiss={() => setTimePickerTarget(null)}/> : null}
     </ScrollView>
   </Modal>}
 function Choice({label, active, onPress}:{label:string;active:boolean;onPress:()=>void}) { return <Pressable onPress={onPress} style={[styles.choice, active && styles.choiceActive]}><Text style={[styles.choiceText, active && styles.choiceTextActive]}>{label}</Text></Pressable>; }
@@ -229,22 +227,27 @@ const styles = StyleSheet.create({
   kindHelp:{fontSize:12,color:palette.muted},
   destination:{fontSize:13,color:palette.muted,marginBottom:8},
   destinationStrong:{fontWeight:'900',color:palette.ink},
-  field:{marginTop:8},
-  fieldLabel:{fontSize:12,fontWeight:'800',color:palette.muted,marginTop:10},
-  required:{color:palette.primary},
-  input:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E2E4EA',borderRadius:12,padding:12,marginTop:5,color:palette.ink,minHeight:46},
-  multiline:{minHeight:76,textAlignVertical:'top'},
-  dateButton:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E2E4EA',borderRadius:12,padding:12,minHeight:48,justifyContent:'center',marginTop:5},
+  field:{marginTop:13},
+  fieldLabel:{fontSize:12,fontWeight:'800',color:palette.muted,marginBottom:6},
+  fieldLabelFixed:{fontSize:12,fontWeight:'800',color:palette.muted,marginBottom:6,minHeight:26,lineHeight:13},
+  fieldLabelSpaced:{marginTop:18},
+  required:{color:palette.danger},
+  input:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:12,padding:12,color:palette.ink,fontSize:15},
+  multiline:{minHeight:88,textAlignVertical:'top'},
+  dateButton:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:12,padding:12,minHeight:48,justifyContent:'center'},
   dateButtonText:{color:palette.ink,fontSize:15},
+  inline:{flexDirection:'row',gap:10},
+  flex:{flex:1},
   row:{flexDirection:'row',gap:8,marginTop:6,flexWrap:'nowrap'},
   rowWrap:{flexDirection:'row',gap:8,marginTop:8,flexWrap:'wrap'},
   flexField:{flex:1,minWidth:0},
   durationInput:{flex:1},
   durationLabel:{fontSize:11,fontWeight:'700',color:palette.muted,marginBottom:4,marginTop:8},
-  rowBetween:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:12},
-  choice:{paddingHorizontal:12,paddingVertical:9,borderRadius:99,backgroundColor:'#ECEEF4'},
-  choiceActive:{backgroundColor:palette.primary},
-  choiceText:{fontWeight:'800',color:palette.muted},
+  rowBetween:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:13},
+  choices:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:12},
+  choice:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},
+  choiceActive:{backgroundColor:palette.primary,borderColor:palette.primary},
+  choiceText:{fontSize:13,fontWeight:'700',color:palette.ink},
   choiceTextActive:{color:'#FFF'},
   actionsRow:{flexDirection:'row',gap:8,marginTop:20},
   section:{marginTop:24,paddingTop:16,borderTopWidth:1,borderTopColor:palette.border,gap:8},
@@ -254,11 +257,14 @@ const styles = StyleSheet.create({
   localDeleteText:{color:'#A12626',fontWeight:'900'},
   googleDelete:{alignSelf:'flex-start',backgroundColor:'#A12626',borderRadius:12,paddingHorizontal:12,paddingVertical:12,minHeight:44,justifyContent:'center'},
   googleDeleteText:{color:'#FFF',fontWeight:'900'},
+  remindersList:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:6},
   reminderList:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8},
   reminderChip:{flexDirection:'row',alignItems:'center',gap:6,backgroundColor:palette.soft,borderRadius:99,paddingHorizontal:10,paddingVertical:6},
   reminderChipText:{fontSize:12,fontWeight:'800',color:palette.primary},
   reminderRemove:{fontSize:12,fontWeight:'900',color:palette.muted},
-  presetButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:10,paddingVertical:12,flexGrow:1,flexBasis:'40%',alignItems:'center'},
-  presetButtonText:{fontSize:12,fontWeight:'800',color:palette.ink},
-  spacedLabel:{marginTop:16},
-,inline:{flexDirection:'row',gap:10},flex:{flex:1},fieldLabelFixed:{fontSize:12,fontWeight:'800',color:palette.muted,marginBottom:6,minHeight:26,lineHeight:13},fieldLabelSpaced:{marginTop:18},choices:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:12},choice:{borderRadius:99,paddingHorizontal:12,paddingVertical:9,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},choiceActive:{backgroundColor:palette.primary,borderColor:palette.primary},choiceText:{fontSize:13,fontWeight:'700',color:palette.ink},choiceTextActive:{color:'#FFF'},remindersList:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:6},addReminderButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:12,justifyContent:'center'},addReminderButtonText:{fontSize:12,fontWeight:'800',color:palette.ink},detailsToggle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:13},detailsToggleText:{fontSize:15,fontWeight:'800',color:palette.primary},chevron:{fontSize:24,color:palette.primary}});
+  addReminderButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:12,justifyContent:'center'},
+  addReminderButtonText:{fontSize:12,fontWeight:'800',color:palette.ink},
+  detailsToggle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:13},
+  detailsToggleText:{fontSize:15,fontWeight:'800',color:palette.primary},
+  chevron:{fontSize:24,color:palette.primary},
+});
