@@ -1,82 +1,84 @@
 # FlowOS
 
-FlowOS è un'app mobile-first che unifica task ed eventi, con reminder locali associabili a ciascuna attività.
+**FlowOS** is a mobile-first productivity app that brings tasks, events and reminders together in one daily planning system.
 
-## Stato del progetto
+**Website:** https://getflowos.netlify.app/  
+**Privacy policy:** https://getflowos.netlify.app/privacy-policy/  
+**Account deletion:** https://getflowos.netlify.app/delete-account/  
+**Source code:** https://github.com/alexnardi16/flowos
 
-La codebase è in fase di preparazione alla prima release Android **1.0.0**.
+## What you can do
 
-La sincronizzazione Google include retry automatici e mantiene le modifiche in sospeso durante errori transitori di rete o server, invece di trasformarli immediatamente in errori permanenti.
+- Review today's activities in a dedicated **Today** view.
+- Manage commitments in **Calendar** and **List** views.
+- Create tasks, events and reminders with dates, times, durations, priorities and recurrence.
+- Enter activities using natural-language input.
+- Use **Focus** mode to concentrate on the next step.
+- Set local notifications, custom reminders and a daily summary.
+- Synchronize supported Google Calendar events and Google Tasks when you connect Google.
+- Use Android home-screen widgets for Today and Calendar.
+- Manage sync conflicts and recover from transient network/server failures.
+- Delete your FlowOS account and associated data through the in-app flow or public deletion page.
 
-### Funzioni attualmente implementate
+The core planning and suggestion features described here use application rules and heuristics; the product listing does not claim that they are AI-generated.
 
-- Home “Oggi” con attività previste nella giornata
-- Commitment unificati: task, eventi e reminder
-- Inserimento in linguaggio naturale tramite regole deterministiche locali
-- Lista e calendario
-- Inbox dei conflitti di sincronizzazione
-- Focus mode
-- Riepilogo giornaliero automatico alle 07:30
-- Sincronizzazione Google Calendar e Google Tasks
-- Completamento e rinvio
-- Notifiche e reminder locali
-- Background tasks
-- Widget Android Oggi e Calendario, responsive alla dimensione
-- Meteo basato sulla posizione, solo quando autorizzato
-- Eliminazione definitiva dell'account e dei dati associati
-- Privacy policy e pagina pubblica di eliminazione account
+## Project status
 
-FlowOS **non utilizza modelli di intelligenza artificiale**: interpretazione del linguaggio naturale e logica di pianificazione sono deterministiche e locali.
+The repository contains the Android app, backend integration, automated tests, deployment workflows and public legal pages. The codebase is maintained on the `main` branch.
 
-## Stack
+A successful CI/build is not a substitute for physical-device acceptance or Play Console approval. Before publishing, complete the checklist in [`docs/RELEASE_1.0.0_CHECKLIST.md`](docs/RELEASE_1.0.0_CHECKLIST.md), including production OAuth verification, end-to-end account deletion, Data Safety declarations and real-device tests.
 
-- Expo SDK 57 / React Native 0.86
-- TypeScript
-- Expo Router
-- Supabase Auth + PostgreSQL + Edge Functions
-- Google Calendar / Google Tasks
+## Technology
+
+- Expo / React Native
+- TypeScript and Expo Router
+- Supabase Auth, PostgreSQL and Edge Functions
+- Google Calendar API and Google Tasks API
 - EAS Build / EAS Update
 - GitHub Actions
+- Netlify for the public website and legal pages
 
-## Sviluppo locale
+## Local development
+
+Requirements: Node.js 22 or later.
 
 ```bash
 npm install
 npx expo start
 ```
 
-Per la validazione completa:
+Useful validation commands:
 
 ```bash
 npm run typecheck
 npm test
+npx expo lint
 npx expo export --platform web
 ```
 
-## Android production
+The application needs the appropriate environment configuration and backend services to test authentication and live Google synchronization end to end. See [`docs/EAS_AND_BACKEND_SETUP.md`](docs/EAS_AND_BACKEND_SETUP.md) and [`docs/GOOGLE_WORKSPACE_SETUP.md`](docs/GOOGLE_WORKSPACE_SETUP.md).
 
-Il profilo EAS `production` genera un **Android App Bundle (AAB)** ed usa credenziali remote e auto-incremento del `versionCode`. Il workflow GitHub Actions dedicato alla release costruisce l'AAB quando viene pubblicato un tag/release di versione.
+## Android release
 
-Prima della pubblicazione su Google Play devono essere completati anche i controlli esterni al repository: test del binario su dispositivo Android, configurazione/verifica Google OAuth, Play Console Data Safety e store listing, privacy policy pubblicamente raggiungibile e, quando applicabile, closed testing richiesto da Google Play.
+The production workflow builds an Android App Bundle (AAB). The `versionCode` is managed by the production build workflow. Release metadata and four-language notes are maintained in:
 
-Le release note devono descrivere FlowOS come app di organizzazione personale e sincronizzazione, senza riferimenti a IA, modelli o suggerimenti generati da IA. Una bozza per la 1.0.0 è in `docs/release-notes-1.0.0.md`.
+- [`docs/google-play/STORE_METADATA.md`](docs/google-play/STORE_METADATA.md)
+- [`docs/release-notes-1.0.0.md`](docs/release-notes-1.0.0.md)
+- [`docs/google-play/DATA_SAFETY.md`](docs/google-play/DATA_SAFETY.md)
+- [`docs/RELEASE_1.0.0_CHECKLIST.md`](docs/RELEASE_1.0.0_CHECKLIST.md)
 
-## Privacy e account deletion
+The public legal site is hosted on Netlify; **GitHub Pages is not currently enabled** for this repository. The static website source lives in `public/` and is copied into the web export.
 
-- Privacy policy in-app: `/privacy-policy`
-- Account deletion: `/delete-account`
-- URL pubblico previsto per la cancellazione: `https://getflowos.netlify.app/delete-account`
+## Main workflows
 
-## CI/CD
+- `.github/workflows/ci.yml`: typecheck, tests, lint, Expo Doctor and web export validation.
+- `.github/workflows/release-aab.yml`: production Android AAB build and release artifact.
+- `.github/workflows/eas-build.yml`: EAS development/preview builds.
+- `.github/workflows/eas-update.yml`: EAS Update.
+- `.github/workflows/eas-web-preview.yml`: web preview workflow.
+- `.github/workflows/public-site-smoke.yml`: scheduled reachability checks for public legal pages.
+- `.github/workflows/supabase-deploy.yml`: Supabase deployment workflow.
 
-- `.github/workflows/ci.yml`: typecheck, test e validazione web
-- `.github/workflows/eas-build.yml`: build EAS di sviluppo/preview
-- `.github/workflows/eas-production-build.yml`: build production
-- `.github/workflows/eas-update.yml`: EAS Update
-- `.github/workflows/eas-web-preview.yml`: preview web
-- `.github/workflows/release-aab.yml`: build e allegato AAB per release Android
-- `.github/workflows/supabase-deploy.yml`: deploy Supabase
+## Privacy and support
 
-## Repository
-
-Codice sorgente principale di FlowOS, pubblicato sul branch `main`.
+For privacy questions or account-deletion requests, contact [alex16nardi@gmail.com](mailto:alex16nardi@gmail.com). Never send passwords or OAuth tokens by email.
