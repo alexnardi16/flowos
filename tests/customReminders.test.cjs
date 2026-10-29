@@ -17,6 +17,19 @@ test('every event gets an automatic notification at its exact start', () => {
   assert.equal(buildCustomReminders(commitments, now)[0].minutesBefore, 0);
 });
 
+test('an explicit zero-minute reminder replaces the automatic start reminder instead of duplicating it', () => {
+  const now = new Date(2026, 6, 23, 9, 0);
+  const event = commitment({
+    id: 'ev-zero',
+    scheduledAt: new Date(2026, 6, 23, 10, 0).toISOString(),
+    reminders: [{ id: 'start-now', minutesBefore: 0, createdAt: now.toISOString() }],
+  });
+  const reminders = buildCustomReminders([event], now);
+  assert.equal(reminders.length, 1);
+  assert.equal(reminders[0].minutesBefore, 0);
+  assert.equal(reminders[0].id, 'ev-zero:start-now');
+});
+
 test('duplicate commitment rows produce only one logical reminder', () => {
   const now = new Date(2026, 6, 23, 9, 0);
   const event = commitment({
