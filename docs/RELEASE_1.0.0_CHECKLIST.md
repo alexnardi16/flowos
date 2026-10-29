@@ -67,8 +67,11 @@ Run these checks on the production-like AAB, with a real Google account connecte
 
 ## Release
 
-- [ ] Create Git tag `v1.0.0` on the final validated commit
-- [ ] Publish GitHub release `v1.0.0`
-- [ ] Confirm GitHub Actions production AAB workflow succeeds
-- [ ] Upload resulting AAB to Google Play production
-- [ ] Verify Play Console release status
+- [x] Git tag `v1.0.0` and GitHub release exist (the tag is historical and is not automatically moved to later commits).
+- [ ] Build the latest validated `main` commit with the **Production Android AAB** workflow.
+- [ ] Verify the downloaded AAB belongs to the intended commit and has a new, valid Android `versionCode`; do not assume the AAB attached to the original `v1.0.0` release contains current `main`.
+- [ ] Install and smoke-test that exact AAB on a physical Android device.
+- [ ] Upload the validated AAB to the appropriate Google Play track.
+- [ ] Verify Play Console pre-launch checks and release status.
+
+Do not create or move the `v1.0.0` tag just to rebuild the binary. If a new public app version is needed after `1.0.0`, update the app version and prepare a new versioned release deliberately.
