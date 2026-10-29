@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import DateTimePicker from '@expo/ui/community/datetime-picker';
-import { Button, palette, showAlert, showConfirm } from '@/components/ui';
+import { Button, Card, SectionTitle, palette, showAlert, showConfirm } from '@/components/ui';
+import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleCalendar, type GoogleTaskList } from '@/lib/googleWorkspace';
 import { formatReminderOffsetLabel } from '@/lib/customReminders';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment, CommitmentKind, ReminderOffset } from '@/types';
@@ -35,6 +36,20 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const removeAlsoFromGoogle = useFlowStore((state) => state.removeAlsoFromGoogle);
   const removeSeriesFromGoogle = useFlowStore((state) => state.removeSeriesFromGoogle);
   const syncItemToGoogleNow = useFlowStore((state) => state.syncItemToGoogleNow);
+  const [calendars, setCalendars] = useState<GoogleCalendar[]>([]);
+  const [taskLists, setTaskLists] = useState<GoogleTaskList[]>([]);
+  const [calendarId, setCalendarId] = useState<string | undefined>(item.googleCalendarId);
+  const [taskListId, setTaskListId] = useState<string | undefined>(item.googleTaskListId);
+  const [ownEmail, setOwnEmail] = useState<string | null>(null);
+  useEffect(() => {
+    void getGoogleWorkspaceStatus().then((status) => {
+      const writable = status.calendars.filter((calendar) => calendar.selected && ['owner', 'writer'].includes(calendar.access_role));
+      const lists = status.taskLists.filter((list) => list.selected);
+      setCalendars(writable); setTaskLists(lists); setOwnEmail(status.connection?.google_email ?? null);
+      setCalendarId((current) => current ?? (writable.find((calendar) => calendar.google_calendar_id === item.googleCalendarId) ?? writable.find((calendar) => calendar.is_default) ?? writable[0])?.google_calendar_id);
+      setTaskListId((current) => current ?? (lists.find((list) => list.google_task_list_id === item.googleTaskListId) ?? lists.find((list) => list.is_default) ?? lists[0])?.google_task_list_id);
+    }).catch(() => undefined);
+  }, [item.googleCalendarId, item.googleTaskListId]);
 
   const dateField = item.scheduledAt ? 'scheduledAt' : 'dueAt';
   const [title, setTitle] = useState(item.title);
@@ -106,6 +121,8 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         link: link.trim() || undefined,
         description: description.trim() || undefined,
         reminders: reminders.length ? reminders : undefined,
+        googleCalendarId: kind === 'event' ? calendarId : undefined,
+        googleTaskListId: kind === 'task' ? taskListId : undefined,
         scheduledAt: kind === 'event' ? when : undefined,
         dueAt: kind !== 'event' ? when : undefined,
       };
@@ -148,63 +165,110 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   }
 
   const isFlowOSOnly = !item.externalId;
+  const destinationName = useMemo(() => {
+    if (kind === 'event') { const calendar = calendars.find((entry) => entry.google_calendar_id === calendarId); return calendar ? friendlyCalendarName(calendar.summary, ownEmail, language) : undefined; }
+    return taskLists.find((entry) => entry.google_task_list_id === taskListId)?.title;
+  }, [kind, calendars, taskLists, calendarId, taskListId, ownEmail, language]);
 
   return <Modal visible animationType="slide" onRequestClose={onClose}>
-    <ScrollView showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.wrap}>
+    <ScrollView showsVerticalScrollIndicator persistentScrollbar keyboardShouldPersistTaps="handled" contentContainerStyle={styles.wrap}>
       <Text style={styles.title}>{t('Gestisci')}</Text>
-      <Text style={styles.label}>{t('Titolo')}</Text><TextInput value={title} onChangeText={setTitle} style={styles.input} />
-      <Text style={styles.label}>{t('Tipo')}</Text><View style={styles.row}>{(['event','task'] as const).map((k)=><Pressable key={k} onPress={()=>setKind(k)} style={[styles.choice,kind===k&&styles.choiceActive]}><Text style={[styles.choiceText,kind===k&&styles.choiceTextActive]}>{k==='event'?t('Evento'):t('Task')}</Text></Pressable>)}</View>
-      {kind==='task'?<><Text style={styles.label}>{t('Priorità')}</Text><TextInput value={priority} onChangeText={v=>setPriority(v.replace(/\D/g,''))} keyboardType="number-pad" placeholder={t('Facoltativa')} style={styles.input}/><Text style={styles.help}>Lascia vuoto per nessuna priorità. Le task con priorità esplicita vengono rinumerate automaticamente.</Text></>:null}
-      <View style={styles.rowBetween}><Text style={styles.label}>{t('Giornata intera')}</Text><Switch value={allDay} onValueChange={setAllDay}/></View>
-      <View style={styles.row}><View style={styles.flexField}><Text style={styles.label}>{t('Data di inizio')}</Text><Pressable onPress={()=>setDatePickerTarget('start')} style={styles.dateButton}><Text style={styles.dateButtonText}>{dateStr}</Text></Pressable></View>{!allDay?<View style={styles.flexField}><Text style={styles.label}>{t('Orario di inizio')}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('Orario di inizio')} onPress={()=>setTimePickerTarget('start')} style={styles.dateButton}><Text style={styles.dateButtonText}>{timeStr}</Text></Pressable></View>:null}</View>
-      {!allDay?<><Text style={styles.label}>{t('Fine o durata')}</Text><View style={styles.rowWrap}><Pressable onPress={()=>setDurationMode('duration')} style={[styles.choice,durationMode==='duration'&&styles.choiceActive]}><Text style={[styles.choiceText,durationMode==='duration'&&styles.choiceTextActive]}>{t('Durata')}</Text></Pressable><Pressable onPress={()=>{setEndFromDuration();setDurationMode('end');}} style={[styles.choice,durationMode==='end'&&styles.choiceActive]}><Text style={[styles.choiceText,durationMode==='end'&&styles.choiceTextActive]}>{t('Data e ora di fine')}</Text></Pressable></View></>:null}
-      {durationMode==='end'&&!allDay?<View style={styles.row}><View style={styles.flexField}><Text style={styles.label}>{t('Data di fine')}</Text><Pressable onPress={()=>setDatePickerTarget('end')} style={styles.dateButton}><Text style={styles.dateButtonText}>{endDate}</Text></Pressable></View><View style={styles.flexField}><Text style={styles.label}>{t('Orario di fine')}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('Orario di fine')} onPress={()=>setTimePickerTarget('end')} style={styles.dateButton}><Text style={styles.dateButtonText}>{endTime}</Text></Pressable></View></View>:null}
-      {kind!=='task'||allDay||durationMode==='duration'?<><Text style={styles.label}>Durata{allDay?' (giorni)':''}</Text><View style={styles.row}><View style={styles.flexField}><Text style={styles.durationLabel}>{t('giorni')}</Text><TextInput value={days} onChangeText={v=>setDays(v.replace(/\D/g,''))} keyboardType="number-pad" style={[styles.input,styles.durationInput]}/></View>{!allDay?<><View style={styles.flexField}><Text style={styles.durationLabel}>{t('ore')}</Text><TextInput value={hours} onChangeText={v=>setHours(v.replace(/\D/g,''))} keyboardType="number-pad" style={[styles.input,styles.durationInput]}/></View><View style={styles.flexField}><Text style={styles.durationLabel}>{t('minuti')}</Text><TextInput value={minutes} onChangeText={v=>setMinutes(v.replace(/\D/g,''))} keyboardType="number-pad" style={[styles.input,styles.durationInput]}/></View></>:null}</View></>:null}
-      <Text style={styles.label}>{t('Descrizione')}</Text><TextInput value={description} onChangeText={setDescription} style={styles.input} multiline />
-      <Text style={styles.label}>{t('Note private')}</Text><TextInput value={notes} onChangeText={setNotes} style={styles.input} multiline />
-      <Text style={styles.label}>{t('Luogo')}</Text><TextInput value={location} onChangeText={setLocation} style={styles.input} />
-      <Text style={styles.label}>{t('Link')}</Text><TextInput value={link} onChangeText={setLink} style={styles.input} autoCapitalize="none" />
-      <Text style={styles.label}>{t('Notifiche di rappel')}</Text>
-      {reminders.length?<View style={styles.reminderList}>{reminders.map(r=><View key={r.id} style={styles.reminderChip}><Text style={styles.reminderChipText}>{formatReminderOffsetLabel(r.minutesBefore,language)}</Text><Pressable onPress={()=>removeReminder(r.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable></View>)}</View>:<Text style={styles.help}>Il rappel all'ora esatta di inizio è automatico.</Text>}
-      <View style={styles.rowWrap}>{REMINDER_PRESETS.map(minutes=><Pressable key={minutes} onPress={()=>addReminder(minutes)} style={styles.presetButton}><Text style={styles.presetButtonText}>{formatReminderOffsetLabel(minutes,language)}</Text></Pressable>)}</View>
-      <View style={styles.row}><View style={styles.reminderInputField}><Text style={styles.reminderInputLabel}>{t('giorni prima')}</Text><TextInput value={customDays} onChangeText={v=>setCustomDays(v.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.reminderInputField}><Text style={styles.reminderInputLabel}>{t('ore prima')}</Text><TextInput value={customHours} onChangeText={v=>setCustomHours(v.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.reminderInputField}><Text style={styles.reminderInputLabel}>{t('minuti prima')}</Text><TextInput value={customMinutes} onChangeText={v=>setCustomMinutes(v.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><Pressable onPress={()=>{const m=(Number(customDays)||0)*1440+(Number(customHours)||0)*60+(Number(customMinutes)||0);if(customDays!==''||customHours!==''||customMinutes!==''){addReminder(m);setCustomDays('');setCustomHours('');setCustomMinutes('');}}} style={styles.presetButton}><Text style={styles.presetButtonText}>{t('Aggiungi')}</Text></Pressable></View>
-      <View style={styles.actionsRow}><Button secondary label={t('Annulla')} onPress={onClose} disabled={busy}/><Button label={t('Salva modifiche')} onPress={()=>void save()} loading={busy}/></View>
-      {isFlowOSOnly?<View style={styles.section}><Text style={styles.sectionTitle}>{t('Solo su FlowOS')}</Text><Text style={styles.help}>{t('Questo elemento non è mai stato sincronizzato con Google.')}</Text><Button secondary label={t('Sincronizza con Google')} onPress={()=>void syncNow()} disabled={busy}/></View>:null}
-      <View style={styles.section}><Text style={styles.sectionTitle}>{t('Elimina')}</Text><Pressable disabled={busy} onPress={()=>void removeLocal()} style={styles.localDelete}><Text style={styles.localDeleteText}>{t('Elimina solo da FlowOS')}</Text></Pressable>{item.externalId?<Pressable disabled={busy} onPress={()=>void removeGoogle()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{item.googleRecurringEventId?'Elimina solo questa occorrenza':t('Elimina da FlowOS e Google')}</Text></Pressable>:null}{item.googleRecurringEventId?<Pressable disabled={busy} onPress={()=>void removeSeries()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>Elimina tutta la serie</Text></Pressable>:null}</View>
-      {datePickerTarget?<DateTimePicker value={new Date(`${datePickerTarget==='start'?dateStr:endDate}T12:00:00`)} mode="date" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_,selectedDate)=>handleDatePicked(selectedDate)} onDismiss={()=>setDatePickerTarget(null)}/>:null}
-      {timePickerTarget?<DateTimePicker value={new Date(`${timePickerTarget==='start'?dateStr:endDate}T${timePickerTarget==='start'?timeStr:endTime}:00`)} mode="time" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_,selectedDate)=>handleTimePicked(selectedDate)} onDismiss={()=>setTimePickerTarget(null)}/>:null}
+      <SectionTitle title={t('1. Tipo')} subtitle={t('Evento per un appuntamento fisso; task per un’attività.')}/>
+      <View style={styles.kindRow}>{(['task','event'] as const).map((value) => <Pressable key={value} onPress={() => setKind(value)} style={[styles.kindCard, kind === value && styles.kindCardActive]}><Text style={[styles.kindTitle, kind === value && styles.kindTitleActive]}>{value === 'event' ? t('Evento') : t('Task')}</Text><Text style={[styles.kindHelp, kind === value && styles.kindTitleActive]}>{value === 'event' ? t('Occupa uno spazio nel calendario') : t('Richiede un’azione')}</Text></Pressable>)}</View>
+
+      <SectionTitle title={t('2. Destinazione Google')} subtitle={kind === 'event' ? t('Scegli il calendario prima di inserire i dettagli.') : t('Scegli la lista Google Tasks prima di inserire i dettagli.')}/>
+      <Card><Text style={styles.destination}>{t('Destinazione')}: <Text style={styles.destinationStrong}>{destinationName ?? t('nessuna disponibile')}</Text></Text>
+        <View style={styles.rowWrap}>{kind === 'event' ? calendars.map((entry) => <Choice key={entry.id} label={friendlyCalendarName(entry.summary, ownEmail, language)} active={entry.google_calendar_id === calendarId} onPress={() => setCalendarId(entry.google_calendar_id)}/>) : taskLists.map((entry) => <Choice key={entry.id} label={entry.title} active={entry.google_task_list_id === taskListId} onPress={() => setTaskListId(entry.google_task_list_id)}/>)}</View>
+        {!destinationName ? <Text style={styles.help}>{t('Configura almeno una destinazione scrivibile nella sezione Io.')}</Text> : null}
+      </Card>
+
+      <SectionTitle title={t('3. Informazioni essenziali')}/>
+      <Card>
+        <Field label={t('Titolo')} value={title} onChangeText={setTitle} required/>
+        {kind === 'task' ? <Field label={t('Priorità')} value={priority} onChangeText={(value) => setPriority(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder={t('Facoltativa')}/> : null}
+        <View style={styles.rowBetween}><Text style={styles.fieldLabel}>{t('Giornata intera')}</Text><Switch value={allDay} onValueChange={setAllDay}/></View>
+        <View style={styles.row}>
+          <View style={styles.flexField}><Text style={styles.fieldLabel}>{t('Data di inizio')} *</Text><Pressable onPress={() => setDatePickerTarget('start')} style={styles.dateButton}><Text style={styles.dateButtonText}>{dateStr}</Text></Pressable></View>
+          {!allDay ? <View style={styles.flexField}><Text style={styles.fieldLabel}>{t('Orario di inizio')} *</Text><Pressable accessibilityRole="button" onPress={() => setTimePickerTarget('start')} style={styles.dateButton}><Text style={styles.dateButtonText}>{timeStr}</Text></Pressable></View> : null}
+        </View>
+        {!allDay ? <><Text style={styles.fieldLabel}>{t('Fine o durata')}</Text><View style={styles.rowWrap}>
+          <Choice label={t('Durata')} active={durationMode === 'duration'} onPress={() => setDurationMode('duration')}/>
+          <Choice label={t('Data e ora di fine')} active={durationMode === 'end'} onPress={() => { setEndFromDuration(); setDurationMode('end'); }}/>
+        </View></> : null}
+        {durationMode === 'end' && !allDay ? <View style={styles.row}>
+          <View style={styles.flexField}><Text style={styles.fieldLabel}>{t('Data di fine')}</Text><Pressable onPress={() => setDatePickerTarget('end')} style={styles.dateButton}><Text style={styles.dateButtonText}>{endDate}</Text></Pressable></View>
+          <View style={styles.flexField}><Text style={styles.fieldLabel}>{t('Orario di fine')}</Text><Pressable accessibilityRole="button" onPress={() => setTimePickerTarget('end')} style={styles.dateButton}><Text style={styles.dateButtonText}>{endTime}</Text></Pressable></View>
+        </View> : null}
+        {durationMode === 'duration' || allDay ? <><Text style={styles.fieldLabel}>{t('Durata')}{allDay ? ` (${t('giorni')})` : ''} *</Text><View style={styles.row}>
+          <View style={styles.flexField}><Text style={styles.durationLabel}>{t('giorni')}</Text><TextInput value={days} onChangeText={(value) => setDays(value.replace(/\D/g,''))} keyboardType="number-pad" style={[styles.input, styles.durationInput]}/></View>
+          {!allDay ? <><View style={styles.flexField}><Text style={styles.durationLabel}>{t('ore')}</Text><TextInput value={hours} onChangeText={(value) => setHours(value.replace(/\D/g,''))} keyboardType="number-pad" style={[styles.input, styles.durationInput]}/></View><View style={styles.flexField}><Text style={styles.durationLabel}>{t('minuti')}</Text><TextInput value={minutes} onChangeText={(value) => setMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" style={[styles.input, styles.durationInput]}/></View></> : null}
+        </View></> : null}
+        <Field label={t('Descrizione')} value={description} onChangeText={setDescription} multiline placeholder={t('Informazioni principali')}/>
+        <Field label={t('Note private')} value={notes} onChangeText={setNotes} multiline placeholder={t('Dettagli utili per te')}/>
+        <Field label={t('Luogo')} value={location} onChangeText={setLocation} placeholder={t('Indirizzo o luogo')}/>
+        <Field label={t('Link')} value={link} onChangeText={setLink} autoCapitalize="none" keyboardType="url" placeholder="https://…"/>
+        <Text style={[styles.fieldLabel, styles.spacedLabel]}>{t('Notifiche di rappel')}</Text>
+        {reminders.length ? <View style={styles.reminderList}>{reminders.map((reminder) => <View key={reminder.id} style={styles.reminderChip}><Text style={styles.reminderChipText}>{formatReminderOffsetLabel(reminder.minutesBefore, language)}</Text><Pressable onPress={() => removeReminder(reminder.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable></View>)}</View> : <Text style={styles.help}>Il rappel all'ora esatta di inizio è automatico.</Text>}
+        <View style={styles.rowWrap}>{REMINDER_PRESETS.map((offset) => <Choice key={offset} label={formatReminderOffsetLabel(offset, language)} active={reminders.some((reminder) => reminder.minutesBefore === offset)} onPress={() => addReminder(offset)}/>)}</View>
+        <View style={styles.row}><View style={styles.flexField}><Text style={styles.durationLabel}>{t('giorni prima')}</Text><TextInput value={customDays} onChangeText={(value) => setCustomDays(value.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.flexField}><Text style={styles.durationLabel}>{t('ore prima')}</Text><TextInput value={customHours} onChangeText={(value) => setCustomHours(value.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><View style={styles.flexField}><Text style={styles.durationLabel}>{t('minuti prima')}</Text><TextInput value={customMinutes} onChangeText={(value) => setCustomMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" style={styles.input}/></View><Pressable onPress={() => { const offset = (Number(customDays)||0)*1440+(Number(customHours)||0)*60+(Number(customMinutes)||0); if (customDays !== '' || customHours !== '' || customMinutes !== '') { addReminder(offset); setCustomDays(''); setCustomHours(''); setCustomMinutes(''); } }} style={styles.presetButton}><Text style={styles.presetButtonText}>{t('Aggiungi')}</Text></Pressable></View>
+      </Card>
+
+      <View style={styles.actionsRow}><Button secondary label={t('Annulla')} onPress={onClose} disabled={busy}/><Button label={t('Salva modifiche')} onPress={() => void save()} loading={busy}/></View>
+      {isFlowOSOnly ? <View style={styles.section}><Text style={styles.sectionTitle}>{t('Solo su FlowOS')}</Text><Text style={styles.help}>{t('Questo elemento non è mai stato sincronizzato con Google.')}</Text><Button secondary label={t('Sincronizza con Google')} onPress={() => void syncNow()} disabled={busy}/></View> : null}
+
+      <View style={styles.section}><Text style={styles.sectionTitle}>{t('Elimina')}</Text>
+        <Pressable disabled={busy} onPress={() => void removeLocal()} style={styles.localDelete}><Text style={styles.localDeleteText}>{t('Elimina da FlowOS')}</Text></Pressable>
+        {item.externalId ? <Pressable disabled={busy} onPress={() => void removeGoogle()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{t('Elimina da FlowOS e Google')}</Text></Pressable> : null}
+        {item.googleRecurringEventId ? <Pressable disabled={busy} onPress={() => void removeSeries()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{t('Elimina tutta la serie')}</Text></Pressable> : null}
+      </View>
+      {datePickerTarget ? <DateTimePicker value={new Date(`${datePickerTarget === 'start' ? dateStr : endDate}T12:00:00`)} mode="date" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_, selectedDate) => handleDatePicked(selectedDate)} onDismiss={() => setDatePickerTarget(null)}/> : null}
+      {timePickerTarget ? <DateTimePicker value={new Date(`${timePickerTarget === 'start' ? dateStr : endDate}T${timePickerTarget === 'start' ? timeStr : endTime}:00`)} mode="time" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_, selectedDate) => handleTimePicked(selectedDate)} onDismiss={() => setTimePickerTarget(null)}/> : null}
     </ScrollView>
   </Modal>}
+function Choice({label, active, onPress}:{label:string;active:boolean;onPress:()=>void}) { return <Pressable onPress={onPress} style={[styles.choice, active && styles.choiceActive]}><Text style={[styles.choiceText, active && styles.choiceTextActive]}>{label}</Text></Pressable>; }
+type FieldProps = {label:string; value:string; onChangeText:(value:string)=>void; required?:boolean; multiline?:boolean; placeholder?:string; keyboardType?:'default'|'number-pad'|'url'; autoCapitalize?:'none'|'sentences'};
+function Field({label,value,onChangeText,required,multiline,placeholder,keyboardType,autoCapitalize}:FieldProps) { return <View style={styles.field}><Text style={styles.fieldLabel}>{label}{required ? <Text style={styles.required}> *</Text> : null}</Text><TextInput value={value} onChangeText={onChangeText} multiline={multiline} placeholder={placeholder} placeholderTextColor="#979DAE" keyboardType={keyboardType} autoCapitalize={autoCapitalize} style={[styles.input,multiline&&styles.multiline]}/></View>; }
 
 const styles = StyleSheet.create({
-  dateButton:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E2E4EA',borderRadius:12,padding:12,minHeight:48,justifyContent:'center'},dateButtonText:{color:palette.ink,fontSize:15},
-  wrap: { padding: 20, paddingTop: 50, paddingBottom: 60, gap: 6, backgroundColor: palette.bg },
-  title: { fontSize: 26, fontWeight: '900', color: palette.ink, marginBottom: 10 },
-  label: { fontSize: 12, fontWeight: '800', color: palette.muted, marginTop: 12 },
-  input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E4EA', borderRadius: 12, padding: 12, marginTop: 5, color: palette.ink },
-  durationInput: { flex: 1 },
-  row: { flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'nowrap' },
-  rowWrap: { flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'wrap' },
-  flexField: { flex: 1, minWidth: 0 },
-  durationLabel: { fontSize: 11, fontWeight: '700', color: palette.muted, marginBottom: 4 },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
-  choice: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 99, backgroundColor: '#ECEEF4' },
-  choiceActive: { backgroundColor: palette.primary },
-  choiceText: { fontWeight: '800', color: palette.muted },
-  choiceTextActive: { color: '#FFF' },
-  actionsRow: { flexDirection: 'row', gap: 8, marginTop: 20 },
-  section: { marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: palette.border, gap: 8 },
-  sectionTitle: { fontSize: 14, fontWeight: '900', color: palette.ink },
-  help: { fontSize: 12, color: palette.muted },
-  localDelete: { alignSelf: 'flex-start', backgroundColor: '#FDECEC', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
-  localDeleteText: { color: '#A12626', fontWeight: '900' },
-  googleDelete: { alignSelf: 'flex-start', backgroundColor: '#A12626', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
-  googleDeleteText: { color: '#FFF', fontWeight: '900' },
-  reminderList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
-  reminderInputField:{flex:1,minWidth:0},reminderInputLabel:{fontSize:11,lineHeight:13,fontWeight:'700',color:palette.muted,height:26,textAlignVertical:'center'},
-  reminderChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: palette.soft, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  reminderChipText: { fontSize: 12, fontWeight: '800', color: palette.primary },
-  reminderRemove: { fontSize: 12, fontWeight: '900', color: palette.muted },
-  presetButton: { backgroundColor: '#ECEEF4', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 9, flexGrow: 1, flexBasis: '40%', alignItems: 'center' },
-  presetButtonText: { fontSize: 12, fontWeight: '800', color: palette.ink },
+  wrap:{padding:20,paddingTop:50,paddingBottom:60,gap:8,backgroundColor:palette.bg},
+  title:{fontSize:26,fontWeight:'900',color:palette.ink,marginBottom:10},
+  kindRow:{flexDirection:'row',gap:10,marginTop:4},
+  kindCard:{flex:1,minWidth:0,borderWidth:1,borderColor:palette.border,borderRadius:16,padding:14,backgroundColor:'#FFF',gap:5},
+  kindCardActive:{borderColor:palette.primary,backgroundColor:palette.soft},
+  kindTitle:{fontSize:15,fontWeight:'900',color:palette.ink},
+  kindHelp:{fontSize:12,color:palette.muted},
+  destination:{fontSize:13,color:palette.muted,marginBottom:8},
+  destinationStrong:{fontWeight:'900',color:palette.ink},
+  field:{marginTop:8},
+  fieldLabel:{fontSize:12,fontWeight:'800',color:palette.muted,marginTop:10},
+  required:{color:palette.primary},
+  input:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E2E4EA',borderRadius:12,padding:12,marginTop:5,color:palette.ink,minHeight:46},
+  multiline:{minHeight:76,textAlignVertical:'top'},
+  dateButton:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E2E4EA',borderRadius:12,padding:12,minHeight:48,justifyContent:'center',marginTop:5},
+  dateButtonText:{color:palette.ink,fontSize:15},
+  row:{flexDirection:'row',gap:8,marginTop:6,flexWrap:'nowrap'},
+  rowWrap:{flexDirection:'row',gap:8,marginTop:8,flexWrap:'wrap'},
+  flexField:{flex:1,minWidth:0},
+  durationInput:{flex:1},
+  durationLabel:{fontSize:11,fontWeight:'700',color:palette.muted,marginBottom:4,marginTop:8},
+  rowBetween:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:12},
+  choice:{paddingHorizontal:12,paddingVertical:9,borderRadius:99,backgroundColor:'#ECEEF4'},
+  choiceActive:{backgroundColor:palette.primary},
+  choiceText:{fontWeight:'800',color:palette.muted},
+  choiceTextActive:{color:'#FFF'},
+  actionsRow:{flexDirection:'row',gap:8,marginTop:20},
+  section:{marginTop:24,paddingTop:16,borderTopWidth:1,borderTopColor:palette.border,gap:8},
+  sectionTitle:{fontSize:14,fontWeight:'900',color:palette.ink},
+  help:{fontSize:12,color:palette.muted},
+  localDelete:{alignSelf:'flex-start',backgroundColor:'#FDECEC',borderRadius:12,paddingHorizontal:12,paddingVertical:12,minHeight:44,justifyContent:'center'},
+  localDeleteText:{color:'#A12626',fontWeight:'900'},
+  googleDelete:{alignSelf:'flex-start',backgroundColor:'#A12626',borderRadius:12,paddingHorizontal:12,paddingVertical:12,minHeight:44,justifyContent:'center'},
+  googleDeleteText:{color:'#FFF',fontWeight:'900'},
+  reminderList:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8},
+  reminderChip:{flexDirection:'row',alignItems:'center',gap:6,backgroundColor:palette.soft,borderRadius:99,paddingHorizontal:10,paddingVertical:6},
+  reminderChipText:{fontSize:12,fontWeight:'800',color:palette.primary},
+  reminderRemove:{fontSize:12,fontWeight:'900',color:palette.muted},
+  presetButton:{backgroundColor:'#ECEEF4',borderRadius:12,paddingHorizontal:10,paddingVertical:12,flexGrow:1,flexBasis:'40%',alignItems:'center'},
+  presetButtonText:{fontSize:12,fontWeight:'800',color:palette.ink},
+  spacedLabel:{marginTop:16},
 });
