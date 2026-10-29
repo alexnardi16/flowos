@@ -22,7 +22,7 @@ module.exports = {
   slug: 'flowos',
   owner: 'alex16nardi',
   version: '1.0.0',
-  description: 'Unifica task ed eventi con reminder locali associabili a ciascuna attività.',
+  description: 'Organizza task, eventi e promemoria in un unico sistema, con pianificazione giornaliera e sincronizzazione Google opzionale.',
   icon: './assets/flowos-app-icon-512-store.png',
   orientation: 'portrait',
   scheme: 'flowos',
