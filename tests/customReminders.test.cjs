@@ -134,8 +134,13 @@ test('Add and Manage show the activity start-time reminder enabled by default wi
   assert.match(manageSource, /destinationName/);
   assert.match(manageSource, /t\('Elimina da FlowOS'\)/);
   assert.match(manageSource, /t\('Elimina da FlowOS e Google'\)/);
-  assert.match(manageSource, /setTimePickerTarget\('start'\)/);
-  assert.match(manageSource, /setTimePickerTarget\('end'\)/);
+  assert.match(manageSource, /label=\{t\('Ordine di esecuzione'\)\}/);
+  assert.match(manageSource, /t\('Ripeti'\)/);
+  assert.match(manageSource, /REPEAT_KEYS\[option\]/);
+  assert.match(manageSource, /recurrenceRule: repeat !== 'none'/);
+  assert.match(manageSource, /onChangeText=\{updateStartTime\}/);
+  assert.match(manageSource, /onChangeText=\{updateEndTime\}/);
+  assert.match(manageSource, /detailsToggle/);
   assert.match(manageSource, /rowWrap:\{flexDirection:'row',gap:8,marginTop:8,flexWrap:'wrap'\}/);
   assert.match(reminderSource, /All'ora di inizio dell'attività/);
 });
