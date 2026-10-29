@@ -56,7 +56,15 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const [notes, setNotes] = useState(item.notes ?? '');
   const [link, setLink] = useState(item.link ?? '');
   const [description, setDescription] = useState(item.description ?? '');
-  const [reminders, setReminders] = useState<ReminderOffset[]>(item.reminders ?? []);
+  const [reminders, setReminders] = useState<ReminderOffset[]>(() => {
+    const configured = item.reminders ?? [];
+    if (configured.some((reminder) => reminder.minutesBefore === 0)) return configured;
+    return [...configured, {
+      id: `default-start-${item.id}`,
+      minutesBefore: 0,
+      createdAt: new Date().toISOString(),
+    }].sort((a, b) => a.minutesBefore - b.minutesBefore);
+  });
   const [customDays, setCustomDays] = useState('');
   const [customHours, setCustomHours] = useState('');
   const [customMinutes, setCustomMinutes] = useState('');
