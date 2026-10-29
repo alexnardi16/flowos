@@ -38,7 +38,7 @@ export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef 
       <View style={styles.screenBrandRow}>
         <View style={styles.screenBrandLeft}>
           <Image source={require("../assets/flowos-app-icon-512-store.png")} style={styles.screenLogo} resizeMode="contain" accessibilityLabel="Logo FlowOS" />
-          <Text style={styles.screenBrand}>FLOWOS</Text>
+          <Text style={styles.screenBrand}>FlowOS</Text>
         </View>
         <BuildInfo inline />
       </View>
@@ -86,7 +86,7 @@ const styles=StyleSheet.create({
   screenBrandRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:38},
   screenBrandLeft:{flexDirection:'row',alignItems:'center',gap:9},
   screenLogo:{width:34,height:34,borderRadius:9},
-  screenBrand:{fontSize:15,lineHeight:18,fontWeight:'900',letterSpacing:2.2,color:palette.primary,marginTop:2},
+  screenBrand:{fontSize:16,lineHeight:20,fontWeight:'800',letterSpacing:0.2,color:palette.primary,marginTop:2},
   screenTitle:{fontSize:30,lineHeight:36,fontWeight:'900',color:palette.ink,marginTop:-2},
   screenSubtitle:{fontSize:14,lineHeight:20,color:palette.muted,marginTop:-4},
   card:{backgroundColor:palette.card,borderRadius:22,padding:18,borderWidth:1,borderColor:'#EEF0F5',shadowColor:'#000',shadowOpacity:.045,shadowRadius:14,shadowOffset:{width:0,height:5},elevation:2},
