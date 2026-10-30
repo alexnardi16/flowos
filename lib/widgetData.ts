@@ -4,7 +4,7 @@ import { isExpired } from './itemTiming';
 import { toDateKey } from './dailySummary';
 import { sortCommitments } from './activityOrdering';
 import { activitySourceColor, buildActivitySourceColors } from './activityColors';
-import { isVisibleCompletedMultiDayForDate } from './commitmentVisibility';
+import { isVisibleCompletedMultiDayForDate, isOverdueTask } from './commitmentVisibility';
 import { t, type Language } from './i18n';
 
 export type WidgetItem = { id: string; title: string; time: string; kind: Commitment['kind']; priority?: number; sourceColor?: string };
@@ -25,7 +25,7 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
     const completedMultiDayVisible=isVisibleCompletedMultiDayForDate(item,now);
     if(!isActive(item)&&!completedMultiDayVisible)continue;
     const value=item.scheduledAt??item.dueAt;
-    if(value&&itemIsToday(item,now))todayItems.push(item);
+    if(value&&(itemIsToday(item,now)||isOverdueTask(item,now)))todayItems.push(item);
     else if(completedMultiDayVisible)todayItems.push(item);
 
     if(item.kind==='event'&&item.scheduledAt){
@@ -42,5 +42,5 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
   const sortedTodayItems = sortCommitments(todayItems, calendarNames);
   const sourceColors=buildActivitySourceColors(commitments);
 
-  return {dateKey:toDateKey(now),items:sortedTodayItems.map(item=>{const value=(item.scheduledAt??item.dueAt)!;if(item.allDay)return{id:item.id,title:item.title,time:t('Tutto il giorno',undefined,language??'it'),kind:item.kind,priority:item.kind==='task'?item.priority:undefined,sourceColor:activitySourceColor(item,sourceColors)};const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const locale=language==='fr'?'fr-FR':language==='es'?'es-ES':language==='en'?'en-US':'it-IT';const fmt=(d:Date)=>d.toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});return{id:item.id,title:item.title,time:`${fmt(start)} - ${fmt(end)}`,kind:item.kind,priority:item.kind==='task'?item.priority:undefined,sourceColor:activitySourceColor(item,sourceColors)};}),nextEventTitle:nextEvent?.title??null,nextEventTime:nextEvent?.scheduledAt?formatCommitmentTime(nextEvent,nextEvent.scheduledAt):null,dueSoonCount,overdueCount,generatedAt:now.toISOString(),language};
+  return {dateKey:toDateKey(now),items:sortedTodayItems.map(item=>{const value=(item.scheduledAt??item.dueAt)!;if(item.allDay)return{id:item.id,title:item.title,time:(isOverdueTask(item,now)?t('Scaduta',undefined,language??'it')+' · ':'')+t('Tutto il giorno',undefined,language??'it'),kind:item.kind,priority:item.kind==='task'?item.priority:undefined,sourceColor:activitySourceColor(item,sourceColors)};const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const locale=language==='fr'?'fr-FR':language==='es'?'es-ES':language==='en'?'en-US':'it-IT';const fmt=(d:Date)=>d.toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});return{id:item.id,title:item.title,time:(isOverdueTask(item,now)?t('Scaduta',undefined,language??'it')+' · ':'')+`${fmt(start)} - ${fmt(end)}`,kind:item.kind,priority:item.kind==='task'?item.priority:undefined,sourceColor:activitySourceColor(item,sourceColors)};}),nextEventTitle:nextEvent?.title??null,nextEventTime:nextEvent?.scheduledAt?formatCommitmentTime(nextEvent,nextEvent.scheduledAt):null,dueSoonCount,overdueCount,generatedAt:now.toISOString(),language};
 }

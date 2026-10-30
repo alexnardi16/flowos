@@ -9,7 +9,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage, widgetStrings } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
-import { isVisibleCompletedMultiDayForDate } from '@/lib/commitmentVisibility';
+import { isVisibleCompletedMultiDayForDate, isOverdueTask } from '@/lib/commitmentVisibility';
 import { buildCalendarTimeline } from '@/lib/calendarTimeline';
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
@@ -50,7 +50,8 @@ export default function Calendar(){
   const byDay=useMemo(()=>{
     const map=new Map<string,Commitment[]>();
     for(const item of commitments.filter(item=>!item.deletedAt&&item.status!=='done')){
-      const value=itemDate(item);if(!value)continue;
+      const overdueTask=isOverdueTask(item);
+      const value=overdueTask?new Date().toISOString():itemDate(item);if(!value)continue;
       const d=new Date(value);
       const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dayKey(d);
       const list=map.get(key)??[];list.push(item);map.set(key,list);
@@ -90,6 +91,7 @@ export default function Calendar(){
               <View style={styles.dayActivities}>
                 {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),pressed&&styles.itemPressed]}>
                   {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
+                  {isOverdueTask(item) ? <Text style={styles.overdueTag}>{t('Scaduta')}</Text> : null}
                   <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Text style={styles.itemTitle}>{item.title}</Text></View>
                   {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
                 </Pressable>)}
@@ -117,6 +119,7 @@ const styles=StyleSheet.create({
   dayActivities:{gap:2,paddingTop:3},
   item:{borderRadius:5,padding:2,borderWidth:1,gap:0},
   itemTime:{fontSize:4,lineHeight:7,fontWeight:'800',color:palette.muted},
+  overdueTag:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.warning},
   itemTitleRow:{flexDirection:'row',alignItems:'flex-start',gap:2,minWidth:0},itemPriority:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.primary},itemTitle:{flex:1,minWidth:0,flexShrink:1,fontSize:5,lineHeight:7,fontWeight:'900',color:palette.ink},
   itemMeta:{fontSize:6,lineHeight:8,color:palette.muted},
   itemPressed:{opacity:.78}

@@ -1,4 +1,9 @@
 import type { Commitment } from '../types';
+import { isExpired } from './itemTiming';
+
+export function isOverdueTask(item: Commitment, now = new Date()): boolean {
+  return item.kind === 'task' && item.status !== 'done' && !item.deletedAt && isExpired(item, now);
+}
 
 export function eventEnd(item: Commitment): Date | null {
   if (item.kind !== 'event' || !item.scheduledAt || !item.durationMinutes) return null;
@@ -23,6 +28,7 @@ export function isCompletedMultiDayVisible(item: Commitment, now = new Date()): 
 
 export function isVisibleInToday(item: Commitment, now = new Date()): boolean {
   if (item.status !== 'done' && !item.deletedAt) {
+    if (isOverdueTask(item, now)) return true;
     const value = item.scheduledAt ?? item.dueAt;
     if (!value) return false;
     const date = new Date(value);

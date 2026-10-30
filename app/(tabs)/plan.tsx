@@ -10,7 +10,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
-import { eventEnd, isCompletedMultiDayVisible } from '@/lib/commitmentVisibility';
+import { eventEnd, isCompletedMultiDayVisible, isOverdueTask } from '@/lib/commitmentVisibility';
 
 
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -45,7 +45,8 @@ export default function Plan(){
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
       const completedMultiDay=isCompletedMultiDayVisible(item,new Date(now));
-      const value=completedMultiDay?eventEnd(item)?.toISOString():itemDate(item);
+      const overdueTask=isOverdueTask(item,new Date(now));
+      const value=completedMultiDay?eventEnd(item)?.toISOString():overdueTask?new Date(now).toISOString():itemDate(item);
       if(!value)continue;
       const date=new Date(value);
       const key=item.allDay
@@ -72,7 +73,7 @@ export default function Plan(){
     {groupedItems.length?groupedItems.map(group=><View key={group.key} onLayout={event=>{if(group.key===initialScrollKey&&!didInitialScroll.current){didInitialScroll.current=true;const y=event.nativeEvent.layout.y;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,y-8),animated:false}));}}} style={styles.dayGroup}>
       <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={styles.dayDividerText}>{group.label}</Text><View style={styles.dayDividerLine}/></View>
       {group.items.map(item=>{
-        const overdue=item.status!=='done'&&isExpired(item);
+        const overdue=isOverdueTask(item);
         return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
           <Card style={[styles.itemCard,cardSourceStyle(item,sourceColors)]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
