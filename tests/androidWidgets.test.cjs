@@ -219,7 +219,13 @@ test('List and Calendar provide a direct Today navigation shortcut',()=>{
   assert.match(plan,/todayButton/);
   assert.match(plan,/scrollToToday/);
   assert.match(calendar,/todayButton/);
-  assert.match(calendar,/setSelectedDateOverride\(dayKey\(new Date\(\)\)\)/);
+  assert.match(calendar,/headerActions=\\{<View style=\\{styles\\.todayRow\\}/);
+  assert.match(calendar,/const goToToday=useCallback\\(\\(\\)=>\\{setSelectedDateOverride\\(dayKey\\(new Date\\(\\)\\)\\);scrollToSelectedWeek\\(\\);\\}/);
+  assert.match(calendar,/onPress=\\{goToToday\\}/);
+  assert.match(plan,/headerActions=\\{<View style=\\{styles\\.searchRow\\}/);
+  assert.match(plan,/pendingTodayScroll\\.current=true/);
+  assert.match(plan,/if\\(query\\.trim\\(\\)\\)setQuery\\(''\\)/);
+  assert.match(plan,/pendingTodayScroll\\.current&&group\\.key===todayGroupKey/);
 });
 
 test('Manage page and Today macrosection use the shared recurring completion prompt',()=>{
