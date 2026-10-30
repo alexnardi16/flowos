@@ -211,3 +211,21 @@ test('Today widget title uses more of the first line before wrapping',()=>{
   assert.match(widget, /hasPriority\?36:42/);
   assert.match(widget, /item\.priority\?36:42/);
 });
+
+
+test('List and Calendar provide a direct Today navigation shortcut',()=>{
+  const plan=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
+  const calendar=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
+  assert.match(plan,/todayButton/);
+  assert.match(plan,/scrollToToday/);
+  assert.match(calendar,/todayButton/);
+  assert.match(calendar,/setSelectedDateOverride\(dayKey\(new Date\(\)\)\)/);
+});
+
+test('Manage page and Today macrosection use the shared recurring completion prompt',()=>{
+  const manage=fs.readFileSync('components/ManageSheet.tsx','utf8');
+  const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
+  assert.match(manage,/requestComplete\(item/);
+  assert.match(manage,/t\('Completa'\)/);
+  assert.match(today,/requestComplete\(item,complete\)/);
+});
