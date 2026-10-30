@@ -14,6 +14,7 @@ import { normalizeTaskPriorities } from './lib/taskPriority';
 import { sortCommitments } from './lib/activityOrdering';
 import { getLanguage, widgetStrings, t } from './lib/i18n';
 import { isOverdueTask } from './lib/commitmentVisibility';
+import { materializeNextOccurrence } from './lib/recurrence';
 
 const STORAGE_KEY='flowos-store-v2';
 const CALENDAR_CACHE_KEY='flowos-calendar-widget-v2';
@@ -50,8 +51,12 @@ async function refreshFromGoogle(){
 async function runWidgetComplete(id:string){
   const items=await loadCommitments();
   const item=items.find(candidate=>candidate.id===id);
-  if(!item)return;
-  await saveCommitment({...item,status:'done' as const});
+  if(!item||item.status==='done')return;
+  const updated={...item,status:'done' as const,completedAt:new Date().toISOString(),syncStatus:item.externalId&&item.kind==='task'?'pending':item.syncStatus};
+  const next=materializeNextOccurrence(updated);
+  await saveCommitment(updated);
+  if(next)await saveCommitment(next);
+  await flushOfflineQueue();
   await pushPendingToGoogle();
   const refreshed=await loadCommitments();
   await writeCommitments(normalizeTaskPriorities(refreshed));
