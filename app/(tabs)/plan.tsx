@@ -4,7 +4,7 @@ import { Card, Chip, EmptyState, ScreenShell, SectionTitle, palette } from '@/co
 import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';
 import { ManageSheet } from '@/components/ManageSheet';
 import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
-import { formatDurationLabel, isExpired } from '@/lib/itemTiming';
+import { formatDurationLabel } from '@/lib/itemTiming';
 import { useFlowStore } from '@/lib/store';
 import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
@@ -39,7 +39,6 @@ export default function Plan(){
     return commitments.filter(item=>!normalized||searchable(item).includes(normalized));
   },[commitments,query]);
 
-  const overdueItems=items.filter(item=>item.status!=='done'&&isExpired(item));
   const calendarNames=useMemo(()=>new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)])),[google?.calendars,google?.connection?.google_email,language]);
   const groupedItems=useMemo(()=>{
     const groups=new Map<string,{label:string;items:Commitment[]}>();
@@ -60,7 +59,7 @@ export default function Plan(){
       groups.set(key,group);
     }
     return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([key,group])=>({key,...group,items:sortCommitments(group.items,calendarNames)}));
-  },[items,calendarNames]);
+  },[items,calendarNames,now]);
   const todayKey=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
   const initialScrollKey=groupedItems.find(group=>group.key>=todayKey)?.key??groupedItems[groupedItems.length-1]?.key;
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
@@ -68,7 +67,7 @@ export default function Plan(){
 
   return <ScreenShell title={t('Lista')} scrollRef={scrollRef} scrollProps={{stickyHeaderIndices:[0]}}>
     <TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca titolo, descrizione, luogo…')} placeholderTextColor={palette.muted} style={styles.search}/>
-    {overdueItems.length?<Card style={styles.overdueCard}><View style={styles.overdueHeader}><Text style={styles.overdueTitle}>{t('Attività in ritardo')}</Text><Chip tone="warning">{overdueItems.length}</Chip></View>{overdueItems.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={styles.overdueItem}><View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.overdueItemTitle}>{item.title}</Text></View><Text style={styles.overdueItemMeta}>{formatStartEnd(item,language)} · {item.kind==='event'?t('Evento'):t('Task')}</Text></Pressable>)}</Card>:null}
+    
     <SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/>
     {groupedItems.length?groupedItems.map(group=><View key={group.key} onLayout={event=>{if(group.key===initialScrollKey&&!didInitialScroll.current){didInitialScroll.current=true;const y=event.nativeEvent.layout.y;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,y-8),animated:false}));}}} style={styles.dayGroup}>
       <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={styles.dayDividerText}>{group.label}</Text><View style={styles.dayDividerLine}/></View>
@@ -95,12 +94,7 @@ export default function Plan(){
 const styles=StyleSheet.create({
   warning:{color:palette.warning},
   search:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:15,paddingHorizontal:15,paddingVertical:13,fontSize:15,color:palette.ink},
-  overdueCard:{backgroundColor:'#FFF7E8',borderColor:'#F3DCA8',borderWidth:1,gap:8,padding:13},
-  overdueHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
-  overdueTitle:{fontSize:16,fontWeight:'900',color:palette.ink},
-  overdueItem:{paddingTop:6,borderTopWidth:1,borderTopColor:'#F3DCA8'},
-  overdueItemTitle:{fontSize:15,fontWeight:'900',color:palette.ink},
-  overdueItemMeta:{fontSize:12,lineHeight:16,fontWeight:'800',color:palette.primary,marginTop:1},dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:12,fontWeight:'900',color:palette.primary,textTransform:'capitalize'},
+dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:12,fontWeight:'900',color:palette.primary,textTransform:'capitalize'},
   itemCard:{padding:7,gap:2},
   tagRow:{alignItems:'center',gap:6,paddingRight:4},
   titleRow:{flexDirection:'row',alignItems:'flex-start',gap:7,minWidth:0},priorityBadge:{fontSize:12,lineHeight:18,fontWeight:'900',color:palette.primary,backgroundColor:palette.soft,borderRadius:8,paddingHorizontal:6},item:{flex:1,minWidth:0,flexShrink:1,fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
