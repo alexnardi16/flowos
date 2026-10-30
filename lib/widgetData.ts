@@ -5,7 +5,7 @@ import { toDateKey } from './dailySummary';
 import { sortCommitments } from './activityOrdering';
 import { activitySourceColor, buildActivitySourceColors } from './activityColors';
 import { isVisibleCompletedMultiDayForDate, isOverdueTask } from './commitmentVisibility';
-import { t, type Language } from './i18n';
+import { type Language } from './i18n';
 
 export type WidgetItem = { id: string; title: string; time: string; kind: Commitment['kind']; priority?: number; sourceColor?: string };
 export type TodayGlance = { dateKey: string; items: WidgetItem[]; nextEventTitle: string | null; nextEventTime: string | null; dueSoonCount: number; overdueCount: number; generatedAt: string; language?: Language };
