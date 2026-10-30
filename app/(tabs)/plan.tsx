@@ -28,6 +28,7 @@ export default function Plan(){
   const[now,setNow]=useState(()=>Date.now());
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const scrollRef=useRef<import('react-native').ScrollView|null>(null);
+  const groupOffsets=useRef(new Map<string,number>());
   const didInitialScroll=useRef(false);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
 
@@ -62,14 +63,16 @@ export default function Plan(){
   },[items,calendarNames,now]);
   const todayKey=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
   const initialScrollKey=groupedItems.find(group=>group.key>=todayKey)?.key??groupedItems[groupedItems.length-1]?.key;
+  const todayGroupKey=groupedItems.find(group=>group.key>=todayKey)?.key??groupedItems[groupedItems.length-1]?.key;
+  function scrollToToday(){const offset=todayGroupKey?groupOffsets.current.get(todayGroupKey):undefined;scrollRef.current?.scrollTo({y:offset===undefined?0:Math.max(0,offset-8),animated:true});}
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   function formatStartEnd(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);const options={weekday:'short' as const,day:'2-digit' as const,month:'2-digit' as const,year:'numeric' as const};if(item.allDay){const date=new Date(value);return `${date.toLocaleDateString(localeForLanguage(language),{...options,timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),options);const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} · ${time(start)} - ${date(end)===date(start)?time(end):`${date(end)} · ${time(end)}`}`;}
 
   return <ScreenShell title={t('Lista')} scrollRef={scrollRef} scrollProps={{stickyHeaderIndices:[0]}}>
-    <TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca titolo, descrizione, luogo…')} placeholderTextColor={palette.muted} style={styles.search}/>
+    <View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca titolo, descrizione, luogo…')} placeholderTextColor={palette.muted} style={styles.search}/><Pressable onPress={scrollToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable></View>
     
     <SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/>
-    {groupedItems.length?groupedItems.map(group=><View key={group.key} onLayout={event=>{if(group.key===initialScrollKey&&!didInitialScroll.current){didInitialScroll.current=true;const y=event.nativeEvent.layout.y;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,y-8),animated:false}));}}} style={styles.dayGroup}>
+    {groupedItems.length?groupedItems.map(group=><View key={group.key} onLayout={event=>{groupOffsets.current.set(group.key,event.nativeEvent.layout.y);if(group.key===initialScrollKey&&!didInitialScroll.current){didInitialScroll.current=true;const y=event.nativeEvent.layout.y;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,y-8),animated:false}));}}} style={styles.dayGroup}>
       <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={styles.dayDividerText}>{group.label}</Text><View style={styles.dayDividerLine}/></View>
       {group.items.map(item=>{
         const overdue=isOverdueTask(item);
@@ -93,7 +96,10 @@ export default function Plan(){
 
 const styles=StyleSheet.create({
   warning:{color:palette.warning},
-  search:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:15,paddingHorizontal:15,paddingVertical:13,fontSize:15,color:palette.ink},
+  searchRow:{flexDirection:'row',alignItems:'center',gap:8},
+  search:{flex:1,minWidth:0,backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:15,paddingHorizontal:15,paddingVertical:13,fontSize:15,color:palette.ink},
+  todayButton:{backgroundColor:palette.primary,borderRadius:13,paddingHorizontal:15,paddingVertical:13,justifyContent:'center',alignItems:'center'},
+  todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'900'},
 dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:12,fontWeight:'900',color:palette.primary,textTransform:'capitalize'},
   itemCard:{padding:7,gap:2},
   tagRow:{alignItems:'center',gap:6,paddingRight:4},
