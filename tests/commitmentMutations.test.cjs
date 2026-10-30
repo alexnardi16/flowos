@@ -131,6 +131,6 @@ test('recurring completion offers occurrence or series while widget completion r
   assert.match(prompt,/Tutta la serie/);
   assert.match(complete,/scope==='series'/);
   assert.match(complete,/candidate\.recurrenceSeriesId===seriesId/);
-  assert.match(widget,/materializeNextOccurrence\(updated\)/);
+  assert.match(widget,/materializeNextOccurrence\(updated,items\)/);
   assert.doesNotMatch(widget,/requestComplete|Alert\.alert/);
 });
