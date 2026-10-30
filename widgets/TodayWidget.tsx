@@ -10,7 +10,7 @@ const TodayWidgetComponent=(props:TodayGlance,environment:WidgetEnvironment)=>{
   const visible=props.items.slice(0,5);
   return <VStack modifiers={[padding({all:10})]}>
     <Text modifiers={[font({weight:'bold',size:16})]}>{labels.today} · {props.items.length} {labels.activityWord}</Text>
-    {visible.length?visible.map(item=><Text key={item.id} modifiers={[font({size:12})]}>{item.time} · {item.kind==='event'?labels.event:labels.task} · {item.title}</Text>):<Text modifiers={[font({size:12}),foregroundStyle('#6B7280')]}>{labels.noActivities}</Text>}
+    {visible.length?visible.map(item=><Text key={item.id} modifiers={[font({size:12})]}>{item.time?`${item.time} · `:''}{item.title}</Text>):<Text modifiers={[font({size:12}),foregroundStyle('#6B7280')]}>{labels.noActivities}</Text>}
     {props.items.length>visible.length?<Text modifiers={[font({size:10}),foregroundStyle('#6B7280')]}>+{props.items.length-visible.length} {labels.more}</Text>:null}
   </VStack>;
 };
