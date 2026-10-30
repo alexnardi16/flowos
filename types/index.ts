@@ -28,6 +28,7 @@ export interface Commitment {
   googleEventType?: string;
   recurrenceRule?: RecurrenceRule;
   recurrenceSeriesId?: string;
+  recurrenceSeriesEndAt?: string;
   reminders?: ReminderOffset[];
   reminderDismissedAt?: string;
   externalId?: string;
