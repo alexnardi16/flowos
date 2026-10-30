@@ -120,3 +120,17 @@ test('flush reconciliation removes successful snapshot entries but keeps unrelat
   const concurrent = queueMutation('concurrent', 'task-2');
   assert.deepEqual(reconcileQueueAfterFlush([succeeded], [], [succeeded, concurrent]), [concurrent]);
 });
+
+
+test('recurring completion offers occurrence or series while widget completion remains occurrence-only',()=>{
+  const prompt=fs.readFileSync(path.join(__dirname,'..','lib','completePrompt.ts'),'utf8');
+  const widget=fs.readFileSync(path.join(__dirname,'..','widget-task-handler.tsx'),'utf8');
+  const complete=storeSource.slice(storeSource.indexOf('  complete:async'),storeSource.indexOf('  postpone:async'));
+  assert.match(prompt,/item\.recurrenceRule \|\| item\.recurrenceSeriesId \|\| item\.googleRecurringEventId/);
+  assert.match(prompt,/Solo questa occorrenza/);
+  assert.match(prompt,/Tutta la serie/);
+  assert.match(complete,/scope==='series'/);
+  assert.match(complete,/candidate\.recurrenceSeriesId===seriesId/);
+  assert.match(widget,/materializeNextOccurrence\(updated\)/);
+  assert.doesNotMatch(widget,/requestComplete|Alert\.alert/);
+});
