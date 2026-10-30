@@ -24,7 +24,7 @@ function refreshNotifications(commitments:Commitment[]){if(Platform.OS==='web')r
 let taskRolloverInFlight:Promise<void>|null=null;
 const googleRetryTimers=new Map<string,ReturnType<typeof setTimeout>>();
 
-type State={commitments:Commitment[];focusId?:string;syncing:boolean;addCommitment:(commitment:Commitment)=>Promise<boolean>;hydrateFromCloud:()=>Promise<void>;rolloverTodayTasks:()=>Promise<void>;complete:(id:string)=>Promise<void>;postpone:(id:string)=>Promise<void>;updateCommitment:(commitment:Commitment)=>Promise<void>;removeOnlyFromFlowOS:(id:string)=>Promise<void>;removeAlsoFromGoogle:(id:string)=>Promise<void>;removeSeriesFromGoogle:(id:string)=>Promise<void>;syncItemToGoogleNow:(id:string)=>Promise<void>;syncWithGoogle:()=>Promise<void>;autoCompleteExpiredEvents:()=>Promise<void>;autoPlan:()=>Promise<void>;startFocus:(id:string)=>void;stopFocus:()=>void;};
+type State={commitments:Commitment[];focusId?:string;syncing:boolean;addCommitment:(commitment:Commitment)=>Promise<boolean>;hydrateFromCloud:()=>Promise<void>;rolloverTodayTasks:()=>Promise<void>;complete:(id:string,scope?:'occurrence'|'series')=>Promise<void>;postpone:(id:string)=>Promise<void>;updateCommitment:(commitment:Commitment)=>Promise<void>;removeOnlyFromFlowOS:(id:string)=>Promise<void>;removeAlsoFromGoogle:(id:string)=>Promise<void>;removeSeriesFromGoogle:(id:string)=>Promise<void>;syncItemToGoogleNow:(id:string)=>Promise<void>;syncWithGoogle:()=>Promise<void>;autoCompleteExpiredEvents:()=>Promise<void>;autoPlan:()=>Promise<void>;startFocus:(id:string)=>void;stopFocus:()=>void;};
 
 export const useFlowStore=create<State>()(persist((set,get)=>{
   const pushGoogleAndRefresh=async(protectedId?:string):Promise<boolean>=>{if(!isSupabaseConfigured)return false;try{await flushOfflineQueue();await pushPendingToGoogle(protectedId);const pendingIds=new Set(await getPendingCommitmentIds());if(protectedId)pendingIds.add(protectedId);const remote=await loadCommitments();const remoteItem=protectedId?remote.find(item=>item.id===protectedId):undefined;const localItem=protectedId?get().commitments.find(item=>item.id===protectedId):undefined;const googleSynced=protectedId?Boolean(remoteItem?.externalId&&remoteItem.syncStatus==='synced'):true;const merged=mergeRemoteCommitments(remote,get().commitments,pendingIds);set({commitments:merged});refreshWidget(merged);refreshNotifications(merged);if(protectedId&&!googleSynced&&localItem){await logNotificationEvent('store-google-sync-not-confirmed',{id:protectedId,title:localItem.title,remoteStatus:remoteItem?.syncStatus??null,remoteExternalId:remoteItem?.externalId??null,remoteSyncError:remoteItem?.syncError??null},'warn');return false;}return true;}catch(error){const pendingIds=new Set(await getPendingCommitmentIds());if(protectedId)pendingIds.add(protectedId);const preserved=mergeRemoteCommitments([],get().commitments,pendingIds);set({commitments:preserved});refreshWidget(preserved);refreshNotifications(preserved);void logNotificationEvent('auto-push-failed',error,'warn');return false;}};
@@ -69,7 +69,56 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
   addCommitment:async commitment=>{await logNotificationEvent('store-add-commitment-start',{id:commitment.id,kind:commitment.kind,title:commitment.title,syncStatus:commitment.syncStatus??null});try{const normalized=commitment.kind==='task'&&commitment.status!=='done'?{...commitment,priority:commitment.priority}:commitment;const current=get().commitments;const base=upsertCommitmentState(current,normalized);const next=normalized.kind==='task'&&normalized.status!=='done'&&normalized.priority?reorderTaskPriorities(normalizeTaskPriorities(base),normalized.id,normalized.priority):base;set({commitments:next});refreshWidget(next);refreshNotifications(next);await logNotificationEvent('store-add-commitment-state-updated',{id:commitment.id,commitmentCount:next.length});let persistenceFailed=false;for(const changed of next){const before=current.find(c=>c.id===changed.id);if(!before||before.priority!==changed.priority||changed.id===normalized.id){await logNotificationEvent('store-add-commitment-save-start',{id:changed.id,title:changed.title});const saved=await saveCommitment(changed);if(!saved&&changed.id===normalized.id)persistenceFailed=true;await logNotificationEvent('store-add-commitment-save-result',{id:changed.id,title:changed.title,saved});}}if(persistenceFailed){await logNotificationEvent('store-add-commitment-google-push-skipped',{id:commitment.id,reason:'local-persistence-not-confirmed'},'warn');return false;}await logNotificationEvent('store-add-commitment-google-push-start',{id:commitment.id});const googleSynced=await pushGoogleAndRefresh(commitment.id);await logNotificationEvent(googleSynced?'store-add-commitment-google-push-success':'store-add-commitment-google-push-failed',{id:commitment.id},googleSynced?'info':'warn');if(googleSynced){const timer=googleRetryTimers.get(commitment.id);if(timer)clearTimeout(timer);googleRetryTimers.delete(commitment.id);}else{const retry=(attempt:number)=>{const delay=Math.min(300000,15000*Math.pow(2,attempt));const timer=setTimeout(async()=>{googleRetryTimers.delete(commitment.id);const synced=await pushGoogleAndRefresh(commitment.id);if(synced){await logNotificationEvent('store-google-sync-retry-succeeded',{id:commitment.id,attempt:attempt+1});}else if(attempt<4){retry(attempt+1);}else{await logNotificationEvent('store-google-sync-retry-deferred-to-background',{id:commitment.id},'warn');}},delay);googleRetryTimers.set(commitment.id,timer);};retry(0);}return googleSynced;}catch(error){await logNotificationEvent('store-add-commitment-failed',{id:commitment.id,kind:commitment.kind,title:commitment.title,error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack??null}:error},'error');throw error;}},
   rolloverTodayTasks:async()=>{if(taskRolloverInFlight)return taskRolloverInFlight;taskRolloverInFlight=(async()=>{const current=get().commitments;const result=rolloverIncompleteTasks(current,new Date());if(!result.changed.length)return;const normalized=normalizeTaskPriorities(result.commitments);set({commitments:normalized});refreshWidget(normalized);refreshNotifications(normalized);for(const changed of normalized){const before=current.find(c=>c.id===changed.id);if(!before||before.priority!==changed.priority||result.changed.some(item=>item.id===changed.id))await saveCommitment(changed);}try{await pushGoogleAndRefresh();}catch(error){void logNotificationEvent('task-rollover-push-failed',error,'warn');}})().finally(()=>{taskRolloverInFlight=null;});return taskRolloverInFlight;},
   hydrateFromCloud:async()=>{if(!isSupabaseConfigured)return;set({syncing:true});try{const repairedIds=await repairInvalidCommitmentIds();await flushOfflineQueue();for(const id of repairedIds){try{await pushPendingToGoogle(id);}catch(error){await logNotificationEvent('commitment-invalid-id-repair-push-failed',{id,error:error instanceof Error?{name:error.name,message:error.message}:String(error)},'warn');}}const pendingIds=await getPendingCommitmentIds();const remote=await loadCommitments();const merged=mergeRemoteCommitments(remote,get().commitments,pendingIds);set({commitments:merged});refreshWidget(merged);refreshNotifications(merged);}finally{set({syncing:false});}},
-  complete:async id=>{const current=get().commitments;const item=current.find(c=>c.id===id);if(!item)return;const updated={...item,status:'done' as const,completedAt:new Date().toISOString(),syncStatus:item.externalId?'pending':item.syncStatus};const next=materializeNextOccurrence(updated);const rawNext=next?[next,...current.map(c=>c.id===id?updated:c)]:current.map(c=>c.id===id?updated:c);const nextCommitments=normalizeTaskPriorities(rawNext);set({commitments:nextCommitments});refreshWidget(nextCommitments);await saveCommitment(updated);if(next)await saveCommitment(next);for(const changed of nextCommitments.filter(c=>c.kind==='task'&&c.status!=='done')){const previous=current.find(c=>c.id===changed.id);if(previous?.priority!==changed.priority)await saveCommitment(changed);}await pushGoogleAndRefresh();showSnackbar(t('Attività completata'),t('Annulla'),()=>{void(async()=>{const restored=next?get().commitments.filter(c=>c.id!==next.id).map(c=>c.id===id?item:c):get().commitments.map(c=>c.id===id?item:c);set({commitments:restored});await saveCommitment(item);if(next)await removeCommitmentOnlyFromFlowOS(next.id);await pushGoogleAndRefresh();refreshWidget(restored);refreshNotifications(restored);})();});},
+  complete:async (id,scope='occurrence')=>{
+    const current=get().commitments;
+    const item=current.find(c=>c.id===id);
+    if(!item||item.status==='done')return;
+    const completedAt=new Date().toISOString();
+    const makeDone=(candidate:Commitment):Commitment=>({...candidate,status:'done',completedAt,syncStatus:candidate.externalId&&candidate.kind==='task'?'pending':candidate.syncStatus,...(scope==='series'?{recurrenceRule:undefined}:{})});
+    let changedItems:Commitment[];
+    let next:Commitment|null=null;
+    if(scope==='series'){
+      const seriesId=item.recurrenceSeriesId??item.id;
+      changedItems=current.filter(candidate=>
+        candidate.id===item.id ||
+        candidate.id===seriesId ||
+        candidate.recurrenceSeriesId===seriesId ||
+        Boolean(item.googleRecurringEventId&&candidate.googleRecurringEventId===item.googleRecurringEventId)
+      ).filter(candidate=>candidate.status!=='done').map(makeDone);
+    }else{
+      const updated=makeDone(item);
+      changedItems=[updated];
+      next=materializeNextOccurrence(updated);
+    }
+    const changedById=new Map(changedItems.map(candidate=>[candidate.id,candidate]));
+    const raw=current.map(candidate=>changedById.get(candidate.id)??candidate);
+    if(next)raw.unshift(next);
+    const nextCommitments=normalizeTaskPriorities(raw);
+    set({commitments:nextCommitments});
+    refreshWidget(nextCommitments);
+    for(const changed of changedItems)await saveCommitment(changed);
+    if(next)await saveCommitment(next);
+    for(const changed of nextCommitments.filter(candidate=>candidate.kind==='task'&&candidate.status!=='done')){
+      const previous=current.find(candidate=>candidate.id===changed.id);
+      if(previous?.priority!==changed.priority)await saveCommitment(changed);
+    }
+    await pushGoogleAndRefresh();
+    showSnackbar(t('Attività completata'),t('Annulla'),()=>{
+      void(async()=>{
+        const changedIds=new Set(changedItems.map(candidate=>candidate.id));
+        const restored= get().commitments.filter(candidate=>candidate.id!==next?.id).map(candidate=>{
+          const previous=current.find(entry=>entry.id===candidate.id);
+          return changedIds.has(candidate.id)&&previous?previous:candidate;
+        });
+        set({commitments:restored});
+        for(const previous of current.filter(candidate=>changedIds.has(candidate.id)))await saveCommitment(previous);
+        if(next)await removeCommitmentOnlyFromFlowOS(next.id);
+        await pushGoogleAndRefresh();
+        refreshWidget(restored);
+        refreshNotifications(restored);
+      })();
+    });
+  },
   postpone:async id=>{const current=get().commitments;const item=current.find(c=>c.id===id);if(!item)return;const base=item.scheduledAt??item.dueAt??new Date().toISOString();const nextDay=new Date(new Date(base).getTime()+86400000).toISOString();const updated={...item,status:item.kind==='event'?'scheduled':item.status,scheduledAt:item.scheduledAt?nextDay:undefined,dueAt:item.dueAt?nextDay:undefined} as Commitment;const nextCommitments=normalizeTaskPriorities(get().commitments.map(c=>c.id===id?updated:c));set({commitments:nextCommitments});refreshWidget(nextCommitments);for(const changed of nextCommitments){const before=current.find(c=>c.id===changed.id);if(!before||before.priority!==changed.priority||changed.id===id)await saveCommitment(changed);}await pushGoogleAndRefresh();refreshNotifications(get().commitments);showSnackbar(t('Attività rimandata di 1 giorno'),t('Annulla'),()=>{void(async()=>{const restored=get().commitments.map(c=>c.id===id?item:c);set({commitments:restored});await saveCommitment(item);await pushGoogleAndRefresh();refreshWidget(restored);refreshNotifications(restored);})();});},
   updateCommitment:async updated=>{const current=get().commitments;const previous=current.find(item=>item.id===updated.id);const base=upsertCommitmentState(current,updated.kind==='task'&&updated.status!=='done'?{...updated,priority:updated.priority}:updated);const normalizedBase=normalizeTaskPriorities(base);
 const nextCommitments=updated.kind==='task'&&updated.status!=='done'?reorderTaskPriorities(normalizedBase,updated.id,updated.priority):normalizedBase;set({commitments:nextCommitments});refreshWidget(nextCommitments);for(const changed of nextCommitments){const before=current.find(c=>c.id===changed.id);if(!before||before.priority!==changed.priority||changed.id===updated.id)await saveCommitment(changed);}await pushGoogleAndRefresh();refreshNotifications(get().commitments);if(previous)showSnackbar(t('Modifiche salvate'),t('Annulla'),()=>{void(async()=>{const restored=get().commitments.map(c=>c.id===updated.id?previous:c);set({commitments:restored});await saveCommitment(previous);await pushGoogleAndRefresh();refreshWidget(restored);})();});},
