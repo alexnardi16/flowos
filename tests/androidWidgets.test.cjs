@@ -194,3 +194,20 @@ test('List memoizes calendar labels and empty state refers to search, not remove
   assert.match(plan,/const calendarNames=useMemo\(\(\)=>new Map/);
   assert.doesNotMatch(plan,/Modifica i filtri/);
 });
+
+test('Today widget shows only start/end times and titles, never type or overdue tags',()=>{
+  const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  const ios=fs.readFileSync('widgets/TodayWidget.tsx','utf8');
+  assert.match(widget, /item\.time \? <TextWidget text=\{item\.time\}/);
+  assert.doesNotMatch(widget, /\$\{item\.time\} · \$\{item\.kind\}/);
+  assert.match(handler, /time:item\.allDay\?'':/);
+  assert.match(ios, /item\.time\?\x60\$\{item\.time\} · \x60:''/);
+  assert.doesNotMatch(ios, /labels\.event|labels\.task/);
+});
+
+test('Today widget title uses more of the first line before wrapping',()=>{
+  const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  assert.match(widget, /hasPriority\?36:42/);
+  assert.match(widget, /item\.priority\?36:42/);
+});
