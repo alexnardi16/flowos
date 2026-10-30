@@ -60,3 +60,34 @@ export function materializeNextOccurrence(completed: Commitment, existing: Commi
     syncStatus: undefined,
   };
 }
+
+/** Builds every locally-managed occurrence through the inclusive series end date. */
+export function buildRecurrenceOccurrences(base: Commitment, createId: () => string): Commitment[] {
+  const rule = base.recurrenceRule;
+  const startValue = base.dueAt ?? base.scheduledAt;
+  if (!rule || !rule.until || !startValue) return [base];
+  const result: Commitment[] = [base];
+  const seriesId = base.recurrenceSeriesId ?? base.id;
+  let cursor = new Date(startValue);
+  const end = new Date(rule.until).getTime();
+  for (let index = 0; index < 10000; index += 1) {
+    const next = computeNextOccurrence(cursor, rule);
+    if (next.getTime() > end) break;
+    const iso = next.toISOString();
+    result.push({
+      ...base,
+      id: createId(),
+      recurrenceSeriesId: seriesId,
+      dueAt: base.dueAt ? iso : undefined,
+      scheduledAt: base.scheduledAt ? iso : undefined,
+      externalId: undefined,
+      externalEtag: undefined,
+      externalUpdatedAt: undefined,
+      syncStatus: undefined,
+      completedAt: undefined,
+      deletedAt: undefined,
+    });
+    cursor = next;
+  }
+  return result;
+}
