@@ -88,7 +88,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
     }else{
       const updated=makeDone(item);
       changedItems=[updated];
-      next=materializeNextOccurrence(updated);
+      next=materializeNextOccurrence(updated,current);
     }
     const changedById=new Map(changedItems.map(candidate=>[candidate.id,candidate]));
     const raw=current.map(candidate=>changedById.get(candidate.id)??candidate);
