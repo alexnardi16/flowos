@@ -31,20 +31,21 @@ export function computeNextOccurrence(fromDate: Date, rule: RecurrenceRule): Dat
  * marked done, produces the next occurrence to insert, or null once the
  * series has finished (via `until` or `count`).
  */
-export function materializeNextOccurrence(completed: Commitment): Commitment | null {
+export function materializeNextOccurrence(completed: Commitment, existing: Commitment[] = []): Commitment | null {
   if (!completed.recurrenceRule) return null;
   const rule = completed.recurrenceRule;
   const baseDateStr = completed.dueAt ?? completed.scheduledAt;
   if (!baseDateStr) return null;
 
   const next = computeNextOccurrence(new Date(baseDateStr), rule);
+  const seriesId = completed.recurrenceSeriesId ?? completed.id;
+  if (existing.some(item => (item.recurrenceSeriesId ?? (item.recurrenceRule ? item.id : undefined)) === seriesId && item.status !== 'done' && new Date(item.dueAt ?? item.scheduledAt ?? 0).getTime() >= next.getTime())) return null;
   if (rule.until && next.getTime() > new Date(rule.until).getTime()) return null;
 
   const nextRule: RecurrenceRule = rule.count !== undefined ? { ...rule, count: rule.count - 1 } : rule;
   if (nextRule.count !== undefined && nextRule.count <= 0) return null;
 
   const nextIso = next.toISOString();
-  const seriesId = completed.recurrenceSeriesId ?? completed.id;
   return {
     ...completed,
     id: `${seriesId}-${next.getTime()}`,
