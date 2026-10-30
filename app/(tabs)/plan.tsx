@@ -80,7 +80,7 @@ export default function Plan(){
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
-            <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item,language)}{overdue?' · '+t('scaduta'):''}</Text>
+            <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item,language)}{overdue?' · '+t('Scaduta'):''}</Text>
             {item.description?<Text style={styles.description}>{item.description}</Text>:null}
             {item.location?<Text style={styles.meta}>{t('Luogo')}: {item.location}</Text>:null}
           </Card>
