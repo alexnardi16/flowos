@@ -119,6 +119,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       const durationMinutes = durationMode === 'end' && !allDay && when && endWhen
         ? Math.max(1, Math.round((new Date(endWhen).getTime() - new Date(when).getTime()) / 60000))
         : Math.max(1, (Number(days) || 0) * 1440 + (Number(hours) || 0) * 60 + (Number(minutes) || 0));
+      if((repeat!=='none'||item.googleRecurringEventId||item.recurrenceSeriesId)&&(!repeatUntil||!Number.isFinite(new Date(`${repeatUntil}T23:59:59.999`).getTime())||new Date(`${repeatUntil}T23:59:59.999`).getTime()<new Date(when??'').getTime())){showAlert(t('Gestisci'),t('Indica una data di fine della serie uguale o successiva alla data di inizio.'));return;}
       const updated: Commitment = {
         ...item,
         title: title.trim() || item.title,
@@ -138,7 +139,6 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         scheduledAt: kind === 'event' ? when : undefined,
         dueAt: kind !== 'event' ? when : undefined,
       };
-      if((repeat!=='none'||item.googleRecurringEventId||item.recurrenceSeriesId)&&(!repeatUntil||!Number.isFinite(new Date(`${repeatUntil}T23:59:59.999`).getTime())||new Date(`${repeatUntil}T23:59:59.999`).getTime()<new Date(when??'').getTime())){showAlert(t('Gestisci'),t('Indica una data di fine della serie uguale o successiva alla data di inizio.'));return;}
       await updateCommitment(updated);
       if(kind==='task'&&updated.recurrenceRule){
         const occurrences=buildRecurrenceOccurrences(updated,createUuid);
