@@ -172,7 +172,7 @@ test('All macrosection headers remain outside the scrollable content',()=>{
   assert.match(source,/styles\.screenTitle/);
   assert.match(source,/<ScrollView ref=\{scrollRef\} \{\.\.\.scrollProps\} style=\{styles\.screenScroll\}/);
   assert.match(source,/screenHeader:\{[^}]*backgroundColor:palette\.bg/);
-  assert.match(fs.readFileSync('app/(tabs)/plan.tsx','utf8'),/stickyHeaderIndices:\[0\]/);
+  assert.match(fs.readFileSync('app/(tabs)/plan.tsx','utf8'),/headerActions=\{<View style=\{styles\.searchRow\}/);
 });
 
 test('Today tab badge uses the same visibility policy as the Today screen',()=>{
