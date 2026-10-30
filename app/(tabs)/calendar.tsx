@@ -72,10 +72,10 @@ export default function Calendar(){
   const selectedDateKey=selectedDateOverride??requestedDate??dayKey(new Date());
   const selectedWeekIndex=weeks.findIndex(week=>week.some(date=>dayKey(date)===selectedDateKey));
   const scrollToSelectedWeek=useCallback(()=>{if(selectedWeekIndex<0)return;const offset=weekOffsets.current.get(selectedWeekIndex);if(offset===undefined)return;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));},[selectedWeekIndex]);
+  const goToToday=useCallback(()=>{setSelectedDateOverride(dayKey(new Date()));scrollToSelectedWeek();},[scrollToSelectedWeek]);
   useEffect(()=>{scrollToSelectedWeek();},[scrollToSelectedWeek,selectedDateKey]);
 
-  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef}>
-    <View style={styles.todayRow}><Pressable onPress={()=>setSelectedDateOverride(dayKey(new Date()))} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable></View>
+  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable></View>}>
     {weeks.map((week,index)=>{const strings=widgetStrings(language);
       const monthTitle=monthLabelForWeek(week,index,strings.months);
       return <Card key={index} style={styles.weekCard} onLayout={(event)=>{weekOffsets.current.set(index,event.nativeEvent.layout.y);if(index===selectedWeekIndex)scrollToSelectedWeek();}}>
