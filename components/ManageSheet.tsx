@@ -6,6 +6,8 @@ import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleCalendar, ty
 import { formatReminderOffsetLabel } from '@/lib/customReminders';
 import { useFlowStore } from '@/lib/store';
 import { requestComplete } from '@/lib/completePrompt';
+import { buildRecurrenceOccurrences } from '@/lib/recurrence';
+import { createUuid } from '@/lib/uuid';
 import type { Commitment, CommitmentKind, ReminderOffset, RecurrenceFrequency } from '@/types';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 
@@ -35,6 +37,8 @@ function combine(dateStr: string, timeStr: string, allDay: boolean): string | un
 
 export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () => void }) { const { language } = useLanguage();
   const updateCommitment = useFlowStore((state) => state.updateCommitment);
+  const addCommitment = useFlowStore((state) => state.addCommitment);
+  const commitments = useFlowStore((state) => state.commitments);
   const complete = useFlowStore((state) => state.complete);
   const removeOnlyFromFlowOS = useFlowStore((state) => state.removeOnlyFromFlowOS);
   const removeAlsoFromGoogle = useFlowStore((state) => state.removeAlsoFromGoogle);
@@ -135,6 +139,12 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       };
       if(repeat!=='none'&&(!repeatUntil||!Number.isFinite(new Date(`${repeatUntil}T23:59:59.999`).getTime())||new Date(`${repeatUntil}T23:59:59.999`).getTime()<new Date(when??'').getTime())){showAlert(t('Gestisci'),t('Indica una data di fine della serie uguale o successiva alla data di inizio.'));return;}
       await updateCommitment(updated);
+      if(kind==='task'&&updated.recurrenceRule){
+        const occurrences=buildRecurrenceOccurrences(updated,createUuid);
+        const seriesId=updated.recurrenceSeriesId??updated.id;
+        const existingDates=new Set(commitments.filter(candidate=>(candidate.recurrenceSeriesId??(candidate.recurrenceRule?candidate.id:undefined))===seriesId).map(candidate=>candidate.dueAt??candidate.scheduledAt));
+        for(const occurrence of occurrences.slice(1))if(!existingDates.has(occurrence.dueAt??occurrence.scheduledAt))await addCommitment(occurrence);
+      }
       onClose();
     } catch (error) {
       showAlert(t('Gestisci'), error instanceof Error ? error.message : t('Salvataggio non riuscito.'));
