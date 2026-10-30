@@ -3,7 +3,7 @@ import type { Commitment } from '../types';
 export const TASK_ROLLOVER_STORAGE_KEY = 'flowos-task-rollover-date-v1';
 
 /** Compatibility shim: overdue tasks are displayed in today's views; persisted dates are never shifted. */
-export function rolloverIncompleteTasks(commitments: Commitment[]): { commitments: Commitment[]; changed: Commitment[] } {
+export function rolloverIncompleteTasks(commitments: Commitment[], _now: Date = new Date()): { commitments: Commitment[]; changed: Commitment[] } {
   return { commitments, changed: [] };
 }
 
