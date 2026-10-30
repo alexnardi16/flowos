@@ -60,3 +60,15 @@ test('shared calendar timeline always includes the current week if sync range en
   const timeline=buildCalendarTimeline([],new Date('2025-01-01T00:00:00'),now);
   assert.ok(timeline.weeks.some(week=>week.some(day=>day.getFullYear()===2026&&day.getMonth()===9&&day.getDate()===20)));
 });
+
+test('calendar widget renders every active occurrence in a recurring series on its own date',()=>{
+  const now=new Date('2026-10-30T08:00:00');
+  const series=[
+    {id:'root',title:'Recurring task',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-10-30T09:00:00',recurrenceRule:{frequency:'daily',interval:1,until:'2026-11-01T23:59:59.999Z'}},
+    {id:'next-1',title:'Recurring task',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-10-31T09:00:00',recurrenceSeriesId:'root'},
+    {id:'next-2',title:'Recurring task',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-11-01T09:00:00',recurrenceSeriesId:'root'}
+  ];
+  const data=buildCalendarWidgetData(series,new Date('2026-11-05T23:59:59'),now);
+  const days=data.weeks.flatMap(week=>week.days);
+  for(const date of ['2026-10-30','2026-10-31','2026-11-01'])assert.equal(days.find(day=>day.dateKey===date).items.filter(item=>item.title==='Recurring task').length,1);
+});
