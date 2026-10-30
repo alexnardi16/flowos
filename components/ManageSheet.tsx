@@ -63,6 +63,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const [timeStr, setTimeStr] = useState(toTimeInput(item[dateField], item.allDay));
   const [durationMode, setDurationMode] = useState<'duration'|'end'>('duration');
   const [repeat, setRepeat] = useState<RepeatOption>(item.recurrenceRule?.frequency ?? 'none');
+  const [repeatUntil, setRepeatUntil] = useState(item.recurrenceRule?.until ? toDateInput(item.recurrenceRule.until, false) : '');
   const [showDetails, setShowDetails] = useState(Boolean(item.description || item.notes || item.location || item.link));
   const [days, setDays] = useState(String(Math.floor(item.durationMinutes / 1440)));
   const [hours, setHours] = useState(String(Math.floor((item.durationMinutes % 1440) / 60)));
@@ -70,7 +71,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const initialEnd = new Date(new Date(item[dateField] ?? Date.now()).getTime() + Math.max(1,item.durationMinutes)*60000);
   const [endDate, setEndDate] = useState(initialEnd.toISOString().slice(0,10));
   const [endTime, setEndTime] = useState(initialEnd.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
-  const [datePickerTarget, setDatePickerTarget] = useState<'start'|'end'|null>(null);
+  const [datePickerTarget, setDatePickerTarget] = useState<'start'|'end'|'recurrence'|null>(null);
   const [priority, setPriority] = useState(String(item.priority ?? ''));
   const [location, setLocation] = useState(item.location ?? '');
   const [notes, setNotes] = useState(item.notes ?? '');
@@ -104,7 +105,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   function updateStartTime(value:string){setTimeStr(value);if(durationMode==='end'&&!allDay){const start=combine(dateStr,value,false);if(start){const end=new Date(new Date(start).getTime()+Math.max(1,(Number(days)||0)*1440+(Number(hours)||0)*60+(Number(minutes)||0))*60000);setEndDate(`${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`);setEndTime(`${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`);}}}
   function updateEndDate(value:string){setEndDate(value);const start=combine(dateStr,timeStr,allDay),end=combine(value,endTime,allDay);if(durationMode==='end'&&start&&end)setDurationFields(Math.max(1,Math.round((new Date(end).getTime()-new Date(start).getTime())/60000)));}
   function updateEndTime(value:string){setEndTime(value);const start=combine(dateStr,timeStr,allDay),end=combine(endDate,value,allDay);if(durationMode==='end'&&start&&end)setDurationFields(Math.max(1,Math.round((new Date(end).getTime()-new Date(start).getTime())/60000)));}
-  function handleDatePicked(selected:Date){const value=`${selected.getFullYear()}-${String(selected.getMonth()+1).padStart(2,'0')}-${String(selected.getDate()).padStart(2,'0')}`;if(datePickerTarget==='start')updateStartDate(value);else if(datePickerTarget==='end')updateEndDate(value);setDatePickerTarget(null);}
+  function handleDatePicked(selected:Date){const value=`${selected.getFullYear()}-${String(selected.getMonth()+1).padStart(2,'0')}-${String(selected.getDate()).padStart(2,'0')}`;if(datePickerTarget==='start')updateStartDate(value);else if(datePickerTarget==='end')updateEndDate(value);else if(datePickerTarget==='recurrence')setRepeatUntil(value);setDatePickerTarget(null);}
 
   async function save() {
     setBusy(true);
@@ -126,12 +127,13 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         link: link.trim() || undefined,
         description: description.trim() || undefined,
         reminders: reminders.length ? reminders : undefined,
-        recurrenceRule: repeat !== 'none' ? { frequency: repeat, interval: item.recurrenceRule?.frequency === repeat ? item.recurrenceRule.interval ?? 1 : 1, ...(item.recurrenceRule?.frequency === repeat && item.recurrenceRule.until ? { until: item.recurrenceRule.until } : {}), ...(item.recurrenceRule?.frequency === repeat && item.recurrenceRule.count ? { count: item.recurrenceRule.count } : {}) } : undefined,
+        recurrenceRule: repeat !== 'none' ? { frequency: repeat, interval: item.recurrenceRule?.frequency === repeat ? item.recurrenceRule.interval ?? 1 : 1, until: new Date(`${repeatUntil}T23:59:59.999`).toISOString() } : undefined,
         googleCalendarId: kind === 'event' ? calendarId : undefined,
         googleTaskListId: kind === 'task' ? taskListId : undefined,
         scheduledAt: kind === 'event' ? when : undefined,
         dueAt: kind !== 'event' ? when : undefined,
       };
+      if(repeat!=='none'&&(!repeatUntil||!Number.isFinite(new Date(`${repeatUntil}T23:59:59.999`).getTime())||new Date(`${repeatUntil}T23:59:59.999`).getTime()<new Date(when??'').getTime())){showAlert(t('Gestisci'),t('Indica una data di fine della serie uguale o successiva alla data di inizio.'));return;}
       await updateCommitment(updated);
       onClose();
     } catch (error) {
@@ -196,7 +198,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         {kind === 'task' && durationMode === 'end' && !allDay ? <View style={styles.inline}><View style={[styles.flex, styles.field]}><Text style={styles.fieldLabelFixed}>{t('Data di fine')}</Text><Pressable onPress={() => setDatePickerTarget('end')} style={styles.dateButton}><Text style={styles.dateButtonText}>{endDate}</Text></Pressable></View><View style={styles.flex}><Field fixedLabel singleLineLabel required label={t('Orario di fine')} value={endTime} onChangeText={updateEndTime} placeholder="HH:MM"/></View></View> : null}
         {kind !== 'task' || allDay || durationMode === 'duration' ? <><Text style={styles.fieldLabel}>{t('Durata')}{allDay ? ' (' + t('giorni') + ')' : ''}<Text style={styles.required}> *</Text></Text><View style={styles.inline}><View style={styles.flex}><Field label={t('giorni')} value={days} onChangeText={(value) => setDays(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View>{!allDay ? <><View style={styles.flex}><Field label={t('ore')} value={hours} onChangeText={(value) => setHours(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field label={t('minuti')} value={minutes} onChangeText={(value) => setMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View></> : null}</View></> : null}
         {kind === 'task' ? <><Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Priorità')}</Text><Field label={t('Ordine di esecuzione')} value={priority} onChangeText={(value) => setPriority(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder={t('Facoltativa')}/></> : null}
-        <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Ripeti')}{kind === 'task' ? ' (' + t('Ripetizione task gestita da FlowOS: Google Tasks non supporta la ricorrenza.') + ')' : ''}</Text><View style={styles.choices}>{(['none','daily','weekly','monthly'] as const).map((option) => <Choice key={option} label={t(REPEAT_KEYS[option])} active={repeat === option} onPress={() => setRepeat(option)}/>)}</View>
+        <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Ripeti')}{kind === 'task' ? ' (' + t('Ripetizione task gestita da FlowOS: Google Tasks non supporta la ricorrenza.') + ')' : ''}</Text><View style={styles.choices}>{(['none','daily','weekly','monthly'] as const).map((option) => <Choice key={option} label={t(REPEAT_KEYS[option])} active={repeat === option} onPress={() => setRepeat(option)}/>)}</View>{repeat!=='none'?<View style={styles.field}><Text style={styles.fieldLabelFixed}>{t('Fine della serie')} *</Text><Pressable onPress={()=>setDatePickerTarget('recurrence')} style={styles.dateButton}><Text style={styles.dateButtonText}>{repeatUntil||t('Seleziona una data')}</Text></Pressable><Text style={styles.help}>{t('Tutte le occorrenze fino a questa data saranno create e mostrate.')}</Text></View>:null}
         <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Notifiche di rappel')}</Text>{reminders.length ? <View style={styles.remindersList}>{reminders.map((reminder) => <View key={reminder.id} style={styles.reminderChip}><Text style={styles.reminderChipText}>{formatReminderOffsetLabel(reminder.minutesBefore, language)}</Text><Pressable onPress={() => removeReminder(reminder.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable></View>)}</View> : null}
         <View style={styles.choices}>{REMINDER_PRESETS.map((offset) => <Choice key={offset} label={formatReminderOffsetLabel(offset, language)} active={false} onPress={() => addReminder(offset)}/>)}</View>
         <View style={styles.inline}><View style={styles.flex}><Field fixedLabel label={t('giorni prima').replace(/\s+/, '\n')} value={customDays} onChangeText={(value) => setCustomDays(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field fixedLabel label={t('ore prima').replace(/\s+/, '\n')} value={customHours} onChangeText={(value) => setCustomHours(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field fixedLabel label={t('minuti prima').replace(/\s+/, '\n')} value={customMinutes} onChangeText={(value) => setCustomMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><Pressable onPress={() => { const offset = (Number(customDays)||0)*1440+(Number(customHours)||0)*60+(Number(customMinutes)||0); if(customDays !== '' || customHours !== '' || customMinutes !== '') { addReminder(offset); setCustomDays(''); setCustomHours(''); setCustomMinutes(''); } }} style={styles.addReminderButton}><Text style={styles.addReminderButtonText}>{t('Aggiungi')}</Text></Pressable></View>
@@ -212,7 +214,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         {item.externalId ? <Pressable disabled={busy} onPress={() => void removeGoogle()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{t('Elimina da FlowOS e Google')}</Text></Pressable> : null}
         {item.googleRecurringEventId ? <Pressable disabled={busy} onPress={() => void removeSeries()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{t('Elimina tutta la serie')}</Text></Pressable> : null}
       </View>
-      {datePickerTarget ? <DateTimePicker value={new Date(`${datePickerTarget === 'start' ? dateStr : endDate}T12:00:00`)} mode="date" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_, selectedDate) => handleDatePicked(selectedDate)} onDismiss={() => setDatePickerTarget(null)}/> : null}
+      {datePickerTarget ? <DateTimePicker value={new Date(`${datePickerTarget === 'start' ? dateStr : datePickerTarget === 'end' ? endDate : repeatUntil || dateStr}T12:00:00`)} mode="date" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_, selectedDate) => handleDatePicked(selectedDate)} onDismiss={() => setDatePickerTarget(null)}/> : null}
     </ScrollView>
   </Modal>}
 function Choice({label, active, onPress}:{label:string;active:boolean;onPress:()=>void}) { return <Pressable onPress={onPress} style={[styles.choice, active && styles.choiceActive]}><Text style={[styles.choiceText, active && styles.choiceTextActive]}>{label}</Text></Pressable>; }
