@@ -30,6 +30,7 @@ export default function Calendar(){
   const { language } = useLanguage();
   const commitments=useFlowStore(state=>state.commitments); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
   const[manageId,setManageId]=useState<string|null>(null);
+  const[selectedDateOverride,setSelectedDateOverride]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const params=useLocalSearchParams<{widgetAction?:string;date?:string;id?:string}>();
   const scrollRef=useRef<import('react-native').ScrollView|null>(null);
@@ -68,12 +69,13 @@ export default function Calendar(){
 
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   const requestedDate=typeof params.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(params.date)?params.date:null;
-  const selectedDateKey=requestedDate??dayKey(new Date());
+  const selectedDateKey=selectedDateOverride??requestedDate??dayKey(new Date());
   const selectedWeekIndex=weeks.findIndex(week=>week.some(date=>dayKey(date)===selectedDateKey));
   const scrollToSelectedWeek=useCallback(()=>{if(selectedWeekIndex<0)return;const offset=weekOffsets.current.get(selectedWeekIndex);if(offset===undefined)return;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));},[selectedWeekIndex]);
   useEffect(()=>{scrollToSelectedWeek();},[scrollToSelectedWeek,selectedDateKey]);
 
   return <ScreenShell title={t('Calendario')} scrollRef={scrollRef}>
+    <View style={styles.todayRow}><Pressable onPress={()=>setSelectedDateOverride(dayKey(new Date()))} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable></View>
     {weeks.map((week,index)=>{const strings=widgetStrings(language);
       const monthTitle=monthLabelForWeek(week,index,strings.months);
       return <Card key={index} style={styles.weekCard} onLayout={(event)=>{weekOffsets.current.set(index,event.nativeEvent.layout.y);if(index===selectedWeekIndex)scrollToSelectedWeek();}}>
@@ -106,6 +108,9 @@ export default function Calendar(){
 }
 
 const styles=StyleSheet.create({
+  todayRow:{flexDirection:'row',justifyContent:'flex-end'},
+  todayButton:{backgroundColor:palette.primary,borderRadius:13,paddingHorizontal:16,paddingVertical:9},
+  todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'900'},
   weekCard:{padding:5,gap:3},
   monthTitle:{fontSize:18,lineHeight:22,fontWeight:'900',color:palette.primary,textTransform:'capitalize',paddingHorizontal:2},
   grid:{flexDirection:'row',gap:2,width:'100%'},
