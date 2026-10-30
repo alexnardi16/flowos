@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { computeNextOccurrence, materializeNextOccurrence, toRRuleString } = require('../.test-dist-notifications/lib/recurrence.js');
+const { computeNextOccurrence, materializeNextOccurrence, buildRecurrenceOccurrences, toRRuleString } = require('../.test-dist-notifications/lib/recurrence.js');
 
 function task(overrides) {
   return {
@@ -80,4 +80,18 @@ test('toRRuleString includes COUNT when a count limit is set', () => {
 
 test('toRRuleString includes UNTIL (preferring it over count when both would apply) when an end date is set', () => {
   assert.equal(toRRuleString({ frequency: 'monthly', interval: 2, until: '2026-12-31T00:00:00.000Z' }), 'RRULE:FREQ=MONTHLY;INTERVAL=2;UNTIL=20261231T000000Z');
+});
+
+test('a dated recurring task expands every occurrence through the inclusive end date', () => {
+  const base = task({ id: 'series-root', status: 'active', dueAt: '2026-10-30T09:00:00.000Z', recurrenceRule: { frequency: 'weekly', interval: 1, until: '2026-11-20T23:59:59.999Z' } });
+  const items = buildRecurrenceOccurrences(base, (() => { let id = 0; return () => `occ-${++id}`; })());
+  assert.equal(items.length, 4);
+  assert.deepEqual(items.map(item => item.dueAt), ['2026-10-30T09:00:00.000Z','2026-11-06T09:00:00.000Z','2026-11-13T09:00:00.000Z','2026-11-20T09:00:00.000Z']);
+  assert.equal(items[1].recurrenceSeriesId, 'series-root');
+});
+
+test('completing one occurrence does not create a duplicate when future occurrences already exist', () => {
+  const first = task({ id: 'series-root', status: 'done', dueAt: '2026-10-30T09:00:00.000Z', recurrenceRule: { frequency: 'daily', interval: 1, until: '2026-11-02T23:59:59.999Z' } });
+  const next = { ...first, id: 'occ-1', recurrenceSeriesId: first.id, status: 'active', dueAt: '2026-10-31T09:00:00.000Z' };
+  assert.equal(materializeNextOccurrence(first, [first, next]), null);
 });
