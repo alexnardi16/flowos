@@ -216,18 +216,17 @@ test('Today widget title uses more of the first line before wrapping',()=>{
 test('List and Calendar provide a direct Today navigation shortcut',()=>{
   const plan=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
   const calendar=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
-  assert.match(plan,/todayButton/);
-  assert.match(plan,/scrollToToday/);
-  assert.match(calendar,/todayButton/);
-  assert.match(calendar,/headerActions=\\{<View style=\\{styles\\.todayRow\\}/);
-  assert.match(calendar,/const goToToday=useCallback\\(\\(\\)=>\\{setSelectedDateOverride\\(dayKey\\(new Date\\(\\)\\)\\);scrollToSelectedWeek\\(\\);\\}/);
-  assert.match(calendar,/onPress=\\{goToToday\\}/);
-  assert.match(plan,/headerActions=\\{<View style=\\{styles\\.searchRow\\}/);
-  assert.match(plan,/pendingTodayScroll\\.current=true/);
-  assert.match(plan,/if\\(query\\.trim\\(\\)\\)setQuery\\(''\\)/);
-  assert.match(plan,/pendingTodayScroll\\.current&&group\\.key===todayGroupKey/);
+  assert.ok(plan.includes('todayButton'));
+  assert.ok(plan.includes('scrollToToday'));
+  assert.ok(calendar.includes('todayButton'));
+  assert.ok(calendar.includes('headerActions={<View style={styles.todayRow}'));
+  assert.ok(calendar.includes('const goToToday=useCallback(()=>{setSelectedDateOverride(dayKey(new Date()));scrollToSelectedWeek();}'));
+  assert.ok(calendar.includes('onPress={goToToday}'));
+  assert.ok(plan.includes('headerActions={<View style={styles.searchRow}'));
+  assert.ok(plan.includes('pendingTodayScroll.current=true'));
+  assert.ok(plan.includes("if(query.trim())setQuery('')"));
+  assert.ok(plan.includes('pendingTodayScroll.current&&group.key===todayGroupKey'));
 });
-
 test('Manage page and Today macrosection use the shared recurring completion prompt',()=>{
   const manage=fs.readFileSync('components/ManageSheet.tsx','utf8');
   const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
