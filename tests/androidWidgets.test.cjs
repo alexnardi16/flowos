@@ -150,7 +150,7 @@ test('Android Calendar widget renders bounded pages without truncating the full 
 test('List and Today macrosections have no filters and List search stays sticky',()=>{
   const plan=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
   const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
-  assert.match(plan,/stickyHeaderIndices:\[0\]/);
+  assert.match(plan,/headerActions=\{<View style=\{styles\.searchRow\}/);
   assert.match(plan,/<TextInput value=\{query\} onChangeText=\{setQuery\}/);
   assert.doesNotMatch(plan,/Solo contatti|Escludi contatti|Passati e completati|Scaduti aperti|FILTERS_KEY|CONTACTS_FILTER_KEY/);
   assert.doesNotMatch(today,/Solo contatti|Escludi contatti|CONTACTS_FILTER_KEY|contactsFilter/);
