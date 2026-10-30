@@ -53,7 +53,7 @@ async function runWidgetComplete(id:string){
   const item=items.find(candidate=>candidate.id===id);
   if(!item||item.status==='done')return;
   const updated={...item,status:'done' as const,completedAt:new Date().toISOString(),syncStatus:item.externalId&&item.kind==='task'?'pending':item.syncStatus};
-  const next=materializeNextOccurrence(updated);
+  const next=materializeNextOccurrence(updated,items);
   await saveCommitment(updated);
   if(next)await saveCommitment(next);
   await flushOfflineQueue();
