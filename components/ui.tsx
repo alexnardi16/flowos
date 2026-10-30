@@ -1,4 +1,4 @@
-import { PropsWithChildren, RefObject } from 'react';
+import { PropsWithChildren, RefObject, ReactNode } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BuildInfo } from './BuildInfo';
@@ -30,7 +30,7 @@ export const palette = {
   soft:'#ECE9FF', success:'#15866B', warning:'#B66A14', danger:'#A12626', border:'#E2E4EA',
 };
 
-export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps; scrollRef?:RefObject<ScrollView|null> }>) {
+export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef, headerActions }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps; scrollRef?:RefObject<ScrollView|null>; headerActions?:ReactNode }>) {
   const insets = useSafeAreaInsets();
   const contentPaddingBottom = Math.max(118, insets.bottom + 112);
   return <SafeAreaView edges={['top','bottom']} style={styles.screenSafe}>
@@ -44,6 +44,7 @@ export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef 
       </View>
       <Text style={styles.screenTitle}>{title}</Text>
       {subtitle ? <Text style={styles.screenSubtitle}>{subtitle}</Text> : null}
+      {headerActions}
     </View>
     <ScrollView ref={scrollRef} {...scrollProps} style={styles.screenScroll} showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
       {children}
