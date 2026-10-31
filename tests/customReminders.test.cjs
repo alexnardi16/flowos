@@ -142,18 +142,18 @@ test('Add and Manage show the activity start-time reminder enabled by default wi
   assert.match(manageSource, /onChangeText=\{updateEndTime\}/);
   assert.match(manageSource, /detailsToggle/);
   assert.match(manageSource, /rowWrap:\{flexDirection:'row',gap:8,marginTop:8,flexWrap:'wrap'\}/);
-  assert.match(reminderSource, /All'ora di inizio dell'attività/);
+  assert.match(reminderSource, /All'ora di inizio/);
 });
 
 test('start-time reminder notification body omits the relative-time prefix', () => {
-  assert.equal(formatReminderNotificationBody(0), "All'ora di inizio dell'attività");
+  assert.equal(formatReminderNotificationBody(0), "All'ora di inizio");
   assert.equal(formatReminderNotificationBody(15), 'Tra 15 minuti prima');
   assert.equal(formatReminderNotificationBody(60), 'Tra 1 ora prima');
 });
 
 
 test('old scheduled start-time notification copy is refreshed without the Tra prefix', () => {
-  assert.equal(isReminderNotificationBodyCurrent("Tra All'ora di inizio dell'attività", 0), false);
-  assert.equal(isReminderNotificationBodyCurrent("All'ora di inizio dell'attività", 0), true);
+  assert.equal(isReminderNotificationBodyCurrent("Tra All'ora di inizio", 0), false);
+  assert.equal(isReminderNotificationBodyCurrent("All'ora di inizio", 0), true);
   assert.equal(isReminderNotificationBodyCurrent('Tra 15 minuti prima', 15), true);
 });
