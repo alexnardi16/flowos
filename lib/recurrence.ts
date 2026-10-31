@@ -2,7 +2,7 @@ import type { Commitment, RecurrenceRule } from '../types';
 
 /** Converts our local recurrence shape into a Google Calendar RRULE string (used only for kind='event', which Google itself expands — see lib/recurrence.ts's other exports for the separate local-only engine used by tasks/reminders). */
 export function toRRuleString(rule: RecurrenceRule): string {
-  const freqMap: Record<RecurrenceRule['frequency'], string> = { daily: 'DAILY', weekly: 'WEEKLY', monthly: 'MONTHLY' };
+  const freqMap: Record<RecurrenceRule['frequency'], string> = { daily: 'DAILY', weekly: 'WEEKLY', monthly: 'MONTHLY', yearly: 'YEARLY' };
   const parts = [`FREQ=${freqMap[rule.frequency]}`, `INTERVAL=${Math.max(1, rule.interval)}`];
   if (rule.count) parts.push(`COUNT=${rule.count}`);
   else if (rule.until) parts.push(`UNTIL=${rule.until.replace(/[-:]/g, '').split('.')[0]}Z`);
@@ -21,6 +21,16 @@ export function computeNextOccurrence(fromDate: Date, rule: RecurrenceRule): Dat
     case 'monthly':
       next.setMonth(next.getMonth() + rule.interval);
       break;
+    case 'yearly': {
+      const month = next.getMonth();
+      const day = next.getDate();
+      next.setDate(1);
+      next.setFullYear(next.getFullYear() + rule.interval);
+      next.setMonth(month);
+      const lastDay = new Date(next.getFullYear(), month + 1, 0).getDate();
+      next.setDate(Math.min(day, lastDay));
+      break;
+    }
   }
   return next;
 }
