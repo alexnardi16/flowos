@@ -109,7 +109,7 @@ test('done and deleted items never produce reminders', () => {
 });
 
 test('formatReminderOffsetLabel renders minutes, hours, and days naturally', () => {
-  assert.equal(formatReminderOffsetLabel(0), 'All\'ora di inizio dell\'attività');
+  assert.equal(formatReminderOffsetLabel(0), "All'ora di inizio");
   assert.equal(formatReminderOffsetLabel(15), '15 minuti prima');
   assert.equal(formatReminderOffsetLabel(60), '1 ora prima');
   assert.equal(formatReminderOffsetLabel(120), '2 ore prima');
