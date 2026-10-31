@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildReminderPlan, summarizeTaskList, type ReminderPlan } from './reminderPlan';
-import { buildCustomReminders, dedupeScheduledReminders, formatReminderOffsetLabel } from './customReminders';
+import { buildCustomReminders, dedupeScheduledReminders, formatReminderNotificationBody } from './customReminders';
 import { ensureDailySummaryChannel, NOTIFICATIONS_SUPPORTED_HERE, requestNotificationPermission } from './notificationService';
 import { syncTodayWidget } from './widgetSync';
 import { logNotificationEvent } from './notificationLog';
@@ -171,7 +171,7 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
           sticky: Platform.OS === 'android',
           autoDismiss: false,
           priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
-          body: `Tra ${formatReminderOffsetLabel(reminder.minutesBefore)}`,
+          body: formatReminderNotificationBody(reminder.minutesBefore),
           data: {
             source: 'reminder',
             commitmentId: reminder.commitmentId,
