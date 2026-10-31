@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { buildCustomReminders, formatReminderOffsetLabel, formatReminderNotificationBody } = require('../.test-dist-notifications/lib/customReminders.js');
+const { buildCustomReminders, formatReminderOffsetLabel, formatReminderNotificationBody, isReminderNotificationBodyCurrent } = require('../.test-dist-notifications/lib/customReminders.js');
 
 function commitment(overrides) {
   return {
@@ -149,4 +149,11 @@ test('start-time reminder notification body omits the relative-time prefix', () 
   assert.equal(formatReminderNotificationBody(0), "All'ora di inizio dell'attività");
   assert.equal(formatReminderNotificationBody(15), 'Tra 15 minuti prima');
   assert.equal(formatReminderNotificationBody(60), 'Tra 1 ora prima');
+});
+
+
+test('old scheduled start-time notification copy is refreshed without the Tra prefix', () => {
+  assert.equal(isReminderNotificationBodyCurrent("Tra All'ora di inizio dell'attività", 0), false);
+  assert.equal(isReminderNotificationBodyCurrent("All'ora di inizio dell'attività", 0), true);
+  assert.equal(isReminderNotificationBodyCurrent('Tra 15 minuti prima', 15), true);
 });
