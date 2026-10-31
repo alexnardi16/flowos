@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildReminderPlan, summarizeTaskList, type ReminderPlan } from './reminderPlan';
-import { buildCustomReminders, dedupeScheduledReminders, formatReminderNotificationBody } from './customReminders';
+import { buildCustomReminders, dedupeScheduledReminders, formatReminderNotificationBody, isReminderNotificationBodyCurrent } from './customReminders';
 import { ensureDailySummaryChannel, NOTIFICATIONS_SUPPORTED_HERE, requestNotificationPermission } from './notificationService';
 import { syncTodayWidget } from './widgetSync';
 import { logNotificationEvent } from './notificationLog';
@@ -150,8 +150,9 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     const desiredTime = new Date(desired.triggerAt).getTime();
     const actualTime = getTriggerAt(notification);
     const sameTrigger = actualTime !== null && Math.abs(actualTime - desiredTime) < 1000;
+    const sameBody = isReminderNotificationBodyCurrent(notification.content.body, desired.minutesBefore);
 
-    if (kept.has(key) || !sameTrigger) {
+    if (kept.has(key) || !sameTrigger || !sameBody) {
       await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
         logNotificationEvent('cancel-event-reminder-duplicate-failed', error, 'warn'),
       );
