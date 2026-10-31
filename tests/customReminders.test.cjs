@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { buildCustomReminders, formatReminderOffsetLabel } = require('../.test-dist-notifications/lib/customReminders.js');
+const { buildCustomReminders, formatReminderOffsetLabel, formatReminderNotificationBody } = require('../.test-dist-notifications/lib/customReminders.js');
 
 function commitment(overrides) {
   return {
@@ -143,4 +143,10 @@ test('Add and Manage show the activity start-time reminder enabled by default wi
   assert.match(manageSource, /detailsToggle/);
   assert.match(manageSource, /rowWrap:\{flexDirection:'row',gap:8,marginTop:8,flexWrap:'wrap'\}/);
   assert.match(reminderSource, /All'ora di inizio dell'attività/);
+});
+
+test('start-time reminder notification body omits the relative-time prefix', () => {
+  assert.equal(formatReminderNotificationBody(0), "All'ora di inizio dell'attività");
+  assert.equal(formatReminderNotificationBody(15), 'Tra 15 minuti prima');
+  assert.equal(formatReminderNotificationBody(60), 'Tra 1 ora prima');
 });
