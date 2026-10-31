@@ -41,7 +41,7 @@ export interface Commitment {
   deletedAt?: string;
 }
 
-export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 /** Locally-managed recurrence for FlowOS-only tasks/reminders (Google Tasks has no native recurrence). */
 export interface RecurrenceRule {
