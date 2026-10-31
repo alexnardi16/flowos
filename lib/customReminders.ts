@@ -28,6 +28,12 @@ export function formatReminderOffsetLabel(minutesBefore: number, language?: Lang
   return `${minutesBefore} ${t('minuti',undefined,language)} ${t('prima',undefined,language)}`;
 }
 
+/** Notification body: start-time reminders have no relative-time prefix. */
+export function formatReminderNotificationBody(minutesBefore: number, language?: Language): string {
+  const label = formatReminderOffsetLabel(minutesBefore, language);
+  return minutesBefore === 0 ? label : `Tra ${label}`;
+}
+
 /**
  * Pure function: which reminder notifications should be pending right now,
  * for every commitment's own configured `reminders`.
