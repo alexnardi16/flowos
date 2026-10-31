@@ -35,6 +35,15 @@ export function formatReminderNotificationBody(minutesBefore: number, language?:
 }
 
 /**
+ * Existing OS notifications are reusable only when their visible body matches
+ * the current copy. This also refreshes old start-time reminders that used the
+ * obsolete `Tra All'ora di inizio` wording.
+ */
+export function isReminderNotificationBodyCurrent(existingBody: string | null | undefined, minutesBefore: number, language?: Language): boolean {
+  return existingBody === formatReminderNotificationBody(minutesBefore, language);
+}
+
+/**
  * Pure function: which reminder notifications should be pending right now,
  * for every commitment's own configured `reminders`.
  * All-day events are skipped because they have no meaningful reminder time; all-day tasks may still use their due date as the reminder anchor.
