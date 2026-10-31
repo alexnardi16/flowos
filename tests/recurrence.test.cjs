@@ -70,6 +70,19 @@ test('successive occurrences chain through the same recurrenceSeriesId', () => {
   assert.equal(third.recurrenceSeriesId, 'series-root');
 });
 
+test('yearly recurrence advances by calendar years and clamps leap day to February 28', () => {
+  const next = computeNextOccurrence(new Date(2024, 1, 29, 9, 30), { frequency: 'yearly', interval: 1 });
+  assert.equal(next.getFullYear(), 2025);
+  assert.equal(next.getMonth(), 1);
+  assert.equal(next.getDate(), 28);
+  assert.equal(next.getHours(), 9);
+  assert.equal(next.getMinutes(), 30);
+});
+
+test('toRRuleString builds a valid yearly RRULE for Google Calendar', () => {
+  assert.equal(toRRuleString({ frequency: 'yearly', interval: 1 }), 'RRULE:FREQ=YEARLY;INTERVAL=1');
+});
+
 test('toRRuleString builds a valid weekly RRULE for Google Calendar', () => {
   assert.equal(toRRuleString({ frequency: 'weekly', interval: 1 }), 'RRULE:FREQ=WEEKLY;INTERVAL=1');
 });
