@@ -22,6 +22,12 @@ test('moving a task to an occupied priority shifts all following tasks down', ()
   assert.deepEqual(next.map(x => [x.id,x.priority]), [['a',2],['b',3],['c',1],['d',undefined]]);
 });
 
+test('adding a new task at priority 1 keeps it first and shifts existing tasks down once', () => {
+  const items = [task('existing','Existing task',1), task('later','Later task',2), task('new','New task',1)];
+  const next = reorderTaskPriorities(items, 'new', 1);
+  assert.deepEqual(next.map(x => [x.id,x.priority]), [['existing',2],['later',3],['new',1]]);
+});
+
 test('priority changes are global across dates, including overdue tasks', () => {
   const items = [
     task('today','Today',1,'active','2026-10-30T10:00:00+01:00'),
