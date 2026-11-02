@@ -45,7 +45,7 @@ test('duplicate priorities on different dates remain independent while gaps clos
     task('b','B',1,'active','2026-10-29T10:00:00+01:00'),
     task('c','C',3,'active','2026-11-01T10:00:00+01:00'),
   ];
-  assert.deepEqual(normalizeTaskPriorities(items).map(x => x.priority), [1,2,3]);
+  assert.deepEqual(normalizeTaskPriorities(items).map(x => x.priority), [1,1,2]);
 });
 
 test('clearing a priority makes the task unprioritized and renumbers the remaining prioritized tasks', () => {
