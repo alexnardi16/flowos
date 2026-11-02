@@ -129,8 +129,13 @@ test('Add and Manage show the activity start-time reminder enabled by default wi
   assert.match(manageSource, /SectionTitle title=\{t\('2\. Destinazione Google'\)\}/);
   assert.match(manageSource, /SectionTitle title=\{t\('3\. Informazioni essenziali'\)\}/);
   assert.match(manageSource, /t\('Durata'\)/);
-  assert.match(manageSource, /t\('Data e ora di fine'\)/);
-  assert.match(manageSource, /durationMode === 'end' && !allDay/);
+  assert.match(manageSource, /t\('Data di fine'\)/);
+  assert.match(manageSource, /t\('Orario di fine'\)/);
+  assert.match(manageSource, /t\('Durata'\)/);
+  assert.match(manageSource, /setDurationInput\('days'/);
+  assert.match(manageSource, /setDurationInput\('hours'/);
+  assert.match(manageSource, /setDurationInput\('minutes'/);
+  assert.doesNotMatch(manageSource, /durationMode/);
   assert.match(manageSource, /destinationName/);
   assert.match(manageSource, /t\('Elimina da FlowOS'\)/);
   assert.match(manageSource, /t\('Elimina da FlowOS e Google'\)/);
