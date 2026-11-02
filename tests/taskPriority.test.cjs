@@ -35,15 +35,15 @@ test('priorities are independent across dates, including overdue tasks', () => {
     task('later','Later',3,'active','2026-11-01T10:00:00+01:00'),
   ];
   const next = reorderTaskPriorities(items, 'overdue', 1);
-  assert.deepEqual(next.map(x => [x.id,x.priority]), [['today',2],['overdue',1],['later',3]]);
-  assert.deepEqual(normalizeTaskPriorities(next).map(x => x.priority), [2,1,3]);
+  assert.deepEqual(next.map(x => [x.id,x.priority]), [['today',1],['overdue',1],['later',1]]);
+  assert.deepEqual(normalizeTaskPriorities(next).map(x => x.priority), [1,1,1]);
 });
 
 test('duplicate priorities on different dates remain independent while gaps close within each date', () => {
   const items = [
     task('a','A',1,'active','2026-10-30T10:00:00+01:00'),
     task('b','B',1,'active','2026-10-29T10:00:00+01:00'),
-    task('c','C',3,'active','2026-11-01T10:00:00+01:00'),
+    task('c','C',3,'active','2026-10-30T10:00:00+01:00'),
   ];
   assert.deepEqual(normalizeTaskPriorities(items).map(x => x.priority), [1,1,2]);
 });
