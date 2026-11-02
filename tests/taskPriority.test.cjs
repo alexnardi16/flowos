@@ -28,7 +28,7 @@ test('adding a new task at priority 1 keeps it first and shifts existing tasks d
   assert.deepEqual(next.map(x => [x.id,x.priority]), [['existing',2],['later',3],['new',1]]);
 });
 
-test('priority changes are global across dates, including overdue tasks', () => {
+test('priorities are independent across dates, including overdue tasks', () => {
   const items = [
     task('today','Today',1,'active','2026-10-30T10:00:00+01:00'),
     task('overdue','Overdue',2,'active','2026-10-29T10:00:00+01:00'),
@@ -39,7 +39,7 @@ test('priority changes are global across dates, including overdue tasks', () => 
   assert.deepEqual(normalizeTaskPriorities(next).map(x => x.priority), [2,1,3]);
 });
 
-test('duplicate priorities are normalized globally, not separately by date', () => {
+test('duplicate priorities on different dates remain independent while gaps close within each date', () => {
   const items = [
     task('a','A',1,'active','2026-10-30T10:00:00+01:00'),
     task('b','B',1,'active','2026-10-29T10:00:00+01:00'),
@@ -66,4 +66,29 @@ test('next priority is global regardless of the supplied task date', () => {
     task('c','C',3,'active','2026-09-25T10:00:00+02:00'),
   ];
   assert.equal(nextTaskPriority(items, items[2]), 4);
+});
+
+test('inserting at priority 1 shifts only tasks on the same day', () => {
+  const items = [
+    task('a','A',1,'active','2026-10-30T09:00:00+01:00'),
+    task('b','B',2,'active','2026-10-30T10:00:00+01:00'),
+    task('other','Other day',1,'active','2026-10-31T09:00:00+01:00'),
+    task('new','New',1,'active','2026-10-30T11:00:00+01:00'),
+  ];
+  const next = reorderTaskPriorities(items, 'new', 1);
+  assert.deepEqual(next.map(x => [x.id,x.priority]), [['a',2],['b',3],['other',1],['new',1]]);
+});
+
+test('all-day tasks use their calendar date rather than the local timezone date', () => {
+  const items = [
+    {...task('a','A',1), allDay:true, dueAt:'2026-10-30T00:00:00.000Z'},
+    {...task('b','B',3), allDay:true, dueAt:'2026-10-30T00:00:00.000Z'},
+    {...task('c','C',1), allDay:true, dueAt:'2026-10-31T00:00:00.000Z'},
+  ];
+  assert.deepEqual(normalizeTaskPriorities(items).map(x => x.priority), [1,2,1]);
+});
+
+test('undated tasks have a separate consecutive priority sequence', () => {
+  const items = [task('a','A',1), task('b','B',3), task('c','C',1,'active','2026-10-30T10:00:00+01:00')];
+  assert.deepEqual(normalizeTaskPriorities(items).map(x => x.priority), [1,2,1]);
 });
