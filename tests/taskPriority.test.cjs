@@ -59,13 +59,13 @@ test('completed tasks are excluded from priority numbering', () => {
   assert.equal(nextTaskPriority(items), 2);
 });
 
-test('next priority is global regardless of the supplied task date', () => {
+test('next priority is calculated within the supplied task date', () => {
   const items = [
     task('a','A',1,'active','2026-09-24T10:00:00+02:00'),
     task('b','B',2,'active','2026-09-24T11:00:00+02:00'),
     task('c','C',3,'active','2026-09-25T10:00:00+02:00'),
   ];
-  assert.equal(nextTaskPriority(items, items[2]), 4);
+  assert.equal(nextTaskPriority(items, items[2]), 2);
 });
 
 test('inserting at priority 1 shifts only tasks on the same day', () => {
@@ -91,4 +91,15 @@ test('all-day tasks use their calendar date rather than the local timezone date'
 test('undated tasks have a separate consecutive priority sequence', () => {
   const items = [task('a','A',1), task('b','B',3), task('c','C',1,'active','2026-10-30T10:00:00+01:00')];
   assert.deepEqual(normalizeTaskPriorities(items).map(x => x.priority), [1,2,1]);
+});
+
+test('moving a task to another date closes the gap on its previous date', () => {
+  const items = [
+    task('a','A',1,'active','2026-10-30T09:00:00+01:00'),
+    task('b','B',2,'active','2026-10-30T10:00:00+01:00'),
+    task('c','C',1,'active','2026-10-31T09:00:00+01:00'),
+  ];
+  const moved = {...items[1], dueAt:'2026-10-31T10:00:00+01:00'};
+  const next = reorderTaskPriorities([items[0], moved, items[2]], 'b', 2);
+  assert.deepEqual(next.map(x => [x.id,x.priority]), [['a',1],['b',2],['c',1]]);
 });
