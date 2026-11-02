@@ -59,7 +59,7 @@ export function reorderTaskPriorities(items: Commitment[], taskId: string, reque
   const position = Math.min(Math.max(0, Math.round(requestedPriority) - 1), prioritized.length);
   prioritized.splice(position, 0, target);
   const byId = new Map(prioritized.map((item, index) => [item.id, index + 1]));
-  return items.map(item => byId.has(item.id) ? { ...item, priority: byId.get(item.id) } : item);
+  return normalizeTaskPriorities(items.map(item => byId.has(item.id) ? { ...item, priority: byId.get(item.id) } : item));
 }
 
 export function nextTaskPriority(items: Commitment[], forItem?: Commitment): number {
