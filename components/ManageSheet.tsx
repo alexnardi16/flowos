@@ -117,7 +117,6 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     setBusy(true);
     try {
       const when = combine(dateStr, timeStr, allDay);
-      const endWhen = combine(endDate, endTime, allDay);
       const durationMinutes = Math.max(1, (Number(days) || 0) * 1440 + (Number(hours) || 0) * 60 + (Number(minutes) || 0));
       if((repeat!=='none'||item.googleRecurringEventId||item.recurrenceSeriesId)&&(!repeatUntil||!Number.isFinite(new Date(`${repeatUntil}T23:59:59.999`).getTime())||new Date(`${repeatUntil}T23:59:59.999`).getTime()<new Date(when??'').getTime())){showAlert(t('Gestisci'),t('Indica una data di fine della serie uguale o successiva alla data di inizio.'));return;}
       const updated: Commitment = {
