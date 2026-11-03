@@ -26,6 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const hydrateFromCloud = useFlowStore((state) => state.hydrateFromCloud);
   const rolloverTodayTasks = useFlowStore((state) => state.rolloverTodayTasks);
+  const autoCompleteExpiredEvents = useFlowStore((state) => state.autoCompleteExpiredEvents);
+  const autoCompleteInProgressRef = useRef(false);
   const commitments = useFlowStore((state) => state.commitments);
   const commitmentsRef = useRef(commitments);
   const googleSyncInProgressRef = useRef(false);
@@ -165,16 +167,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void checkAndRecoverMissedDailySummary();
     void refreshReminders();
     void rolloverTodayTasks();
+    const runAutoComplete = () => {
+      if (autoCompleteInProgressRef.current) return;
+      autoCompleteInProgressRef.current = true;
+      void autoCompleteExpiredEvents()
+        .catch(error => recordDiagnostic('event-auto-completion-failed', error, 'warn'))
+        .finally(() => { autoCompleteInProgressRef.current = false; });
+    };
+    runAutoComplete();
 
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         void checkAndRecoverMissedDailySummary();
         void refreshReminders();
         void rolloverTodayTasks();
+        runAutoComplete();
       }
     });
     // Retry while the app is in the foreground so reconnecting Wi-Fi/mobile
     // data after the configured summary time is picked up automatically.
+    const eventCompletionInterval = setInterval(() => {
+      if (AppState.currentState === 'active') runAutoComplete();
+    }, 10000);
+
     const recoveryInterval = setInterval(() => {
       void checkAndRecoverMissedDailySummary();
       if (!googleSyncInProgressRef.current && commitmentsRef.current.some(item => item.resolutionPending)) {
@@ -196,9 +211,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.remove();
       clearInterval(recoveryInterval);
+      clearInterval(eventCompletionInterval);
       clearInterval(remoteSyncInterval);
     };
-  }, [session?.user.id, rolloverTodayTasks, hydrateFromCloud]);
+  }, [session?.user.id, rolloverTodayTasks, hydrateFromCloud, autoCompleteExpiredEvents]);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,
