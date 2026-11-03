@@ -26,7 +26,7 @@ async function loadFreshData(now: Date) {
   const loaded = await loadCommitments();
   const completed = await autoCompleteExpiredEvents(loaded, now);
   let commitments = completed.commitments;
-  try { const replanned = await runIntelligentReplan(loaded, undefined, now); if (replanned) commitments = replanned; }
+  try { const replanned = await runIntelligentReplan(completed.commitments, undefined, now); if (replanned) commitments = replanned; }
   catch (error) { await logNotificationEvent('intelligent-replan-failed', error, 'warn'); }
   return { commitments, summary: buildDailySummary(commitments, now) };
 }
