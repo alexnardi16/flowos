@@ -150,11 +150,13 @@ TaskManager.defineTask(TASK_ROLLOVER_BACKGROUND_TASK, async () => {
     const loaded = await loadCommitments();
     const completed = await autoCompleteExpiredEvents(loaded, new Date());
     const result = rolloverIncompleteTasks(completed.commitments, new Date());
-    if (!result.changed.length) return BackgroundTask.BackgroundTaskResult.Success;
+    if (!result.changed.length && !completed.completedCount) return BackgroundTask.BackgroundTaskResult.Success;
     for (const item of result.changed) await saveCommitment(item);
-    try { await pushPendingToGoogle(); } catch (error) { await logNotificationEvent('task-rollover-google-push-failed', error, 'warn'); }
+    if (result.changed.length) {
+      try { await pushPendingToGoogle(); } catch (error) { await logNotificationEvent('task-rollover-google-push-failed', error, 'warn'); }
+    }
     await syncTodayWidget(result.commitments, new Date());
-    await logNotificationEvent('task-rollover-background-completed', { count: result.changed.length });
+    await logNotificationEvent('task-rollover-background-completed', { count: result.changed.length, autoCompletedEvents: completed.completedCount });
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch (error) {
     await logNotificationEvent('task-rollover-background-failed', error, 'warn');
