@@ -33,11 +33,11 @@ test('Android Today widget data is rendered synchronously from local storage',()
 
 test('Android Calendar widget reserves title width for task priority when measuring and rendering rows',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
-  assert.match(source,/function itemTitleLines\\(item: AndroidCalendarItem\\)/);
-  assert.match(source,/titleLines\\(item\\.title, item\\.priority \\? 10 : 12\\)/);
-  assert.match(source,/const lines = itemTitleLines\\(item\\)\\.length/);
-  assert.match(source,/const lines = itemTitleLines\\(item\\)/);
-  assert.match(source,/height: itemHeight\\(item\\)/);
+  assert.match(source,/function itemTitleLines\(item: AndroidCalendarItem\)/);
+  assert.match(source,/titleLines\(item\.title, item\.priority \\? 10 : 12\)/);
+  assert.match(source,/const lines = itemTitleLines\(item\)\.length/);
+  assert.match(source,/const lines = itemTitleLines\(item\)/);
+  assert.match(source,/height: itemHeight\(item\)/);
 });
 
 test('Android Calendar widget always sizes root and list to the real launcher bounds',()=>{
