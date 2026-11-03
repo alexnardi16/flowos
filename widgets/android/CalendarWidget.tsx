@@ -57,8 +57,13 @@ const ITEM_VERTICAL_PADDING = 2;
 const DAY_HEADER_HEIGHT = 11;
 const ITEM_GAP = 3;
 const WEEK_BOTTOM_PADDING = 10;
+function itemTitleLines(item: AndroidCalendarItem) {
+  // Reserve horizontal space for the priority badge before calculating title wrapping.
+  return titleLines(item.title, item.priority ? 10 : 12);
+}
+
 function itemHeight(item: AndroidCalendarItem) {
-  const lines = titleLines(item.title).length;
+  const lines = itemTitleLines(item).length;
   const timeHeight = item.time ? ITEM_TIME_HEIGHT : 0;
   return ITEM_VERTICAL_PADDING * 2 + timeHeight + lines * ITEM_TITLE_LINE_HEIGHT;
 }
@@ -127,7 +132,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                       <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: day.isToday ? PRIMARY : MUTED }} />
                     </FlexWidget>
                     {day.items.map(item => {
-                      const lines = titleLines(item.title);
+                      const lines = itemTitleLines(item);
                       return (
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
                           {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: MUTED }} /> : null}
