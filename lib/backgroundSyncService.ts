@@ -181,7 +181,9 @@ TaskManager.defineTask(GOOGLE_TASKS_BACKGROUND_TASK, async () => {
     // must not wait for the next app launch or a manual widget refresh.
     await syncGoogleWorkspace();
     const now = new Date();
-    const commitments = await loadCommitments();
+    const loaded = await loadCommitments();
+    const completed = await autoCompleteExpiredEvents(loaded, now);
+    const commitments = completed.commitments;
     await syncTodayWidget(commitments, now);
     await safeRunReminderEngine(commitments, now);
     await logNotificationEvent('google-workspace-background-sync-completed', {
