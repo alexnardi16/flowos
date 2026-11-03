@@ -81,3 +81,20 @@ test('Manage sheet matches Add time inputs and keeps a zero-minute reminder opti
   assert.ok(source.includes("label={t('Orario di fine')} value={endTime} onChangeText={updateEndTime} placeholder=\"HH:MM\""));
 
 });
+
+
+test('expired events are auto-completed globally while the app is active, not only on Today',()=>{
+  const source=fs.readFileSync('providers/AuthProvider.tsx','utf8');
+  assert.match(source,/autoCompleteExpiredEvents\(\)/);
+  assert.match(source,/eventCompletionInterval = setInterval/);
+  assert.match(source,/runAutoComplete\(\)/);
+  const today=fs.readFileSync('app\/(tabs)\/today.tsx','utf8');
+  assert.doesNotMatch(today,/autoCompleteExpiredEvents/);
+});
+
+test('background refresh and maintenance also complete expired events and refresh the widget',()=>{
+  const source=fs.readFileSync('lib/backgroundSyncService.ts','utf8');
+  assert.match(source,/autoCompleteExpiredEvents\(loaded, now\)/);
+  assert.match(source,/autoCompleteExpiredEvents\(loaded, new Date\(\)\)/);
+  assert.match(source,/syncTodayWidget\(commitments, now\)/);
+});
