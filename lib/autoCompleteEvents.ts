@@ -23,7 +23,7 @@ export async function autoCompleteExpiredEvents(
   for (const item of commitments) {
     if (item.kind !== 'event' || item.status === 'done' || item.deletedAt || !isExpired(item, now)) continue;
 
-    const updated: Commitment = { ...item, status: 'done' };
+    const updated: Commitment = { ...item, status: 'done', completedAt: now.toISOString() };
     // Google Calendar already owns recurring event expansion; do not create a duplicate
     // local occurrence when an event is auto-completed after its end time.
     const next = item.kind === 'event' ? null : materializeNextOccurrence(updated);
