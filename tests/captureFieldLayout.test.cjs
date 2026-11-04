@@ -49,3 +49,9 @@ test('start-time field does not add a second outer margin',()=>{
   assert.match(capture,/<View style=\{styles\.flex\}><Field fixedLabel singleLineLabel required label=\{t\('Orario di inizio'\)\}/);
   assert.doesNotMatch(capture,/<View style=\{\[styles\.flex,styles\.field\]\}><Field fixedLabel singleLineLabel required label=\{t\('Orario di inizio'\)\}/);
 });
+
+test('changing activity type also reconciles all-day state with the duration fields',()=>{
+  const manage=fs.readFileSync('components/ManageSheet.tsx','utf8');
+  assert.match(manage,/if \(value !== kind\) \{ setKind\(value\); toggleAllDay\(value === 'task'\); \}/);
+  assert.match(manage,/function toggleAllDay\(value:boolean\)/);
+});
