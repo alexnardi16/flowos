@@ -33,6 +33,21 @@ test('monthly recurrence advances by N months', () => {
   assert.equal(next.getDate(), 25);
 });
 
+test('monthly recurrence clamps dates such as January 31 to the last valid day of February', () => {
+  const next = computeNextOccurrence(new Date(2026, 0, 31, 9, 30), { frequency: 'monthly', interval: 1 });
+  assert.equal(next.getFullYear(), 2026);
+  assert.equal(next.getMonth(), 1);
+  assert.equal(next.getDate(), 28);
+  assert.equal(next.getHours(), 9);
+  assert.equal(next.getMinutes(), 30);
+});
+
+test('monthly recurrence preserves the day when the target month contains it', () => {
+  const next = computeNextOccurrence(new Date(2026, 0, 31, 9, 30), { frequency: 'monthly', interval: 2 });
+  assert.equal(next.getMonth(), 2);
+  assert.equal(next.getDate(), 31);
+});
+
 test('a completed recurring task with no recurrenceRule produces no next occurrence', () => {
   const completed = task({ dueAt: new Date(2026, 6, 25).toISOString() });
   assert.equal(materializeNextOccurrence(completed), null);
