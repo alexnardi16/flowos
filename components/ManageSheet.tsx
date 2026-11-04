@@ -40,6 +40,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const addCommitment = useFlowStore((state) => state.addCommitment);
   const commitments = useFlowStore((state) => state.commitments);
   const complete = useFlowStore((state) => state.complete);
+  const uncomplete = useFlowStore((state) => state.uncomplete);
   const removeOnlyFromFlowOS = useFlowStore((state) => state.removeOnlyFromFlowOS);
   const removeAlsoFromGoogle = useFlowStore((state) => state.removeAlsoFromGoogle);
   const removeSeriesFromGoogle = useFlowStore((state) => state.removeSeriesFromGoogle);
@@ -153,6 +154,13 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     }
   }
 
+  async function undoCompletion() {
+    setBusy(true);
+    try { await uncomplete(item.id); onClose(); }
+    catch (error) { showAlert(t('Gestisci'), error instanceof Error ? error.message : t('Operazione non riuscita.')); }
+    finally { setBusy(false); }
+  }
+
   async function removeLocal() {
     setBusy(true);
     try { await removeOnlyFromFlowOS(item.id); onClose(); }
@@ -214,7 +222,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       </Card>
       <Pressable onPress={() => setShowDetails((value) => !value)} style={styles.detailsToggle}><Text style={styles.detailsToggleText}>{showDetails ? t('Nascondi dettagli facoltativi') : t('Aggiungi descrizione, note, luogo o link')}</Text><Text style={styles.chevron}>{showDetails ? '−' : '+'}</Text></Pressable>{showDetails ? <Card><Field label={t('Descrizione')} value={description} onChangeText={setDescription} multiline placeholder={t('Informazioni principali')}/><Field label={t('Note private')} value={notes} onChangeText={setNotes} multiline placeholder={t('Dettagli utili per te')}/><Field label={t('Luogo')} value={location} onChangeText={setLocation} placeholder={t('Indirizzo o luogo')}/><Field label={t('Link')} value={link} onChangeText={setLink} keyboardType="url" autoCapitalize="none" placeholder="https://…"/></Card> : null}
 
-      {item.status!=='done' ? <Button secondary label={t('Completa')} onPress={() => requestComplete(item,(id,scope)=>complete(id,scope).then(()=>onClose()))} disabled={busy}/> : null}
+      {item.status!=='done' ? <Button secondary label={t('Completa')} onPress={() => requestComplete(item,(id,scope)=>complete(id,scope).then(()=>onClose()))} disabled={busy}/> : <Button secondary label={t('Annulla Completamento')} onPress={() => void undoCompletion()} disabled={busy}/>}
       <View style={styles.actionsRow}><Button secondary label={t('Annulla')} onPress={onClose} disabled={busy}/><Button label={t('Salva modifiche')} onPress={() => void save()} loading={busy}/></View>
       {isFlowOSOnly ? <View style={styles.section}><Text style={styles.sectionTitle}>{t('Solo su FlowOS')}</Text><Text style={styles.help}>{t('Questo elemento non è mai stato sincronizzato con Google.')}</Text><Button secondary label={t('Sincronizza con Google')} onPress={() => void syncNow()} disabled={busy}/></View> : null}
 
