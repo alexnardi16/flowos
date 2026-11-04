@@ -24,7 +24,7 @@ function refreshNotifications(commitments:Commitment[]){if(Platform.OS==='web')r
 let taskRolloverInFlight:Promise<void>|null=null;
 const googleRetryTimers=new Map<string,ReturnType<typeof setTimeout>>();
 
-type State={commitments:Commitment[];focusId?:string;syncing:boolean;addCommitment:(commitment:Commitment)=>Promise<boolean>;hydrateFromCloud:()=>Promise<void>;rolloverTodayTasks:()=>Promise<void>;complete:(id:string,scope?:'occurrence'|'series')=>Promise<void>;uncomplete:(id:string)=>Promise<void>;postpone:(id:string)=>Promise<void>;updateCommitment:(commitment:Commitment)=>Promise<void>;removeOnlyFromFlowOS:(id:string)=>Promise<void>;removeAlsoFromGoogle:(id:string)=>Promise<void>;removeSeriesFromGoogle:(id:string)=>Promise<void>;syncItemToGoogleNow:(id:string)=>Promise<void>;syncWithGoogle:()=>Promise<void>;autoCompleteExpiredEvents:()=>Promise<void>;autoPlan:()=>Promise<void>;startFocus:(id:string)=>void;stopFocus:()=>void;};
+type State={commitments:Commitment[];focusId?:string;syncing:boolean;addCommitment:(commitment:Commitment)=>Promise<boolean>;hydrateFromCloud:()=>Promise<void>;rolloverTodayTasks:()=>Promise<void>;complete:(id:string,scope?:'occurrence'|'series')=>Promise<void>;uncomplete:(id:string)=>Promise<void>;stopRecurrenceSeries:(id:string)=>Promise<void>;postpone:(id:string)=>Promise<void>;updateCommitment:(commitment:Commitment)=>Promise<void>;removeOnlyFromFlowOS:(id:string)=>Promise<void>;removeAlsoFromGoogle:(id:string)=>Promise<void>;removeSeriesFromGoogle:(id:string)=>Promise<void>;syncItemToGoogleNow:(id:string)=>Promise<void>;syncWithGoogle:()=>Promise<void>;autoCompleteExpiredEvents:()=>Promise<void>;autoPlan:()=>Promise<void>;startFocus:(id:string)=>void;stopFocus:()=>void;};
 
 export const useFlowStore=create<State>()(persist((set,get)=>{
   const pushGoogleAndRefresh=async(protectedId?:string):Promise<boolean>=>{if(!isSupabaseConfigured)return false;try{await flushOfflineQueue();await pushPendingToGoogle(protectedId);const pendingIds=new Set(await getPendingCommitmentIds());if(protectedId)pendingIds.add(protectedId);const remote=await loadCommitments();const remoteItem=protectedId?remote.find(item=>item.id===protectedId):undefined;const localItem=protectedId?get().commitments.find(item=>item.id===protectedId):undefined;const googleSynced=protectedId?Boolean(remoteItem?.externalId&&remoteItem.syncStatus==='synced'):true;const merged=mergeRemoteCommitments(remote,get().commitments,pendingIds);set({commitments:merged});refreshWidget(merged);refreshNotifications(merged);if(protectedId&&!googleSynced&&localItem){await logNotificationEvent('store-google-sync-not-confirmed',{id:protectedId,title:localItem.title,remoteStatus:remoteItem?.syncStatus??null,remoteExternalId:remoteItem?.externalId??null,remoteSyncError:remoteItem?.syncError??null},'warn');return false;}return true;}catch(error){const pendingIds=new Set(await getPendingCommitmentIds());if(protectedId)pendingIds.add(protectedId);const preserved=mergeRemoteCommitments([],get().commitments,pendingIds);set({commitments:preserved});refreshWidget(preserved);refreshNotifications(preserved);void logNotificationEvent('auto-push-failed',error,'warn');return false;}};
@@ -130,6 +130,28 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
     for(const changed of nextCommitments){
       const previous=current.find(candidate=>candidate.id===changed.id);
       if(!previous||previous.status!==changed.status||previous.priority!==changed.priority||changed.id===id)await saveCommitment(changed);
+    }
+    await pushGoogleAndRefresh();
+    refreshNotifications(get().commitments);
+  },
+  stopRecurrenceSeries:async id=>{
+    const current=get().commitments;
+    const item=current.find(candidate=>candidate.id===id);
+    if(!item)return;
+    const seriesId=item.recurrenceSeriesId??item.id;
+    const nextCommitments=current.map(candidate=>
+      candidate.id===id||candidate.id===seriesId||candidate.recurrenceSeriesId===seriesId
+        ? {...candidate,recurrenceRule:undefined,recurrenceSeriesId:undefined,recurrenceSeriesEndAt:undefined}
+        : candidate
+    );
+    set({commitments:nextCommitments});
+    refreshWidget(nextCommitments);
+    for(const changed of nextCommitments){
+      const previous=current.find(candidate=>candidate.id===changed.id);
+      if(previous&&(previous.recurrenceRule||previous.recurrenceSeriesId||previous.recurrenceSeriesEndAt)&&
+        (changed.id===id||changed.id===seriesId||previous.recurrenceSeriesId===seriesId)){
+        await saveCommitment(changed);
+      }
     }
     await pushGoogleAndRefresh();
     refreshNotifications(get().commitments);
