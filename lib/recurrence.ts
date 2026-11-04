@@ -18,9 +18,14 @@ export function computeNextOccurrence(fromDate: Date, rule: RecurrenceRule): Dat
     case 'weekly':
       next.setDate(next.getDate() + rule.interval * 7);
       break;
-    case 'monthly':
+    case 'monthly': {
+      const day = next.getDate();
+      next.setDate(1);
       next.setMonth(next.getMonth() + rule.interval);
+      const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+      next.setDate(Math.min(day, lastDay));
       break;
+    }
     case 'yearly': {
       const month = next.getMonth();
       const day = next.getDate();
