@@ -41,6 +41,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const commitments = useFlowStore((state) => state.commitments);
   const complete = useFlowStore((state) => state.complete);
   const uncomplete = useFlowStore((state) => state.uncomplete);
+  const stopRecurrenceSeries = useFlowStore((state) => state.stopRecurrenceSeries);
   const removeOnlyFromFlowOS = useFlowStore((state) => state.removeOnlyFromFlowOS);
   const removeAlsoFromGoogle = useFlowStore((state) => state.removeAlsoFromGoogle);
   const removeSeriesFromGoogle = useFlowStore((state) => state.removeSeriesFromGoogle);
@@ -119,7 +120,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     try {
       const when = combine(dateStr, timeStr, allDay);
       const durationMinutes = Math.max(1, (Number(days) || 0) * 1440 + (Number(hours) || 0) * 60 + (Number(minutes) || 0));
-      if((repeat!=='none'||item.googleRecurringEventId||item.recurrenceSeriesId)&&(!repeatUntil||!Number.isFinite(new Date(`${repeatUntil}T23:59:59.999`).getTime())||new Date(`${repeatUntil}T23:59:59.999`).getTime()<new Date(when??'').getTime())){showAlert(t('Gestisci'),t('Indica una data di fine della serie uguale o successiva alla data di inizio.'));return;}
+      if((repeat!=='none'||item.googleRecurringEventId)&&(!repeatUntil||!Number.isFinite(new Date(`${repeatUntil}T23:59:59.999`).getTime())||new Date(`${repeatUntil}T23:59:59.999`).getTime()<new Date(when??'').getTime())){showAlert(t('Gestisci'),t('Indica una data di fine della serie uguale o successiva alla data di inizio.'));return;}
       const updated: Commitment = {
         ...item,
         title: title.trim() || item.title,
@@ -132,13 +133,15 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         link: link.trim() || undefined,
         description: description.trim() || undefined,
         reminders: reminders.length ? reminders : undefined,
-        recurrenceRule: repeat !== 'none' ? { frequency: repeat, interval: item.recurrenceRule?.frequency === repeat ? item.recurrenceRule.interval ?? 1 : 1, until: new Date(`${repeatUntil}T23:59:59.999`).toISOString() } : item.recurrenceRule,
-        recurrenceSeriesEndAt: (repeat !== 'none' || item.googleRecurringEventId || item.recurrenceSeriesId) ? new Date(`${repeatUntil}T23:59:59.999`).toISOString() : undefined,
+        recurrenceRule: repeat !== 'none' ? { frequency: repeat, interval: item.recurrenceRule?.frequency === repeat ? item.recurrenceRule.interval ?? 1 : 1, until: new Date(`${repeatUntil}T23:59:59.999`).toISOString() } : undefined,
+        recurrenceSeriesId: repeat !== 'none' ? item.recurrenceSeriesId : undefined,
+        recurrenceSeriesEndAt: (repeat !== 'none' || item.googleRecurringEventId) ? new Date(`${repeatUntil}T23:59:59.999`).toISOString() : undefined,
         googleCalendarId: kind === 'event' ? calendarId : undefined,
         googleTaskListId: kind === 'task' ? taskListId : undefined,
         scheduledAt: kind === 'event' ? when : undefined,
         dueAt: kind !== 'event' ? when : undefined,
       };
+      if (repeat === 'none' && (item.recurrenceRule || item.recurrenceSeriesId)) await stopRecurrenceSeries(item.id);
       await updateCommitment(updated);
       if(kind==='task'&&updated.recurrenceRule){
         const occurrences=buildRecurrenceOccurrences(updated,createUuid);
