@@ -55,3 +55,14 @@ test('changing activity type also reconciles all-day state with the duration fie
   assert.match(manage,/if \(value !== kind\) \{ setKind\(value\); toggleAllDay\(value === 'task'\); \}/);
   assert.match(manage,/function toggleAllDay\(value:boolean\)/);
 });
+
+test('resetting Add preserves a coherent default for the selected activity type',()=>{
+  const source=fs.readFileSync('app/(tabs)/capture.tsx','utf8');
+  const start=source.indexOf('function reset(){');
+  const end=source.indexOf('\n',start);
+  const reset=source.slice(start,end);
+  assert.match(reset,/setAllDay\(taskKind\)/);
+  assert.match(reset,/setDays\(taskKind\?'1':'0'\)/);
+  assert.match(reset,/setHours\(taskKind\?'0':'1'\)/);
+  assert.match(reset,/setEndDate\(taskKind\?resetEndDate:resetDate\)/);
+});
