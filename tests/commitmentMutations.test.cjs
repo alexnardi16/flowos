@@ -7,6 +7,19 @@ test('creates an event',()=>{const created=item('event-1','event','Visita');asse
 test('creates a task',()=>{const created=item('task-1','task','Telefonare');assert.deepEqual(upsertCommitmentState([],created),[created]);});
 test('updates an event without duplication',()=>{const original=item('event-1','event','Vecchio');const updated={...original,title:'Nuovo',durationMinutes:60};const next=upsertCommitmentState([original],updated);assert.equal(next.length,1);assert.deepEqual(next[0],updated);});
 test('updates a task without duplication',()=>{const original=item('task-1','task','Vecchio');const updated={...original,title:'Nuovo',status:'waiting'};const next=upsertCommitmentState([original],updated);assert.equal(next.length,1);assert.deepEqual(next[0],updated);});
+test('Manage offers undo completion for every completed task and event',()=>{
+  assert.match(manageSource,/item\.status!=='done' \? <Button secondary label=\{t\('Completa'\)\}/);
+  assert.match(manageSource,/label=\{t\('Annulla Completamento'\)\} onPress=\{\(\) => void undoCompletion\(\)\}/);
+  assert.match(storeSource,/uncomplete:\(id:string\)=>Promise<void>/);
+  const start=storeSource.indexOf('  uncomplete:async');
+  const end=storeSource.indexOf('  postpone:async',start);
+  const undo=storeSource.slice(start,end);
+  assert.match(undo,/status:item\.kind==='event'\?'scheduled':'active'/);
+  assert.match(undo,/completedAt:undefined/);
+  assert.match(undo,/syncStatus:item\.externalId&&item\.kind==='task'\?'pending':item\.syncStatus/);
+  assert.match(undo,/await pushGoogleAndRefresh\(\)/);
+  assert.match(undo,/refreshNotifications\(get\(\)\.commitments\)/);
+});
 test('deletes an event',()=>{const event=item('event-1','event');const task=item('task-1','task');assert.deepEqual(removeCommitmentState([event,task],event.id),[task]);});
 test('deletes a task',()=>{const event=item('event-1','event');const task=item('task-1','task');assert.deepEqual(removeCommitmentState([event,task],task.id),[event]);});
 test('preserves pending local data during a remote refresh',()=>{const pending=item('event-1','event','Nuovo evento');const remote=item('task-1','task');assert.deepEqual(mergeRemoteCommitments([remote],[pending,remote],[pending.id]),[pending,remote]);});
