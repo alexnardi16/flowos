@@ -147,3 +147,15 @@ test('recurring completion offers occurrence or series while widget completion r
   assert.match(widget,/materializeNextOccurrence\(updated,items\)/);
   assert.doesNotMatch(widget,/requestComplete|Alert\.alert/);
 });
+
+test('Manage can stop a local recurrence series instead of silently retaining its recurrence rule',()=>{
+  assert.match(manageSource,/repeat === 'none' && \(item\.recurrenceRule \|\| item\.recurrenceSeriesId\)/);
+  assert.match(manageSource,/recurrenceRule: repeat !== 'none' \?/);
+  assert.match(manageSource,/recurrenceSeriesId: repeat !== 'none' \? item\.recurrenceSeriesId : undefined/);
+  assert.match(storeSource,/stopRecurrenceSeries:\(id:string\)=>Promise<void>/);
+  const start=storeSource.indexOf('  stopRecurrenceSeries:async');
+  const end=storeSource.indexOf('  postpone:async',start);
+  const stop=storeSource.slice(start,end);
+  assert.match(stop,/recurrenceRule:undefined,recurrenceSeriesId:undefined,recurrenceSeriesEndAt:undefined/);
+  assert.match(stop,/await pushGoogleAndRefresh\(\)/);
+});
