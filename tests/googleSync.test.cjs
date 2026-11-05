@@ -178,7 +178,7 @@ test('all Calendar create and recreation paths recover by FlowOS ID before issui
 });
 
 test('a live Google push lease cannot be bypassed by an edit that resets sync_status to pending',()=>{
-  const migration=fs.readFileSync('supabase/migrations/20261105120000_guard_google_push_leases.sql','utf8');
+  const migration=fs.readFileSync('supabase/migrations/20261105100000_guard_google_push_leases.sql','utf8');
   const claimPredicate=migration.slice(migration.indexOf('where c.id'),migration.indexOf('returning c.*'));
   assert.match(claimPredicate,/c\.sync_claimed_at is null or c\.sync_claimed_at < now\(\) - interval '5 minutes'/i);
   assert.ok(claimPredicate.indexOf('c.sync_claimed_at is null') < claimPredicate.indexOf('c.sync_status in'));
