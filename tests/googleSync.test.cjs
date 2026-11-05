@@ -176,3 +176,19 @@ test('all Calendar create and recreation paths recover by FlowOS ID before issui
   assert.match(source,/remote=await createOrRecoverCalendarEvent\(calendarId,c,token\)/);
   assert.match(source,/await createOrRecoverCalendarEvent\(c\.google_calendar_id\?\?defCal\?\.google_calendar_id,c,token\)/);
 });
+
+test('a live Google push lease cannot be bypassed by an edit that resets sync_status to pending',()=>{
+  const migration=fs.readFileSync('supabase/migrations/20261105100000_guard_google_push_leases.sql','utf8');
+  const claimPredicate=migration.slice(migration.indexOf('where c.id'),migration.indexOf('returning c.*'));
+  assert.match(claimPredicate,/c\.sync_claimed_at is null or c\.sync_claimed_at < now\(\) - interval '5 minutes'/i);
+  assert.ok(claimPredicate.indexOf('c.sync_claimed_at is null') < claimPredicate.indexOf('c.sync_status in'));
+});
+
+test('foreground and background Google pushes retain edits made while the remote request is in flight',()=>{
+  for(const path of ['supabase/functions/google-workspace/index.ts','supabase/functions/google-sync-worker/index.ts']){
+    const source=fs.readFileSync(path,'utf8');
+    assert.match(source,/async function saveGooglePushResult\(userId:string,c:any,metadata:Record<string,unknown>\)/);
+    assert.match(source,/\.eq\("updated_at",c\.updated_at\)\.select\("id"\)\.maybeSingle\(\)/);
+    assert.match(source,/sync_status:"pending"\}\)\.eq\("id",c\.id\)\.eq\("user_id",userId\)\.neq\("updated_at",c\.updated_at\)/);
+  }
+});
