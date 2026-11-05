@@ -140,3 +140,12 @@ test('Google push worker does not reclaim a live lease and can recover abandoned
   assert.match(worker,/\["pending","syncing"\]/);
   assert.match(workspace,/item-push-skipped-already-claimed/);
 });
+
+
+test('task writes release the atomic lease after success and the worker recovers Calendar POST retries',()=>{
+  const workspace=fs.readFileSync('supabase/functions/google-workspace/index.ts','utf8');
+  const worker=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  assert.match(workspace,/google_task_list_id:listId,[\s\S]*?sync_status:"synced",sync_claimed_at:null/);
+  assert.match(worker,/createOrRecoverCalendarEvent\(userId,c\.google_calendar_id,c\)/);
+  assert.match(worker,/privateExtendedProperty:"flowosCommitmentId="/);
+});
