@@ -160,3 +160,11 @@ test('Add form serializes rapid create taps before the first asynchronous operat
   const guard=capture.slice(start,end);
   assert.ok(guard.indexOf('createInFlightRef.current=true')<guard.indexOf('await createOnce()'));
 });
+
+
+test('tombstoned resolution-pending activities can still be claimed for Google deletion, never recreated',()=>{
+  const migration=fs.readFileSync('supabase/migrations/20261105093000_allow_claiming_google_deletions.sql','utf8');
+  const worker=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  assert.match(migration,/c\.deleted_at is null or c\.resolution_pending/i);
+  assert.match(worker,/if\(c\.deleted_at\)[\s\S]*?method:"DELETE"/);
+});
