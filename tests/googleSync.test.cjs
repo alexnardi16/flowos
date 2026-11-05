@@ -168,3 +168,11 @@ test('tombstoned resolution-pending activities can still be claimed for Google d
   assert.match(migration,/c\.deleted_at is null or c\.resolution_pending/i);
   assert.match(worker,/if\(c\.deleted_at\)[\s\S]*?method:"DELETE"/);
 });
+
+
+test('all Calendar create and recreation paths recover by FlowOS ID before issuing POST',()=>{
+  const source=fs.readFileSync('supabase/functions/google-workspace/index.ts','utf8');
+  assert.match(source,/async function createOrRecoverCalendarEvent\(/);
+  assert.match(source,/remote=await createOrRecoverCalendarEvent\(calendarId,c,token\)/);
+  assert.match(source,/await createOrRecoverCalendarEvent\(c\.google_calendar_id\?\?defCal\?\.google_calendar_id,c,token\)/);
+});
