@@ -149,3 +149,14 @@ test('task writes release the atomic lease after success and the worker recovers
   assert.match(worker,/createOrRecoverCalendarEvent\(userId,c\.google_calendar_id,c\)/);
   assert.match(worker,/privateExtendedProperty:"flowosCommitmentId="/);
 });
+
+
+test('Add form serializes rapid create taps before the first asynchronous operation',()=>{
+  const capture=fs.readFileSync('app/(tabs)/capture.tsx','utf8');
+  assert.match(capture,/const createInFlightRef=useRef\(false\)/);
+  assert.match(capture,/async function create\(\)\{if\(createInFlightRef\.current\)return;createInFlightRef\.current=true;try\{await createOnce\(\);\}finally\{createInFlightRef\.current=false;\}\}/);
+  const start=capture.indexOf('async function create(){');
+  const end=capture.indexOf('function findVoiceItem',start);
+  const guard=capture.slice(start,end);
+  assert.ok(guard.indexOf('createInFlightRef.current=true')<guard.indexOf('await createOnce()'));
+});
