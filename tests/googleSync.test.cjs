@@ -98,3 +98,45 @@ test('background refresh and maintenance also complete expired events and refres
   assert.match(source,/autoCompleteExpiredEvents\(loaded, new Date\(\)\)/);
   assert.match(source,/syncTodayWidget\(commitments, now\)/);
 });
+
+
+test('Google pushes atomically claim each commitment so foreground, background and webhook workers cannot POST it twice',()=>{
+  const migration=fs.readFileSync('supabase/migrations/20261105090000_google_push_idempotency.sql','utf8');
+  const workspace=fs.readFileSync('supabase/functions/google-workspace/index.ts','utf8');
+  const worker=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  assert.match(migration,/add column if not exists sync_claimed_at timestamptz/i);
+  assert.match(migration,/create or replace function public\.claim_flowos_google_push/i);
+  assert.match(migration,/update public\.commitments/i);
+  assert.match(migration,/interval '5 minutes'/i);
+  assert.match(migration,/grant execute .*service_role/i);
+  assert.match(workspace,/rpc\("claim_flowos_google_push"/);
+  assert.match(worker,/rpc\("claim_flowos_google_push"/);
+  assert.match(workspace,/sync_claimed_at:null/);
+  assert.match(worker,/sync_claimed_at:null/);
+});
+
+test('Calendar create retries recover the original event by its stable FlowOS commitment ID and clean prior duplicates',()=>{
+  const workspace=fs.readFileSync('supabase/functions/google-workspace/index.ts','utf8');
+  const worker=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  assert.match(workspace,/privateExtendedProperty:"flowosCommitmentId="/);
+  assert.match(workspace,/matches\[0\]\?\?await gfetch\(base,token/);
+  assert.match(workspace,/duplicate-calendar-event-cleaned/);
+  assert.match(worker,/extendedProperties:\{private:\{flowosCommitmentId:c\.id\}\}/);
+});
+
+test('Google imports match external resources by resource type and calendar or task list, not external ID alone',()=>{
+  const workspace=fs.readFileSync('supabase/functions/google-workspace/index.ts','utf8');
+  const worker=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  assert.match(workspace,/function externalIdentity\(row:any\)/);
+  assert.match(worker,/function externalIdentity\(row:any\)/);
+  assert.match(workspace,/map\.get\(externalIdentity\(row\)\)/);
+  assert.match(worker,/map\.get\(externalIdentity\(row\)\)/);
+});
+
+test('Google push worker does not reclaim a live lease and can recover abandoned syncing rows',()=>{
+  const workspace=fs.readFileSync('supabase/functions/google-workspace/index.ts','utf8');
+  const worker=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  assert.match(workspace,/\["pending","error","syncing"\]/);
+  assert.match(worker,/\["pending","syncing"\]/);
+  assert.match(workspace,/item-push-skipped-already-claimed/);
+});
