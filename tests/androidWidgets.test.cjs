@@ -256,8 +256,8 @@ test('Google resource names are never replaced with developer-specific aliases',
 test('Widget appearance preferences are per FlowOS user and support color opacity',()=>{
   const appearance=fs.readFileSync('lib/widgetAppearance.ts','utf8');
   const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
-  assert.match(appearance,/supabase\.auth\.getUser\(\)/);
-  assert.match(appearance,/STORAGE_PREFIX.*data\.user\?\.id/);
+  assert.match(appearance,/supabase\.auth\.getSession\(\)/);
+  assert.match(appearance,/STORAGE_PREFIX.*data\.session\?\.user\.id/);
   assert.match(appearance,/colorWithOpacity/);
   assert.match(appearance,/Math\.max\(0, Math\.min\(100/);
   assert.match(settings,/google\?\.calendars\.map/);
