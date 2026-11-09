@@ -300,8 +300,16 @@ test('Widget customization uses selectable color swatches and includes button co
   assert.match(appearance,/buttonTextColor/);
   assert.match(today,/buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF'/);
   assert.match(calendar,/buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF'/);
-  assert.match(settings,/Opacità %/);
+  assert.match(settings,/Opacità del colore dello sfondo \(%\)/);
+  assert.match(settings,/Opacità del colore del testo \(%\)/);
+  assert.match(settings,/Opacità dello sfondo dei pulsanti \(%\)/);
+  assert.match(settings,/Opacità del testo e dei simboli dei pulsanti \(%\)/);
   assert.match(settings,/Testo e simboli dei pulsanti/);
+  assert.match(settings,/WIDGET_COLOR_SWATCHES=\["#F1F4FF","#172033","#4254C5","#FFFFFF"/);
+  for(const field of ['textOpacity','buttonBackgroundOpacity','buttonTextOpacity']) assert.match(appearance,new RegExp(field));
+  assert.match(sync,/appearance\.today\.textOpacity/);
+  assert.match(sync,/appearance\.today\.buttonBackgroundOpacity/);
+  assert.match(sync,/appearance\.today\.buttonTextOpacity/);
 });
 test('Settings languages are alphabetically ordered by visible label',()=>{
   const source=fs.readFileSync('lib/i18n.ts','utf8');
