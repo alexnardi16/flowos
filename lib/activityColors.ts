@@ -33,7 +33,12 @@ export function activitySourceColor(item: Commitment, sourceColors: Map<string,s
   return activitySourceColorsForKey(activitySourceKey(item),sourceColors);
 }
 
+export function defaultActivitySourceColor(key:string){
+  if(key==='flowos')return '#F3F4F7';
+  return ACTIVITY_SOURCE_COLORS[stableColorIndex(key)];
+}
+
 export function activitySourceColorsForKey(key:string, sourceColors:Map<string,string>){
   if(key==='flowos')return '#F3F4F7';
-  return sourceColors.get(key)??ACTIVITY_SOURCE_COLORS[0];
+  return sourceColors.get(key)??defaultActivitySourceColor(key);
 }
