@@ -38,14 +38,14 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       const { CalendarWidget } = await import('../widgets/android/CalendarWidget');
       let syncEndDate = new Date(now.getFullYear() + 1, 11, 31);
       try { const cachedRange=await AsyncStorage.getItem('flowos-calendar-widget-range-v1'); if(cachedRange){const parsed=JSON.parse(cachedRange);if(parsed?.endDate)syncEndDate=new Date(`${parsed.endDate}T23:59:59`);} } catch {}
-      await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => React.createElement(TodayWidget, { items, language, backgroundColor:todayBackgroundColor, textColor:appearance.today.textColor }) });
+      await requestWidgetUpdate({ widgetName: 'TodayAndroidWidget', renderWidget: () => React.createElement(TodayWidget, { items, language, backgroundColor:todayBackgroundColor, textColor:appearance.today.textColor, buttonBackgroundColor:appearance.today.buttonBackgroundColor, buttonTextColor:appearance.today.buttonTextColor }) });
 
       const { weeks: rawWeeks } = buildCalendarWidgetData(commitments, syncEndDate, now, calendarNames, language);
       const allWeeks=rawWeeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=commitmentById.get(item.id);return {...item,sourceColor:source?sourceAppearanceColor(activitySourceKey(source),String(item.sourceColor),appearance):item.sourceColor};})}))}));
       await AsyncStorage.setItem('flowos-calendar-widget-v2',JSON.stringify({dateKey:glance.dateKey,weeks:allWeeks,language}));
       const page = getCalendarWidgetPage(allWeeks);
       await AsyncStorage.setItem('flowos-calendar-widget-page-v1',String(page.startIndex));
-      await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks:page.weeks,hasOlderWeeks:page.hasOlderWeeks,hasNewerWeeks:page.hasNewerWeeks,language,backgroundColor:calendarBackgroundColor,textColor:appearance.calendar.textColor}) });
+      await requestWidgetUpdate({ widgetName:'CalendarAndroidWidget', renderWidget:()=>React.createElement(CalendarWidget,{weeks:page.weeks,hasOlderWeeks:page.hasOlderWeeks,hasNewerWeeks:page.hasNewerWeeks,language,backgroundColor:calendarBackgroundColor,textColor:appearance.calendar.textColor,buttonBackgroundColor:appearance.calendar.buttonBackgroundColor,buttonTextColor:appearance.calendar.buttonTextColor}) });
       await logNotificationEvent('today-widget-updated',{platform:'android',dateKey:glance.dateKey,count:items.length,calendarWeeks:allWeeks.length,calendarRenderedWeeks:page.weeks.length,calendarDays:allWeeks.reduce((sum,week)=>sum+week.days.length,0),equalWidthDays:true});
       recordDiagnostic('widget-sync-completed',{platform:'android',durationMs:Date.now()-startedAt,count:items.length,calendarWeeks:allWeeks.length,calendarRenderedWeeks:page.weeks.length});
     }
