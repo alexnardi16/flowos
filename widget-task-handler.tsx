@@ -138,8 +138,10 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames,language);
       await saveCalendarCache(data,language);
     }
-    const commitmentById=new Map((readCommitments(raw) as Commitment[]).map(item=>[item.id,item]));
-    data={weeks:data.weeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=commitmentById.get(item.id);return source?{...item,sourceColor:sourceAppearanceColor(activitySourceKey(source),String(item.sourceColor),appearance)}:item;})}))}))};
+    const widgetCommitments=readCommitments(raw) as Commitment[];
+    const commitmentById=new Map(widgetCommitments.map(item=>[item.id,item]));
+    const sourceColors=buildActivitySourceColors(widgetCommitments);
+    data={weeks:data.weeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=commitmentById.get(item.id);return source?{...item,sourceColor:sourceAppearanceColor(activitySourceKey(source),activitySourceColor(source,sourceColors),appearance)}:item;})}))}))};
     let requestedStart:number|undefined;
     try { const saved=await AsyncStorage.getItem(CALENDAR_PAGE_KEY); if(saved!==null&&Number.isFinite(Number(saved)))requestedStart=Number(saved); } catch {}
     const pageShift=CALENDAR_WIDGET_PAGE_SIZE-CALENDAR_WIDGET_PAGE_OVERLAP;
@@ -171,7 +173,8 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         let calendarNames:Map<string,string>|undefined;
         try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
         const refreshedRaw=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames,language);
-        const refreshed={weeks:refreshedRaw.weeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=remote.find(candidate=>candidate.id===item.id);return source?{...item,sourceColor:sourceAppearanceColor(activitySourceKey(source),String(item.sourceColor),appearance)}:item;})}))}))};
+        const refreshedSourceColors=buildActivitySourceColors(remote);
+        const refreshed={weeks:refreshedRaw.weeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=remote.find(candidate=>candidate.id===item.id);return source?{...item,sourceColor:sourceAppearanceColor(activitySourceKey(source),activitySourceColor(source,refreshedSourceColors),appearance)}:item;})}))}))};
         await saveCalendarCache(refreshed,language);
         page=getCalendarWidgetPage(refreshed.weeks,page.startIndex,new Date());
         try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
