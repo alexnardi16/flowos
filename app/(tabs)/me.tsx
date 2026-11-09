@@ -16,6 +16,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import * as Application from 'expo-application';
 import { LANGUAGES, localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { syncTodayWidget } from '@/lib/widgetSync';
+import { DEFAULT_WIDGET_APPEARANCE, getWidgetAppearance, normalizeHexColor, resetWidgetAppearance, saveWidgetAppearance, type WidgetAppearance } from '@/lib/widgetAppearance';
 
 function syncDate(value?:string|null,language:import('@/lib/i18n').Language='it'){return value?new Date(value).toLocaleString(localeForLanguage(language),{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):t('mai sincronizzata',undefined,language);}
 function logLine(entry:DiagnosticEntry){const time=new Date(entry.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});return `${time} [${entry.level}] ${entry.event}${entry.details?` — ${entry.details}`:''}`;}
@@ -46,6 +47,8 @@ export default function Me(){
   const[timeSaving,setTimeSaving]=useState(false);
   const { language, setLanguage } = useLanguage();
   const [languageBusy,setLanguageBusy]=useState(false);
+  const [widgetAppearance,setWidgetAppearance]=useState<WidgetAppearance>(DEFAULT_WIDGET_APPEARANCE);
+  const [widgetAppearanceBusy,setWidgetAppearanceBusy]=useState(false);
 
   const commitments=useFlowStore(state=>state.commitments);
   const hydrate=useFlowStore(s=>s.hydrateFromCloud);
@@ -79,6 +82,8 @@ export default function Me(){
   useEffect(()=>{void loadGoogle();const u=subscribeDiagnostics(e=>setLogs([...e].reverse()));return u;},[]);
   useEffect(()=>{if(google?.range){const toInput=(v:string)=>{const[d,m,y]=v.split('/');return `${d}-${m}-${y}`;};setRangeStart(toInput(google.range.labelStart));setRangeEnd(toInput(google.range.labelEnd));}},[google?.range?.labelStart,google?.range?.labelEnd]);
   useEffect(()=>{const u=subscribeToSyncProgress(p=>{setProgress(p.percent);setStage(p.stage);});return u;},[]);
+  useEffect(()=>{void getWidgetAppearance().then(setWidgetAppearance);},[]);
+
   useEffect(()=>{
     void isDailySummaryEnabledStored().then(setNotificationsEnabled);
     void getDailySummaryTime().then(({hour,minute})=>{setSummaryHour(hour);setSummaryMinute(minute);});
@@ -87,6 +92,27 @@ export default function Me(){
     void getNotificationLog().then(setNotificationLogs);
     return unsubscribe;
   },[]);
+
+  function updateWidgetSection(section:'today'|'calendar',field:'backgroundColor'|'backgroundOpacity'|'textColor',value:string|number){
+    setWidgetAppearance(current=>({...current,[section]:{...current[section],[field]:field==='backgroundOpacity'?Math.max(0,Math.min(100,Number(value)||0)):normalizeHexColor(String(value),current[section][field as 'backgroundColor'|'textColor'])}}));
+  }
+  function updateSourceAppearance(key:string,field:'color'|'opacity',value:string|number){
+    setWidgetAppearance(current=>({...current,sources:{...current.sources,[key]:{color:field==='color'?normalizeHexColor(String(value),current.sources[key]?.color??'#E8F0FF'):(current.sources[key]?.color??'#E8F0FF'),opacity:field==='opacity'?Math.max(0,Math.min(100,Number(value)||0)):(current.sources[key]?.opacity??100)}}}));
+  }
+  async function saveAppearance(){
+    if(widgetAppearanceBusy)return;
+    setWidgetAppearanceBusy(true);
+    try{await saveWidgetAppearance(widgetAppearance);await syncTodayWidget(commitments);showAlert('Widget','Personalizzazione salvata.');}
+    catch(e){showAlert('Widget',e instanceof Error?e.message:'Salvataggio non riuscito.');}
+    finally{setWidgetAppearanceBusy(false);}
+  }
+  async function restoreAppearanceDefaults(){
+    if(widgetAppearanceBusy)return;
+    setWidgetAppearanceBusy(true);
+    try{const defaults=await resetWidgetAppearance();setWidgetAppearance(defaults);await syncTodayWidget(commitments);showAlert('Widget','Valori predefiniti ripristinati.');}
+    catch(e){showAlert('Widget',e instanceof Error?e.message:'Ripristino non riuscito.');}
+    finally{setWidgetAppearanceBusy(false);}
+  }
 
   async function run(action:()=>Promise<unknown>){
     if(busy)return;
@@ -241,6 +267,24 @@ export default function Me(){
      </Card>
 
     <Card>
+      <Text style={styles.label}>Personalizzazione widget</Text>
+      <Text style={styles.meta}>Scegli sfondo, trasparenza e colore del testo per ciascun widget. I colori delle schede possono essere personalizzati per ogni calendario e lista Google Tasks.</Text>
+      {(['today','calendar'] as const).map(section=><View key={section} style={styles.widgetAppearanceSection}>
+        <Text style={styles.item}>{section==='today'?'Widget Oggi':'Widget Calendario'}</Text>
+        <View style={styles.colorFields}>
+          <View style={styles.colorField}><Text style={styles.meta}>Sfondo (HEX)</Text><TextInput value={widgetAppearance[section].backgroundColor} onChangeText={value=>updateWidgetSection(section,'backgroundColor',value)} autoCapitalize="characters" maxLength={7} style={styles.colorInput}/></View>
+          <View style={styles.opacityField}><Text style={styles.meta}>Trasparenza %</Text><TextInput value={String(widgetAppearance[section].backgroundOpacity)} onChangeText={value=>updateWidgetSection(section,'backgroundOpacity',value)} keyboardType="numeric" maxLength={3} style={styles.colorInput}/></View>
+          <View style={styles.colorField}><Text style={styles.meta}>Testo (HEX)</Text><TextInput value={widgetAppearance[section].textColor} onChangeText={value=>updateWidgetSection(section,'textColor',value)} autoCapitalize="characters" maxLength={7} style={styles.colorInput}/></View>
+        </View>
+      </View>)}
+      <Text style={styles.item}>Colori delle schede delle attività</Text>
+      {google?.calendars.map(calendar=>{const key=`calendar:${calendar.google_calendar_id}`;const value=widgetAppearance.sources[key]??{color:'#E8F0FF',opacity:100};return <View key={key} style={styles.sourceAppearanceRow}><Text style={styles.meta}>{friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)}</Text><View style={styles.colorFields}><View style={styles.colorField}><Text style={styles.meta}>Colore HEX</Text><TextInput value={value.color} onChangeText={color=>updateSourceAppearance(key,'color',color)} autoCapitalize="characters" maxLength={7} style={styles.colorInput}/></View><View style={styles.opacityField}><Text style={styles.meta}>Trasparenza %</Text><TextInput value={String(value.opacity)} onChangeText={opacity=>updateSourceAppearance(key,'opacity',opacity)} keyboardType="numeric" maxLength={3} style={styles.colorInput}/></View></View></View>;})}
+      {google?.taskLists.map(list=>{const key=`task:${list.google_task_list_id}`;const value=widgetAppearance.sources[key]??{color:'#E9F8EF',opacity:100};return <View key={key} style={styles.sourceAppearanceRow}><Text style={styles.meta}>{list.title}</Text><View style={styles.colorFields}><View style={styles.colorField}><Text style={styles.meta}>Colore HEX</Text><TextInput value={value.color} onChangeText={color=>updateSourceAppearance(key,'color',color)} autoCapitalize="characters" maxLength={7} style={styles.colorInput}/></View><View style={styles.opacityField}><Text style={styles.meta}>Trasparenza %</Text><TextInput value={String(value.opacity)} onChangeText={opacity=>updateSourceAppearance(key,'opacity',opacity)} keyboardType="numeric" maxLength={3} style={styles.colorInput}/></View></View></View>;})}
+      {!google?.calendars.length&&!google?.taskLists.length?<Text style={styles.meta}>Collega Google per personalizzare i colori delle singole sorgenti.</Text>:null}
+      <View style={styles.actions}><Button style={styles.actionButton} label={widgetAppearanceBusy?'Salvataggio…':'Salva colori'} onPress={()=>{void saveAppearance();}} disabled={widgetAppearanceBusy}/><Button style={styles.actionButton} secondary label="Ripristina default" onPress={()=>{void restoreAppearanceDefaults();}} disabled={widgetAppearanceBusy}/></View>
+    </Card>
+
+    <Card>
       <Text style={styles.label}>{t('Google Workspace')}</Text>
       <Text style={styles.meta}>{t('Intervallo importazione:')} {google?.range?`${google.range.labelStart} → ${google.range.labelEnd}`:t('caricamento…')}</Text>
       <View style={styles.inline}><TextInput value={rangeStart} onChangeText={setRangeStart} placeholder={t('GG-MM-AAAA')} style={styles.input}/><TextInput value={rangeEnd} onChangeText={setRangeEnd} placeholder="GG-MM-AAAA" style={styles.input}/><Button secondary label={t('Salva')} onPress={()=>{void saveRange();}}/></View>
@@ -293,6 +337,7 @@ export default function Me(){
 
 const styles=StyleSheet.create({languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageOption:{borderRadius:12,paddingHorizontal:14,paddingVertical:10,backgroundColor:'#ECEEF4',borderWidth:1,borderColor:palette.border},languageOptionActive:{backgroundColor:palette.primary,borderColor:palette.primary},languageOptionText:{fontSize:12,fontWeight:'800',color:palette.muted},languageOptionTextActive:{color:'#FFF'},
   label:{fontSize:17,fontWeight:'900',color:palette.ink,marginBottom:6},
+  widgetAppearanceSection:{marginTop:12,paddingTop:10,borderTopWidth:1,borderTopColor:palette.border,gap:7},colorFields:{flexDirection:'row',gap:7,alignItems:'flex-end'},colorField:{flex:1,minWidth:0},opacityField:{width:94},colorInput:{borderWidth:1,borderColor:palette.border,borderRadius:9,paddingHorizontal:9,paddingVertical:8,fontSize:12,color:palette.ink,marginTop:3},sourceAppearanceRow:{paddingTop:8,marginTop:5,borderTopWidth:1,borderTopColor:palette.border,gap:5},
   meta:{fontSize:12,lineHeight:17,color:palette.muted},
   item:{fontSize:14,fontWeight:'800',color:palette.ink},
   inline:{flexDirection:'row',alignItems:'center',gap:6,marginTop:8},
