@@ -81,7 +81,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
   const labels=widgetStrings(language);
   return (
     <FlexWidget
-      style={{ width: 'match_parent', height: 'match_parent', padding: 8, backgroundColor, borderRadius: 20, flexDirection: 'column' }}
+      style={{ width: 'match_parent', height: 'match_parent', padding: 8, backgroundColor:backgroundColor as any, borderRadius: 20, flexDirection: 'column' }}
       clickAction="OPEN_URI"
       clickActionData={{ uri: 'flowos://calendar' }}
       accessibilityLabel="FlowOS: calendario"
@@ -89,7 +89,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
       <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 5 }}>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex:1 }}>
           <ImageWidget image={require("../../assets/flowos-app-icon-512-store.png")} imageWidth={26} imageHeight={26} style={{ width:26, height:26, marginRight:7 }} radius={7} resizeMode="contain" />
-          <TextWidget text={labels.calendar} style={{ fontSize: 19, fontWeight: 'bold', color: textColor }} />
+          <TextWidget text={labels.calendar} style={{ fontSize: 19, fontWeight: 'bold', color: textColor as any }} />
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <FlexWidget style={{ height: 26, paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel={labels.today}><TextWidget text={labels.today} style={{ fontSize: 9, fontWeight: 'bold', color: '#FFFFFF' }} /></FlexWidget>
@@ -128,18 +128,18 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                     style={{ width: 0, flex: 1, height, marginHorizontal: 1, padding: 2, borderRadius: 7, borderWidth: 1, borderColor: BORDER, backgroundColor: day.isToday ? '#E8ECFF' : '#FFFFFF', flexDirection: 'column' }}
                   >
                     <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
-                      <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: textColor }} />
+                      <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: textColor as any }} />
                     </FlexWidget>
                     {day.items.map(item => {
                       const lines = itemTitleLines(item);
                       return (
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
-                          {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor }} /> : null}
+                          {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor as any }} /> : null}
                           <FlexWidget style={{ flex:1, flexDirection:'row', alignItems:'flex-start' }}>
                             {item.priority ? <TextWidget text={String(item.priority)} style={{ width:8, fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: PRIMARY }} /> : null}
                             <FlexWidget style={{ flex:1, flexDirection:'column' }}>
                               {lines.map((line, index) => (
-                                <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: textColor }} />
+                                <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: textColor as any }} />
                               ))}
                             </FlexWidget>
                           </FlexWidget>
