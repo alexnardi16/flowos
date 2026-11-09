@@ -126,11 +126,11 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
   const calendarBackgroundColor=colorWithOpacity(appearance.calendar.backgroundColor,appearance.calendar.backgroundOpacity);
   if(props.widgetInfo.widgetName==='TodayAndroidWidget'){
     const data=todayData(raw,language,appearance);
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} language={language} backgroundColor={todayBackgroundColor} textColor={appearance.today.textColor} buttonBackgroundColor={appearance.today.buttonBackgroundColor} buttonTextColor={appearance.today.buttonTextColor}/>);break;default:break;}
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} language={language} backgroundColor={todayBackgroundColor} textColor={colorWithOpacity(appearance.today.textColor,appearance.today.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.today.buttonBackgroundColor,appearance.today.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.today.buttonTextColor,appearance.today.buttonTextOpacity)}/>);break;default:break;}
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
     let data=await loadCalendarCache(language);
     if(!data) {
-      props.renderWidget(<CalendarWidget weeks={[]} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor} buttonBackgroundColor={appearance.calendar.buttonBackgroundColor} buttonTextColor={appearance.calendar.buttonTextColor}/>);
+      props.renderWidget(<CalendarWidget weeks={[]} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)} buttonBackgroundColor={appearance.calendar.buttonBackgroundColor} buttonTextColor={appearance.calendar.buttonTextColor}/>);
       let syncEnd=new Date(new Date().getFullYear()+1,11,31);
       try { const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus()); if(status.range?.endDate)syncEnd=new Date(`${status.range.endDate}T23:59:59`); } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
       let calendarNames:Map<string,string>|undefined;
@@ -149,19 +149,19 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     let page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
     if(isCalendarNavigation) {
       // Show staged progress while the launcher prepares the new bounded page.
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={15} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={15} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);
       await new Promise<void>(resolve=>setTimeout(resolve,90));
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={55} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={55} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);
       if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,page.startIndex-pageShift);
       if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=page.startIndex+pageShift;
       if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=undefined;
       page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
       await new Promise<void>(resolve=>setTimeout(resolve,90));
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={90} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={90} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);
       await new Promise<void>(resolve=>setTimeout(resolve,70));
     }
     try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);break;default:break;}
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);break;default:break;}
     if(props.widgetAction==='WIDGET_UPDATE'){
       try{
         const remote=await refreshFromGoogle();
@@ -178,7 +178,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         await saveCalendarCache(refreshed,language);
         page=getCalendarWidgetPage(refreshed.weeks,page.startIndex,new Date());
         try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
-        props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
+        props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);
       }catch(error){recordDiagnostic('widget-calendar-background-refresh-failed',error,'warn');}
     }
   }
