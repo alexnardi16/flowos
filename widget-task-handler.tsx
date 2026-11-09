@@ -155,11 +155,11 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=undefined;
       page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
       await new Promise<void>(resolve=>setTimeout(resolve,90));
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={90} language={language}/>);
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={90} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
       await new Promise<void>(resolve=>setTimeout(resolve,70));
     }
     try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language}/>);break;default:break;}
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);break;default:break;}
     if(props.widgetAction==='WIDGET_UPDATE'){
       try{
         const remote=await refreshFromGoogle();
@@ -170,7 +170,8 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
         let calendarNames:Map<string,string>|undefined;
         try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
-        const refreshed=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames,language);
+        const refreshedRaw=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames,language);
+        const refreshed={weeks:refreshedRaw.weeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=remote.find(candidate=>candidate.id===item.id);return source?{...item,sourceColor:sourceAppearanceColor(activitySourceKey(source),String(item.sourceColor),appearance)}:item;})}))}))};
         await saveCalendarCache(refreshed,language);
         page=getCalendarWidgetPage(refreshed.weeks,page.startIndex,new Date());
         try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
