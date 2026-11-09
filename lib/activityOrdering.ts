@@ -6,8 +6,6 @@ function sourceKindFromName(name?: string): ActivitySourceKind {
   const n = (name ?? '').toLocaleLowerCase('it-IT').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (/(jours? feries|fetes? francaises|fetes? en france|public holidays.*france|france.*holidays)/.test(n)) return 'french-holidays';
   if (/(festivita|feste italiane|italia.*fest|italian holidays|holidays.*italy)/.test(n)) return 'italian-holidays';
-  if (/(alex[\s_-]*(?:&|e|and)[\s_-]*chiara|chiara[\s_-]*(?:&|e|and)[\s_-]*alex)/.test(n)) return 'alex-chiara';
-  if (n === 'alex' || /^alex\b/.test(n)) return 'alex';
   return 'other';
 }
 
@@ -19,11 +17,9 @@ export function activitySourceKind(item: Commitment, calendarName?: string): Act
 const rank: Record<ActivitySourceKind, number> = {
   'french-holidays': 0,
   'italian-holidays': 1,
-  'alex': 2,
-  'alex-chiara': 3,
-  'priority-task': 4,
-  'unprioritized-task': 5,
-  'other': 6,
+  'priority-task': 2,
+  'unprioritized-task': 3,
+  'other': 4,
 };
 
 export function compareCommitments(a: Commitment, b: Commitment, calendarNames?: Map<string, string>): number {
