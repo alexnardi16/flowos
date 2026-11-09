@@ -9,7 +9,6 @@ export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlde
 
 const BG = '#F1F4FF';
 const INK = '#172033';
-const MUTED = '#697386';
 const PRIMARY = '#4254C5';
 const BORDER = '#C8CEDA';
 
@@ -129,7 +128,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                     style={{ width: 0, flex: 1, height, marginHorizontal: 1, padding: 2, borderRadius: 7, borderWidth: 1, borderColor: BORDER, backgroundColor: day.isToday ? '#E8ECFF' : '#FFFFFF', flexDirection: 'column' }}
                   >
                     <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
-                      <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: day.isToday ? textColor : textColor }} />
+                      <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: textColor }} />
                     </FlexWidget>
                     {day.items.map(item => {
                       const lines = itemTitleLines(item);
