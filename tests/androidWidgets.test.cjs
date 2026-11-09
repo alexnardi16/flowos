@@ -274,6 +274,8 @@ test('Both Android widgets apply saved background, text and per-source card colo
   assert.match(sync,/getWidgetAppearance/);
   assert.match(sync,/sourceAppearanceColor/);
   assert.match(handler,/sourceAppearanceColor/);
+  assert.match(handler,/activitySourceColor\(source,sourceColors\)/);
+  assert.match(handler,/activitySourceColor\(source,refreshedSourceColors\)/);
   assert.match(today,/backgroundColor=BG, textColor=INK/);
   assert.match(today,/color:textColor/);
   assert.match(calendar,/backgroundColor=BG, textColor=INK/);
