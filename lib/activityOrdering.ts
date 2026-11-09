@@ -1,6 +1,6 @@
 import type { Commitment } from '../types';
 
-export type ActivitySourceKind = 'french-holidays' | 'italian-holidays' | 'alex' | 'alex-chiara' | 'priority-task' | 'unprioritized-task' | 'other';
+export type ActivitySourceKind = 'french-holidays' | 'italian-holidays' | 'priority-task' | 'unprioritized-task' | 'other';
 
 function sourceKindFromName(name?: string): ActivitySourceKind {
   const n = (name ?? '').toLocaleLowerCase('it-IT').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
