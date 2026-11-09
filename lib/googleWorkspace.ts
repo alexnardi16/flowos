@@ -36,7 +36,7 @@ export async function signInWithGoogle(){const redirectTo=Platform.OS==='web'&&t
 let connectInFlight:Promise<unknown>|null=null;
 export async function connectGoogleFromSession(session:Session,force=false){if(!session.provider_token)return null;if(connectInFlight){recordDiagnostic('google-connect-coalesced');return connectInFlight;}const marker=`flowos-google-connected-${session.user.id}-${session.provider_token.slice(-12)}`;if(!force&&Platform.OS==='web'&&typeof sessionStorage!=='undefined'&&sessionStorage.getItem(marker))return null;connectInFlight=invoke({action:'connect',providerToken:session.provider_token,providerRefreshToken:session.provider_refresh_token,scopes:GOOGLE_SCOPES,expiresIn:3600}).then(result=>{if(Platform.OS==='web'&&typeof sessionStorage!=='undefined')sessionStorage.setItem(marker,'1');return result;}).finally(()=>{connectInFlight=null;});return connectInFlight;}
 let statusCache:GoogleWorkspaceStatus|null=null;let statusCacheAt=0;let statusInFlight:Promise<GoogleWorkspaceStatus>|null=null;const STATUS_CACHE_MS=5000;
-export function friendlyTaskListName(name:string){return name.trim()==='Elenco di Alex Nardi'?'Alex':name;}
+export function friendlyTaskListName(name:string){return name;}
 function normalizeWorkspaceStatus(result:any):GoogleWorkspaceStatus {
   const serverRange=result?.range;
   const taskLists=(result?.taskLists??[]).map((list:any)=>({...list,title:friendlyTaskListName(String(list.title??''))}));
