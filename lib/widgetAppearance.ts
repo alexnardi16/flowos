@@ -3,13 +3,13 @@ import { supabase } from './supabase';
 
 export type SourceAppearance = { color: string; opacity: number };
 export type WidgetAppearance = {
-  today: { backgroundColor: string; backgroundOpacity: number; textColor: string; buttonBackgroundColor: string; buttonTextColor: string };
-  calendar: { backgroundColor: string; backgroundOpacity: number; textColor: string; buttonBackgroundColor: string; buttonTextColor: string };
+  today: { backgroundColor: string; backgroundOpacity: number; textColor: string; textOpacity: number; buttonBackgroundColor: string; buttonBackgroundOpacity: number; buttonTextColor: string; buttonTextOpacity: number };
+  calendar: { backgroundColor: string; backgroundOpacity: number; textColor: string; textOpacity: number; buttonBackgroundColor: string; buttonBackgroundOpacity: number; buttonTextColor: string; buttonTextOpacity: number };
   sources: Record<string, SourceAppearance>;
 };
 
 export const DEFAULT_WIDGET_APPEARANCE: WidgetAppearance = {
-  today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', buttonBackgroundColor: '#4254C5', buttonTextColor: '#FFFFFF' },
+  today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#4254C5', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
   calendar: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', buttonBackgroundColor: '#4254C5', buttonTextColor: '#FFFFFF' },
   sources: {},
 };
