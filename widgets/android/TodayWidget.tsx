@@ -3,7 +3,7 @@ import { widgetStrings, type Language } from '../../lib/i18n';
 import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
 export type AndroidWidgetItem = { id: string; title: string; time: string; kind: string; priority?: number; sourceColor?: string };
-export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; language?: Language };
+export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; language?: Language; backgroundColor?: string; textColor?: string };
 const BG = '#F1F4FF'; const INK = '#172033'; const MUTED = '#697386'; const PRIMARY = '#4254C5'; const BORDER = '#C8CEDA';
 const uri=(action:string,id:string)=>`flowos://today?widgetAction=${action}&id=${encodeURIComponent(id)}`;
 function titleLines(text:string,maxChars=32){
@@ -29,18 +29,18 @@ function itemHeight(title:string,hasPriority=false){
   const lines=titleLines(title,hasPriority?36:42).length;
   return Math.max(48,12+lines*17+16+8);
 }
-export function TodayWidget({ items, language='it' }: AndroidTodayWidgetProps) {
+export function TodayWidget({ items, language='it', backgroundColor=BG, textColor=INK }: AndroidTodayWidgetProps) {
   const labels=widgetStrings(language);
-  return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:BG, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel={labels.today}>
+  return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel={labels.today}>
     <FlexWidget style={{ width:'match_parent', height:34, flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingBottom:5 }}>
-      <FlexWidget style={{ flexDirection:'row', alignItems:'center', flex:1 }}><ImageWidget image={require("../../assets/flowos-app-icon-512-store.png")} imageWidth={26} imageHeight={26} style={{ width:26, height:26, marginRight:7 }} radius={7} resizeMode="contain" /><TextWidget text={labels.today} style={{ fontSize:19, fontWeight:'bold', color:INK,marginRight:5 }}/><TextWidget text={`${items.length}`} style={{ fontSize:10,fontWeight:'bold',color:MUTED }}/></FlexWidget>
+      <FlexWidget style={{ flexDirection:'row', alignItems:'center', flex:1 }}><ImageWidget image={require("../../assets/flowos-app-icon-512-store.png")} imageWidth={26} imageHeight={26} style={{ width:26, height:26, marginRight:7 }} radius={7} resizeMode="contain" /><TextWidget text={labels.today} style={{ fontSize:19, fontWeight:'bold', color:textColor,marginRight:5 }}/><TextWidget text={`${items.length}`} style={{ fontSize:10,fontWeight:'bold',color:MUTED }}/></FlexWidget>
       <FlexWidget style={{ flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:30, height:26, marginRight:4, borderRadius:13, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}><TextWidget text="↻" style={{ fontSize:16, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
         <FlexWidget style={{ width:30, height:26, marginRight:4, borderRadius:13, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}><TextWidget text="🎙" style={{ fontSize:14 }}/></FlexWidget>
         <FlexWidget style={{ height:26, paddingHorizontal:9, borderRadius:13, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}><TextWidget text="+" style={{ fontSize:10, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
       </FlexWidget>
     </FlexWidget>
-    <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:BG }}>
+    <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor }}>
       {items.length ? items.map((item)=>{const lines=titleLines(item.title,item.priority?36:42);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:1, paddingHorizontal:8, paddingVertical:6, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:(item.sourceColor??'#F3F4F7') as any, flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
