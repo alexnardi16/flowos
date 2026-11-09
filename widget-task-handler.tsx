@@ -175,7 +175,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         await saveCalendarCache(refreshed,language);
         page=getCalendarWidgetPage(refreshed.weeks,page.startIndex,new Date());
         try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
-        props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language}/>);
+        props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
       }catch(error){recordDiagnostic('widget-calendar-background-refresh-failed',error,'warn');}
     }
   }
