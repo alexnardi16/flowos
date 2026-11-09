@@ -144,7 +144,7 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(source,/isLoading=false, loadingProgress=0/);
   assert.match(source,/Math\.round\(loadingProgress\)/);
   assert.match(source,/labels\.today/);
-  assert.match(source,/paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY/);
+  assert.match(source,/paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor/);
   assert.match(source,/flex: Math\.max\(1, loadingProgress\)/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/CALENDAR_WIDGET_PAGE_SIZE = 8/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/CALENDAR_WIDGET_PAGE_OVERLAP = 0/);
