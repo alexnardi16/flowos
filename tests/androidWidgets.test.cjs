@@ -243,3 +243,46 @@ test('Manage page and Today macrosection use the shared recurring completion pro
   assert.match(manage,/t\('Completa'\)/);
   assert.match(today,/requestComplete\(item,complete\)/);
 });
+
+
+test('Google resource names are never replaced with developer-specific aliases',()=>{
+  const workspace=fs.readFileSync('lib/googleWorkspace.ts','utf8');
+  const ordering=fs.readFileSync('lib/activityOrdering.ts','utf8');
+  assert.match(workspace,/friendlyTaskListName\(name:string\)\{return name;\}/);
+  assert.doesNotMatch(workspace,/Elenco di Alex Nardi|return 'Alex'/);
+  assert.doesNotMatch(ordering,/alex-chiara|\balex\b/i);
+});
+
+test('Widget appearance preferences are per FlowOS user and support color opacity',()=>{
+  const appearance=fs.readFileSync('lib/widgetAppearance.ts','utf8');
+  const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
+  assert.match(appearance,/supabase\.auth\.getUser\(\)/);
+  assert.match(appearance,/STORAGE_PREFIX.*data\.user\?\.id/);
+  assert.match(appearance,/colorWithOpacity/);
+  assert.match(appearance,/Math\.max\(0, Math\.min\(100/);
+  assert.match(settings,/google\?\.calendars\.map/);
+  assert.match(settings,/google\?\.taskLists\.map/);
+  assert.match(settings,/Ripristina default/);
+  assert.match(settings,/resetWidgetAppearance/);
+});
+
+test('Both Android widgets apply saved background, text and per-source card colors',()=>{
+  const sync=fs.readFileSync('lib/widgetSync.ts','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  const today=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  const calendar=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
+  assert.match(sync,/getWidgetAppearance/);
+  assert.match(sync,/sourceAppearanceColor/);
+  assert.match(handler,/sourceAppearanceColor/);
+  assert.match(today,/backgroundColor=BG, textColor=INK/);
+  assert.match(today,/color:textColor/);
+  assert.match(calendar,/backgroundColor=BG, textColor=INK/);
+  assert.match(calendar,/color: textColor/);
+});
+
+test('Macrosection navigation preloads screens to avoid first-open delays',()=>{
+  const layout=fs.readFileSync('app/(tabs)/_layout.tsx','utf8');
+  assert.match(layout,/lazy:false/);
+  assert.match(layout,/freezeOnBlur:true/);
+  assert.match(layout,/detachInactiveScreens:false/);
+});
