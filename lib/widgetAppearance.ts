@@ -10,7 +10,7 @@ export type WidgetAppearance = {
 
 export const DEFAULT_WIDGET_APPEARANCE: WidgetAppearance = {
   today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#4254C5', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
-  calendar: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', buttonBackgroundColor: '#4254C5', buttonTextColor: '#FFFFFF' },
+  calendar: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#4254C5', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
   sources: {},
 };
 const STORAGE_PREFIX = 'flowos-widget-appearance-v1';
