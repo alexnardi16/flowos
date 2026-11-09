@@ -94,15 +94,15 @@ export default function Me(){
   },[]);
 
   function updateWidgetSection(section:'today'|'calendar',field:'backgroundColor'|'backgroundOpacity'|'textColor',value:string|number){
-    setWidgetAppearance(current=>({...current,[section]:{...current[section],[field]:field==='backgroundOpacity'?Math.max(0,Math.min(100,Number(value)||0)):normalizeHexColor(String(value),current[section][field as 'backgroundColor'|'textColor'])}}));
+    setWidgetAppearance(current=>({...current,[section]:{...current[section],[field]:field==='backgroundOpacity'?Math.max(0,Math.min(100,Number(value)||0)):String(value)}}));
   }
   function updateSourceAppearance(key:string,field:'color'|'opacity',value:string|number){
-    setWidgetAppearance(current=>({...current,sources:{...current.sources,[key]:{color:field==='color'?normalizeHexColor(String(value),current.sources[key]?.color??'#E8F0FF'):(current.sources[key]?.color??'#E8F0FF'),opacity:field==='opacity'?Math.max(0,Math.min(100,Number(value)||0)):(current.sources[key]?.opacity??100)}}}));
+    setWidgetAppearance(current=>({...current,sources:{...current.sources,[key]:{color:field==='color'?String(value):(current.sources[key]?.color??'#E8F0FF'),opacity:field==='opacity'?Math.max(0,Math.min(100,Number(value)||0)):(current.sources[key]?.opacity??100)}}}));
   }
   async function saveAppearance(){
     if(widgetAppearanceBusy)return;
     setWidgetAppearanceBusy(true);
-    try{await saveWidgetAppearance(widgetAppearance);await syncTodayWidget(commitments);showAlert('Widget','Personalizzazione salvata.');}
+    try{const sanitized:WidgetAppearance={today:{...widgetAppearance.today,backgroundColor:normalizeHexColor(widgetAppearance.today.backgroundColor),textColor:normalizeHexColor(widgetAppearance.today.textColor,'#172033'),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.backgroundOpacity)||0))},calendar:{...widgetAppearance.calendar,backgroundColor:normalizeHexColor(widgetAppearance.calendar.backgroundColor),textColor:normalizeHexColor(widgetAppearance.calendar.textColor,'#172033'),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.backgroundOpacity)||0))},sources:Object.fromEntries(Object.entries(widgetAppearance.sources).map(([key,value])=>[key,{color:normalizeHexColor(value.color),opacity:Math.max(0,Math.min(100,Number(value.opacity)||0))}]))};setWidgetAppearance(sanitized);await saveWidgetAppearance(sanitized);await syncTodayWidget(commitments);showAlert('Widget','Personalizzazione salvata.');}
     catch(e){showAlert('Widget',e instanceof Error?e.message:'Salvataggio non riuscito.');}
     finally{setWidgetAppearanceBusy(false);}
   }
