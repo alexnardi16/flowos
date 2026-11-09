@@ -130,7 +130,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
     let data=await loadCalendarCache(language);
     if(!data) {
-      props.renderWidget(<CalendarWidget weeks={[]} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)} buttonBackgroundColor={appearance.calendar.buttonBackgroundColor} buttonTextColor={appearance.calendar.buttonTextColor}/>);
+      props.renderWidget(<CalendarWidget weeks={[]} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);
       let syncEnd=new Date(new Date().getFullYear()+1,11,31);
       try { const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus()); if(status.range?.endDate)syncEnd=new Date(`${status.range.endDate}T23:59:59`); } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
       let calendarNames:Map<string,string>|undefined;
