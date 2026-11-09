@@ -4,7 +4,7 @@ import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-an
 
 export type AndroidWidgetItem = { id: string; title: string; time: string; kind: string; priority?: number; sourceColor?: string };
 export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; language?: Language; backgroundColor?: string; textColor?: string };
-const BG = '#F1F4FF'; const INK = '#172033'; const MUTED = '#697386'; const PRIMARY = '#4254C5'; const BORDER = '#C8CEDA';
+const BG = '#F1F4FF'; const INK = '#172033'; const PRIMARY = '#4254C5'; const BORDER = '#C8CEDA';
 const uri=(action:string,id:string)=>`flowos://today?widgetAction=${action}&id=${encodeURIComponent(id)}`;
 function titleLines(text:string,maxChars=32){
   const clean=text.trim();
