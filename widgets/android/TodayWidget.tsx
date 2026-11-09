@@ -45,7 +45,7 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
         <FlexWidget style={{ width:0, flex:1, flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
           <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }}>
-            {lines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:12, lineHeight:17, fontWeight:'bold', color:INK }}/>)}
+            {lines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:12, lineHeight:17, fontWeight:'bold', color:textColor }}/>)}
             {item.time ? <TextWidget text={item.time} style={{ fontSize:9, lineHeight:16, color:MUTED }}/> : null}
           </FlexWidget>
         </FlexWidget>
