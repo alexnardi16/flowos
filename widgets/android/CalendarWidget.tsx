@@ -129,13 +129,13 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                     style={{ width: 0, flex: 1, height, marginHorizontal: 1, padding: 2, borderRadius: 7, borderWidth: 1, borderColor: BORDER, backgroundColor: day.isToday ? '#E8ECFF' : '#FFFFFF', flexDirection: 'column' }}
                   >
                     <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
-                      <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: day.isToday ? PRIMARY : MUTED }} />
+                      <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: day.isToday ? textColor : textColor }} />
                     </FlexWidget>
                     {day.items.map(item => {
                       const lines = itemTitleLines(item);
                       return (
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
-                          {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: MUTED }} /> : null}
+                          {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor }} /> : null}
                           <FlexWidget style={{ flex:1, flexDirection:'row', alignItems:'flex-start' }}>
                             {item.priority ? <TextWidget text={String(item.priority)} style={{ width:8, fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: PRIMARY }} /> : null}
                             <FlexWidget style={{ flex:1, flexDirection:'column' }}>
