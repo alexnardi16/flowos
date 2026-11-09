@@ -287,3 +287,24 @@ test('Macrosection navigation preloads screens to avoid first-open delays',()=>{
   assert.match(layout,/lazy:false/);
   assert.match(layout,/freezeOnBlur:true/);
 });
+
+test('Widget customization uses selectable color swatches and includes button colors for both widgets',()=>{
+  const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
+  const appearance=fs.readFileSync('lib/widgetAppearance.ts','utf8');
+  const today=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  const calendar=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
+  assert.match(settings,/WIDGET_COLOR_SWATCHES/);
+  assert.match(settings,/<ColorSwatches value=\{widgetAppearance\[section\]\.backgroundColor\}/);
+  assert.doesNotMatch(settings,/TextInput value=\{widgetAppearance\[section\]\.(backgroundColor|textColor)/);
+  assert.match(appearance,/buttonBackgroundColor/);
+  assert.match(appearance,/buttonTextColor/);
+  assert.match(today,/buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF'/);
+  assert.match(calendar,/buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF'/);
+  assert.match(settings,/Opacità %/);
+  assert.match(settings,/Testo e simboli dei pulsanti/);
+});
+test('Settings languages are alphabetically ordered by visible label',()=>{
+  const source=fs.readFileSync('lib/i18n.ts','utf8');
+  const order=[...source.match(/export const LANGUAGES:[\s\S]*?\];/)[0].matchAll(/label: '([^']+)'/g)].map(match=>match[1]);
+  assert.deepEqual(order,['English','Español','Français','Italiano']);
+});
