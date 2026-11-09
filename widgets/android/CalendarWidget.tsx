@@ -5,7 +5,7 @@ import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-an
 export type AndroidCalendarItem = { id: string; title: string; time: string; sourceColor: any; priority?: number };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
-export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language };
+export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language; backgroundColor?: string; textColor?: string };
 
 const BG = '#F1F4FF';
 const INK = '#172033';
@@ -78,11 +78,11 @@ function weekHeight(week: AndroidCalendarWeek) {
   return Math.max(92, ...week.days.map(day => dayHeight(day)));
 }
 
-export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, isLoading=false, loadingProgress=0, language='it' }: AndroidCalendarWidgetProps) {
+export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, isLoading=false, loadingProgress=0, language='it', backgroundColor=BG, textColor=INK }: AndroidCalendarWidgetProps) {
   const labels=widgetStrings(language);
   return (
     <FlexWidget
-      style={{ width: 'match_parent', height: 'match_parent', padding: 8, backgroundColor: BG, borderRadius: 20, flexDirection: 'column' }}
+      style={{ width: 'match_parent', height: 'match_parent', padding: 8, backgroundColor, borderRadius: 20, flexDirection: 'column' }}
       clickAction="OPEN_URI"
       clickActionData={{ uri: 'flowos://calendar' }}
       accessibilityLabel="FlowOS: calendario"
@@ -90,7 +90,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
       <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 5 }}>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex:1 }}>
           <ImageWidget image={require("../../assets/flowos-app-icon-512-store.png")} imageWidth={26} imageHeight={26} style={{ width:26, height:26, marginRight:7 }} radius={7} resizeMode="contain" />
-          <TextWidget text={labels.calendar} style={{ fontSize: 19, fontWeight: 'bold', color: INK }} />
+          <TextWidget text={labels.calendar} style={{ fontSize: 19, fontWeight: 'bold', color: textColor }} />
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <FlexWidget style={{ height: 26, paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel={labels.today}><TextWidget text={labels.today} style={{ fontSize: 9, fontWeight: 'bold', color: '#FFFFFF' }} /></FlexWidget>
@@ -106,7 +106,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
         </FlexWidget>
       </FlexWidget>
 
-      <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: BG }}>
+      <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor }}>
         {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 16, flexDirection: 'row', alignItems: 'center', marginVertical: 2 }}><FlexWidget style={{ flex: 1, height: 5, backgroundColor: '#D9DFF8', borderRadius: 3, flexDirection: 'row' }}><FlexWidget style={{ flex: Math.max(1, loadingProgress), height: 5, backgroundColor: PRIMARY, borderRadius: 3 }} /><FlexWidget style={{ flex: Math.max(1, 100 - loadingProgress), height: 5 }} /></FlexWidget><TextWidget text={`${Math.round(loadingProgress)}%`} style={{ width: 32, marginLeft: 6, fontSize: 9, fontWeight: 'bold', color: PRIMARY }} /></FlexWidget> : null}
         {hasOlderWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:'#E8ECFF', borderRadius:8, marginVertical:2 }}><TextWidget text={`← ${labels.olderWeeks}`} style={{ fontSize:10, fontWeight:'bold', color:PRIMARY }} /></FlexWidget> : null}
         {weeks.map(week => {
