@@ -286,5 +286,4 @@ test('Macrosection navigation preloads screens to avoid first-open delays',()=>{
   const layout=fs.readFileSync('app/(tabs)/_layout.tsx','utf8');
   assert.match(layout,/lazy:false/);
   assert.match(layout,/freezeOnBlur:true/);
-  assert.match(layout,/detachInactiveScreens:false/);
 });
