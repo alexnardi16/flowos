@@ -17,8 +17,8 @@ const STORAGE_PREFIX = 'flowos-widget-appearance-v1';
 
 async function storageKey() {
   try {
-    const { data } = await supabase.auth.getUser();
-    return `${STORAGE_PREFIX}:${data.user?.id ?? 'local'}`;
+    const { data } = await supabase.auth.getSession();
+    return `${STORAGE_PREFIX}:${data.session?.user.id ?? 'local'}`;
   } catch {
     return `${STORAGE_PREFIX}:local`;
   }
