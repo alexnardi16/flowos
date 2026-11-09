@@ -93,26 +93,26 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <FlexWidget style={{ height: 26, paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel={labels.today}><TextWidget text={labels.today} style={{ fontSize: 9, fontWeight: 'bold', color: buttonTextColor as any }} /></FlexWidget>
-          <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
-            <TextWidget text="↻" style={{ fontSize: 16, fontWeight: 'bold', color: '#FFFFFF' }} />
+          <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
+            <TextWidget text="↻" style={{ fontSize: 16, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
-          <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}>
-            <TextWidget text="🎙" style={{ fontSize: 14 }} />
+          <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}>
+            <TextWidget text="🎙" style={{ fontSize: 14, color: buttonTextColor as any }} />
           </FlexWidget>
-          <FlexWidget style={{ height: 26, paddingHorizontal: 9, borderRadius: 13, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}>
-            <TextWidget text="+" style={{ fontSize: 10, fontWeight: 'bold', color: '#FFFFFF' }} />
+          <FlexWidget style={{ height: 26, paddingHorizontal: 9, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}>
+            <TextWidget text="+" style={{ fontSize: 10, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
         </FlexWidget>
       </FlexWidget>
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: backgroundColor as any }}>
-        {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 16, flexDirection: 'row', alignItems: 'center', marginVertical: 2 }}><FlexWidget style={{ flex: 1, height: 5, backgroundColor: '#D9DFF8', borderRadius: 3, flexDirection: 'row' }}><FlexWidget style={{ flex: Math.max(1, loadingProgress), height: 5, backgroundColor: PRIMARY, borderRadius: 3 }} /><FlexWidget style={{ flex: Math.max(1, 100 - loadingProgress), height: 5 }} /></FlexWidget><TextWidget text={`${Math.round(loadingProgress)}%`} style={{ width: 32, marginLeft: 6, fontSize: 9, fontWeight: 'bold', color: PRIMARY }} /></FlexWidget> : null}
-        {hasOlderWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:'#E8ECFF', borderRadius:8, marginVertical:2 }}><TextWidget text={`← ${labels.olderWeeks}`} style={{ fontSize:10, fontWeight:'bold', color:PRIMARY }} /></FlexWidget> : null}
+        {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 16, flexDirection: 'row', alignItems: 'center', marginVertical: 2 }}><FlexWidget style={{ flex: 1, height: 5, backgroundColor: '#D9DFF8', borderRadius: 3, flexDirection: 'row' }}><FlexWidget style={{ flex: Math.max(1, loadingProgress), height: 5, backgroundColor: buttonBackgroundColor as any, borderRadius: 3 }} /><FlexWidget style={{ flex: Math.max(1, 100 - loadingProgress), height: 5 }} /></FlexWidget><TextWidget text={`${Math.round(loadingProgress)}%`} style={{ width: 32, marginLeft: 6, fontSize: 9, fontWeight: 'bold', color: buttonTextColor as any }} /></FlexWidget> : null}
+        {hasOlderWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:buttonBackgroundColor as any, borderRadius:8, marginVertical:2 }}><TextWidget text={`← ${labels.olderWeeks}`} style={{ fontSize:10, fontWeight:'bold', color:buttonTextColor as any }} /></FlexWidget> : null}
         {weeks.map(week => {
           const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
           return (
             <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?week=${week.days[0]?.dateKey}` }} style={{ width: 'match_parent', height: weekContainerHeight, flexDirection: 'column', marginVertical: 2 }}>
-              {week.title ? <TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize: 10, fontWeight: 'bold', color: PRIMARY, marginBottom: 3 }} /> : null}
+              {week.title ? <TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize: 10, fontWeight: 'bold', color: buttonTextColor as any, marginBottom: 3 }} /> : null}
               <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'flex-start' }}>
                 {Array.from({ length: 7 }, (_, index) => week.days[index] ?? {
                   dateKey: `${week.title}-${index}`,
@@ -136,7 +136,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
                           {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor as any }} /> : null}
                           <FlexWidget style={{ flex:1, flexDirection:'row', alignItems:'flex-start' }}>
-                            {item.priority ? <TextWidget text={String(item.priority)} style={{ width:8, fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: PRIMARY }} /> : null}
+                            {item.priority ? <TextWidget text={String(item.priority)} style={{ width:8, fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: buttonTextColor as any }} /> : null}
                             <FlexWidget style={{ flex:1, flexDirection:'column' }}>
                               {lines.map((line, index) => (
                                 <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: textColor as any }} />
@@ -153,7 +153,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
             </FlexWidget>
           );
         })}
-        {hasNewerWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_NEWER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:'#E8ECFF', borderRadius:8, marginVertical:2 }}><TextWidget text={`${labels.newerWeeks} →`} style={{ fontSize:10, fontWeight:'bold', color:PRIMARY }} /></FlexWidget> : null}
+        {hasNewerWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_NEWER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:buttonBackgroundColor as any, borderRadius:8, marginVertical:2 }}><TextWidget text={`${labels.newerWeeks} →`} style={{ fontSize:10, fontWeight:'bold', color:buttonTextColor as any }} /></FlexWidget> : null}
         <FlexWidget style={{ width: 'match_parent', height: 96 }} />
       </ListWidget>
     </FlexWidget>
