@@ -15,6 +15,8 @@ import { sortCommitments } from './lib/activityOrdering';
 import { getLanguage, widgetStrings, t } from './lib/i18n';
 import { isOverdueTask } from './lib/commitmentVisibility';
 import { materializeNextOccurrence } from './lib/recurrence';
+import { activitySourceColor, activitySourceKey, buildActivitySourceColors } from './lib/activityColors';
+import { colorWithOpacity, getWidgetAppearance, sourceAppearanceColor, type WidgetAppearance } from './lib/widgetAppearance';
 
 const STORAGE_KEY='flowos-store-v2';
 const CALENDAR_CACHE_KEY='flowos-calendar-widget-v2';
@@ -30,12 +32,12 @@ async function writeCommitments(commitments:Commitment[]){
   parsed.state={...(parsed.state??{}),commitments};
   await AsyncStorage.setItem(STORAGE_KEY,JSON.stringify(parsed));
 }
-function todayData(raw:string|null,language='it' as import('./lib/i18n').Language):Omit<AndroidTodayWidgetProps,'language'>{
-  const commitments=readCommitments(raw),now=new Date();
+function todayData(raw:string|null,language='it' as import('./lib/i18n').Language,appearance:WidgetAppearance):Omit<AndroidTodayWidgetProps,'language'|'backgroundColor'|'textColor'>{
+  const commitments=readCommitments(raw),now=new Date(),sourceColors=buildActivitySourceColors(commitments as Commitment[]);
   const todayItems=commitments.filter((item:any)=>item&&item.status!=='done'&&item.status!=='completed'&&!item.deletedAt)
     .filter((item:any)=>{if(isOverdueTask(item,now))return true;const date=item.scheduledAt??item.dueAt;if(!date)return false;const d=new Date(date);return item.allDay?d.getUTCFullYear()===now.getFullYear()&&d.getUTCMonth()===now.getMonth()&&d.getUTCDate()===now.getDate():dateKey(d)===dateKey(now);});
   const items=sortCommitments(todayItems as Commitment[])
-    .map((item:any)=>{const date=item.scheduledAt??item.dueAt;return {id:item.id,title:item.title,time:item.allDay?'':(()=>{const start=new Date(date);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const locale=language==='it'?'it-IT':language==='fr'?'fr-FR':language==='es'?'es-ES':'en-US';const fmt=(d:Date)=>d.toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});return `${fmt(start)} - ${fmt(end)}`;})(),kind:kindLabel(item.kind,language),priority:item.kind==='task'?item.priority:undefined};});
+    .map((item:any)=>{const date=item.scheduledAt??item.dueAt;return {id:item.id,title:item.title,time:item.allDay?'':(()=>{const start=new Date(date);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const locale=language==='it'?'it-IT':language==='fr'?'fr-FR':language==='es'?'es-ES':'en-US';const fmt=(d:Date)=>d.toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});return `${fmt(start)} - ${fmt(end)}`;})(),kind:kindLabel(item.kind,language),priority:item.kind==='task'?item.priority:undefined,sourceColor:sourceAppearanceColor(activitySourceKey(item as Commitment),activitySourceColor(item as Commitment,sourceColors),appearance)};});
   return{items};
 }
 async function loadCalendarCache(language:string){try{const raw=await AsyncStorage.getItem(CALENDAR_CACHE_KEY);if(!raw)return null;const parsed=JSON.parse(raw);return parsed?.dateKey===dateKey(new Date())&&parsed?.language===language&&Array.isArray(parsed?.weeks)?{weeks:parsed.weeks as AndroidCalendarWidgetProps['weeks']}:null;}catch{return null;}}
@@ -119,13 +121,16 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
   }
   const raw=await AsyncStorage.getItem(STORAGE_KEY);
   const language=await getLanguage();
+  const appearance=await getWidgetAppearance();
+  const todayBackgroundColor=colorWithOpacity(appearance.today.backgroundColor,appearance.today.backgroundOpacity);
+  const calendarBackgroundColor=colorWithOpacity(appearance.calendar.backgroundColor,appearance.calendar.backgroundOpacity);
   if(props.widgetInfo.widgetName==='TodayAndroidWidget'){
-    const data=todayData(raw,language);
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} language={language}/>);break;default:break;}
+    const data=todayData(raw,language,appearance);
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} language={language} backgroundColor={todayBackgroundColor} textColor={appearance.today.textColor}/>);break;default:break;}
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
     let data=await loadCalendarCache(language);
     if(!data) {
-      props.renderWidget(<CalendarWidget weeks={[]} language={language}/>);
+      props.renderWidget(<CalendarWidget weeks={[]} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
       let syncEnd=new Date(new Date().getFullYear()+1,11,31);
       try { const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus()); if(status.range?.endDate)syncEnd=new Date(`${status.range.endDate}T23:59:59`); } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
       let calendarNames:Map<string,string>|undefined;
@@ -133,6 +138,8 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames,language);
       await saveCalendarCache(data,language);
     }
+    const commitmentById=new Map((readCommitments(raw) as Commitment[]).map(item=>[item.id,item]));
+    data={weeks:data.weeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=commitmentById.get(item.id);return source?{...item,sourceColor:sourceAppearanceColor(activitySourceKey(source),String(item.sourceColor),appearance)}:item;})}))}))};
     let requestedStart:number|undefined;
     try { const saved=await AsyncStorage.getItem(CALENDAR_PAGE_KEY); if(saved!==null&&Number.isFinite(Number(saved)))requestedStart=Number(saved); } catch {}
     const pageShift=CALENDAR_WIDGET_PAGE_SIZE-CALENDAR_WIDGET_PAGE_OVERLAP;
@@ -140,9 +147,9 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     let page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
     if(isCalendarNavigation) {
       // Show staged progress while the launcher prepares the new bounded page.
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={15} language={language}/>);
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={15} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
       await new Promise<void>(resolve=>setTimeout(resolve,90));
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={55} language={language}/>);
+      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={55} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
       if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,page.startIndex-pageShift);
       if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=page.startIndex+pageShift;
       if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=undefined;
