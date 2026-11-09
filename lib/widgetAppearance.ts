@@ -3,14 +3,14 @@ import { supabase } from './supabase';
 
 export type SourceAppearance = { color: string; opacity: number };
 export type WidgetAppearance = {
-  today: { backgroundColor: string; backgroundOpacity: number; textColor: string };
-  calendar: { backgroundColor: string; backgroundOpacity: number; textColor: string };
+  today: { backgroundColor: string; backgroundOpacity: number; textColor: string; buttonBackgroundColor: string; buttonTextColor: string };
+  calendar: { backgroundColor: string; backgroundOpacity: number; textColor: string; buttonBackgroundColor: string; buttonTextColor: string };
   sources: Record<string, SourceAppearance>;
 };
 
 export const DEFAULT_WIDGET_APPEARANCE: WidgetAppearance = {
-  today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033' },
-  calendar: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033' },
+  today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', buttonBackgroundColor: '#4254C5', buttonTextColor: '#FFFFFF' },
+  calendar: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', buttonBackgroundColor: '#4254C5', buttonTextColor: '#FFFFFF' },
   sources: {},
 };
 const STORAGE_PREFIX = 'flowos-widget-appearance-v1';
