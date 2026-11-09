@@ -126,11 +126,11 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
   const calendarBackgroundColor=colorWithOpacity(appearance.calendar.backgroundColor,appearance.calendar.backgroundOpacity);
   if(props.widgetInfo.widgetName==='TodayAndroidWidget'){
     const data=todayData(raw,language,appearance);
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} language={language} backgroundColor={todayBackgroundColor} textColor={appearance.today.textColor}/>);break;default:break;}
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} language={language} backgroundColor={todayBackgroundColor} textColor={appearance.today.textColor} buttonBackgroundColor={appearance.today.buttonBackgroundColor} buttonTextColor={appearance.today.buttonTextColor}/>);break;default:break;}
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
     let data=await loadCalendarCache(language);
     if(!data) {
-      props.renderWidget(<CalendarWidget weeks={[]} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor}/>);
+      props.renderWidget(<CalendarWidget weeks={[]} language={language} backgroundColor={calendarBackgroundColor} textColor={appearance.calendar.textColor} buttonBackgroundColor={appearance.calendar.buttonBackgroundColor} buttonTextColor={appearance.calendar.buttonTextColor}/>);
       let syncEnd=new Date(new Date().getFullYear()+1,11,31);
       try { const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus()); if(status.range?.endDate)syncEnd=new Date(`${status.range.endDate}T23:59:59`); } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
       let calendarNames:Map<string,string>|undefined;
