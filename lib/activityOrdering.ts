@@ -17,9 +17,9 @@ export function activitySourceKind(item: Commitment, calendarName?: string): Act
 const rank: Record<ActivitySourceKind, number> = {
   'french-holidays': 0,
   'italian-holidays': 1,
-  'priority-task': 2,
-  'unprioritized-task': 3,
-  'other': 4,
+  'other': 2,
+  'priority-task': 3,
+  'unprioritized-task': 4,
 };
 
 export function compareCommitments(a: Commitment, b: Commitment, calendarNames?: Map<string, string>): number {
