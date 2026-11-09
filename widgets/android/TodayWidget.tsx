@@ -40,7 +40,7 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
         <FlexWidget style={{ height:26, paddingHorizontal:9, borderRadius:13, backgroundColor:PRIMARY, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}><TextWidget text="+" style={{ fontSize:10, fontWeight:'bold', color:'#FFFFFF' }}/></FlexWidget>
       </FlexWidget>
     </FlexWidget>
-    <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor }}>
+    <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:backgroundColor as any }}>
       {items.length ? items.map((item)=>{const lines=titleLines(item.title,item.priority?36:42);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:1, paddingHorizontal:8, paddingVertical:6, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:(item.sourceColor??'#F3F4F7') as any, flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
