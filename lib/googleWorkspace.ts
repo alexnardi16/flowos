@@ -62,7 +62,7 @@ export async function syncGoogleRemote(){
   return syncGoogleTasksIncremental();
 }export async function syncGoogleTasksIncremental(){if(syncInFlight){recordDiagnostic('google-tasks-background-sync-skipped-full-sync-in-flight');return null;}if(taskIncrementalInFlight)return taskIncrementalInFlight;taskIncrementalInFlight=invoke({action:'sync-tasks-incremental'}).finally(()=>{taskIncrementalInFlight=null;});return taskIncrementalInFlight;}
 export async function disconnectGoogleWorkspace(){return invoke({action:'disconnect'});}export async function setSyncRange(startDate:string|null,endDate:string|null){return invoke({action:'set-sync-range',startDate,endDate});}export function friendlyCalendarName(name:string,ownEmail?:string|null,language:Language=getCurrentLanguage()){
-  if(ownEmail&&name.trim().toLowerCase()===ownEmail.trim().toLowerCase())return 'Alex';
+
   const normalized=name.trim().toLowerCase();
   const names:Record<string,Record<Language,string>>={
     'jours fériés en france':{it:'Festività in Francia',en:'Holidays in France',fr:'Jours fériés en France',es:'Días festivos en Francia'},
