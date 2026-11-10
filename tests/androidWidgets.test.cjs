@@ -340,3 +340,15 @@ test('multi-day activities are expanded into every intersected day across all ap
   assert.match(todayWidgetData,/isMultiDayActivity\(item\)/);
   assert.match(handler,/isVisibleInToday\(item as Commitment,now\)/);
 });
+
+
+test('widget sync parallelizes independent reads and skips unchanged native widget renders',()=>{
+  const source=fs.readFileSync('lib/widgetSync.ts','utf8');
+  assert.match(source,/Promise\.all\(\[[\s\S]*getLanguage\(\)[\s\S]*getWidgetAppearance\(\)[\s\S]*getGoogleWorkspaceStatus\(\)/);
+  assert.match(source,/lastTodayWidgetSignature/);
+  assert.match(source,/lastCalendarInputSignature/);
+  assert.match(source,/cachedCalendarWeeks/);
+  assert.match(source,/lastCalendarStorageValue/);
+  assert.match(source,/lastCalendarRenderedSignature/);
+  assert.match(source,/}, 50\);/);
+});
