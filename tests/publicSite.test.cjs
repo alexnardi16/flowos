@@ -56,12 +56,17 @@ test('privacy policy discloses the data categories used by the app', () => {
     assert.match(privacy, new RegExp(phrase, 'i'), `Privacy Policy should mention ${phrase}`);
   }
 
-  assert.match(privacy, /does not integrate an OpenAI service/i);
+  assert.match(privacy, /does not send task, calendar or other user-entered content to OpenAI/i);
   assert.doesNotMatch(privacy, /(?:sent|transmitted) to OpenAI|AI-powered FlowOS feature/i);
   assert.match(privacy, /Expo push token/i);
   assert.match(privacy, /Supabase/i);
   assert.match(privacy, /Netlify/i);
   assert.match(privacy, /system or browser speech-recognition service/i);
+
+  const retiredTranslation = fs.readFileSync(path.join(root, 'supabase', 'functions', 'translate-activities', 'index.ts'), 'utf8');
+  assert.match(retiredTranslation, /ENDPOINT_RETIRED/);
+  assert.match(retiredTranslation, /status: 410/);
+  assert.doesNotMatch(retiredTranslation, /OPENAI_API_KEY|api\\.openai\\.com|chat\\/completions/);
 
   // Location/weather is explicitly disclosed as retired, but stale provider/history
   // disclosures must not return to the public policy.
