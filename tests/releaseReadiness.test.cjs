@@ -78,6 +78,14 @@ test('account exit clears the diagnostic session and auth subscriptions are clea
   assert.match(auth, /supabase\.removeChannel\(channel\)/);
 });
 
+test('sign-out unregisters the current device push token from the active FlowOS account', () => {
+  const auth = read('providers/AuthProvider.tsx');
+  const push = read('lib/googlePushSync.ts');
+  assert.match(auth, /unregisterGooglePushToken\(session\.user\.id\)/);
+  assert.match(push, /device_push_tokens/);
+  assert.match(push, /\.delete\(\).*user_id.*expo_push_token/);
+});
+
 test('account deletion removes Expo push tokens as well as Google and FlowOS account data', () => {
   const deletion = read('supabase/functions/delete-account/index.ts');
   assert.match(deletion, /device_push_tokens/);
