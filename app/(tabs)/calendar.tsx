@@ -9,7 +9,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage, widgetStrings } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
-import { isVisibleCompletedMultiDayForDate, isOverdueTask, eventDayDates } from '@/lib/commitmentVisibility';
+import { isVisibleCompletedMultiDayForDate, isOverdueTask, activityDayDates, isMultiDayActivity } from '@/lib/commitmentVisibility';
 import { buildCalendarTimeline } from '@/lib/calendarTimeline';
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
@@ -54,7 +54,7 @@ export default function Calendar(){
       const overdueTask=isOverdueTask(item);
       const value=overdueTask?new Date().toISOString():itemDate(item);if(!value)continue;
       const d=new Date(value);
-      const dates=item.kind==='event'&&item.durationMinutes>24*60?eventDayDates(item):[d];
+      const dates=isMultiDayActivity(item)?activityDayDates(item):[d];
       for(const date of dates){
         const key=item.allDay?`${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`:dayKey(date);
         const list=map.get(key)??[];list.push(item);map.set(key,list);
@@ -64,7 +64,7 @@ export default function Calendar(){
       const end=item.scheduledAt&&item.durationMinutes?new Date(new Date(item.scheduledAt).getTime()+Math.max(1,item.durationMinutes)*60000):null;
       if(!end||item.durationMinutes<=24*60)continue;
       if(!isVisibleCompletedMultiDayForDate(item,end))continue;
-      for(const date of eventDayDates(item)){
+      for(const date of activityDayDates(item)){
         const key=dayKey(date);
         const list=map.get(key)??[];list.push(item);map.set(key,list);
       }
