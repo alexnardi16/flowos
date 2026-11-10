@@ -372,3 +372,12 @@ test('Calendar memoizes sorted day buckets instead of sorting every day during r
   assert.match(source,/const items=sortedByDay\.get\(dayKey\(date\)\)\?\?\[\]/);
   assert.doesNotMatch(source,/sortCommitments\(byDay\.get/);
 });
+
+
+test('widget payload caching verifies storage and restores the current calendar page after refresh',()=>{
+  const source=fs.readFileSync('lib/widgetSync.ts','utf8');
+  assert.match(source,/AsyncStorage\.getItem\('flowos-calendar-widget-v2'\)/);
+  assert.match(source,/if\(storedCalendarPayload!==payload\)/);
+  assert.match(source,/await AsyncStorage\.setItem\('flowos-calendar-widget-page-v1',String\(page\.startIndex\)\)/);
+  assert.doesNotMatch(source,/lastCalendarPageIndex/);
+});
