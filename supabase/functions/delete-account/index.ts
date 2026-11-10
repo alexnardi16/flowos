@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const { data: tokenRow } = await admin.schema("private").from("google_oauth_tokens").select("access_token").eq("user_id", user.id).maybeSingle();
     if (tokenRow?.access_token) await revokeGoogleToken(tokenRow.access_token as string);
 
-    for (const table of ["commitments", "google_calendars", "google_connections", "google_task_lists"]) {
+    for (const table of ["commitments", "google_calendars", "google_connections", "google_task_lists", "device_push_tokens"]) {
       const { error } = await admin.from(table).delete().eq("user_id", user.id);
       if (error) throw error;
     }
