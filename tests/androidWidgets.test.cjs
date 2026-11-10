@@ -323,7 +323,7 @@ test('Settings languages are alphabetically ordered by visible label',()=>{
   assert.deepEqual(order,['English','Español','Français','Italiano']);
 });
 
-test('multi-day events are expanded into every intersected day across all app surfaces and widgets',()=>{
+test('multi-day activities are expanded into every intersected day across all app surfaces and widgets',()=>{
   const visibility=fs.readFileSync('lib/commitmentVisibility.ts','utf8');
   const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
   const list=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
@@ -331,12 +331,12 @@ test('multi-day events are expanded into every intersected day across all app su
   const calendarWidget=fs.readFileSync('lib/calendarWidgetData.ts','utf8');
   const todayWidgetData=fs.readFileSync('lib/widgetData.ts','utf8');
   const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
-  assert.match(visibility,/export function eventDayDates/);
+  assert.match(visibility,/export function activityDayDates/);
   assert.match(visibility,/start\.getTime\(\) < dayEnd\.getTime\(\) && end\.getTime\(\) > dayStart\.getTime\(\)/);
   assert.match(today,/isVisibleInToday\(item\)/);
-  assert.match(list,/eventDayDates\(item\)/);
-  assert.match(calendar,/eventDayDates\(item\)/);
-  assert.match(calendarWidget,/eventDayDates\(item\)/);
-  assert.match(todayWidgetData,/eventOccursOnDate\(item,now\)/);
+  assert.match(list,/activityDayDates\(item\)/);
+  assert.match(calendar,/activityDayDates\(item\)/);
+  assert.match(calendarWidget,/activityDayDates\(item\)/);
+  assert.match(todayWidgetData,/isMultiDayActivity\(item\)/);
   assert.match(handler,/isVisibleInToday\(item as Commitment,now\)/);
 });
