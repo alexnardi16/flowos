@@ -49,7 +49,7 @@ https://getflowos.netlify.app/delete-account/
 Complete the Google Play content rating questionnaire in Play Console.
 
 ## Target audience
-Recommended initial declaration: adults / general audience, not specifically directed at children. Confirm this against the final product positioning before submission.
+General audience. FlowOS is a productivity and personal-planning app, not designed or marketed for children. Do not opt into the Families programme.
 
 ## Ads
 No advertising SDK or advertising functionality is intended for the v1.0.0 release. Confirm this against the final production build before declaring it in Play Console.
