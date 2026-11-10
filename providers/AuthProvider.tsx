@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch(error) {
           recordDiagnostic('google-realtime-commitments-refresh-failed',error,'warn');
         }
-      }, 500);
+      }, 150);
     };
     const channel=supabase.channel(`flowos-commitments-${session.user.id}`)
       .on('postgres_changes',{event:'*',schema:'public',table:'commitments',filter:`user_id=eq.${session.user.id}`},scheduleRefresh)
@@ -205,7 +205,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const remoteSyncInterval = setInterval(() => {
       if (AppState.currentState !== 'active' || googleSyncInProgressRef.current) return;
       void syncGoogleRemote()
-        .then(() => hydrateFromCloud())
+        .then(result => {
+          // Keep the 10-second Google Tasks poll, but avoid a full Supabase
+          // hydration and widget cascade when the incremental worker found no changes.
+          if (Number(result?.changed ?? 0) > 0) return hydrateFromCloud();
+          return undefined;
+        })
         .catch(error => recordDiagnostic('google-remote-fast-sync-failed', error, 'warn'));
     }, 10000);
     return () => {
