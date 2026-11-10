@@ -163,7 +163,7 @@ test('List and Today macrosections have no filters and List search stays sticky'
   assert.match(plan,/<TextInput value=\{query\} onChangeText=\{setQuery\}/);
   assert.doesNotMatch(plan,/Solo contatti|Escludi contatti|Passati e completati|Scaduti aperti|FILTERS_KEY|CONTACTS_FILTER_KEY/);
   assert.doesNotMatch(today,/Solo contatti|Escludi contatti|CONTACTS_FILTER_KEY|contactsFilter/);
-  assert.match(plan,/commitments\.filter\(item=>!normalized\|\|searchable\(item\)\.includes\(normalized\)\)/);
+  assert.match(plan,/searchIndex\.filter\(entry=>!normalized\|\|entry\.text\.includes\(normalized\)\)/);
   assert.match(today,/commitments\.filter\(item=>isVisibleInToday\(item\)\)/);
 });
 
