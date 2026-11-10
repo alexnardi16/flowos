@@ -47,6 +47,7 @@ function normalizeWorkspaceStatus(result:any):GoogleWorkspaceStatus {
   }
   return {...result,taskLists,range:currentRange()};
 }
+export function getCachedGoogleWorkspaceStatus():GoogleWorkspaceStatus|null{return statusCache;}
 export function invalidateGoogleWorkspaceStatusCache(){statusCache=null;statusCacheAt=0;}
 export async function getGoogleWorkspaceStatus():Promise<GoogleWorkspaceStatus>{const now=Date.now();if(statusCache&&now-statusCacheAt<STATUS_CACHE_MS)return statusCache;if(statusInFlight)return statusInFlight;statusInFlight=invoke({action:'status'},1).then(normalizeWorkspaceStatus).then(result=>{statusCache=result;statusCacheAt=Date.now();return result;}).finally(()=>{statusInFlight=null;});return statusInFlight;}
 const activeProgressListeners=new Set<(progress:SyncProgress)=>void>();let syncInFlight:Promise<{pushed:number;events:number;tasks:number;range?:GoogleSyncRange}>|null=null;
