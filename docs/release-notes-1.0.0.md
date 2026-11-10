@@ -8,7 +8,7 @@ Use the matching language block in Google Play Console. Keep the locale tags exa
 Prima versione di FlowOS per Android.
 
 * Task, eventi e promemoria in un unico spazio
-* Inserimento rapido in linguaggio naturale
+* Comandi vocali per aggiungere, modificare, spostare, completare o eliminare attività
 * Viste Oggi, Calendario ed Elenco, con modalità Focus
 * Priorità, attività ricorrenti e promemoria personalizzabili
 * Sincronizzazione opzionale con Google Calendar e Google Tasks
@@ -22,7 +22,7 @@ Prima versione di FlowOS per Android.
 First Android release of FlowOS.
 
 * Tasks, events and reminders in one place
-* Quick natural-language entry
+* Voice commands to add, edit, move, complete or delete activities
 * Today, Calendar and List views, plus Focus mode
 * Priorities, recurring activities and customizable reminders
 * Optional sync with Google Calendar and Google Tasks
@@ -36,7 +36,7 @@ First Android release of FlowOS.
 Première version Android de FlowOS.
 
 * Tâches, événements et rappels réunis au même endroit
-* Saisie rapide en langage naturel
+* Commandes vocales pour ajouter, modifier, déplacer, terminer ou supprimer des activités
 * Vues Aujourd’hui, Calendrier et Liste, avec le mode Focus
 * Priorités, activités récurrentes et rappels personnalisables
 * Synchronisation facultative avec Google Calendar et Google Tasks
@@ -50,7 +50,7 @@ Première version Android de FlowOS.
 Primera versión de FlowOS para Android.
 
 * Tareas, eventos y recordatorios en un solo lugar
-* Entrada rápida en lenguaje natural
+* Comandos de voz para añadir, editar, mover, completar o eliminar actividades
 * Vistas Hoy, Calendario y Lista, además del modo Focus
 * Prioridades, actividades recurrentes y recordatorios personalizables
 * Sincronización opcional con Google Calendar y Google Tasks
