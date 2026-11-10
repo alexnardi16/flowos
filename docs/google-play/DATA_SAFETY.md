@@ -59,7 +59,7 @@ Google Play requires disclosure of relevant data handling by third-party SDKs/se
 
 ## Google API data
 
-The current Google OAuth scopes are `openid`, `email`, `profile`, `https://www.googleapis.com/auth/calendar.events`, `https://www.googleapis.com/auth/calendar.calendarlist.readonly`, and `https://www.googleapis.com/auth/tasks`. Calendar events and Google Tasks are synchronized through the FlowOS backend. OAuth access/refresh tokens are stored server-side in the private Supabase schema.
+The current Google OAuth scopes are `openid`, `email`, `profile`, `https://www.googleapis.com/auth/calendar.events`, `https://www.googleapis.com/auth/calendar.calendarlist.readonly`, and `https://www.googleapis.com/auth/tasks`. Calendar events and Google Tasks are synchronized through the FlowOS backend. OAuth access/refresh tokens are stored server-side in the private Supabase schema. These tokens are authentication credentials rather than task content; confirm with the current Play Console taxonomy whether they require a separate Personal info data-type declaration (for example, Other info or User IDs) in addition to the email/name/account identifiers already listed.
 
 ## Security
 
