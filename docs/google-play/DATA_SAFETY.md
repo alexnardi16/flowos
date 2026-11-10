@@ -5,7 +5,7 @@ This is the evidence-based preparation for the Play Console form. It is not a su
 ## Current production data flows verified from source and Supabase
 
 - Supabase Auth authenticates the user. The app stores the FlowOS account ID and Google profile identity (name, email and Google account ID).
-- FlowOS stores user-created commitments, including task/event titles, descriptions, dates, deadlines, duration, priority, status and preferences, in Supabase.
+- FlowOS stores user-created commitments, including task/event titles, descriptions, dates, deadlines, duration, priority and status, in Supabase. App language, preferences and widget appearance settings are stored locally on the device and are not transmitted to FlowOS servers.
 - When the user connects Google, FlowOS reads and synchronizes the selected Google Calendar events and Google Tasks through its backend. OAuth access and refresh tokens are stored in the non-exposed `private` schema. The `private` schema grants access only to the backend `service_role`; `anon` and `authenticated` have no schema/table privileges.
 - When notifications are enabled, the app registers an Expo push token. The token is stored in `public.device_push_tokens` and sent to Expo Push Service. Push payloads contain only a background-sync marker and timestamp, not task or calendar content.
 - Expo EAS Update receives technical update-check metadata such as platform and runtime/app version. No task, calendar, account profile or user-entered content is included in update checks.
