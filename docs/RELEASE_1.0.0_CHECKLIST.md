@@ -26,9 +26,11 @@
 - [x] In-app privacy policy exists
 - [x] In-app account deletion flow exists
 - [x] Server-side account deletion function exists
-- [ ] Verify public privacy-policy URL over HTTPS
-- [ ] Verify public account-deletion URL over HTTPS
+- [x] Verify public privacy-policy URL over HTTPS (Netlify deployment and live legal-site smoke test)
+- [x] Verify public account-deletion URL over HTTPS (Netlify deployment and live legal-site smoke test)
 - [ ] Verify deletion from an external browser without requiring app installation
+- [ ] Confirm the Android/browser speech-recognition provider and whether the external audio-processing flow requires an Audio files declaration
+- [ ] Confirm Expo push-token, Expo EAS Update and Supabase data disclosures against the production SDK/service configuration
 - [ ] Complete Google Play Data Safety form consistently with the actual data flows
 
 ## Google Play Console
