@@ -44,6 +44,15 @@ function transientPushError(error:unknown){
   return /network|fetch failed|unknownhost|unable to resolve host|no address associated|timeout|abort|exp\.host/i.test(message);
 }
 
+export async function unregisterGooglePushToken(userId:string){
+  if(Platform.OS==='web'||!userId)return;
+  const token=(await Notifications.getExpoPushTokenAsync({projectId:EXPO_PROJECT_ID})).data;
+  if(!token)return;
+  const {error}=await supabase.from('device_push_tokens').delete().eq('user_id',userId).eq('expo_push_token',token);
+  if(error)throw error;
+  recordDiagnostic('google-push-token-unregistered',{platform:Platform.OS});
+}
+
 export async function registerGooglePushToken(userId:string){
   if (Platform.OS==='web') return;
   try {
