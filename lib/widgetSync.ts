@@ -83,8 +83,8 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       }else{
         recordDiagnostic('calendar-widget-data-cache-hit',{weeks:cachedCalendarWeeks.length});
       }
-      const allWeeks=cachedCalendarWeeks;
-      const payload=cachedCalendarPayload;
+      const allWeeks=cachedCalendarWeeks!;
+      const payload=cachedCalendarPayload!;
       if(payload!==lastCalendarStorageValue){
         await AsyncStorage.setItem('flowos-calendar-widget-v2',payload);
         lastCalendarStorageValue=payload;
