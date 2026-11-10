@@ -61,7 +61,7 @@ test('vertical app scrolling keeps its indicator persistent',()=>{
 test('login page no longer renders a diagnostics card',()=>{
   const source=fs.readFileSync('app/login.tsx','utf8');
   assert.doesNotMatch(source,/diagnosticsCard|DIAGNOSTICA ACCESSO|subscribeDiagnostics|BuildInfo/);
-  assert.match(source,/recordDiagnostic\\(/);
+  assert.match(source,/recordDiagnostic\(/);
 });
 test('Add defaults to Task',()=>{
   const source=fs.readFileSync('app/(tabs)/capture.tsx','utf8');
