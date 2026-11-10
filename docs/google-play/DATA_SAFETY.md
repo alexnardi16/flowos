@@ -44,6 +44,7 @@ Google defines collection as transmitting data off the user's device, including 
 - **Supabase:** receives account identity, FlowOS commitments, preferences, Google connection metadata and OAuth tokens for authentication, storage and synchronization.
 - **Google:** provides sign-in and receives the event/task changes that FlowOS synchronizes to the Google calendars and task lists selected by the user.
 - **Expo:** receives the device push token and the background-sync push message metadata needed to deliver the notification. The message contains no task or calendar content.
+- **Expo EAS Update:** receives technical update-check metadata, such as app platform and runtime/app version, to determine which compatible app update to deliver; task and calendar content is not included in update checks.
 - **Netlify:** hosts the public website and legal pages; web visitors' standard request metadata may be processed by the hosting provider.
 
 ## Third-party processing
