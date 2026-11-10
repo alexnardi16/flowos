@@ -7,7 +7,35 @@ export function isOverdueTask(item: Commitment, now = new Date()): boolean {
 
 export function eventEnd(item: Commitment): Date | null {
   if (item.kind !== 'event' || !item.scheduledAt || !item.durationMinutes) return null;
-  return new Date(new Date(item.scheduledAt).getTime() + Math.max(1, item.durationMinutes) * 60000);
+  const end = new Date(new Date(item.scheduledAt).getTime() + Math.max(1, item.durationMinutes) * 60000);
+  return Number.isFinite(end.getTime()) ? end : null;
+}
+
+/** True for every local calendar day intersected by an event's [start, end) interval. */
+export function eventOccursOnDate(item: Commitment, date: Date): boolean {
+  const end = eventEnd(item);
+  if (!end || !item.scheduledAt || !Number.isFinite(date.getTime())) return false;
+  const start = new Date(item.scheduledAt);
+  if (!Number.isFinite(start.getTime())) return false;
+  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  return start.getTime() < dayEnd.getTime() && end.getTime() > dayStart.getTime();
+}
+
+/** Returns each local calendar day touched by the event, without duplicating the event itself. */
+export function eventDayDates(item: Commitment): Date[] {
+  const end = eventEnd(item);
+  if (!end || !item.scheduledAt) return [];
+  const start = new Date(item.scheduledAt);
+  if (!Number.isFinite(start.getTime())) return [];
+  const day = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const dates: Date[] = [];
+  while (day.getTime() < end.getTime()) {
+    dates.push(new Date(day));
+    day.setDate(day.getDate() + 1);
+  }
+  return dates;
 }
 
 function dateKey(value: Date) {
@@ -23,16 +51,17 @@ export function isCompletedMultiDayVisible(item: Commitment, now = new Date()): 
   const todayKey = dateKey(now);
   const endKey = dateKey(end);
   const completedKey = dateKey(completed);
-  return completedKey < endKey && todayKey === endKey;
+  return completedKey < endKey && eventOccursOnDate(item, now);
 }
 
 export function isVisibleInToday(item: Commitment, now = new Date()): boolean {
   if (item.status !== 'done' && !item.deletedAt) {
     if (isOverdueTask(item, now)) return true;
+    if (item.kind === 'event') return eventOccursOnDate(item, now);
     const value = item.scheduledAt ?? item.dueAt;
     if (!value) return false;
     const date = new Date(value);
-    if (item.allDay) return date.getUTCFullYear() === now.getFullYear() && date.getUTCMonth() === now.getMonth() && date.getUTCDate() === now.getDate();
+    if (item.allDay) return date.getUTCFullYear() === now.getUTCFullYear() && date.getUTCMonth() === now.getMonth() && date.getUTCDate() === now.getDate();
     return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
   }
   return isCompletedMultiDayVisible(item, now);
@@ -43,5 +72,5 @@ export function isVisibleCompletedMultiDayForDate(item: Commitment, date: Date):
   const end = eventEnd(item);
   if (!end || item.durationMinutes <= 24 * 60) return false;
   const completed = new Date(item.completedAt);
-  return dateKey(completed) < dateKey(end) && dateKey(date) === dateKey(end);
+  return dateKey(completed) < dateKey(end) && eventOccursOnDate(item, date);
 }
