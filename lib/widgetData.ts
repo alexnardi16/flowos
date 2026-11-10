@@ -4,14 +4,14 @@ import { isExpired } from './itemTiming';
 import { toDateKey } from './dailySummary';
 import { sortCommitments } from './activityOrdering';
 import { activitySourceColor, buildActivitySourceColors } from './activityColors';
-import { isVisibleCompletedMultiDayForDate, isOverdueTask } from './commitmentVisibility';
+import { isVisibleCompletedMultiDayForDate, isOverdueTask, eventOccursOnDate } from './commitmentVisibility';
 import { type Language } from './i18n';
 
 export type WidgetItem = { id: string; title: string; time: string; kind: Commitment['kind']; priority?: number; sourceColor?: string };
 export type TodayGlance = { dateKey: string; items: WidgetItem[]; nextEventTitle: string | null; nextEventTime: string | null; dueSoonCount: number; overdueCount: number; generatedAt: string; language?: Language };
 
 function isActive(item: Commitment): boolean { return item.status !== 'done' && !item.deletedAt; }
-function itemIsToday(item: Commitment, now: Date) { const value=item.scheduledAt??item.dueAt; return Boolean(value&&isSameCalendarDay(item,value,now)); }
+function itemIsToday(item: Commitment, now: Date) { if(item.kind==='event')return eventOccursOnDate(item,now); const value=item.scheduledAt??item.dueAt; return Boolean(value&&isSameCalendarDay(item,value,now)); }
 
 export function buildTodayGlance(commitments: Commitment[], now: Date = new Date(), calendarNames?: Map<string,string>, language?: Language): TodayGlance {
   const nowMs=now.getTime();
