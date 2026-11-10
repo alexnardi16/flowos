@@ -28,6 +28,7 @@ Google defines collection as transmitting data off the user's device, including 
 
 - When notification permission is granted, the app obtains an Expo push token for the device.
 - The token is stored in the Supabase `device_push_tokens` table, associated with the authenticated user, and sent to Expo's push service for background-sync notifications.
+- FlowOS attempts to remove the current device's token on sign-out and removes all account-associated tokens during account deletion.
 - The push payload contains a sync marker and timestamp, not task titles, descriptions, calendar event content or other commitment data.
 - Review the Play Console taxonomy for whether this token must be declared under **Device or other IDs**. Its purpose is app functionality; collection is conditional on notification permission.
 
