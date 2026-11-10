@@ -103,3 +103,18 @@ test('moving a task to another date closes the gap on its previous date', () => 
   const next = reorderTaskPriorities([items[0], moved, items[2]], 'b', 2);
   assert.deepEqual(next.map(x => [x.id,x.priority]), [['a',1],['b',2],['c',1]]);
 });
+
+
+test('an occupied daily priority is an insertion position and shifts existing tasks down', () => {
+  const items = [
+    task('first','First',1,'active','2026-11-10T08:00:00+01:00'),
+    task('second','Second',2,'active','2026-11-10T09:00:00+01:00'),
+    task('third','Third',3,'active','2026-11-10T10:00:00+01:00'),
+    task('other-day','Other day',1,'active','2026-11-11T08:00:00+01:00'),
+    task('new','New task',2,'active','2026-11-10T11:00:00+01:00'),
+  ];
+  const next = reorderTaskPriorities(items, 'new', 2);
+  assert.deepEqual(next.map(x => [x.id, x.priority]), [
+    ['first',1],['second',3],['third',4],['other-day',1],['new',2],
+  ]);
+});
