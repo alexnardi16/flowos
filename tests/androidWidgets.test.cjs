@@ -352,3 +352,13 @@ test('widget sync parallelizes independent reads and skips unchanged native widg
   assert.match(source,/lastCalendarRenderedSignature/);
   assert.match(source,/}, 50\);/);
 });
+
+
+test('widget visual refresh never waits for a network Google status lookup',()=>{
+  const source=fs.readFileSync('lib/widgetSync.ts','utf8');
+  const workspace=fs.readFileSync('lib/googleWorkspace.ts','utf8');
+  assert.match(workspace,/export function getCachedGoogleWorkspaceStatus\(\)/);
+  assert.match(source,/getCachedGoogleWorkspaceStatus\(\)/);
+  assert.match(source,/void getGoogleWorkspaceStatus\(\)\.then\(refreshed=>/);
+  assert.doesNotMatch(source,/await getGoogleWorkspaceStatus\(/);
+});
