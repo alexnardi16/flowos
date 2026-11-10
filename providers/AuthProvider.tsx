@@ -8,7 +8,7 @@ import { checkAndRecoverMissedDailySummary, refreshReminders, registerBackground
 import { clearNotificationLog } from '../lib/notificationLog';
 import { useFlowStore } from '../lib/store';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { registerGooglePushToken } from '../lib/googlePushSync';
+import { registerGooglePushToken, unregisterGooglePushToken } from '../lib/googlePushSync';
 
 type AuthContextValue = {
   session: Session | null;
@@ -233,6 +233,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     signOut: async () => {
       recordDiagnostic('auth-sign-out-started');
+      if (session?.user.id) {
+        try { await unregisterGooglePushToken(session.user.id); }
+        catch (error) { recordDiagnostic('google-push-token-unregister-failed', error, 'warn'); }
+      }
       await supabase.auth.signOut();
       endDiagnosticSession();
     },
