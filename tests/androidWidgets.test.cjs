@@ -306,7 +306,12 @@ test('Widget customization uses selectable color swatches and includes button co
   assert.match(settings,/Opacità dello sfondo dei pulsanti \(%\)/);
   assert.match(settings,/Opacità del testo e dei simboli dei pulsanti \(%\)/);
   assert.match(settings,/Testo e simboli dei pulsanti/);
-  assert.match(settings,/WIDGET_COLOR_SWATCHES=\["#F1F4FF","#172033","#4254C5","#FFFFFF"/);
+  assert.match(settings,/"#F1F4FF","#172033","#4254C5","#FFFFFF","#F3F4F7",\.\.\.ACTIVITY_SOURCE_COLORS/);
+  assert.match(settings,/ACTIVITY_SOURCE_COLORS, defaultActivitySourceColor/);
+  assert.match(settings,/normalizedSwatchColor\(value\)/);
+  assert.match(settings,/accessibilityState=\{\{selected:selected===color\}\}/);
+  const sourceColors=fs.readFileSync('lib/activityColors.ts','utf8');
+  assert.match(sourceColors,/ACTIVITY_SOURCE_COLORS = \['#E8F0FF','#E9F8EF','#FFF0D9','#F3E9FF','#FFE8EE','#E7F6F5','#F1F1E8','#EDEAFF'\]/);
   for(const field of ['textOpacity','buttonBackgroundOpacity','buttonTextOpacity']) assert.match(appearance,new RegExp(field));
   assert.match(sync,/appearance\.today\.textOpacity/);
   assert.match(sync,/appearance\.today\.buttonBackgroundOpacity/);
