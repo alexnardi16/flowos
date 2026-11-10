@@ -42,16 +42,16 @@ function dateKey(value: Date) {
   return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
 }
 
-/** A completed multi-day event remains visible on its final calendar day only when it was completed before that day. */
-export function isCompletedMultiDayVisible(item: Commitment, now = new Date()): boolean {
-  if (item.kind !== 'event' || item.status !== 'done' || !item.completedAt) return false;
+/** A completed multi-day event remains part of its planned duration only if completed before its end. */
+export function isCompletedMultiDayEvent(item: Commitment): boolean {
+  if (item.kind !== 'event' || item.status !== 'done' || !item.completedAt || item.durationMinutes <= 24 * 60) return false;
   const end = eventEnd(item);
-  if (!end || item.durationMinutes <= 24 * 60) return false;
   const completed = new Date(item.completedAt);
-  const todayKey = dateKey(now);
-  const endKey = dateKey(end);
-  const completedKey = dateKey(completed);
-  return completedKey < endKey && eventOccursOnDate(item, now);
+  return Boolean(end && Number.isFinite(completed.getTime()) && completed.getTime() < end.getTime());
+}
+
+export function isCompletedMultiDayVisible(item: Commitment, now = new Date()): boolean {
+  return isCompletedMultiDayEvent(item) && eventOccursOnDate(item, now);
 }
 
 export function isVisibleInToday(item: Commitment, now = new Date()): boolean {
@@ -72,5 +72,5 @@ export function isVisibleCompletedMultiDayForDate(item: Commitment, date: Date):
   const end = eventEnd(item);
   if (!end || item.durationMinutes <= 24 * 60) return false;
   const completed = new Date(item.completedAt);
-  return dateKey(completed) < dateKey(end) && eventOccursOnDate(item, date);
+  return completed.getTime() < end.getTime() && (dateKey(date) === dateKey(end) || eventOccursOnDate(item, date));
 }
