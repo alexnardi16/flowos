@@ -28,7 +28,7 @@
   <h2>6. Location and weather</h2>
   <p>The current release of FlowOS does not request, collect, or transmit your phone's location. Weather/location features are not part of the shipped release.</p>
   <h2>7. Service providers and data sharing</h2>
-  <p>FlowOS uses third-party infrastructure and services to operate its features, including Supabase for authentication and application data, Google APIs for the Google features you authorize, and OpenAI for AI processing when you use AI features. Data is transmitted to these providers only as necessary to provide the corresponding feature.</p>
+  <p>FlowOS uses Supabase for authentication and application data storage, and Google APIs for the Google features you authorize. If you grant notification permission, an Expo push token is stored with your account in Supabase and sent to Expo's push service to deliver background-sync notifications. Push payloads contain only a sync marker and timestamp, not task or calendar content. The public website is hosted by Netlify, which may process standard web request metadata such as IP address and browser information. The current application source does not integrate OpenAI or a third-party analytics or crash-reporting service.</p>
   <h2>7. Security</h2>
   <p>FlowOS uses authentication controls, encrypted HTTPS connections, row-level access controls for application data, and private server-side storage for Google OAuth tokens. Access to application records is restricted to the authenticated account that owns them.</p>
   <h2>8. Retention and deletion</h2>
