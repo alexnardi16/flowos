@@ -63,3 +63,11 @@ test('authenticated home does not create a fresh array inside a Zustand selector
   assert.match(source, /const commitments = useFlowStore\(\(state\) => state\.commitments\)/);
   assert.match(source, /useMemo\(/);
 });
+
+test('login page hides diagnostics while retaining diagnostics in the settings area', () => {
+  const login = fs.readFileSync(path.join(__dirname, '../app/login.tsx'), 'utf8');
+  const settings = fs.readFileSync(path.join(__dirname, '../app/(tabs)/me.tsx'), 'utf8');
+  assert.doesNotMatch(login, /DIAGNOSTICA ACCESSO|diagnosticsCard|subscribeDiagnostics|BuildInfo/);
+  assert.match(login, /recordDiagnostic\(/);
+  assert.match(settings, /Diagnostica|diagnostics|Logger/i);
+});
