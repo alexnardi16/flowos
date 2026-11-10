@@ -51,3 +51,10 @@ test('Today widget includes a multi-day event that started before today and is s
   const glance=buildTodayGlance([event],now);
   assert.equal(glance.items.some(item=>item.id==='multi-event'),true);
 });
+
+test('Today widget includes a multi-day task on days after its start date',()=>{
+  const now=new Date(2026,8,21,12,0);
+  const task=commitment({id:'multi-task',kind:'task',title:'Multi-day task',status:'active',dueAt:new Date(2026,8,20,10,0).toISOString(),durationMinutes:72*60});
+  const glance=buildTodayGlance([task],now);
+  assert.equal(glance.items.some(item=>item.id==='multi-task'),true);
+});
