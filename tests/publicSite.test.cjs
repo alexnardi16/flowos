@@ -16,6 +16,8 @@ test('public landing and legal pages exist and expose the required FlowOS identi
   assert.ok(home.includes('href=\"/privacy-policy/\"'));
   assert.ok(home.includes('href=\"/delete-account/\"'));
   const privacy = readPublic(path.join('privacy-policy', 'index.html'));
+  const privacyStatic = readPublic('privacy-policy-static.html');
+  assert.equal(privacyStatic, privacy, 'The static fallback policy must match the canonical privacy page');
   const deletion = readPublic(path.join('delete-account', 'index.html'));
   const terms = readPublic(path.join('terms', 'index.html'));
 
@@ -43,6 +45,7 @@ test('privacy policy discloses the data categories used by the app', () => {
     'Google Tasks',
     'OAuth',
     'Expo',
+    'speech-recognition',
     'tasks',
     'commitments',
     'notifications',
@@ -57,6 +60,7 @@ test('privacy policy discloses the data categories used by the app', () => {
   assert.match(privacy, /Expo push token/i);
   assert.match(privacy, /Supabase/i);
   assert.match(privacy, /Netlify/i);
+  assert.match(privacy, /system or browser speech-recognition service/i);
 
   // Location/weather is explicitly disclosed as retired, but stale provider/history
   // disclosures must not return to the public policy.
