@@ -349,7 +349,7 @@ test('widget sync parallelizes independent reads and skips unchanged native widg
   assert.match(source,/lastTodayWidgetSignature/);
   assert.match(source,/lastCalendarInputSignature/);
   assert.match(source,/cachedCalendarWeeks/);
-  assert.match(source,/lastCalendarStorageValue/);
+  assert.match(source,/AsyncStorage\.getItem\('flowos-calendar-widget-v2'\)/);
   assert.match(source,/lastCalendarRenderedSignature/);
   assert.match(source,/}, 50\);/);
 });
