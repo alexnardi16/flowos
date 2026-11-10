@@ -12,11 +12,12 @@
 - Review today's activities in a dedicated **Today** view.
 - Manage commitments in **Calendar** and **List** views.
 - Create tasks, events and reminders with dates, times, durations, priorities and recurrence.
-- Enter activities using natural-language input.
+- Use voice commands to add, edit, move, complete or delete activities.
 - Use **Focus** mode to concentrate on the next step.
 - Set local notifications, custom reminders and a daily summary.
 - Synchronize supported Google Calendar events and Google Tasks when you connect Google.
 - Use Android home-screen widgets for Today and Calendar.
+- Synchronize Google Calendar changes through push notifications and Google Tasks changes through periodic incremental checks.
 - Manage sync conflicts and recover from transient network/server failures.
 - Delete your FlowOS account and associated data through the in-app flow or public deletion page.
 
