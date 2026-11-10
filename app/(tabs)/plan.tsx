@@ -46,7 +46,7 @@ export default function Plan(){
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
       const overdueTask=isOverdueTask(item,new Date(now));
-      const spansDays=isMultiDayActivity(item)&&(item.status!=='done'||(item.kind==='event'&&isCompletedMultiDayEvent(item)));
+      const spansDays=!overdueTask&&isMultiDayActivity(item)&&(item.status!=='done'||(item.kind==='event'&&isCompletedMultiDayEvent(item)));
       const dates=spansDays?activityDayDates(item):[];
       const value=overdueTask?new Date(now).toISOString():itemDate(item);
       const dayDates=dates.length?dates:value?[new Date(value)]:[];
