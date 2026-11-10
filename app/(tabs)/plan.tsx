@@ -10,7 +10,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
-import { eventDayDates, isCompletedMultiDayEvent, isOverdueTask } from '@/lib/commitmentVisibility';
+import { activityDayDates, isMultiDayActivity, isCompletedMultiDayEvent, isOverdueTask } from '@/lib/commitmentVisibility';
 
 
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -46,8 +46,8 @@ export default function Plan(){
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
       const overdueTask=isOverdueTask(item,new Date(now));
-      const spansDays=item.kind==='event'&&item.durationMinutes>24*60&&(item.status!=='done'||isCompletedMultiDayEvent(item));
-      const dates=spansDays?eventDayDates(item):[];
+      const spansDays=isMultiDayActivity(item)&&(item.status!=='done'||(item.kind==='event'&&isCompletedMultiDayEvent(item)));
+      const dates=spansDays?activityDayDates(item):[];
       const value=overdueTask?new Date(now).toISOString():itemDate(item);
       const dayDates=dates.length?dates:value?[new Date(value)]:[];
       for(const date of dayDates){
