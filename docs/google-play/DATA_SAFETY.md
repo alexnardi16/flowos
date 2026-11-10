@@ -67,6 +67,49 @@ The backend stores Google OAuth access and refresh tokens in `private.google_oau
 
 The in-app deletion function revokes the stored Google access token on a best-effort basis, deletes the user's FlowOS commitments, Google connection/calendar/task-list records, push tokens, private Google OAuth/sync-state rows, and then deletes the Supabase Auth user. The external page provides an email-based request route without requiring app installation. The external request is manually verified and processed; do not describe it as immediate self-service deletion.
 
+
+## Exact entry sequence in Play Console
+
+Open **FlowOS → Policy and programs → App content → Data safety → Start**.
+
+1. **Data collection and security**
+   - Does the app collect or share required user data types? **Yes**
+   - Is all collected user data encrypted in transit? **Yes**, provided the final production AAB and all production endpoints are still using HTTPS/TLS.
+   - Does the app provide a way for users to request deletion of their data? **Yes**.
+
+2. **Data types**
+   Select exactly the six rows listed above:
+   - Personal info → Name
+   - Personal info → Email address
+   - Personal info → User IDs
+   - App activity → Other user-generated content
+   - Calendar → Calendar events
+   - Device or other IDs → Device or other IDs
+
+3. **Data usage and handling**
+   For each selected data type, choose:
+   - **Collected**, not Shared, applying the service-provider and user-initiated-transfer exceptions described above.
+   - **Not processed ephemerally**: these records/tokens are stored for the service, rather than used only in memory for a single request.
+   - Name, Email address and User IDs: **Data collection is required**; purposes **Account management** and **App functionality**.
+   - Other user-generated content: **Users can choose whether this data is collected**; purpose **App functionality**.
+   - Calendar events: **Users can choose whether this data is collected** by connecting Google; purpose **App functionality**.
+   - Device or other IDs: **Users can choose whether this data is collected** by granting notification permission; purpose **App functionality**.
+
+4. **Data deletion questions**
+   - In-app account deletion: **Yes**.
+   - External account deletion web resource: **Yes**.
+   - Web URL: `https://getflowos.netlify.app/delete-account/`.
+   - Describe the external path accurately: a user can submit a request by email without reinstalling or signing into the app; the request is manually verified and processed.
+
+5. Save as **Draft** first. Review the Store listing preview and confirm that it does not show unexpected shared data types. Do not submit until the final AAB, the live legal pages and the Google OAuth production configuration have been checked.
+
+Other Console locations:
+- Privacy policy URL: **Policy and programs → App content → Privacy policy** → `https://getflowos.netlify.app/privacy-policy/`.
+- Store listing: **Grow users → Store presence → Main store listing** (wording may vary) for title, descriptions, screenshots and icon.
+- Target audience and content rating: **Policy and programs → App content**. Do not select child age groups or opt into Families unless the product is intentionally directed at children.
+- Ads declaration: declare **No** only after confirming the exact production AAB has no ads or advertising SDK.
+- App access: provide a dedicated reviewer Google account and instructions. Never provide a personal account or real personal data.
+
 ## Final checks before submission
 
 1. Confirm the exact production AAB and its currently distributed predecessors. Google Play's form covers all versions still distributed across tracks.
