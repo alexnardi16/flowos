@@ -89,3 +89,12 @@ test('completed multi-day events remain visible across all planned days when com
   const days=data.weeks.flatMap(week=>week.days);
   for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(days.find(day=>day.dateKey===date).items.some(item=>item.id==='done-multi'),true,date);
 });
+
+test('multi-day tasks appear on every calendar day covered by their duration',()=>{
+  const now=new Date('2026-09-19T10:00:00');
+  const task={id:'multi-task',title:'Multi-day task',kind:'task',status:'active',dueAt:'2026-09-20T10:00:00',durationMinutes:72*60,energy:'medium',context:'test',confidence:1};
+  const data=buildCalendarWidgetData([task],new Date('2026-09-30T23:59:59'),now);
+  const days=data.weeks.flatMap(week=>week.days);
+  for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(days.find(day=>day.dateKey===date).items.some(item=>item.id==='multi-task'),true,date);
+  assert.equal(days.find(day=>day.dateKey==='2026-09-24').items.some(item=>item.id==='multi-task'),false);
+});
