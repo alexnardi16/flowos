@@ -10,6 +10,7 @@ This is the evidence-based preparation for the Play Console form. It is not a su
 - When notifications are enabled, the app registers an Expo push token. The token is stored in `public.device_push_tokens` and sent to Expo Push Service. Push payloads contain only a background-sync marker and timestamp, not task or calendar content.
 - Expo EAS Update receives technical update-check metadata such as platform and runtime/app version. No task, calendar, account profile or user-entered content is included in update checks.
 - Voice commands on Android launch the Android system speech-recognition activity through `android.speech.action.RECOGNIZE_SPEECH`. FlowOS receives the resulting text transcript and parses it locally. FlowOS does not request the Android microphone permission, upload raw audio to FlowOS servers, or store voice recordings. The system speech-recognition provider may process audio under its own terms.
+- The `ai-planner` and `interpret-commitment` backend functions currently use deterministic local rules and do not call a generative-AI provider. The legacy translation endpoint is retired. No active Edge Function references OpenAI or transmits user content to it.
 - Local reminders and diagnostic/notification logs are kept on-device. The app source contains no analytics, advertising or third-party crash-reporting SDK.
 - Device location is not requested or transmitted by the current app.
 
