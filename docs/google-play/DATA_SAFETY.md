@@ -1,83 +1,78 @@
 # FlowOS - Google Play Data safety declaration preparation
 
-This document is a preparation aid, not a submitted Play Console declaration. Recheck the exact production AAB, Supabase project, Google OAuth configuration and Expo push setup before submitting or changing the Play Console form.
+This is the evidence-based preparation for the Play Console form. It is not a submitted declaration. The final answers must match the exact AAB uploaded to Google Play and every version still distributed on any Play track.
 
-## Data collected / processed by the app
+## Current production data flows verified from source and Supabase
 
-The table below follows the current Google Play data-type names. Confirm each answer against the exact production binary and current Play Console form before submission. In particular, verify the account-profile fields returned by Google Sign-In and the actual token-deletion behavior.
+- Supabase Auth authenticates the user. The app stores the FlowOS account ID and Google profile identity (name, email and Google account ID).
+- FlowOS stores user-created commitments, including task/event titles, descriptions, dates, deadlines, duration, priority, status and preferences, in Supabase.
+- When the user connects Google, FlowOS reads and synchronizes the selected Google Calendar events and Google Tasks through its backend. OAuth access and refresh tokens are stored in the non-exposed `private` schema. The `private` schema grants access only to the backend `service_role`; `anon` and `authenticated` have no schema/table privileges.
+- When notifications are enabled, the app registers an Expo push token. The token is stored in `public.device_push_tokens` and sent to Expo Push Service. Push payloads contain only a background-sync marker and timestamp, not task or calendar content.
+- Expo EAS Update receives technical update-check metadata such as platform and runtime/app version. No task, calendar, account profile or user-entered content is included in update checks.
+- Voice commands on Android launch the Android system speech-recognition activity through `android.speech.action.RECOGNIZE_SPEECH`. FlowOS receives the resulting text transcript and parses it locally. FlowOS does not request the Android microphone permission, upload raw audio to FlowOS servers, or store voice recordings. The system speech-recognition provider may process audio under its own terms.
+- Local reminders and diagnostic/notification logs are kept on-device. The app source contains no analytics, advertising or third-party crash-reporting SDK.
+- Device location is not requested or transmitted by the current app.
 
-Google defines collection as transmitting data off the user's device, including transmission by libraries and SDKs.
+## Recommended Play Console answers
 
-| Play Console category | Data type | Collection | Purpose | Optional | Deletion | Recipients / sharing |
-|---|---|---:|---|---:|---|
-| Personal info | Name | Yes, from the Google profile at sign-in | Account management / app functionality | No | Yes | Supabase (Google is the identity source) |
-| Personal info | Email address | Yes | Account management / authentication | No | Yes | Supabase (Google is the identity source) |
-| Personal info | User IDs | Yes | Account management and associating user data | No | Yes | Supabase |
-| App activity | Other user-generated content (task titles, notes, descriptions and commitment details) | Yes | App functionality | Yes, user chooses what to enter | Yes | Supabase; Google Tasks when the user connects and synchronizes |
-| Calendar | Calendar events | Yes, when Google is connected | App functionality | Yes, user chooses whether to connect Google | Yes | Supabase; Google Calendar when the user connects and synchronizes |
+### Data collection and security
 
-| Device or other IDs | Expo push token | Yes, when notification permission is granted | App functionality | Yes, user can deny/disable notifications | Yes, when the account/device token is removed | Supabase and Expo Push Service |
+| Play Console question | Recommended answer | Evidence / qualification |
+|---|---|---|
+| Does the app collect or share required user data types? | **Yes** | Account identity, user-created content, Google Calendar data and conditional push token are transmitted off-device. |
+| Is all user data collected by the app encrypted in transit? | **Yes**, after confirming the production endpoints/build use HTTPS/TLS | Supabase, Google APIs and Expo endpoints are called over HTTPS. Recheck the final AAB and every network path. |
+| Does the app provide a way for users to request deletion of their data? | **Yes** | In-app deletion and the public email-based deletion request page are available. |
 
-### Voice commands
+### Select these data types
 
-- Voice commands open the Android system speech-recognition activity (or the browser speech-recognition API on web).
-- FlowOS receives the recognized transcript and parses the command locally; the app code does not upload or store raw audio recordings on FlowOS servers.
-- The system/browser speech-recognition provider may process the audio independently. Verify the relevant provider and whether this external system flow affects the Play Console Audio files declaration for the shipped Android build.
+| Play Console category | Data type | Collected? | Optional? | Purpose(s) | Notes |
+|---|---|---:|---:|---|---|
+| Personal info | Name | Yes | No, as part of Google sign-in profile | Account management; App functionality | Google profile name |
+| Personal info | Email address | Yes | No | Account management; App functionality | Google sign-in email |
+| Personal info | User IDs | Yes | No | Account management; App functionality | FlowOS user ID and Google account identifier |
+| App activity | Other user-generated content | Yes | Yes | App functionality | Tasks, notes, descriptions and other commitments entered by the user |
+| Calendar | Calendar events | Yes, when Google is connected | Yes | App functionality | Events and event details synchronized with selected calendars |
+| Device or other IDs | Device or other IDs | Yes, when push notifications are enabled | Yes | App functionality | Expo push token associated with the FlowOS account |
 
-### Device identifiers and notifications
+For each row above, select **Collected**. Do not select **Shared** on the basis of the current documented data flows, subject to the exceptions below.
 
-- When notification permission is granted, the app obtains an Expo push token for the device.
-- The token is stored in the Supabase `device_push_tokens` table, associated with the authenticated user, and sent to Expo's push service for background-sync notifications.
-- FlowOS attempts to remove the current device's token on sign-out and removes all account-associated tokens during account deletion.
-- The push payload contains a sync marker and timestamp, not task titles, descriptions, calendar event content or other commitment data.
-- Review the Play Console taxonomy for whether this token must be declared under **Device or other IDs**. Its purpose is app functionality; collection is conditional on notification permission.
+### Sharing classification and third parties
 
-### Data that is not collected by FlowOS for analytics/advertising
+Google Play excludes transfers to a service provider processing data on the developer's behalf from the definition of sharing. It also excludes a transfer to a third party based on a specific user-initiated action where the user reasonably expects the data to be transferred.
 
-- No advertising SDK is present in the application configuration.
-- Local reminders are scheduled on the device. The separate Expo push token described above is used for background synchronization, not advertising or analytics.
-- Diagnostic and notification logs are stored locally on the device; the current app code does not upload them to a third-party analytics or crash-reporting service.
-- Device location is no longer requested or transmitted by the production code.
+- **Supabase:** service provider for authentication, storage and backend processing. Data sent to Supabase is collected, but is not declared as shared solely because Supabase is the service provider.
+- **Expo Push Service:** service provider for push delivery. The Expo push token and sync-only payload are sent for this user-enabled app functionality; treat Expo as a service provider, not an advertising/data-broker recipient.
+- **Google Calendar / Google Tasks:** data is transferred to the Google account and destinations that the user explicitly connects and selects for synchronization. This is a user-initiated feature and the transfer is reasonably expected. It is not sharing for the Play Data Safety definition when the user action and in-app expectations are clear.
+- **Google Sign-In:** Google is the identity provider supplying the profile information; the app stores the resulting identity data with Supabase.
+- **Expo EAS Update:** receives technical app compatibility metadata, not user content or account data.
+- **Netlify:** hosts the public legal/marketing website. Standard web request metadata relates to visits to those public pages, not data collected by the Android app.
 
-## Recipients and sharing
+Do not declare advertising, marketing, analytics, diagnostics, crash logs, precise/approximate location, contacts, photos/videos, messages or audio files based on the current app source. Android speech recognition is handled by the external system speech-recognition activity; FlowOS receives only the transcript and does not transmit or store the raw recording.
 
-- **Supabase:** receives account identity, FlowOS commitments, preferences, Google connection metadata and OAuth tokens for authentication, storage and synchronization.
-- **Google:** provides sign-in and receives the event/task changes that FlowOS synchronizes to the Google calendars and task lists selected by the user.
-- **Expo:** receives the device push token and the background-sync push message metadata needed to deliver the notification. The message contains no task or calendar content.
-- **Expo EAS Update:** receives technical update-check metadata, such as app platform and runtime/app version, to determine which compatible app update to deliver; task and calendar content is not included in update checks.
-- **Netlify:** hosts the public website and legal pages; web visitors' standard request metadata may be processed by the hosting provider.
+## OAuth credentials
 
-## Third-party processing
+The backend stores Google OAuth access and refresh tokens in `private.google_oauth_tokens`. These are security credentials, not task/calendar content. The current Play Console taxonomy does not present a dedicated OAuth-token data type. Keep their collection and server-side storage clearly disclosed in the Privacy Policy; do not invent a new data type. If the live Play Console form provides a specific authentication/other-info classification applicable to OAuth credentials, review that taxonomy before submitting.
 
-FlowOS currently integrates with:
+## Security evidence
 
-- Supabase for authentication and application data storage.
-- Google APIs for user-authorized Calendar / Tasks synchronization.
-- Expo Push Service for delivery of background-sync notifications when the user grants notification permission.
-
-Google Play requires disclosure of relevant data handling by third-party SDKs/services and consistency with the privacy policy.
-
-## Google API data
-
-The current Google OAuth scopes are `openid`, `email`, `profile`, `https://www.googleapis.com/auth/calendar.events`, `https://www.googleapis.com/auth/calendar.calendarlist.readonly`, and `https://www.googleapis.com/auth/tasks`. Calendar events and Google Tasks are synchronized through the FlowOS backend. OAuth access/refresh tokens are stored server-side in the private Supabase schema. These tokens are authentication credentials rather than task content; confirm with the current Play Console taxonomy whether they require a separate Personal info data-type declaration (for example, Other info or User IDs) in addition to the email/name/account identifiers already listed.
-
-## Security
-
-Declare encryption in transit if all production network paths use HTTPS/TLS, which is the intended configuration. Authentication and row-level access controls are used for application data.
+- Google OAuth scopes in the app: `openid`, `email`, `profile`, `calendar.events`, `calendar.calendarlist.readonly`, and `tasks`.
+- OAuth tokens and Google sync cursors are stored in the non-exposed `private` schema.
+- Direct SQL privilege checks confirmed no schema/table privileges for `anon` or `authenticated` on the three private Google tables. Backend `service_role` is the intended access path.
+- `public.device_push_tokens` has RLS enabled and owner-scoped policies.
+- Supabase Security Advisor currently reports two warnings: `pg_net` installed in `public`, and leaked-password protection disabled. It does not currently report the private Google tables as exposed.
+- The legacy `translate-activities` Edge Function has been retired and replaced with an HTTP 410 response. The app source and tests contain no active translation feature or OpenAI integration. Remove any unused `OPENAI_API_KEY` secret from Supabase after confirming no other service uses it.
 
 ## Data deletion
 
-FlowOS provides an in-app deletion path and an external web resource where users can request account and associated data deletion. Google requires both for apps that enable account creation.
+The in-app deletion function revokes the stored Google access token on a best-effort basis, deletes the user's FlowOS commitments, Google connection/calendar/task-list records, push tokens, private Google OAuth/sync-state rows, and then deletes the Supabase Auth user. The external page provides an email-based request route without requiring app installation. The external request is manually verified and processed; do not describe it as immediate self-service deletion.
 
-The deletion backend removes FlowOS commitments, Google connection records, Google OAuth tokens and the Supabase authentication account, subject to lawful retention requirements.
+## Final checks before submission
 
-## Final verification before Play Console submission
-
-1. Build a new Android AAB from the updated `main` branch. The existing v1.0.0 AAB still contains the previous code and must not be treated as equivalent to this updated source.
-2. Confirm the exact production AAB permissions and dependency set.
-3. Confirm all data transmitted off-device, including Google API data, Supabase account/content data and Expo push tokens.
-4. Confirm third-party SDK/service behavior, especially Expo push-token registration and delivery.
-5. Confirm there is no analytics or crash-reporting SDK, and correctly declare the Expo push token as a device identifier if required by the current Play Console taxonomy.
-6. Confirm exact retention and deletion behavior in the live Supabase project.
-7. Confirm the live Privacy Policy matches these declarations.
-8. Confirm the external account-deletion URL loads without login and clearly provides a way to request deletion.
+1. Confirm the exact production AAB and its currently distributed predecessors. Google Play's form covers all versions still distributed across tracks.
+2. Confirm the final manifest/permissions and third-party SDK behavior in the AAB.
+3. Confirm the Google OAuth consent screen, scopes and account deletion flow.
+4. Confirm that the public Privacy Policy and external deletion page are live and accessible without login.
+5. Remove the unused OpenAI secret from Supabase after checking it is not used by another service.
+6. Review the current Play Console data-type taxonomy and each optionality/sharing exception in the form.
+7. Save the form as a draft first; inspect the Store listing preview before submitting.
+8. Do not claim an independent security audit or certification. No such audit has been performed.
