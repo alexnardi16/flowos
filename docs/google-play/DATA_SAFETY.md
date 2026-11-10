@@ -4,7 +4,7 @@ This document is a preparation aid, not a submitted Play Console declaration. Re
 
 ## Data collected / processed by the app
 
-The table below is a mapping aid. The exact Play Console category for task content and push tokens must be confirmed against the current Data safety form before submission. Do not copy this table blindly.
+The table below follows the current Google Play data-type names. Confirm each answer against the exact production binary and current Play Console form before submission. In particular, verify the account-profile fields returned by Google Sign-In and the actual token-deletion behavior.
 
 Google defines collection as transmitting data off the user's device, including transmission by libraries and SDKs.
 
@@ -13,8 +13,10 @@ Google defines collection as transmitting data off the user's device, including 
 | Personal info | Name | Yes, as part of the Google profile used for sign-in | Account management / app functionality | No | Yes |
 | Personal info | Email address | Yes | Account management / authentication | No | Yes |
 | Personal info | User IDs | Yes | Account management and associating user data | No | Yes |
-| App activity / user-generated content* | Task titles, notes, descriptions and other commitment content | Yes | Task planning and synchronization | Yes | Yes |
-| Calendar | Calendar events | Yes, when Google is connected | Calendar synchronization / app functionality | Yes | Yes |
+| App activity | Other user-generated content (task titles, notes, descriptions and commitment details) | Yes | App functionality | Yes, user chooses what to enter | Yes |
+| Calendar | Calendar events | Yes, when Google is connected | App functionality | Yes, user chooses whether to connect Google | Yes |
+
+| Device or other IDs | Expo push token | Yes, when notification permission is granted | App functionality | Yes, user can deny/disable notifications | Yes, when the account/device token is removed |
 
 ### Device identifiers and notifications
 
@@ -29,6 +31,13 @@ Google defines collection as transmitting data off the user's device, including 
 - Local reminders are scheduled on the device. The separate Expo push token described above is used for background synchronization, not advertising or analytics.
 - Diagnostic and notification logs are stored locally on the device; the current app code does not upload them to a third-party analytics or crash-reporting service.
 - Device location is no longer requested or transmitted by the production code.
+
+## Recipients and sharing
+
+- **Supabase:** receives account identity, FlowOS commitments, preferences, Google connection metadata and OAuth tokens for authentication, storage and synchronization.
+- **Google:** provides sign-in and receives the event/task changes that FlowOS synchronizes to the Google calendars and task lists selected by the user.
+- **Expo:** receives the device push token and the background-sync push message metadata needed to deliver the notification. The message contains no task or calendar content.
+- **Netlify:** hosts the public website and legal pages; web visitors' standard request metadata may be processed by the hosting provider.
 
 ## Third-party processing
 
