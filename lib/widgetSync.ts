@@ -17,8 +17,6 @@ let lastTodayWidgetSignature:string|null=null;
 let lastCalendarInputSignature:string|null=null;
 let cachedCalendarWeeks:AndroidCalendarWeek[]|null=null;
 let cachedCalendarPayload:string|null=null;
-let lastCalendarPageIndex:string|null=null;
-let lastCalendarStorageValue:string|null=null;
 let lastCalendarRenderedSignature:string|null=null;
 
 
@@ -94,16 +92,15 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       }
       const allWeeks=cachedCalendarWeeks!;
       const payload=cachedCalendarPayload!;
-      if(payload!==lastCalendarStorageValue){
+      let storedCalendarPayload:string|null=null;
+      try{storedCalendarPayload=await AsyncStorage.getItem('flowos-calendar-widget-v2');}catch{}
+      if(storedCalendarPayload!==payload){
         await AsyncStorage.setItem('flowos-calendar-widget-v2',payload);
-        lastCalendarStorageValue=payload;
       }
       const page=getCalendarWidgetPage(allWeeks);
-      const pageIndex=String(page.startIndex);
-      if(pageIndex!==lastCalendarPageIndex){
-        await AsyncStorage.setItem('flowos-calendar-widget-page-v1',pageIndex);
-        lastCalendarPageIndex=pageIndex;
-      }
+      // Always restore the canonical current-week page on a data refresh.
+      // The widget handler can change this key independently while browsing.
+      await AsyncStorage.setItem('flowos-calendar-widget-page-v1',String(page.startIndex));
       const calendarTextColor=colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity);
       const calendarButtonBackgroundColor=colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity);
       const calendarButtonTextColor=colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity);
