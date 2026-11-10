@@ -1,11 +1,13 @@
 # FlowOS implementation status
 
+> **Historical engineering snapshot, superseded on 10 November 2026.** This file records work from early development sprints and contains legacy notes that no longer describe the shipped app (including retired weather/location experiments and outdated native-widget status). Do not use it as the current product description or deployment checklist. For current features and privacy disclosures, use `README.md`, `docs/google-play/STORE_METADATA.md`, `docs/google-play/DATA_SAFETY.md` and `docs/RELEASE_1.0.0_CHECKLIST.md`.
+
 ## Implemented
 
 - Mobile-first Expo Router application
 - Unified Commitment domain model
 - Today, Plan, Inbox, Profile, Capture and Focus screens
-- Natural-language interpretation with a Supabase Edge Function
+- Rule-based natural-language interpretation with a Supabase Edge Function (no hosted AI model call)
 - Local fallback parser when the backend is unavailable
 - Supabase passwordless authentication
 - Persistent authentication sessions
@@ -15,7 +17,7 @@
 - Daily summary notification at 07:30 local time, with automatic Google Calendar/Tasks sync beforehand, missed-summary recovery on app foreground, duplicate prevention, a dedicated notification log, and a Notifiche settings screen
 - Per-event reminders 10 minutes before start, grouped due-soon/overdue task notifications, and app badge count (ReminderEngine)
 - Automatic replanning (missed slots, conflicts with fixed events), energy-aware scheduling within real weekly availability windows, and rule-based planning suggestions (ReplanEngine + extended PlanningEngine)
-- Today's weather in the daily summary (Open-Meteo, device location via expo-location)
+- Historical prototype only: a weather summary experiment using Open-Meteo and device location; this is not part of the current shipped product.
 - All-day events handled by calendar day everywhere (no more 2am display bug, no longer block the whole day in auto-planning), recurring events/tasks/reminders with series-vs-occurrence deletion, and a Google-Contacts (birthdays) event filter in Oggi/Piano
 - Device calendar event creation
 - EAS Build and EAS Update profiles
@@ -26,7 +28,7 @@
 - EAS project creation/link and first preview build
 - Supabase project URL and publishable key
 - Deployment of database migration and Edge Function
-- Server-side OpenAI API key
+- No OpenAI API key is required by the current implementation; `interpret-commitment` uses deterministic parsing rules.
 - Apple and Google push credentials for remote notifications
 - Google Calendar OAuth if direct Google-account synchronization is preferred over device-calendar synchronization
 
