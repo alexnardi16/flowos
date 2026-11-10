@@ -205,3 +205,13 @@ test('Google Tasks keeps its 10-second foreground poll without hydrating unchang
   assert.doesNotMatch(body,/\.then\(\(\) => hydrateFromCloud\(\)\)/);
   assert.match(source,/}, 150\);/);
 });
+
+
+test('incremental change counts include local resolution pushes so FlowOS still hydrates their result',()=>{
+  const source=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  const start=source.indexOf('async function syncUser(');
+  const end=source.indexOf('\nDeno.serve',start);
+  const body=source.slice(start,end);
+  assert.match(body,/const resolutionPushed=await pushResolutionPending\(userId\)/);
+  assert.match(body,/return changed\+resolutionPushed/);
+});
