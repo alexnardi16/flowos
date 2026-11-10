@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
-import { BuildInfo } from '../components/BuildInfo';
-import { type DiagnosticEntry, subscribeDiagnostics, recordDiagnostic } from '../lib/diagnostics';
+import { recordDiagnostic } from '../lib/diagnostics';
 import { finishNativeGoogleOAuth, signInWithGoogleWithoutForcedConsent } from '../lib/googleLogin';
 import { useAuth } from '../providers/AuthProvider';
 import { t, useLanguage } from '../lib/i18n';
@@ -15,7 +14,6 @@ export default function LoginScreen() { useLanguage();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [oauthStatus, setOauthStatus] = useState('Pronto');
-  const [diagnostics, setDiagnostics] = useState<DiagnosticEntry[]>([]);
   const googleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function clearGoogleTimeout() {
@@ -44,7 +42,6 @@ export default function LoginScreen() { useLanguage();
 
   useEffect(() => {
     recordDiagnostic('login-screen-mounted', { path: Platform.OS === 'web' ? window.location.pathname : 'native' });
-    const unsubscribe = subscribeDiagnostics(setDiagnostics);
     if (Platform.OS !== 'web') {
       const subscription = Linking.addEventListener('url', ({ url }) => { void handleGoogleCallback(url); });
       void Linking.getInitialURL().then((url) => {
@@ -53,10 +50,9 @@ export default function LoginScreen() { useLanguage();
       return () => {
         clearGoogleTimeout();
         subscription.remove();
-        unsubscribe();
       };
     }
-    return unsubscribe;
+    return undefined;
   }, []);
 
   useEffect(() => {
@@ -109,14 +105,6 @@ export default function LoginScreen() { useLanguage();
         <Text style={styles.permissions}>Dopo la prima autorizzazione, Google normalmente non richiede di nuovo il consenso finché non cambiano i permessi o non revochi l’accesso.</Text>
         {message ? <Text selectable style={styles.error}>{message}</Text> : null}
 
-        <View style={styles.diagnosticsCard}>
-          <Text style={styles.diagnosticsTitle}>{t('DIAGNOSTICA ACCESSO')}</Text>
-          <BuildInfo inline />
-          <ScrollView style={styles.logScroll} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar>
-            {diagnostics.length
-              ? diagnostics.map((entry, index) => <Text key={`${entry.at}-${index}`} selectable style={[styles.log, entry.level==='error'&&styles.logError, entry.level==='warn'&&styles.logWarn]}>{entry.at} [{entry.level}] {entry.event}{entry.details ? ` · ${entry.details}` : ''}</Text>)
-              : <Text style={styles.log}>{t('Nessun evento diagnostico disponibile.')}</Text>}
-          </ScrollView>        </View>
       </View>
     </ScrollView>
   );
@@ -136,10 +124,4 @@ const styles = StyleSheet.create({
   permissions: { fontSize: 12, lineHeight: 17, color: '#777', marginTop: 10 },
   buttonDisabled: { opacity: .55 },
   error: { marginTop: 16, fontSize: 14, lineHeight: 20, color: '#A12626' },
-  diagnosticsCard: { marginTop: 24, overflow: 'visible', padding: 14, borderRadius: 14, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#DDD9CF' },
-  diagnosticsTitle: { fontSize: 11, fontWeight: '900', letterSpacing: 1, color: '#555', marginBottom: 4 },
-  logScroll: { marginTop: 8, height: 230, maxHeight: 230, minHeight: 90, borderWidth: 1, borderColor: '#E5E2DA', borderRadius: 10, padding: 8 },
-  log: { fontFamily: 'monospace', fontSize: 9, lineHeight: 13, color: '#333' },
-  logError: { color: '#B42318' },
-  logWarn: { color: '#A15C00' },
 });
