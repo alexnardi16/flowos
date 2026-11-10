@@ -72,6 +72,12 @@ export default function Calendar(){
     return map;
   },[commitments]);
 
+  const sortedByDay=useMemo(()=>{
+    const result=new Map<string,Commitment[]>();
+    for(const [key,items] of byDay)result.set(key,sortCommitments(items,calendarNames));
+    return result;
+  },[byDay,calendarNames]);
+
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   const requestedDate=typeof params.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(params.date)?params.date:null;
   const selectedDateKey=selectedDateOverride??requestedDate??dayKey(new Date());
@@ -80,14 +86,16 @@ export default function Calendar(){
   const goToToday=useCallback(()=>{setSelectedDateOverride(dayKey(new Date()));scrollToSelectedWeek();},[scrollToSelectedWeek]);
   useEffect(()=>{scrollToSelectedWeek();},[scrollToSelectedWeek,selectedDateKey]);
 
+  const strings=widgetStrings(language);
+
   return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable></View>}>
-    {weeks.map((week,index)=>{const strings=widgetStrings(language);
+    {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week,index,strings.months);
       return <Card key={index} style={styles.weekCard} onLayout={(event)=>{weekOffsets.current.set(index,event.nativeEvent.layout.y);if(index===selectedWeekIndex)scrollToSelectedWeek();}}>
         {monthTitle?<Text style={styles.monthTitle}>{monthTitle}</Text>:null}
         <View style={styles.grid}>
           {week.map((date,dayIndex)=>{
-            const items=sortCommitments(byDay.get(dayKey(date))??[],calendarNames);
+            const items=sortedByDay.get(dayKey(date))??[];
             const today=dayKey(date)===dayKey(new Date());
             const selected=dayKey(date)===selectedDateKey;
             return <View key={date.toISOString()} style={[styles.dayBox,today&&styles.todayBox,selected&&styles.selectedBox]}>
