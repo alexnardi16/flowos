@@ -10,7 +10,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
-import { eventEnd, isCompletedMultiDayVisible, isOverdueTask } from '@/lib/commitmentVisibility';
+import { eventDayDates, isCompletedMultiDayEvent, isOverdueTask } from '@/lib/commitmentVisibility';
 
 
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -45,20 +45,22 @@ export default function Plan(){
   const groupedItems=useMemo(()=>{
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
-      const completedMultiDay=isCompletedMultiDayVisible(item,new Date(now));
       const overdueTask=isOverdueTask(item,new Date(now));
-      const value=completedMultiDay?eventEnd(item)?.toISOString():overdueTask?new Date(now).toISOString():itemDate(item);
-      if(!value)continue;
-      const date=new Date(value);
-      const key=item.allDay
-        ? `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`
-        : `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-      const label=item.allDay
-        ? date.toLocaleDateString(localeForLanguage(language),{weekday:'long',day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'})
-        : date.toLocaleDateString(localeForLanguage(language),{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-      const group=groups.get(key)??{label,items:[]};
-      group.items.push(item);
-      groups.set(key,group);
+      const spansDays=item.kind==='event'&&item.durationMinutes>24*60&&(item.status!=='done'||isCompletedMultiDayEvent(item));
+      const dates=spansDays?eventDayDates(item):[];
+      const value=overdueTask?new Date(now).toISOString():itemDate(item);
+      const dayDates=dates.length?dates:value?[new Date(value)]:[];
+      for(const date of dayDates){
+        const key=item.allDay
+          ? `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`
+          : `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+        const label=item.allDay
+          ? date.toLocaleDateString(localeForLanguage(language),{weekday:'long',day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'})
+          : date.toLocaleDateString(localeForLanguage(language),{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+        const group=groups.get(key)??{label,items:[]};
+        group.items.push(item);
+        groups.set(key,group);
+      }
     }
     return Array.from(groups.entries()).sort(([a],[b])=>a.localeCompare(b)).map(([key,group])=>({key,...group,items:sortCommitments(group.items,calendarNames)}));
   },[items,calendarNames,now]);
