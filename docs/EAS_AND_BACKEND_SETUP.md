@@ -38,7 +38,7 @@ EXPO_PUBLIC_SUPABASE_URL=...
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 ```
 
-4. Deploy the rule-based interpretation function:
+4. Optional legacy endpoint: `interpret-commitment` is a deterministic parser retained for compatibility, but the current app's capture and voice-command flows parse locally and do not depend on it. If you need to keep that endpoint deployed:
 
 ```bash
 supabase functions deploy interpret-commitment
