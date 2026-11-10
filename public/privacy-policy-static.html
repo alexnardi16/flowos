@@ -12,35 +12,54 @@
 <main>
   <h1>FlowOS Privacy Policy</h1>
   <small>Last updated: November 10, 2026</small>
+
   <div class="card"><strong>Developer and privacy contact</strong><p>FlowOS. For privacy questions or requests, contact <a href="mailto:alex16nardi@gmail.com">alex16nardi@gmail.com</a>.</p></div>
+
   <h2>1. What data FlowOS handles</h2>
   <p>FlowOS handles information needed to provide the service, including your Google account identity (such as email address, profile information and account identifier), FlowOS account identifier, tasks, events, reminders and other commitments that you create, and your application preferences.</p>
+
   <h2>2. Google Sign-In and Google services</h2>
   <p>FlowOS uses Google Sign-In for authentication. The Google authentication flow can provide basic profile information, such as your name, email address and Google account identifier. If you choose to connect Google services, FlowOS accesses the Google Calendar and Google Tasks data covered by the permissions you authorize, in order to synchronize events and tasks with FlowOS.</p>
   <p>FlowOS may store the Google account email, Google account identifier, selected calendar and task-list information, synchronization status, and OAuth access/refresh tokens. OAuth tokens are stored server-side in a private database area and are not exposed to the application client.</p>
   <p>Google data is used only to provide the user-requested FlowOS features and synchronization. FlowOS does not use Google Calendar or Google Tasks data for advertising or to sell user data.</p>
+
   <h2>3. Tasks and commitments</h2>
   <p>Information you enter into FlowOS, such as titles, descriptions, dates, deadlines, duration, context, priority, status and other commitment information, is stored with your account so that FlowOS can provide its task and planning features.</p>
-  <h2>4. AI features</h2>
-  <p>When you use an AI-powered FlowOS feature, text needed to interpret or plan a commitment may be sent from the FlowOS server to OpenAI for processing. FlowOS uses OpenAI as a service provider for this feature and configures the relevant API requests not to store responses through the API's storage option. Do not enter information into AI features that you do not want processed by an AI service.</p>
+
+  <h2>4. Service providers and data sharing</h2>
+  <p>FlowOS uses Supabase to authenticate your account and store the commitments, preferences, Google connection details and synchronization metadata needed to operate the app. This information is transmitted between your device and FlowOS servers over HTTPS and is associated with your authenticated account.</p>
+  <p>If you connect Google, FlowOS exchanges the Google account information and the Calendar events and Google Tasks data covered by the permissions you grant with Google APIs, so that the selected calendars and task lists can be synchronized. FlowOS also stores the Google account email, account identifier, selected destination information and OAuth tokens on its backend. OAuth tokens are kept in a private database schema and are not exposed to the app client.</p>
+  <p>Google data is used only to provide the synchronization features you request. FlowOS does not sell personal data or use Google Calendar or Google Tasks content for advertising. The current application source does not integrate an OpenAI service or an AI-processing provider.</p>
+  <p>FlowOS may also register an Expo push token for a device when notification permission is granted. The token is stored with your FlowOS account in Supabase and is sent to Expo's push service so that the backend can deliver a small background-sync notification to that device. The push payload contains a sync marker and timestamp, not your task or calendar content. You can disable notifications in your device settings.
+  </p>
+  <p>The public FlowOS website and legal pages are hosted by Netlify. Visiting those public pages may expose standard connection information, such as your IP address and browser request metadata, to the hosting provider.</p>
+
   <h2>5. Notifications and local diagnostics</h2>
   <p>FlowOS may use local device notifications to deliver reminders when you enable notifications. FlowOS also keeps limited technical diagnostic and notification-log information locally on your device to help diagnose application problems and reminder scheduling issues. These logs are stored on the device, are not used as an advertising profile, and are not sent to a third-party analytics or crash-reporting service by the current application code.</p>
+
   <h2>6. Location and weather</h2>
   <p>The current release of FlowOS does not request, collect, or transmit your phone's location. Weather/location features are not part of the shipped release.</p>
-  <h2>7. Service providers and data sharing</h2>
-  <p>FlowOS uses Supabase for authentication and application data storage, and Google APIs for the Google features you authorize. If you grant notification permission, an Expo push token is stored with your account in Supabase and sent to Expo's push service to deliver background-sync notifications. Push payloads contain only a sync marker and timestamp, not task or calendar content. The public website is hosted by Netlify, which may process standard web request metadata such as IP address and browser information. The current application source does not integrate OpenAI or a third-party analytics or crash-reporting service.</p>
+
   <h2>7. Security</h2>
   <p>FlowOS uses authentication controls, encrypted HTTPS connections, row-level access controls for application data, and private server-side storage for Google OAuth tokens. Access to application records is restricted to the authenticated account that owns them.</p>
+
   <h2>8. Retention and deletion</h2>
   <p>FlowOS retains account and application data for as long as necessary to provide the service, unless you request deletion or a longer retention period is required by law. Local diagnostic and notification records remain on the device until they are cleared by the application or removed with the application data.</p>
   <p>When an account deletion request is fulfilled, FlowOS deletes the FlowOS account and associated application data, including stored Google connection data and OAuth tokens, subject to any data that must lawfully be retained.</p>
   <p>You can initiate deletion from within FlowOS or from the <a href="/delete-account/">external account deletion page</a>.</p>
+
   <h2>9. Your choices</h2>
-  <ul><li>You can disconnect Google from FlowOS settings.</li><li>You can control notification permissions through your device settings.</li><li>You can request deletion of your FlowOS account and associated data.</li><li>You can contact the privacy address above with questions or privacy requests.</li></ul>
+  <ul>
+    <li>You can disconnect Google from FlowOS settings.</li>
+    <li>You can control notification permissions through your device settings.</li>
+    <li>You can request deletion of your FlowOS account and associated data.</li>
+    <li>You can contact the privacy address above with questions or privacy requests.</li>
+  </ul>
+
   <h2>10. Changes to this policy</h2>
   <p>We may update this Privacy Policy when FlowOS changes or when legal requirements change. The latest version will always be published on this page, with the update date shown at the top.</p>
+
   <footer><a href="/about/">FlowOS website</a> · <a href="/delete-account/">Delete account</a> · <a href="/terms/">Terms of Service</a></footer>
 </main>
 </body>
 </html>
-<!-- End of FlowOS public privacy policy. -->
