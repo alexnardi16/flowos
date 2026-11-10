@@ -78,6 +78,13 @@ test('account exit clears the diagnostic session and auth subscriptions are clea
   assert.match(auth, /supabase\.removeChannel\(channel\)/);
 });
 
+test('account deletion removes Expo push tokens as well as Google and FlowOS account data', () => {
+  const deletion = read('supabase/functions/delete-account/index.ts');
+  assert.match(deletion, /device_push_tokens/);
+  assert.match(deletion, /google_oauth_tokens/);
+  assert.match(deletion, /admin\.auth\.admin\.deleteUser\(user\.id\)/);
+});
+
 test('release checklist explicitly separates automated checks from physical-device acceptance', () => {
   const checklist = read('docs/RELEASE_1.0.0_CHECKLIST.md');
   assert.match(checklist, /Functional acceptance on a physical Android device/);
