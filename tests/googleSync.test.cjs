@@ -192,3 +192,16 @@ test('foreground and background Google pushes retain edits made while the remote
     assert.match(source,/sync_status:"pending"\}\)\.eq\("id",c\.id\)\.eq\("user_id",userId\)\.neq\("updated_at",c\.updated_at\)/);
   }
 });
+
+
+test('Google Tasks keeps its 10-second foreground poll without hydrating unchanged snapshots',()=>{
+  const source=fs.readFileSync('providers/AuthProvider.tsx','utf8');
+  const start=source.indexOf('const remoteSyncInterval = setInterval');
+  const end=source.indexOf('return () => {',start);
+  const body=source.slice(start,end);
+  assert.match(body,/syncGoogleRemote\(\)/);
+  assert.match(body,/if \(Number\(result\?\.changed \?\? 0\) > 0\) return hydrateFromCloud\(\)/);
+  assert.match(body,/\}, 10000\)/);
+  assert.doesNotMatch(body,/\.then\(\(\) => hydrateFromCloud\(\)\)/);
+  assert.match(source,/}, 150\);/);
+});
