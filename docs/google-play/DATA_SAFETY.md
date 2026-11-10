@@ -8,15 +8,15 @@ The table below follows the current Google Play data-type names. Confirm each an
 
 Google defines collection as transmitting data off the user's device, including transmission by libraries and SDKs.
 
-| Play Console category | Data type | Collection | Purpose | Optional | Deletion |
+| Play Console category | Data type | Collection | Purpose | Optional | Deletion | Recipients / sharing |
 |---|---|---:|---|---:|---|
-| Personal info | Name | Yes, as part of the Google profile used for sign-in | Account management / app functionality | No | Yes |
-| Personal info | Email address | Yes | Account management / authentication | No | Yes |
-| Personal info | User IDs | Yes | Account management and associating user data | No | Yes |
-| App activity | Other user-generated content (task titles, notes, descriptions and commitment details) | Yes | App functionality | Yes, user chooses what to enter | Yes |
-| Calendar | Calendar events | Yes, when Google is connected | App functionality | Yes, user chooses whether to connect Google | Yes |
+| Personal info | Name | Yes, from the Google profile at sign-in | Account management / app functionality | No | Yes | Supabase (Google is the identity source) |
+| Personal info | Email address | Yes | Account management / authentication | No | Yes | Supabase (Google is the identity source) |
+| Personal info | User IDs | Yes | Account management and associating user data | No | Yes | Supabase |
+| App activity | Other user-generated content (task titles, notes, descriptions and commitment details) | Yes | App functionality | Yes, user chooses what to enter | Yes | Supabase; Google Tasks when the user connects and synchronizes |
+| Calendar | Calendar events | Yes, when Google is connected | App functionality | Yes, user chooses whether to connect Google | Yes | Supabase; Google Calendar when the user connects and synchronizes |
 
-| Device or other IDs | Expo push token | Yes, when notification permission is granted | App functionality | Yes, user can deny/disable notifications | Yes, when the account/device token is removed |
+| Device or other IDs | Expo push token | Yes, when notification permission is granted | App functionality | Yes, user can deny/disable notifications | Yes, when the account/device token is removed | Supabase and Expo Push Service |
 
 ### Voice commands
 
