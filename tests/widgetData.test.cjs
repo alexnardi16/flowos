@@ -44,3 +44,10 @@ test('dueSoonCount and overdueCount mirror the reminder engine thresholds', () =
   assert.equal(glance.dueSoonCount, 1);
   assert.equal(glance.overdueCount, 1);
 });
+
+test('Today widget includes a multi-day event that started before today and is still ongoing',()=>{
+  const now=new Date(2026,8,21,12,0);
+  const event=commitment({id:'multi-event',kind:'event',title:'Multi-day event',status:'scheduled',scheduledAt:new Date(2026,8,20,10,0).toISOString(),durationMinutes:72*60});
+  const glance=buildTodayGlance([event],now);
+  assert.equal(glance.items.some(item=>item.id==='multi-event'),true);
+});
