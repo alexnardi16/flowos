@@ -344,7 +344,8 @@ test('multi-day activities are expanded into every intersected day across all ap
 
 test('widget sync parallelizes independent reads and skips unchanged native widget renders',()=>{
   const source=fs.readFileSync('lib/widgetSync.ts','utf8');
-  assert.match(source,/Promise\.all\(\[[\s\S]*getLanguage\(\)[\s\S]*getWidgetAppearance\(\)[\s\S]*getGoogleWorkspaceStatus\(\)/);
+  assert.match(source,/Promise\.all\(\[getLanguage\(\),getWidgetAppearance\(\)\]\)/);
+  assert.match(source,/void getGoogleWorkspaceStatus\(\)\.then\(refreshed=>/);
   assert.match(source,/lastTodayWidgetSignature/);
   assert.match(source,/lastCalendarInputSignature/);
   assert.match(source,/cachedCalendarWeeks/);
