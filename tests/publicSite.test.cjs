@@ -42,7 +42,7 @@ test('privacy policy discloses the data categories used by the app', () => {
     'Google Calendar',
     'Google Tasks',
     'OAuth',
-    'OpenAI',
+    'Expo',
     'tasks',
     'commitments',
     'notifications',
@@ -51,6 +51,11 @@ test('privacy policy discloses the data categories used by the app', () => {
   ]) {
     assert.match(privacy, new RegExp(phrase, 'i'), `Privacy Policy should mention ${phrase}`);
   }
+
+  assert.doesNotMatch(privacy, /OpenAI|AI-powered|AI processing/i);
+  assert.match(privacy, /Expo push token/i);
+  assert.match(privacy, /Supabase/i);
+  assert.match(privacy, /Netlify/i);
 
   // Location/weather is explicitly disclosed as retired, but stale provider/history
   // disclosures must not return to the public policy.
