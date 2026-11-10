@@ -58,11 +58,10 @@ test('vertical app scrolling keeps its indicator persistent',()=>{
   assert.match(source,/showsVerticalScrollIndicator persistentScrollbar/);
 });
 
-test('login diagnostics card is bounded and vertically scrollable',()=>{
+test('login page no longer renders a diagnostics card',()=>{
   const source=fs.readFileSync('app/login.tsx','utf8');
-  assert.match(source,/diagnosticsCard/);
-  assert.match(source,/logScroll: \{[^}]*height: 230/);
-  assert.match(source,/showsVerticalScrollIndicator persistentScrollbar/);
+  assert.doesNotMatch(source,/diagnosticsCard|DIAGNOSTICA ACCESSO|subscribeDiagnostics|BuildInfo/);
+  assert.match(source,/recordDiagnostic\\(/);
 });
 test('Add defaults to Task',()=>{
   const source=fs.readFileSync('app/(tabs)/capture.tsx','utf8');
