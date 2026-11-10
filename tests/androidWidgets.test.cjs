@@ -363,3 +363,12 @@ test('widget visual refresh never waits for a network Google status lookup',()=>
   assert.match(source,/void getGoogleWorkspaceStatus\(\)\.then\(refreshed=>/);
   assert.doesNotMatch(source,/await getGoogleWorkspaceStatus\(/);
 });
+
+
+test('Calendar memoizes sorted day buckets instead of sorting every day during render',()=>{
+  const source=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
+  assert.match(source,/const sortedByDay=useMemo\(\(\)=>/);
+  assert.match(source,/for\(const \[key,items\] of byDay\)result\.set\(key,sortCommitments\(items,calendarNames\)\)/);
+  assert.match(source,/const items=sortedByDay\.get\(dayKey\(date\)\)\?\?\[\]/);
+  assert.doesNotMatch(source,/sortCommitments\(byDay\.get/);
+});
