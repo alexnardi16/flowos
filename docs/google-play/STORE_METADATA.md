@@ -26,7 +26,7 @@ Capture commitments quickly, review your day at a glance, and keep your schedule
 - Receive local reminders and a daily summary when notifications are enabled.
 
 ### Keep control
-- Add activities using natural-language entry.
+- Use voice commands to add, edit, move, complete or delete activities.
 - Review and manage your commitments in Today, Calendar and List views.
 - Disconnect Google from settings when you no longer want to sync.
 - Request deletion of your FlowOS account and associated data from within the app or through the public deletion page.
