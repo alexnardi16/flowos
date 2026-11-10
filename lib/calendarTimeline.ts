@@ -11,18 +11,28 @@ function validTimestamp(value: string | undefined): number | undefined {
 /** Shared navigable range for the in-app Calendar and Android Calendar widget. */
 export function buildCalendarTimeline(commitments: Commitment[], syncEndDate: Date, now: Date = new Date()): CalendarTimeline {
   const yearStart = new Date(now.getFullYear(), 0, 1);
-  const datedValues = commitments.filter((item) => !item.deletedAt).flatMap((item) => {
+  const yearStartMs = yearStart.getTime();
+  const syncEndMs = Number.isFinite(syncEndDate.getTime()) ? syncEndDate.getTime() : now.getTime();
+  let earliestTimestamp = yearStartMs;
+  let latestTimestamp = Math.max(now.getTime(), syncEndMs);
+
+  // Calculate the bounds in one pass. Avoid allocating an intermediate array
+  // and spreading potentially thousands of timestamps into Math.min/Math.max.
+  for (const item of commitments) {
+    if (item.deletedAt) continue;
     const start = validTimestamp(item.scheduledAt ?? item.dueAt);
-    if (start === undefined) return [];
-    const values = [start];
-    if (item.scheduledAt && item.durationMinutes > 0) values.push(start + item.durationMinutes * 60_000);
-    return values;
-  });
-  const startDate = new Date(Math.min(yearStart.getTime(), ...(datedValues.length ? datedValues : [yearStart.getTime()])));
+    if (start === undefined) continue;
+    if (start < earliestTimestamp) earliestTimestamp = start;
+    if (start > latestTimestamp) latestTimestamp = start;
+    if (item.scheduledAt && item.durationMinutes > 0) {
+      const end = start + item.durationMinutes * 60_000;
+      if (end > latestTimestamp) latestTimestamp = end;
+    }
+  }
+
+  const startDate = new Date(earliestTimestamp);
   const firstMonday = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   firstMonday.setDate(firstMonday.getDate() - ((firstMonday.getDay() + 6) % 7));
-  const syncEnd = Number.isFinite(syncEndDate.getTime()) ? syncEndDate.getTime() : now.getTime();
-  const latestTimestamp = Math.max(now.getTime(), syncEnd, ...(datedValues.length ? datedValues : [now.getTime()]));
   const endDate = new Date(latestTimestamp);
   const weeks: Date[][] = [];
   for (let index = 0; ; index += 1) {
