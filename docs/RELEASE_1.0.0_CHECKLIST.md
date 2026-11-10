@@ -67,6 +67,27 @@ Run these checks on the production-like AAB, with a real Google account connecte
 - [ ] Verify that logs do not expose activity titles, descriptions, locations, email addresses, or credentials.
 - [ ] Test account deletion end-to-end and verify the account's cloud data is deleted as expected.
 
+
+## Privacy and Google Play audit — 2026-11-10
+
+- [x] Rechecked all active Supabase Edge Functions. No active function calls OpenAI; `ai-planner` and `interpret-commitment` use deterministic rules.
+- [x] Retired the unused `translate-activities` endpoint; it now returns HTTP 410 and requires a valid JWT.
+- [x] Added the retired endpoint source to the repository so future deployments do not restore the old OpenAI translation implementation.
+- [x] Updated the canonical Privacy Policy and static fallback; both files are identical.
+- [x] Rewrote `docs/google-play/DATA_SAFETY.md` using the live app/backend data flows and current Google Play data-type taxonomy.
+- [x] Verified all six public application tables have RLS enabled.
+- [x] Verified the three private Google OAuth/sync tables are in a non-exposed schema and grant no schema/table privileges to `anon` or `authenticated`.
+- [ ] Remove the unused `OPENAI_API_KEY` secret from Supabase Edge Function secrets, after confirming it is not used outside FlowOS.
+- [ ] Verify the latest Netlify production deploy is ready and inspect the live Privacy Policy and deletion page from an external browser.
+- [ ] Complete and save the Google Play Data Safety form as a draft, then inspect its Store listing preview before submission.
+- [ ] Confirm the Google OAuth consent screen is in production and any required Google verification is complete.
+- [ ] Confirm the production AAB, install it on a physical Android device, and verify the exact binary before Play Console submission.
+
+### Supabase warnings intentionally not changed
+
+- `pg_net` is installed in `public`. The queue is empty, but 360 recent HTTP response records existed at audit time. Supabase documents that dropping/recreating the extension deletes those records, so this change was not made automatically.
+- Leaked-password protection is disabled. The FlowOS app uses Google OAuth only and has no email/password sign-in flow. Enable the setting if password authentication is enabled in Supabase Auth or introduced in a future release.
+
 ## Release
 
 - [x] Git tag `v1.0.0` and GitHub release exist (the tag is historical and is not automatically moved to later commits).
