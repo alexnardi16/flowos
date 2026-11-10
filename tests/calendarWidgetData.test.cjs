@@ -72,3 +72,20 @@ test('calendar widget renders every active occurrence in a recurring series on i
   const days=data.weeks.flatMap(week=>week.days);
   for(const date of ['2026-10-30','2026-10-31','2026-11-01'])assert.equal(days.find(day=>day.dateKey===date).items.filter(item=>item.title==='Recurring task').length,1);
 });
+
+test('multi-day events appear on every calendar day intersected by their duration',()=>{
+  const now=new Date('2026-09-19T10:00:00');
+  const event={id:'multi',title:'Multi-day mission',kind:'event',status:'scheduled',scheduledAt:'2026-09-20T10:00:00',durationMinutes:72*60,energy:'medium',context:'test',confidence:1};
+  const data=buildCalendarWidgetData([event],new Date('2026-09-30T23:59:59'),now);
+  const days=data.weeks.flatMap(week=>week.days);
+  for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(days.find(day=>day.dateKey===date).items.filter(item=>item.id==='multi').length,1,date);
+  assert.equal(days.find(day=>day.dateKey==='2026-09-24').items.some(item=>item.id==='multi'),false);
+});
+
+test('completed multi-day events remain visible across all planned days when completed before the end',()=>{
+  const now=new Date('2026-09-19T10:00:00');
+  const event={id:'done-multi',title:'Completed mission',kind:'event',status:'done',scheduledAt:'2026-09-20T10:00:00',durationMinutes:72*60,completedAt:'2026-09-21T12:00:00',energy:'medium',context:'test',confidence:1};
+  const data=buildCalendarWidgetData([event],new Date('2026-09-30T23:59:59'),now);
+  const days=data.weeks.flatMap(week=>week.days);
+  for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(days.find(day=>day.dateKey===date).items.some(item=>item.id==='done-multi'),true,date);
+});
