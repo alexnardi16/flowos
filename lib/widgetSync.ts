@@ -2,7 +2,7 @@ import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { buildTodayGlance } from './widgetData';
-import { friendlyCalendarName, getGoogleWorkspaceStatus } from './googleWorkspace';
+import { friendlyCalendarName, getCachedGoogleWorkspaceStatus, getGoogleWorkspaceStatus } from './googleWorkspace';
 import { logNotificationEvent } from './notificationLog';
 import { recordDiagnostic } from './diagnostics';
 import type { Commitment } from '../types';
@@ -25,14 +25,23 @@ let lastCalendarRenderedSignature:string|null=null;
 async function performWidgetSync(commitments: Commitment[], now: Date = new Date()) {
   const startedAt=Date.now();
   try {
-    const [language,appearance,status]=await Promise.all([
-      getLanguage(),
-      getWidgetAppearance(),
-      getGoogleWorkspaceStatus().catch(()=>null)
-    ]);
+    const [language,appearance]=await Promise.all([getLanguage(),getWidgetAppearance()]);
+    // Render immediately with the latest cached names. A slow status request
+    // must never hold up the visual refresh of either native widget.
+    const status=getCachedGoogleWorkspaceStatus();
     const calendarNames:Map<string,string>|undefined=status
       ? new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email,language)]))
       : undefined;
+    void getGoogleWorkspaceStatus().then(refreshed=>{
+      const signature=(value:typeof refreshed|null)=>value?JSON.stringify({
+        email:value.connection?.google_email??null,
+        calendars:value.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])
+      }):'null';
+      if(signature(refreshed)!==signature(status)){
+        const latest=latestWidgetCommitments??commitments;
+        void syncTodayWidget(latest,new Date());
+      }
+    }).catch(error=>recordDiagnostic('widget-google-status-refresh-failed',error,'warn'));
     const glance = buildTodayGlance(commitments, now, calendarNames, language);
     const labels=widgetStrings(language);
     const commitmentById=new Map(commitments.map(item=>[item.id,item]));
