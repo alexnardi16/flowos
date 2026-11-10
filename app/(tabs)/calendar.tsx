@@ -54,7 +54,7 @@ export default function Calendar(){
       const overdueTask=isOverdueTask(item);
       const value=overdueTask?new Date().toISOString():itemDate(item);if(!value)continue;
       const d=new Date(value);
-      const dates=isMultiDayActivity(item)?activityDayDates(item):[d];
+      const dates=!overdueTask&&isMultiDayActivity(item)?activityDayDates(item):[d];
       for(const date of dates){
         const key=item.allDay?`${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`:dayKey(date);
         const list=map.get(key)??[];list.push(item);map.set(key,list);
