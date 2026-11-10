@@ -36,10 +36,11 @@ export default function Plan(){
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
   useEffect(()=>{const i=setInterval(()=>setNow(Date.now()),60000);return()=>clearInterval(i);},[]);
 
+  const searchIndex=useMemo(()=>commitments.map(item=>({item,text:searchable(item)})),[commitments]);
   const items=useMemo(()=>{
-    const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-    return commitments.filter(item=>!normalized||searchable(item).includes(normalized));
-  },[commitments,query]);
+    const normalized=query.trim().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();
+    return searchIndex.filter(entry=>!normalized||entry.text.includes(normalized)).map(entry=>entry.item);
+  },[searchIndex,query]);
 
   const calendarNames=useMemo(()=>new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,google?.connection?.google_email,language)])),[google?.calendars,google?.connection?.google_email,language]);
   const groupedItems=useMemo(()=>{
