@@ -28,11 +28,41 @@ export function eventOccursOnDate(item: Commitment, date: Date): boolean {
   return start.getTime() < dayEnd.getTime() && end.getTime() > dayStart.getTime();
 }
 
-/** Returns each local calendar day touched by the event, without duplicating the event itself. */
-export function eventDayDates(item: Commitment): Date[] {
-  const end = eventEnd(item);
-  if (!end || !item.scheduledAt) return [];
-  const start = new Date(item.scheduledAt);
+export function activityEnd(item: Commitment): Date | null {
+  const startValue = item.scheduledAt ?? item.dueAt;
+  if (!startValue || !item.durationMinutes) return null;
+  const end = new Date(new Date(startValue).getTime() + Math.max(1, item.durationMinutes) * 60000);
+  return Number.isFinite(end.getTime()) ? end : null;
+}
+
+export function isMultiDayActivity(item: Commitment): boolean {
+  return item.durationMinutes > 24 * 60 && activityEnd(item) !== null;
+}
+
+/** True for every local calendar day intersected by an activity's [start, end) interval. */
+export function activityOccursOnDate(item: Commitment, date: Date): boolean {
+  const startValue = item.scheduledAt ?? item.dueAt;
+  const end = activityEnd(item);
+  if (!startValue || !end || !Number.isFinite(date.getTime())) return false;
+  const start = new Date(startValue);
+  if (!Number.isFinite(start.getTime())) return false;
+  if (item.allDay) {
+    const dayStart = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+    return start.getTime() < dayEnd && end.getTime() > dayStart;
+  }
+  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  return start.getTime() < dayEnd.getTime() && end.getTime() > dayStart.getTime();
+}
+
+/** Returns each local calendar day touched by an activity, without duplicating the activity itself. */
+export function activityDayDates(item: Commitment): Date[] {
+  const startValue = item.scheduledAt ?? item.dueAt;
+  const end = activityEnd(item);
+  if (!startValue || !end) return [];
+  const start = new Date(startValue);
   if (!Number.isFinite(start.getTime())) return [];
   const day = item.allDay
     ? new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()))
@@ -64,6 +94,7 @@ export function isCompletedMultiDayVisible(item: Commitment, now = new Date()): 
 
 export function isVisibleInToday(item: Commitment, now = new Date()): boolean {
   if (item.status !== 'done' && !item.deletedAt) {
+    if (isMultiDayActivity(item) && activityOccursOnDate(item, now)) return true;
     if (isOverdueTask(item, now)) return true;
     if (item.kind === 'event') return eventOccursOnDate(item, now);
     const value = item.scheduledAt ?? item.dueAt;
