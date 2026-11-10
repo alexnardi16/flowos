@@ -13,7 +13,7 @@ import { createUuid } from './lib/uuid';
 import { normalizeTaskPriorities } from './lib/taskPriority';
 import { sortCommitments } from './lib/activityOrdering';
 import { getLanguage, widgetStrings, t } from './lib/i18n';
-import { isOverdueTask, isVisibleInToday } from './lib/commitmentVisibility';
+import { isVisibleInToday } from './lib/commitmentVisibility';
 import { materializeNextOccurrence } from './lib/recurrence';
 import { activitySourceColor, activitySourceKey, buildActivitySourceColors } from './lib/activityColors';
 import { colorWithOpacity, getWidgetAppearance, sourceAppearanceColor, type WidgetAppearance } from './lib/widgetAppearance';
