@@ -22,7 +22,7 @@ module.exports = {
   slug: 'flowos',
   owner: 'alex16nardi',
   version: '1.0.0',
-  description: 'Organizza task, eventi e promemoria in un unico sistema, con pianificazione giornaliera e sincronizzazione Google opzionale.',
+  description: 'Organizza task, eventi e promemoria con comandi vocali, pianificazione giornaliera e sincronizzazione Google opzionale.',
   icon: './assets/flowos-app-icon-512-store.png',
   orientation: 'portrait',
   scheme: 'flowos',
