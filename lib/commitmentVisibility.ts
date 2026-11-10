@@ -17,6 +17,11 @@ export function eventOccursOnDate(item: Commitment, date: Date): boolean {
   if (!end || !item.scheduledAt || !Number.isFinite(date.getTime())) return false;
   const start = new Date(item.scheduledAt);
   if (!Number.isFinite(start.getTime())) return false;
+  if (item.allDay) {
+    const dayStart = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+    return start.getTime() < dayEnd && end.getTime() > dayStart;
+  }
   const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const dayEnd = new Date(dayStart);
   dayEnd.setDate(dayEnd.getDate() + 1);
@@ -29,11 +34,14 @@ export function eventDayDates(item: Commitment): Date[] {
   if (!end || !item.scheduledAt) return [];
   const start = new Date(item.scheduledAt);
   if (!Number.isFinite(start.getTime())) return [];
-  const day = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const day = item.allDay
+    ? new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()))
+    : new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const dates: Date[] = [];
   while (day.getTime() < end.getTime()) {
     dates.push(new Date(day));
-    day.setDate(day.getDate() + 1);
+    if (item.allDay) day.setUTCDate(day.getUTCDate() + 1);
+    else day.setDate(day.getDate() + 1);
   }
   return dates;
 }
