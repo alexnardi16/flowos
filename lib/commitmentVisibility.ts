@@ -55,7 +55,7 @@ export function isCompletedMultiDayEvent(item: Commitment): boolean {
   if (item.kind !== 'event' || item.status !== 'done' || !item.completedAt || item.durationMinutes <= 24 * 60) return false;
   const end = eventEnd(item);
   const completed = new Date(item.completedAt);
-  return Boolean(end && Number.isFinite(completed.getTime()) && completed.getTime() < end.getTime());
+  return Boolean(end && Number.isFinite(completed.getTime()) && dateKey(completed) < dateKey(end));
 }
 
 export function isCompletedMultiDayVisible(item: Commitment, now = new Date()): boolean {
@@ -80,5 +80,5 @@ export function isVisibleCompletedMultiDayForDate(item: Commitment, date: Date):
   const end = eventEnd(item);
   if (!end || item.durationMinutes <= 24 * 60) return false;
   const completed = new Date(item.completedAt);
-  return completed.getTime() < end.getTime() && (dateKey(date) === dateKey(end) || eventOccursOnDate(item, date));
+  return dateKey(completed) < dateKey(end) && (dateKey(date) === dateKey(end) || eventOccursOnDate(item, date));
 }
