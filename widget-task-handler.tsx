@@ -13,7 +13,7 @@ import { createUuid } from './lib/uuid';
 import { normalizeTaskPriorities } from './lib/taskPriority';
 import { sortCommitments } from './lib/activityOrdering';
 import { getLanguage, widgetStrings, t } from './lib/i18n';
-import { isOverdueTask } from './lib/commitmentVisibility';
+import { isOverdueTask, isVisibleInToday } from './lib/commitmentVisibility';
 import { materializeNextOccurrence } from './lib/recurrence';
 import { activitySourceColor, activitySourceKey, buildActivitySourceColors } from './lib/activityColors';
 import { colorWithOpacity, getWidgetAppearance, sourceAppearanceColor, type WidgetAppearance } from './lib/widgetAppearance';
@@ -34,8 +34,7 @@ async function writeCommitments(commitments:Commitment[]){
 }
 function todayData(raw:string|null,language='it' as import('./lib/i18n').Language,appearance:WidgetAppearance):Omit<AndroidTodayWidgetProps,'language'|'backgroundColor'|'textColor'>{
   const commitments=readCommitments(raw),now=new Date(),sourceColors=buildActivitySourceColors(commitments as Commitment[]);
-  const todayItems=commitments.filter((item:any)=>item&&item.status!=='done'&&item.status!=='completed'&&!item.deletedAt)
-    .filter((item:any)=>{if(isOverdueTask(item,now))return true;const date=item.scheduledAt??item.dueAt;if(!date)return false;const d=new Date(date);return item.allDay?d.getUTCFullYear()===now.getFullYear()&&d.getUTCMonth()===now.getMonth()&&d.getUTCDate()===now.getDate():dateKey(d)===dateKey(now);});
+  const todayItems=commitments.filter((item:any)=>item&&isVisibleInToday(item as Commitment,now));
   const items=sortCommitments(todayItems as Commitment[])
     .map((item:any)=>{const date=item.scheduledAt??item.dueAt;return {id:item.id,title:item.title,time:item.allDay?'':(()=>{const start=new Date(date);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const locale=language==='it'?'it-IT':language==='fr'?'fr-FR':language==='es'?'es-ES':'en-US';const fmt=(d:Date)=>d.toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});return `${fmt(start)} - ${fmt(end)}`;})(),kind:kindLabel(item.kind,language),priority:item.kind==='task'?item.priority:undefined,sourceColor:sourceAppearanceColor(activitySourceKey(item as Commitment),activitySourceColor(item as Commitment,sourceColors),appearance)};});
   return{items};
