@@ -38,12 +38,10 @@ EXPO_PUBLIC_SUPABASE_URL=...
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 ```
 
-4. Set the server-side secret and deploy the Edge Function:
+4. Deploy the rule-based interpretation function:
 
 ```bash
-supabase secrets set OPENAI_API_KEY=...
-supabase secrets set OPENAI_MODEL=gpt-5-mini
 supabase functions deploy interpret-commitment
 ```
 
-The OpenAI key must never be exposed through an `EXPO_PUBLIC_` variable.
+`interpret-commitment` uses deterministic parsing rules and does not call OpenAI or another hosted AI model. No OpenAI API key or model secret is required. Google synchronization functions require the Google OAuth client secrets and the internal sync key to be configured server-side; never expose these values through an `EXPO_PUBLIC_` variable.
