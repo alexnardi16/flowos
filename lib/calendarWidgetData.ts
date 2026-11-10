@@ -4,7 +4,7 @@ import { sortCommitments } from './activityOrdering';
 import { activitySourceColor, buildActivitySourceColors } from './activityColors';
 import type { Language } from './i18n';
 import { localeForLanguage, widgetStrings } from './i18n';
-import { isVisibleCompletedMultiDayForDate } from './commitmentVisibility';
+import { isVisibleCompletedMultiDayForDate, eventDayDates } from './commitmentVisibility';
 import { buildCalendarTimeline } from './calendarTimeline';
 
 export type CalendarWidgetData = { weeks: AndroidCalendarWeek[] };
@@ -26,8 +26,8 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
   // Use the same date range as the in-app Calendar.
   const timelineWeeks=buildCalendarTimeline(commitments,syncEndDate,now).weeks;
 
-  for(const item of active){const value=item.scheduledAt??item.dueAt;if(!value)continue;const d=new Date(value);const key=item.allDay?`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`:dateKey(d);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}
-  for(const item of commitments.filter(item=>item.status==='done'&&!item.deletedAt)){const end=item.scheduledAt&&item.durationMinutes?new Date(new Date(item.scheduledAt).getTime()+Math.max(1,item.durationMinutes)*60000):null;if(!end||item.durationMinutes<=24*60||!isVisibleCompletedMultiDayForDate(item,end))continue;const key=dateKey(end);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}
+  for(const item of active){const value=item.scheduledAt??item.dueAt;if(!value)continue;const d=new Date(value);const dates=item.kind==='event'&&item.durationMinutes>24*60?eventDayDates(item):[d];for(const date of dates){const key=item.allDay?`${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`:dateKey(date);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}}
+  for(const item of commitments.filter(item=>item.status==='done'&&!item.deletedAt)){const end=item.scheduledAt&&item.durationMinutes?new Date(new Date(item.scheduledAt).getTime()+Math.max(1,item.durationMinutes)*60000):null;if(!end||item.durationMinutes<=24*60||!isVisibleCompletedMultiDayForDate(item,end))continue;for(const date of eventDayDates(item)){const key=dateKey(date);const list=byDate.get(key)??[];list.push(item);byDate.set(key,list);}}
   for(const [key, list] of byDate) byDate.set(key, sortCommitments(list,calendarNames));
   const weeks:AndroidCalendarWeek[]=timelineWeeks.map((week,w)=>{
     const days:AndroidCalendarDay[]=week.map((day,i)=>{const key=dateKey(day);const items=(byDate.get(key)??[]).map(item=>({id:item.id,title:item.title,time:formatItemTime(item,language),sourceColor:activitySourceColor(item,sourceColors),priority:item.kind==='task'?item.priority:undefined}));return {label:`${widgetStrings(language).dayNames[i]} ${day.getDate()}`,dateKey:key,isToday:key===dateKey(now),items};});
