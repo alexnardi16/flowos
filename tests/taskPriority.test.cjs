@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { normalizeTaskPriorities, reorderTaskPriorities, nextTaskPriority } = require('../.test-dist-notifications/lib/taskPriority.js');
 
 function task(id, title, priority, status='active', dueAt) {
@@ -117,4 +119,15 @@ test('an occupied daily priority is an insertion position and shifts existing ta
   assert.deepEqual(next.map(x => [x.id, x.priority]), [
     ['first',1],['second',3],['third',4],['other-day',1],['new',2],
   ]);
+});
+
+
+test('priority guidance is visible when creating and managing tasks in all app languages', () => {
+  const root = path.join(__dirname, '..');
+  const capture = fs.readFileSync(path.join(root, 'app/(tabs)/capture.tsx'), 'utf8');
+  const manage = fs.readFileSync(path.join(root, 'components/ManageSheet.tsx'), 'utf8');
+  const translations = fs.readFileSync(path.join(root, 'lib/i18n.ts'), 'utf8');
+  assert.match(capture, /t\('priority-order-help'\)/);
+  assert.match(manage, /t\('priority-order-help'\)/);
+  assert.equal((translations.match(/'priority-order-help'/g) ?? []).length, 4);
 });
