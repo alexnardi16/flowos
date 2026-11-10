@@ -18,6 +18,12 @@ Google defines collection as transmitting data off the user's device, including 
 
 | Device or other IDs | Expo push token | Yes, when notification permission is granted | App functionality | Yes, user can deny/disable notifications | Yes, when the account/device token is removed |
 
+### Voice commands
+
+- Voice commands open the Android system speech-recognition activity (or the browser speech-recognition API on web).
+- FlowOS receives the recognized transcript and parses the command locally; the app code does not upload or store raw audio recordings on FlowOS servers.
+- The system/browser speech-recognition provider may process the audio independently. Verify the relevant provider and whether this external system flow affects the Play Console Audio files declaration for the shipped Android build.
+
 ### Device identifiers and notifications
 
 - When notification permission is granted, the app obtains an Expo push token for the device.
