@@ -16,15 +16,18 @@ import { useAuth } from '@/providers/AuthProvider';
 import * as Application from 'expo-application';
 import { LANGUAGES, localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { syncTodayWidget } from '@/lib/widgetSync';
-import { defaultActivitySourceColor } from '@/lib/activityColors';
+import { ACTIVITY_SOURCE_COLORS, defaultActivitySourceColor } from '@/lib/activityColors';
 import { DEFAULT_WIDGET_APPEARANCE, getWidgetAppearance, normalizeHexColor, resetWidgetAppearance, saveWidgetAppearance, type WidgetAppearance } from '@/lib/widgetAppearance';
 
 function syncDate(value?:string|null,language:import('@/lib/i18n').Language='it'){return value?new Date(value).toLocaleString(localeForLanguage(language),{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):t('mai sincronizzata',undefined,language);}
 function logLine(entry:DiagnosticEntry){const time=new Date(entry.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});return `${time} [${entry.level}] ${entry.event}${entry.details?` — ${entry.details}`:''}`;}
 function notificationLogLine(entry:NotificationLogEntry){const time=new Date(entry.at).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});return `${time} [${entry.level}] ${entry.event}${entry.details?` — ${entry.details}`:''}`;}
-const WIDGET_COLOR_SWATCHES=["#F1F4FF","#172033","#4254C5","#FFFFFF","#F5F5F5","#D9D9D9","#A6A6A6","#737373","#404040","#000000","#FCE4D6","#F4B183","#ED7D31","#C65911","#843C0C","#FFF2CC","#FFE699","#FFD966","#BF9000","#7F6000","#E2F0D9","#A9D18E","#70AD47","#548235","#375623","#DDEBF7","#9DC3E6","#5B9BD5","#2F75B5","#1F4E78","#D9EAD3","#A2D39B","#00A86B","#008080","#006666","#E4DFEC","#B4A7D6","#8064A2","#5F497A","#F4CCCC","#EA9999","#E06666","#CC0000","#990000","#CFE2F3","#6FA8DC","#3C78D8","#1155CC","#073763","#D0E0E3","#76A5AF","#45818E","#134F5C"];
+const WIDGET_COLOR_SWATCHES=[...new Set(["#F1F4FF","#172033","#4254C5","#FFFFFF","#F3F4F7",...ACTIVITY_SOURCE_COLORS,"#F5F5F5","#D9D9D9","#A6A6A6","#737373","#404040","#000000","#FCE4D6","#F4B183","#ED7D31","#C65911","#843C0C","#FFF2CC","#FFE699","#FFD966","#BF9000","#7F6000","#E2F0D9","#A9D18E","#70AD47","#548235","#375623","#DDEBF7","#9DC3E6","#5B9BD5","#2F75B5","#1F4E78","#D9EAD3","#A2D39B","#00A86B","#008080","#006666","#E4DFEC","#B4A7D6","#8064A2","#5F497A","#F4CCCC","#EA9999","#E06666","#CC0000","#990000","#CFE2F3","#6FA8DC","#3C78D8","#1155CC","#073763","#D0E0E3","#76A5AF","#45818E","#134F5C"])];
+function normalizedSwatchColor(value:string){return value.trim().toUpperCase();}
 function ColorSwatches({value,onSelect}:{value:string;onSelect:(color:string)=>void}){
-  return <View style={styles.colorSwatches}>{WIDGET_COLOR_SWATCHES.map(color=><Pressable key={color} accessibilityRole="button" accessibilityLabel={color} onPress={()=>onSelect(color)} style={[styles.colorSwatch,{backgroundColor:color},value.toUpperCase()===color&&styles.colorSwatchSelected]}/>)}</View>;
+  const colors=normalizedSwatchColor(value)&&!WIDGET_COLOR_SWATCHES.includes(normalizedSwatchColor(value))?[...WIDGET_COLOR_SWATCHES,normalizedSwatchColor(value)]:WIDGET_COLOR_SWATCHES;
+  const selected=normalizedSwatchColor(value);
+  return <View style={styles.colorSwatches}>{colors.map(color=><Pressable key={color} accessibilityRole="button" accessibilityLabel={color} accessibilityState={{selected:selected===color}} onPress={()=>onSelect(color)} style={[styles.colorSwatch,{backgroundColor:color},selected===color&&styles.colorSwatchSelected]}/>)}</View>;
 }
 function OpacityField({label,value,onChange}:{label:string;value:number;onChange:(value:string)=>void}){return <View style={styles.opacityField}><Text style={styles.meta}>{label}</Text><TextInput value={String(value)} onChangeText={onChange} keyboardType="numeric" maxLength={3} style={styles.colorInput}/></View>;}
 function timeLabel(hour:number,minute:number){return `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;}
