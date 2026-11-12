@@ -93,7 +93,7 @@ export default function Plan(){
         groups.set(key,group);
       }
     }
-    return Array.from(groups.entries()).sort(([a],[b])=>filters.order==='asc'?a.localeCompare(b):b.localeCompare(a)).map(([key,group])=>({key,...group,items:group.items.sort((a,b)=>{const av=itemDate(a)?new Date(itemDate(a)!).getTime():Number.POSITIVE_INFINITY;const bv=itemDate(b)?new Date(itemDate(b)!).getTime():Number.POSITIVE_INFINITY;return (filters.order==='asc'?av-bv:bv-av)||sortCommitments([a,b],calendarNames).find(item=>item.id===a.id)!.id.localeCompare(sortCommitments([a,b],calendarNames).find(item=>item.id===b.id)!.id);})));
+    return Array.from(groups.entries()).sort(([a],[b])=>filters.order==='asc'?a.localeCompare(b):b.localeCompare(a)).map(([key,group])=>({key,...group,items:group.items.sort((a,b)=>{const av=itemDate(a)?new Date(itemDate(a)!).getTime():Number.POSITIVE_INFINITY;const bv=itemDate(b)?new Date(itemDate(b)!).getTime():Number.POSITIVE_INFINITY;const byTime=filters.order==='asc'?av-bv:bv-av;return byTime|| (sortCommitments([a,b],calendarNames)[0].id===a.id?-1:1);})));
   },[items,calendarNames,now,filters.order]);
   const todayGroupKey=groupedItems.find(group=>group.key===todayKey)?.key??[...groupedItems].filter(group=>group.key>=todayKey).sort((a,b)=>a.key.localeCompare(b.key))[0]?.key??[...groupedItems].filter(group=>group.key<todayKey).sort((a,b)=>b.key.localeCompare(a.key))[0]?.key;
   const initialScrollKey=todayGroupKey;
