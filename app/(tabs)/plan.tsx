@@ -50,7 +50,7 @@ export default function Plan(){
   const todayKey=(()=>{const d=new Date(now);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
   const searchIndex=useMemo(()=>commitments.map(item=>({item,text:searchable(item)})),[commitments]);
   const items=useMemo(()=>{
-    const normalized=query.trim().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();
+    const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     const filtered=searchIndex.filter(({item,text})=>{
       if(normalized&&!text.includes(normalized))return false;
       if(filters.kind!=='all'&&item.kind!==filters.kind)return false;
