@@ -8,6 +8,7 @@ const calendar=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
 const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
 const calWidget=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
 const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+const capture=fs.readFileSync('app/(tabs)/capture.tsx','utf8');
 
 assert.match(i18n,/type Language = 'it' \| 'en' \| 'fr' \| 'es'/);
 assert.match(i18n,/let currentLanguage:Language='it'/);
