@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DailySummary } from './dailySummary';
 import { logNotificationEvent } from './notificationLog';
 import { hasRecoveredToday } from './notificationDedup';
+import { getLanguage } from './i18n';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -107,8 +108,9 @@ function notificationSource(notification: Notifications.NotificationRequest | No
 
 export async function ensureDailySummaryChannel() {
   if (Platform.OS !== 'android') return;
+  const language = await getLanguage();
   await Notifications.setNotificationChannelAsync(DAILY_SUMMARY_CHANNEL, {
-    name: 'Riepilogo giornaliero FlowOS',
+    name: ({ it: 'Riepilogo giornaliero FlowOS', en: 'FlowOS daily summary', fr: 'Résumé quotidien FlowOS', es: 'Resumen diario de FlowOS' } as const)[language],
     importance: Notifications.AndroidImportance.HIGH,
   });
 }
@@ -330,7 +332,7 @@ export async function scheduleTomorrowMorningSummary(summary: DailySummary, now:
 
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
-      title: `Domani mattina · ${summary.title.replace(/^Domani /, '')}`,
+      title: ({ it: 'Domani mattina', en: 'Tomorrow morning', fr: 'Demain matin', es: 'Mañana por la mañana' } as const)[await getLanguage()] + ` · ${summary.title.replace(/^(Domani|Tomorrow|Demain|Mañana)\\s*/, '')}`,
       body: summary.body,
       sticky: Platform.OS === 'android',
       data: { source: 'tomorrow-morning', dateKey: summary.dateKey },
