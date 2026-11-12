@@ -1,5 +1,5 @@
 import type { Commitment } from '../types';
-import { t, getCurrentLanguage, type Language } from './i18n';
+import { t, type Language } from './i18n';
 
 export type ScheduledReminder = {
   /** Unique per reminder instance (item + offset), not just per item — one item can have several. */
@@ -29,7 +29,7 @@ export function formatReminderOffsetLabel(minutesBefore: number, language?: Lang
 }
 
 /** Notification body: start-time reminders have no relative-time prefix. */
-export function formatReminderNotificationBody(minutesBefore: number, language: Language = getCurrentLanguage()): string {
+export function formatReminderNotificationBody(minutesBefore: number, language: Language = 'it'): string {
   const unit = minutesBefore % 1440 === 0 && minutesBefore >= 1440
     ? { value: minutesBefore / 1440, it: ['giorno', 'giorni'], en: ['day', 'days'], fr: ['jour', 'jours'], es: ['día', 'días'] }
     : minutesBefore % 60 === 0 && minutesBefore >= 60
