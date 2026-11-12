@@ -8,7 +8,7 @@ import { deleteAllFlowOSOnlyData } from '@/lib/commitmentsRepository';
 import { deleteFlowOSAccount } from '@/lib/account';
 import { connectGoogleFromSession, disconnectGoogleWorkspace, getGoogleWorkspaceStatus, isSyncGenuinelyStale, recoverStaleGoogleSyncState, setCalendarSelected, setDefaultCalendar, setDefaultTaskList, setTaskListSelected, friendlyCalendarName, setSyncRange, signInWithGoogle, subscribeToSyncProgress, syncGoogleWorkspace, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { buildDailySummary, type DailySummary } from '@/lib/dailySummary';
-import { registerBackgroundSync, runDailySummaryRefresh, unregisterBackgroundSync, checkAndRecoverMissedDailySummary } from '@/lib/notificationSettingsBridge';
+import { registerBackgroundSync, runDailySummaryRefresh, refreshNotificationsForLanguage, unregisterBackgroundSync, checkAndRecoverMissedDailySummary } from '@/lib/notificationSettingsBridge';
 import { clearNotificationLog, getNotificationLog, subscribeNotificationLog, type NotificationLogEntry } from '@/lib/notificationLog';
 import { DEFAULT_DAILY_SUMMARY_HOUR, DEFAULT_DAILY_SUMMARY_MINUTE, disableDailySummaryNotification, getDailySummaryTime, getLastRecoveryDateKey, isDailySummaryEnabledStored, NOTIFICATIONS_SUPPORTED_HERE, sendImmediateSummaryNotification, setDailySummaryEnabledStored, setDailySummaryTime } from '@/lib/notificationServiceBridge';
 import { useFlowStore } from '@/lib/store';
@@ -272,7 +272,7 @@ export default function Me(){
     <Card>
       <Text style={styles.label}>{t('Lingua')}</Text>
       <Text style={styles.meta}>{t('Lingua app e widget')}</Text>
-      <View style={styles.languageGrid}>{LANGUAGES.map(option=><Pressable key={option.code} onPress={()=>{void (async()=>{if(languageBusy)return;setLanguageBusy(true);try{await setLanguage(option.code);await syncTodayWidget(commitments);await runDailySummaryRefresh();}finally{setLanguageBusy(false);}})();}} style={[styles.languageOption,language===option.code&&styles.languageOptionActive]}><Text style={[styles.languageOptionText,language===option.code&&styles.languageOptionTextActive]}>{option.label}</Text></Pressable>)}</View> 
+      <View style={styles.languageGrid}>{LANGUAGES.map(option=><Pressable key={option.code} onPress={()=>{void (async()=>{if(languageBusy)return;setLanguageBusy(true);try{await setLanguage(option.code);await syncTodayWidget(commitments);await refreshNotificationsForLanguage(commitments);}finally{setLanguageBusy(false);}})();}} style={[styles.languageOption,language===option.code&&styles.languageOptionActive]}><Text style={[styles.languageOptionText,language===option.code&&styles.languageOptionTextActive]}>{option.label}</Text></Pressable>)}</View> 
      </Card>
 
     <Card>
