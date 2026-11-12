@@ -332,7 +332,7 @@ export async function scheduleTomorrowMorningSummary(summary: DailySummary, now:
 
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
-      title: ({ it: 'Domani mattina', en: 'Tomorrow morning', fr: 'Demain matin', es: 'Mañana por la mañana' } as const)[await getLanguage()] + ` · ${summary.title.replace(/^(Domani|Tomorrow|Demain|Mañana)\s*/, '')}`,
+      title: ({ it: 'Domani mattina', en: 'Tomorrow morning', fr: 'Demain matin', es: 'Mañana por la mañana' } as const)[await getLanguage()] + ` · ${summary.title.replace(/^(Domani|Tomorrow|Demain|Mañana)(?:\s*·\s*|\s*)/, '')}`,
       body: summary.body,
       sticky: Platform.OS === 'android',
       data: { source: 'tomorrow-morning', dateKey: summary.dateKey },
