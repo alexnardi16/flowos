@@ -56,7 +56,7 @@ export function buildDailySummary(commitments: Commitment[], now: Date = new Dat
       const start = new Date(value);
       if (!Number.isNaN(start.getTime())) {
         const end = new Date(start.getTime() + Math.max(1, item.durationMinutes || 1) * 60_000);
-        const formatTime = (date: Date) => date.toLocaleTimeString(localeForLanguage(language), { hour: '2-digit', minute: '2-digit' });
+        const formatTime = (date: Date) => date.toLocaleTimeString(localeForLanguage(language), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
         time = `${formatTime(start)} - ${formatTime(end)}`;
       }
     }
