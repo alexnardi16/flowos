@@ -66,5 +66,5 @@ test('Today widget exposes the time range and explicit duration of a timed task'
   const glance=buildTodayGlance([task],now);
   const item=glance.items.find(entry=>entry.id==='timed-task');
   assert.equal(item.time,'10:00 - 11:30');
-  assert.equal(item.duration,'1 h 30 min');
+  assert.equal(item.duration,'Durata: 1 h 30 min');
 });
