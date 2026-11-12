@@ -38,7 +38,7 @@ function toRow(item: Commitment, userId: string) {
     energy: item.energy,
     context: item.context,
     confidence_score: item.confidence,
-    ai_metadata: { fixed: item.fixed, outcome: item.outcome, originalDescription: item.description, notes: item.notes, location: item.location, link: item.link, allDay: item.allDay, recurrenceRule: item.recurrenceRule ? (item.kind === 'event' ? toRRuleString(item.recurrenceRule) : item.recurrenceRule) : undefined, recurrenceSeriesId: item.recurrenceSeriesId, recurrenceSeriesEndAt: item.recurrenceSeriesEndAt, reminders: item.reminders, reminderDismissedAt: item.reminderDismissedAt },
+    ai_metadata: { fixed: item.fixed, outcome: item.outcome, originalDescription: item.description, notes: item.notes, location: item.location, link: item.link, allDay: item.allDay, flowosTimedTask: item.kind === 'task' && !item.allDay, recurrenceRule: item.recurrenceRule ? (item.kind === 'event' ? toRRuleString(item.recurrenceRule) : item.recurrenceRule) : undefined, recurrenceSeriesId: item.recurrenceSeriesId, recurrenceSeriesEndAt: item.recurrenceSeriesEndAt, reminders: item.reminders, reminderDismissedAt: item.reminderDismissedAt },
     external_provider: item.externalId ? 'google' : null,
     external_resource_type: item.externalId ? resourceType : null,
     google_calendar_id: item.googleCalendarId ?? null,
