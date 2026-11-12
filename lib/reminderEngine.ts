@@ -7,6 +7,7 @@ import { ensureDailySummaryChannel, NOTIFICATIONS_SUPPORTED_HERE, requestNotific
 import { syncTodayWidget } from './widgetSync';
 import { logNotificationEvent } from './notificationLog';
 import type { Commitment } from '../types';
+import { getLanguage, type Language } from './i18n';
 
 export const EVENT_REMINDER_CHANNEL = 'flowos-event-reminders';
 export const REMINDER_ACTION_CATEGORY = 'flowos_reminder_actions';
@@ -24,32 +25,32 @@ let reminderEngineInFlight: Promise<ReminderPlan | null> | null = null;
 
 type ReminderMap = Record<string, { notificationId: string; triggerAt: string }>;
 
-async function ensureReminderChannels() {
+async function ensureReminderChannels(language: Language) {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(EVENT_REMINDER_CHANNEL, {
-    name: 'Promemoria FlowOS',
+    name: ({ it: 'Promemoria FlowOS', en: 'FlowOS reminders', fr: 'Rappels FlowOS', es: 'Recordatorios de FlowOS' } as const)[language],
     importance: Notifications.AndroidImportance.HIGH,
   });
   await Notifications.setNotificationChannelAsync(DUE_SOON_CHANNEL, {
-    name: 'Task in scadenza',
+    name: ({ it: 'Task in scadenza', en: 'Tasks due soon', fr: 'Tâches à échéance proche', es: 'Tareas próximas a vencer' } as const)[language],
     importance: Notifications.AndroidImportance.DEFAULT,
   });
   await Notifications.setNotificationChannelAsync(OVERDUE_CHANNEL, {
-    name: 'Task scadute',
+    name: ({ it: 'Task scadute', en: 'Overdue tasks', fr: 'Tâches en retard', es: 'Tareas atrasadas' } as const)[language],
     importance: Notifications.AndroidImportance.DEFAULT,
   });
 }
 
-export async function ensureReminderNotificationCategory() {
+export async function ensureReminderNotificationCategory(language: Language = 'it') {
   await Notifications.setNotificationCategoryAsync(REMINDER_ACTION_CATEGORY, [
     {
       identifier: REMINDER_ACTION_POSTPONE,
-      buttonTitle: 'Rimanda',
+      buttonTitle: ({ it: 'Rimanda', en: 'Snooze', fr: 'Reporter', es: 'Posponer' } as const)[language],
       options: { opensAppToForeground: true },
     },
     {
       identifier: REMINDER_ACTION_COMPLETE,
-      buttonTitle: 'Completa',
+      buttonTitle: ({ it: 'Completa', en: 'Complete', fr: 'Terminer', es: 'Completar' } as const)[language],
       options: { isDestructive: false, opensAppToForeground: true },
     },
   ]);
@@ -90,7 +91,7 @@ async function writeReminderMap(map: ReminderMap) {
  * 5. performs a final OS-level reconciliation, so concurrent passes converge
  *    to one notification per logical reminder.
  */
-async function syncEventReminders(commitments: Commitment[], now: Date) {
+async function syncEventReminders(commitments: Commitment[], now: Date, language: Language) {
   const allReminders = dedupeScheduledReminders(buildCustomReminders(commitments, now, true));
   let recovered: Record<string, string> = {};
   try {
@@ -150,7 +151,7 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
     const desiredTime = new Date(desired.triggerAt).getTime();
     const actualTime = getTriggerAt(notification);
     const sameTrigger = actualTime !== null && Math.abs(actualTime - desiredTime) < 1000;
-    const sameBody = isReminderNotificationBodyCurrent(notification.content.body, desired.minutesBefore);
+    const sameBody = isReminderNotificationBodyCurrent(notification.content.body, desired.minutesBefore, language);
 
     if (kept.has(key) || !sameTrigger || !sameBody) {
       await Notifications.cancelScheduledNotificationAsync(notification.identifier).catch((error) =>
@@ -172,7 +173,7 @@ async function syncEventReminders(commitments: Commitment[], now: Date) {
           sticky: Platform.OS === 'android',
           autoDismiss: false,
           priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
-          body: formatReminderNotificationBody(reminder.minutesBefore),
+          body: formatReminderNotificationBody(reminder.minutesBefore, language),
           data: {
             source: 'reminder',
             commitmentId: reminder.commitmentId,
@@ -385,27 +386,28 @@ async function runReminderEngineInternal(commitments: Commitment[], now: Date = 
     );
     return null;
   }
+  const language = await getLanguage();
   await ensureDailySummaryChannel();
-  await ensureReminderChannels();
-  await ensureReminderNotificationCategory();
+  await ensureReminderChannels(language);
+  await ensureReminderNotificationCategory(language);
 
   const plan = buildReminderPlan(commitments, now);
 
-  await syncEventReminders(commitments, now);
+  await syncEventReminders(commitments, now, language);
   await syncGroupedNotification(
     DUE_SOON_ID_KEY,
     DUE_SOON_CHANNEL,
     plan.dueSoon,
-    (n) => `${n} task in scadenza`,
-    summarizeTaskList(plan.dueSoon),
+    (n) => ({ it: `${n} task in scadenza`, en: `${n} tasks due soon`, fr: `${n} tâches à échéance proche`, es: `${n} tareas próximas a vencer` } as const)[language],
+    summarizeTaskList(plan.dueSoon, 3, language),
     'due-soon',
   );
   await syncGroupedNotification(
     OVERDUE_ID_KEY,
     OVERDUE_CHANNEL,
     plan.overdue,
-    (n) => `${n} task scadut${n === 1 ? 'a' : 'e'}`,
-    summarizeTaskList(plan.overdue),
+    (n) => ({ it: `${n} task scadut${n === 1 ? 'a' : 'e'}`, en: `${n} overdue tasks`, fr: `${n} tâches en retard`, es: `${n} tareas atrasadas` } as const)[language],
+    summarizeTaskList(plan.overdue, 3, language),
     'overdue',
   );
   await syncBadge(plan.badgeCount);
