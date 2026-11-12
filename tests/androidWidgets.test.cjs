@@ -402,3 +402,11 @@ test('Android Calendar widget accounts for the extra task-duration line',()=>{
   assert.match(source,/durationHeight = item\.duration \? ITEM_DURATION_HEIGHT : 0/);
   assert.match(source,/text=\{item\.duration\}/);
 });
+
+
+test('Android Today widget handler supplies localized explicit task duration',()=>{
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(handler,/duration:item\.kind==='task'&&!item\.allDay/);
+  assert.match(handler,/formatDurationLabel\(item as Commitment\)/);
+  assert.match(handler,/Durée/);
+});
