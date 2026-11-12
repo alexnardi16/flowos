@@ -1,6 +1,7 @@
 import type { Commitment } from '../types';
 import { toDateKey } from './dailySummary';
 import { isExpired } from './itemTiming';
+import { getCurrentLanguage, type Language } from './i18n';
 
 export type DueTask = { id: string; title: string; dueAt: string };
 
@@ -54,9 +55,13 @@ export function buildReminderPlan(commitments: Commitment[], now: Date = new Dat
 }
 
 /** Builds the grouped-notification body for a list of due/overdue tasks. */
-export function summarizeTaskList(tasks: DueTask[], maxNamed = 3): string {
+export function summarizeTaskList(tasks: DueTask[], maxNamed = 3, language: Language = getCurrentLanguage()): string {
   if (!tasks.length) return '';
   const named = tasks.slice(0, maxNamed).map((task) => task.title);
   const remaining = tasks.length - named.length;
-  return remaining > 0 ? `${named.join(', ')} e altri ${remaining}` : named.join(', ');
+  if (remaining <= 0) return named.join(', ');
+  if (language === 'it') return `${named.join(', ')} e altri ${remaining}`;
+  const more = ({ en: 'and', fr: 'et', es: 'y' } as const)[language];
+  const suffix = ({ en: 'more', fr: 'autres', es: 'más' } as const)[language];
+  return `${named.join(', ')} ${more} ${remaining} ${suffix}`;
 }
