@@ -71,9 +71,9 @@ export function buildDailySummary(commitments: Commitment[], now: Date = new Dat
   const isTomorrow = dateKey !== toDateKey(now) && targetDate.getTime() > now.getTime();
   const copy = {
     it: { today: 'Oggi', tomorrow: 'Domani', commitmentOne: 'impegno', commitmentMany: 'impegni', noneToday: 'Nessun impegno pianificato per oggi', noneTomorrow: 'Nessun impegno pianificato per domani', overdue: 'in ritardo da recuperare.', freeToday: 'Giornata libera.', freeTomorrow: 'Mattina libera.' },
-    en: { today: 'Today', tomorrow: 'Tomorrow', commitmentOne: 'commitment', commitmentMany: 'commitments', noneToday: 'No commitments planned for today', noneTomorrow: 'No commitments planned for tomorrow', overdue: 'overdue to catch up.', freeToday: 'A free day.', freeTomorrow: 'A free morning.' },
-    fr: { today: 'Aujourd’hui', tomorrow: 'Demain', commitmentOne: 'engagement', commitmentMany: 'engagements', noneToday: 'Aucun engagement prévu pour aujourd’hui', noneTomorrow: 'Aucun engagement prévu pour demain', overdue: 'en retard à rattraper.', freeToday: 'Journée libre.', freeTomorrow: 'Matinée libre.' },
-    es: { today: 'Hoy', tomorrow: 'Mañana', commitmentOne: 'compromiso', commitmentMany: 'compromisos', noneToday: 'No hay compromisos previstos para hoy', noneTomorrow: 'No hay compromisos previstos para mañana', overdue: 'atrasados por recuperar.', freeToday: 'Día libre.', freeTomorrow: 'Mañana libre.' },
+    en: { today: 'Today', tomorrow: 'Tomorrow', commitmentOne: 'commitment', commitmentMany: 'commitments', noneToday: 'No commitments planned for today', noneTomorrow: 'No commitments planned for tomorrow', overdue: 'overdue items to catch up.', freeToday: 'A free day.', freeTomorrow: 'A free morning.' },
+    fr: { today: 'Aujourd’hui', tomorrow: 'Demain', commitmentOne: 'engagement', commitmentMany: 'engagements', noneToday: 'Aucun engagement prévu pour aujourd’hui', noneTomorrow: 'Aucun engagement prévu pour demain', overdue: 'éléments en retard à rattraper.', freeToday: 'Journée libre.', freeTomorrow: 'Matinée libre.' },
+    es: { today: 'Hoy', tomorrow: 'Mañana', commitmentOne: 'compromiso', commitmentMany: 'compromisos', noneToday: 'No hay compromisos previstos para hoy', noneTomorrow: 'No hay compromisos previstos para mañana', overdue: 'actividades atrasadas por recuperar.', freeToday: 'Día libre.', freeTomorrow: 'Mañana libre.' },
   }[language];
   const title = scheduledToday.length
     ? language === 'it'
