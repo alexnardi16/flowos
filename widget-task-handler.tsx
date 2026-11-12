@@ -14,6 +14,7 @@ import { normalizeTaskPriorities } from './lib/taskPriority';
 import { sortCommitments } from './lib/activityOrdering';
 import { getLanguage, widgetStrings, t } from './lib/i18n';
 import { isVisibleInToday } from './lib/commitmentVisibility';
+import { formatDurationLabel } from './lib/itemTiming';
 import { materializeNextOccurrence } from './lib/recurrence';
 import { activitySourceColor, activitySourceKey, buildActivitySourceColors } from './lib/activityColors';
 import { colorWithOpacity, getWidgetAppearance, sourceAppearanceColor, type WidgetAppearance } from './lib/widgetAppearance';
@@ -36,7 +37,7 @@ function todayData(raw:string|null,language='it' as import('./lib/i18n').Languag
   const commitments=readCommitments(raw),now=new Date(),sourceColors=buildActivitySourceColors(commitments as Commitment[]);
   const todayItems=commitments.filter((item:any)=>item&&isVisibleInToday(item as Commitment,now));
   const items=sortCommitments(todayItems as Commitment[])
-    .map((item:any)=>{const date=item.scheduledAt??item.dueAt;return {id:item.id,title:item.title,time:item.allDay?'':(()=>{const start=new Date(date);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const locale=language==='it'?'it-IT':language==='fr'?'fr-FR':language==='es'?'es-ES':'en-US';const fmt=(d:Date)=>d.toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});return `${fmt(start)} - ${fmt(end)}`;})(),kind:kindLabel(item.kind,language),priority:item.kind==='task'?item.priority:undefined,sourceColor:sourceAppearanceColor(activitySourceKey(item as Commitment),activitySourceColor(item as Commitment,sourceColors),appearance)};});
+    .map((item:any)=>{const date=item.scheduledAt??item.dueAt;return {id:item.id,title:item.title,time:item.allDay?'':(()=>{const start=new Date(date);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const locale=language==='it'?'it-IT':language==='fr'?'fr-FR':language==='es'?'es-ES':'en-US';const fmt=(d:Date)=>d.toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit'});return `${fmt(start)} - ${fmt(end)}`;})(),kind:kindLabel(item.kind,language),duration:item.kind==='task'&&!item.allDay?`${({it:'Durata',en:'Duration',fr:'Durée',es:'Duración'} as const)[language]}: ${formatDurationLabel(item as Commitment)}`:undefined,priority:item.kind==='task'?item.priority:undefined,sourceColor:sourceAppearanceColor(activitySourceKey(item as Commitment),activitySourceColor(item as Commitment,sourceColors),appearance)};});
   return{items};
 }
 async function loadCalendarCache(language:string){try{const raw=await AsyncStorage.getItem(CALENDAR_CACHE_KEY);if(!raw)return null;const parsed=JSON.parse(raw);return parsed?.dateKey===dateKey(new Date())&&parsed?.language===language&&Array.isArray(parsed?.weeks)?{weeks:parsed.weeks as AndroidCalendarWidgetProps['weeks']}:null;}catch{return null;}}
