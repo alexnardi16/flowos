@@ -82,7 +82,7 @@ test('Today widget reduces the trailing blank space while keeping list rows cont
 test('Today widget list rows never use flex for their outer height',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.doesNotMatch(source,/style=\{\{ flex:1, height:itemHeight/);
-  assert.match(source,/height:itemHeight\(item\.title/);
+  assert.match(source,/height:itemHeight\(item\)/);
 });
 
 test('Android widget controls open the real Add and Voice flows in FlowOS',()=>{
