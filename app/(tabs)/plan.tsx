@@ -88,6 +88,7 @@ export default function Plan(){
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
             <Text style={[styles.date,overdue&&styles.warning]}>{formatDateTime(item,language)}{overdue?' · '+t('Scaduta'):''}</Text>
+            {item.kind==='task'&&!item.allDay?<Text style={styles.duration}>{t('Durata')}: {formatDurationLabel(item)}</Text>:null}
             {item.description?<Text style={styles.description}>{item.description}</Text>:null}
             {item.location?<Text style={styles.meta}>{t('Luogo')}: {item.location}</Text>:null}
           </Card>
@@ -108,7 +109,7 @@ dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddi
   itemCard:{padding:7,gap:2},
   tagRow:{alignItems:'center',gap:6,paddingRight:4},
   titleRow:{flexDirection:'row',alignItems:'flex-start',gap:7,minWidth:0},priorityBadge:{fontSize:12,lineHeight:18,fontWeight:'900',color:palette.primary,backgroundColor:palette.soft,borderRadius:8,paddingHorizontal:6},item:{flex:1,minWidth:0,flexShrink:1,fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
-  date:{fontSize:13,lineHeight:17,fontWeight:'800',color:palette.primary},
+  date:{fontSize:13,lineHeight:17,fontWeight:'800',color:palette.primary},duration:{fontSize:12,lineHeight:15,fontWeight:'700',color:palette.muted},
   meta:{fontSize:12,lineHeight:16,color:palette.muted},
   description:{fontSize:12,lineHeight:16,color:palette.ink,marginTop:1},
   cardPressed:{opacity:.96,transform:[{scale:.995}]}
