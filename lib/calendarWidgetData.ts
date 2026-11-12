@@ -6,6 +6,7 @@ import type { Language } from './i18n';
 import { localeForLanguage, widgetStrings } from './i18n';
 import { isVisibleCompletedMultiDayForDate, activityDayDates, isMultiDayActivity } from './commitmentVisibility';
 import { buildCalendarTimeline } from './calendarTimeline';
+import { formatDurationLabel } from './itemTiming';
 
 export type CalendarWidgetData = { weeks: AndroidCalendarWeek[] };
 const MONTHS=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
@@ -17,7 +18,7 @@ function formatItemTime(item:Commitment,language:Language='it'){
   if(!startValue)return '';
   const start=new Date(startValue);
   const startText=start.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});
-  if(!item.scheduledAt||!item.durationMinutes)return startText;
+  if(!item.durationMinutes)return startText;
   const end=new Date(start.getTime()+item.durationMinutes*60000);
   return `${startText} - ${end.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'})}`;
 }
@@ -68,6 +69,7 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
         id:item.id,
         title:item.title,
         time:formatItemTime(item,language),
+        duration:item.kind==='task'&&!item.allDay?formatDurationLabel(item):undefined,
         sourceColor:activitySourceColor(item,sourceColors),
         priority:item.kind==='task'?item.priority:undefined
       }));
