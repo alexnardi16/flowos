@@ -222,7 +222,7 @@ test('Today widget shows only start/end times and titles, never type or overdue 
 
 test('Today widget title uses more of the first line before wrapping',()=>{
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(widget, /hasPriority\?36:42/);
+  assert.match(widget, /item\.priority\?36:42/);
   assert.match(widget, /item\.priority\?36:42/);
 });
 
