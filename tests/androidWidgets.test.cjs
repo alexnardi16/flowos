@@ -411,18 +411,16 @@ test('Android Today widget handler supplies localized explicit task duration',()
   assert.match(handler,/Durée/);
 });
 
-test('Android widget providers retain default size and expose compact resize bounds',()=>{
+test('Android widgets retain default grid size and allow compact resizing',()=>{
   const config=fs.readFileSync('app.config.js','utf8');
-  const plugin=fs.readFileSync('plugins/withWidgetResizeConstraints.js','utf8');
   const today=config.split(String.fromCharCode(10)).find(line=>line.includes("name: 'TodayAndroidWidget'"));
   const calendar=config.split(String.fromCharCode(10)).find(line=>line.includes("name: 'CalendarAndroidWidget'"));
   assert.ok(today);
   assert.ok(calendar);
-  assert.ok(today.includes("minWidth: '320dp'") && today.includes('targetCellWidth: 4'));
-  assert.ok(calendar.includes("minWidth: '320dp'") && calendar.includes('targetCellWidth: 4'));
-  assert.match(config,/withWidgetResizeConstraints/);
-  assert.match(plugin,/android:minResizeWidth/);
-  assert.match(plugin,/android:minResizeHeight/);
-  assert.match(plugin,/todayandroidwidget/);
-  assert.match(plugin,/calendarandroidwidget/);
+  assert.ok(today.includes("minWidth: '180dp'") && today.includes("minHeight: '110dp'"));
+  assert.ok(calendar.includes("minWidth: '180dp'") && calendar.includes("minHeight: '160dp'"));
+  assert.ok(today.includes('targetCellWidth: 4') && today.includes('targetCellHeight: 3'));
+  assert.ok(calendar.includes('targetCellWidth: 4') && calendar.includes('targetCellHeight: 5'));
+  assert.ok(today.includes("resizeMode: 'horizontal|vertical'"));
+  assert.ok(calendar.includes("resizeMode: 'horizontal|vertical'"));
 });
