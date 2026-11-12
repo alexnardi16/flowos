@@ -31,3 +31,8 @@ assert.match(calWidget,/height: 'match_parent'/);
 assert.doesNotMatch(handler,/getDisplayTitleMap|getTranslateActivities|translateActivities/);
 
 console.log('language regression tests passed');
+
+assert.match(i18n,/Notifiche promemoria/);
+assert.doesNotMatch(i18n,/Notifiche di rappel/);
+assert.match(capture,/t\('Notifiche promemoria'\)/);
+assert.match(fs.readFileSync('components/ManageSheet.tsx','utf8'),/t\('Notifiche promemoria'\)/);
