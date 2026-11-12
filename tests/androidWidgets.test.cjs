@@ -386,3 +386,19 @@ test('widget payload caching verifies storage and restores the current calendar 
   assert.match(source,/await AsyncStorage\.setItem\('flowos-calendar-widget-page-v1',String\(page\.startIndex\)\)/);
   assert.doesNotMatch(source,/lastCalendarPageIndex/);
 });
+
+
+test('Android Today widget accounts for multiline titles, time and explicit duration while reducing vertical padding',()=>{
+  const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  assert.match(source,/function itemHeight\(item:AndroidWidgetItem\)/);
+  assert.match(source,/item\.duration\?14:0/);
+  assert.match(source,/paddingVertical:4/);
+  assert.match(source,/marginVertical:0/);
+  assert.match(source,/text=\{item\.duration\}/);
+});
+test('Android Calendar widget accounts for the extra task-duration line',()=>{
+  const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
+  assert.match(source,/duration\?: string/);
+  assert.match(source,/durationHeight = item\.duration \? ITEM_DURATION_HEIGHT : 0/);
+  assert.match(source,/text=\{item\.duration\}/);
+});
