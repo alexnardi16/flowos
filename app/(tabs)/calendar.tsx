@@ -11,6 +11,7 @@ import { localeForLanguage, t, useLanguage, widgetStrings } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
 import { isVisibleCompletedMultiDayForDate, isOverdueTask, activityDayDates, isMultiDayActivity } from '@/lib/commitmentVisibility';
 import { buildCalendarTimeline } from '@/lib/calendarTimeline';
+import { formatDurationLabel } from '@/lib/itemTiming';
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -19,7 +20,7 @@ function formatItemTime(item:Commitment,language:import('@/lib/i18n').Language){
   const value=itemDate(item);if(!value)return '';
   const start=new Date(value);
   const startText=start.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});
-  if(!item.scheduledAt||!item.durationMinutes)return startText;
+  if(!item.durationMinutes)return startText;
   const end=new Date(start.getTime()+item.durationMinutes*60000);
   return `${startText} - ${end.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'})}`;
 }
@@ -106,6 +107,7 @@ export default function Calendar(){
               <View style={styles.dayActivities}>
                 {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),pressed&&styles.itemPressed]}>
                   {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
+                  {item.kind==='task'&&!item.allDay?<Text style={styles.itemDuration}>{t('Durata')}: {formatDurationLabel(item)}</Text>:null}
                   {isOverdueTask(item) ? <Text style={styles.overdueTag}>{t('Scaduta')}</Text> : null}
                   <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Text style={styles.itemTitle}>{item.title}</Text></View>
                   {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
