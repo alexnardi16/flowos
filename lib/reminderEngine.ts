@@ -267,9 +267,10 @@ async function syncGroupedNotification(
   title: (n: number) => string,
   body: string,
   source: string,
+  language: Language,
 ) {
   const uniqueTasks = Array.from(new Map(tasks.map((task) => [task.id, task])).values());
-  const hash = uniqueTasks.map((task) => task.id).sort().join(',');
+  const hash = `${language}:${uniqueTasks.map((task) => task.id).sort().join(',')}`;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   const matchingScheduled = scheduled.filter((notification) => notification.content.data?.source === source);
   const presented = NOTIFICATIONS_SUPPORTED_HERE
@@ -401,6 +402,7 @@ async function runReminderEngineInternal(commitments: Commitment[], now: Date = 
     (n) => ({ it: `${n} task in scadenza`, en: `${n} ${n === 1 ? 'task' : 'tasks'} due soon`, fr: `${n} ${n === 1 ? 'tâche à échéance proche' : 'tâches à échéance proche'}`, es: `${n} ${n === 1 ? 'tarea próxima a vencer' : 'tareas próximas a vencer'}` } as const)[language],
     summarizeTaskList(plan.dueSoon, 3, language),
     'due-soon',
+    language,
   );
   await syncGroupedNotification(
     OVERDUE_ID_KEY,
@@ -409,6 +411,7 @@ async function runReminderEngineInternal(commitments: Commitment[], now: Date = 
     (n) => ({ it: `${n} task scadut${n === 1 ? 'a' : 'e'}`, en: `${n} ${n === 1 ? 'overdue task' : 'overdue tasks'}`, fr: `${n} ${n === 1 ? 'tâche en retard' : 'tâches en retard'}`, es: `${n} ${n === 1 ? 'tarea atrasada' : 'tareas atrasadas'}` } as const)[language],
     summarizeTaskList(plan.overdue, 3, language),
     'overdue',
+    language,
   );
   await syncBadge(plan.badgeCount);
   await syncTodayWidget(commitments, now);
