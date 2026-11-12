@@ -22,7 +22,7 @@ test('Android Today widget completion stays in the widget handler without openin
 
 test('Android Today widget task cards fill the available list width',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/width:'match_parent', height:itemHeight\(item\.title,Boolean\(item\.priority\)\)/);
+  assert.match(source,/width:'match_parent', height:itemHeight\(item\)/);
 });
 
 test('Android Today widget data is rendered synchronously from local storage',()=>{
@@ -155,14 +155,20 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/const defaultStart = Math\.max\(0, currentIndex < 0 \? 0 : currentIndex\)/);
 });
 
-test('List and Today macrosections have no filters and List search stays sticky',()=>{
+test('List has persistent chronological, type, period and completion filters while Today stays unfiltered',()=>{
   const plan=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
   const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
   assert.match(plan,/headerActions=\{<View style=\{styles\.searchRow\}/);
   assert.match(plan,/<TextInput value=\{query\} onChangeText=\{setQuery\}/);
-  assert.doesNotMatch(plan,/Solo contatti|Escludi contatti|Passati e completati|Scaduti aperti|FILTERS_KEY|CONTACTS_FILTER_KEY/);
-  assert.doesNotMatch(today,/Solo contatti|Escludi contatti|CONTACTS_FILTER_KEY|contactsFilter/);
-  assert.match(plan,/searchIndex\.filter\(entry=>!normalized\|\|entry\.text\.includes\(normalized\)\)/);
+  assert.match(plan,/LIST_FILTERS_KEY/);
+  assert.match(plan,/filters\.kind/);
+  assert.match(plan,/filters\.period/);
+  assert.match(plan,/filters\.status/);
+  assert.match(plan,/filters\.order/);
+  assert.match(plan,/FilterOption label=\{t\('Cronologico'\)\}/);
+  assert.match(plan,/FilterOption label=\{t\('Inverso'\)\}/);
+  assert.doesNotMatch(today,/contactsFilter/);
+  assert.match(plan,/searchIndex\.filter\(\(\{item,text\}\)/);
   assert.match(today,/commitments\.filter\(item=>isVisibleInToday\(item\)\)/);
 });
 
