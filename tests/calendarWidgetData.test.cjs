@@ -106,5 +106,5 @@ test('Calendar widget shows the end time and explicit duration for timed tasks',
   const data=buildCalendarWidgetData([task],new Date('2026-09-30T23:59:59'),now);
   const item=data.weeks.flatMap(week=>week.days).find(day=>day.dateKey==='2026-09-21').items.find(entry=>entry.id==='timed-task');
   assert.equal(item.time,'10:00 - 11:30');
-  assert.equal(item.duration,'1 h 30 min');
+  assert.equal(item.duration,'Durata: 1 h 30 min');
 });
