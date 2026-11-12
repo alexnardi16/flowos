@@ -49,7 +49,7 @@ export function formatReminderNotificationBody(minutesBefore: number, language: 
  * the current copy. This also refreshes old start-time reminders that used the
  * obsolete `Tra All'ora di inizio` wording.
  */
-export function isReminderNotificationBodyCurrent(existingBody: string | null | undefined, minutesBefore: number, language: Language = getCurrentLanguage()): boolean {
+export function isReminderNotificationBodyCurrent(existingBody: string | null | undefined, minutesBefore: number, language: Language = 'it'): boolean {
   return existingBody === formatReminderNotificationBody(minutesBefore, language);
 }
 
