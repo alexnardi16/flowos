@@ -57,7 +57,7 @@ test('local-only deletion uses the server-side FlowOS tombstone action',()=>{
 });
 
 test('Google pull loads deleted_at before applying FlowOS tombstone protection',()=>{
-  assert.match(serverSource,/select\(["']id,external_id,external_resource_type,google_calendar_id,google_task_list_id,updated_at,last_sync_origin,status,kind,ai_metadata,priority,deleted_at["']\)/);
+  assert.match(serverSource,/select\(["']id,external_id,external_resource_type,google_calendar_id,google_task_list_id,updated_at,last_sync_origin,status,kind,ai_metadata,priority,deleted_at,starts_at,deadline_at,duration_minutes["']\)/);
   assert.match(serverSource,/found\?\.deleted_at&&found\.last_sync_origin===["']flowos["']/);
 });
 
