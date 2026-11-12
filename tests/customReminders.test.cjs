@@ -160,7 +160,8 @@ test('start-time reminder notification body omits the relative-time prefix', () 
 test('old scheduled start-time notification copy is refreshed without the Tra prefix', () => {
   assert.equal(isReminderNotificationBodyCurrent("Tra All'ora di inizio", 0), false);
   assert.equal(isReminderNotificationBodyCurrent("All'ora di inizio", 0), true);
-  assert.equal(isReminderNotificationBodyCurrent('Tra 15 minuti prima', 15), true);
+  assert.equal(isReminderNotificationBodyCurrent('Tra 15 minuti prima', 15), false);
+  assert.equal(isReminderNotificationBodyCurrent('Tra 15 minuti', 15), true);
 });
 
 
