@@ -55,7 +55,7 @@ test('Google push background delivery also refreshes locally scheduled reminders
 
 test('Google updates newer than the last synced remote version override a stale local FlowOS copy',()=>{
   const source=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
-  assert.ok(source.includes('select("id,external_id,external_resource_type,google_calendar_id,google_task_list_id,updated_at,external_updated_at,last_sync_origin,sync_status,status,kind,ai_metadata")'));
+  assert.ok(source.includes('select("id,external_id,external_resource_type,google_calendar_id,google_task_list_id,updated_at,external_updated_at,last_sync_origin,sync_status,status,kind,ai_metadata,starts_at,deadline_at,duration_minutes")'));
   assert.ok(source.includes('remoteChangedSinceLastSync=Boolean(found?.external_updated_at&&row.external_updated_at&&new Date(row.external_updated_at).getTime()>new Date(found.external_updated_at).getTime())'));
   assert.ok(source.includes('&&!remoteChangedSinceLastSync)return[]'));
 });
@@ -221,6 +221,7 @@ test('Google Tasks incremental sync preserves FlowOS timed-task duration and clo
   const source=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
   const workspace=fs.readFileSync('supabase/functions/google-workspace/index.ts','utf8');
   assert.match(source,/preserveTaskDeadlineDate/);
+  assert.match(fs.readFileSync('lib/commitmentsRepository.ts','utf8'),/flowosTimedTask: item\.kind === 'task' && !item\.allDay/);
   assert.match(source,/preserveFlowOsTaskTiming=found\?\.kind==="task"&&row\.kind==="task"/);
   assert.match(source,/duration_minutes:preserveFlowOsTaskTiming\?found\.duration_minutes:row\.duration_minutes/);
   assert.match(workspace,/preserveFlowOsTaskTiming=found\?\.kind==="task"&&row\.kind==="task"/);
