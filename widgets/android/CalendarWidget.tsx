@@ -2,7 +2,7 @@ import React from 'react';
 import { widgetStrings, type Language } from '../../lib/i18n';
 import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
-export type AndroidCalendarItem = { id: string; title: string; time: string; sourceColor: any; priority?: number };
+export type AndroidCalendarItem = { id: string; title: string; time: string; duration?: string; sourceColor: any; priority?: number };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
 export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string };
@@ -51,6 +51,7 @@ function titleLines(text: string, maxChars = 12) {
 }
 
 const ITEM_TIME_HEIGHT = 9;
+const ITEM_DURATION_HEIGHT = 7;
 const ITEM_TITLE_LINE_HEIGHT = 9;
 const ITEM_VERTICAL_PADDING = 2;
 const DAY_HEADER_HEIGHT = 11;
@@ -64,7 +65,8 @@ function itemTitleLines(item: AndroidCalendarItem) {
 function itemHeight(item: AndroidCalendarItem) {
   const lines = itemTitleLines(item).length;
   const timeHeight = item.time ? ITEM_TIME_HEIGHT : 0;
-  return ITEM_VERTICAL_PADDING * 2 + timeHeight + lines * ITEM_TITLE_LINE_HEIGHT;
+  const durationHeight = item.duration ? ITEM_DURATION_HEIGHT : 0;
+  return ITEM_VERTICAL_PADDING * 2 + timeHeight + durationHeight + lines * ITEM_TITLE_LINE_HEIGHT;
 }
 
 function dayHeight(day: AndroidCalendarDay) {
@@ -135,6 +137,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                       return (
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
                           {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor as any }} /> : null}
+                          {item.duration ? <TextWidget text={item.duration} style={{ fontSize: 5, lineHeight: ITEM_DURATION_HEIGHT, color: textColor as any }} /> : null}
                           <FlexWidget style={{ flex:1, flexDirection:'row', alignItems:'flex-start' }}>
                             {item.priority ? <TextWidget text={String(item.priority)} style={{ width:8, fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: PRIMARY }} /> : null}
                             <FlexWidget style={{ flex:1, flexDirection:'column' }}>
