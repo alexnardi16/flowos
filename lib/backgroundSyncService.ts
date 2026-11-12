@@ -11,6 +11,7 @@ import { autoCompleteExpiredEvents } from './autoCompleteEvents';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
 import { rolloverIncompleteTasks } from './taskRollover';
+import type { Commitment } from '../types';
 import { getLanguage } from './i18n';
 import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, reconcilePresentedDailySummary, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
@@ -89,6 +90,20 @@ export async function runDailySummaryRefresh(now: Date = new Date()) {
 }
 
 export async function refreshReminders(now: Date = new Date()) { if (!(await hasAuthenticatedSession())) return null; const { commitments } = await loadFreshData(now); return safeRunReminderEngine(commitments, now); }
+
+export async function refreshNotificationsForLanguage(commitments: Commitment[], now: Date = new Date()) {
+  const language = await getLanguage();
+  await safeRunReminderEngine(commitments, now);
+  if (!(await isDailySummaryEnabledStored())) return;
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowSummary = buildDailySummary(commitments, now, tomorrow, language);
+  const summary = await isPastDailySummaryTime(now)
+    ? tomorrowSummary
+    : buildDailySummary(commitments, now, now, language);
+  await scheduleDailySummaryNotification(summary);
+  await scheduleTomorrowMorningSummary(tomorrowSummary, now);
+}
 
 let dailySummaryRecoveryInFlight: Promise<void> | null = null;
 
