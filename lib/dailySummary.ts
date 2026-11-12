@@ -83,7 +83,7 @@ export function buildDailySummary(commitments: Commitment[], now: Date = new Dat
 
   const bodyParts: string[] = [];
   if (items.length) {
-    bodyParts.push(items.map((item, index) => `${index + 1}. ${item.time ? `${item.time} · ` : ''}${item.title}`).join('\\n'));
+    bodyParts.push(items.map((item, index) => `${index + 1}. ${item.time ? `${item.time} · ` : ''}${item.title}`).join('\n'));
   }
   if (overdue.length) bodyParts.push(`${overdue.length} ${copy.overdue}`);
   if (!items.length && !overdue.length) bodyParts.push(isTomorrow ? copy.freeTomorrow : copy.freeToday);
