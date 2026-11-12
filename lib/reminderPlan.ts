@@ -62,6 +62,6 @@ export function summarizeTaskList(tasks: DueTask[], maxNamed = 3, language: Lang
   if (remaining <= 0) return named.join(', ');
   if (language === 'it') return `${named.join(', ')} e altri ${remaining}`;
   const more = ({ en: 'and', fr: 'et', es: 'y' } as const)[language];
-  const suffix = ({ en: 'more', fr: 'autres', es: 'más' } as const)[language];
+  const suffix = language === 'fr' ? (remaining === 1 ? 'autre' : 'autres') : ({ en: 'more', es: 'más' } as const)[language];
   return `${named.join(', ')} ${more} ${remaining} ${suffix}`;
 }
