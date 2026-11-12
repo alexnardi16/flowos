@@ -11,6 +11,7 @@ import { autoCompleteExpiredEvents } from './autoCompleteEvents';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
 import { rolloverIncompleteTasks } from './taskRollover';
+import { getLanguage } from './i18n';
 import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, reconcilePresentedDailySummary, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
@@ -23,12 +24,13 @@ async function isPastDailySummaryTime(now: Date): Promise<boolean> {
 }
 async function hasAuthenticatedSession(): Promise<boolean> { if (!isSupabaseConfigured) return false; const { data } = await supabase.auth.getSession(); return Boolean(data.session); }
 async function loadFreshData(now: Date) {
+  const language = await getLanguage();
   const loaded = await loadCommitments();
   const completed = await autoCompleteExpiredEvents(loaded, now);
   let commitments = completed.commitments;
   try { const replanned = await runIntelligentReplan(completed.commitments, undefined, now); if (replanned) commitments = replanned; }
   catch (error) { await logNotificationEvent('intelligent-replan-failed', error, 'warn'); }
-  return { commitments, summary: buildDailySummary(commitments, now) };
+  return { commitments, summary: buildDailySummary(commitments, now, now, language) };
 }
 async function safeRunReminderEngine(commitments: Parameters<typeof runReminderEngine>[0], now: Date) { try { return await runReminderEngine(commitments, now); } catch (error) { await logNotificationEvent('reminder-engine-failed', error, 'warn'); return null; } }
 
@@ -63,7 +65,7 @@ async function runDailySummaryRefreshInternal(now: Date): Promise<ReturnType<typ
 
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowSummary = buildDailySummary(commitments, now, tomorrow);
+  const tomorrowSummary = buildDailySummary(commitments, now, tomorrow, await getLanguage());
   const afterConfiguredTime = await isPastDailySummaryTime(now);
 
   // A DAILY trigger fires at the next occurrence. If today's configured time
