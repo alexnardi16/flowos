@@ -69,7 +69,7 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
         id:item.id,
         title:item.title,
         time:formatItemTime(item,language),
-        duration:item.kind==='task'&&!item.allDay?formatDurationLabel(item):undefined,
+        duration:item.kind==='task'&&!item.allDay?`${({it:'Durata',en:'Duration',fr:'Durée',es:'Duración'} as const)[language]}: ${formatDurationLabel(item)}`:undefined,
         sourceColor:activitySourceColor(item,sourceColors),
         priority:item.kind==='task'?item.priority:undefined
       }));
