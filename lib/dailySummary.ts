@@ -1,7 +1,8 @@
 import type { Commitment } from '../types';
 import { isSameCalendarDay } from './allDayDate';
 import { isExpired } from './itemTiming';
-import { getCurrentLanguage, localeForLanguage, type Language } from './i18n';
+type Language = 'it' | 'en' | 'fr' | 'es';
+const localeForLanguage = (language: Language) => ({ it: 'it-IT', en: 'en-US', fr: 'fr-FR', es: 'es-ES' } as const)[language];
 
 export type DailySummaryItem = {
   id: string;
@@ -26,7 +27,7 @@ export function toDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function buildDailySummary(commitments: Commitment[], now: Date = new Date(), targetDate: Date = now, language: Language = getCurrentLanguage()): DailySummary {
+export function buildDailySummary(commitments: Commitment[], now: Date = new Date(), targetDate: Date = now, language: Language = 'it'): DailySummary {
   const dateKey = toDateKey(targetDate);
   const active = commitments.filter((item) => item.status !== 'done' && !item.deletedAt);
   const scheduledToday = active
