@@ -26,8 +26,8 @@ test('foreground remote sync is continuously refreshed while the app is active',
 
 test('Google pulls preserve FlowOS-only metadata such as custom reminders',()=>{
   const source=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
-  assert.match(source,/select\("id,external_id,external_resource_type,google_calendar_id,google_task_list_id,updated_at,external_updated_at,last_sync_origin,sync_status,status,kind,ai_metadata"\)/);
-  assert.match(source,/ai_metadata:\{\.\.\.\(found\?\.ai_metadata\?\?\{\}\),\.\.\.\(row\.ai_metadata\?\?\{\}\)\}/);
+  assert.match(source,/select\("id,external_id,external_resource_type,google_calendar_id,google_task_list_id,updated_at,external_updated_at,last_sync_origin,sync_status,status,kind,ai_metadata,starts_at,deadline_at,duration_minutes"\)/);
+  assert.match(source,/ai_metadata:\{\.\.\.\(found\?\.ai_metadata\?\?\{\}\),\.\.\.\(row\.ai_metadata\?\?\{\}\)/);
 });
 
 test('background sync refreshes both Google Calendar and Google Tasks and replans local reminders',()=>{
@@ -214,4 +214,15 @@ test('incremental change counts include local resolution pushes so FlowOS still 
   const body=source.slice(start,end);
   assert.match(body,/const resolutionPushed=await pushResolutionPending\(userId\)/);
   assert.match(body,/return changed\+resolutionPushed/);
+});
+
+
+test('Google Tasks incremental sync preserves FlowOS timed-task duration and clock time',()=>{
+  const source=fs.readFileSync('supabase/functions/google-sync-worker/index.ts','utf8');
+  const workspace=fs.readFileSync('supabase/functions/google-workspace/index.ts','utf8');
+  assert.match(source,/preserveTaskDeadlineDate/);
+  assert.match(source,/preserveFlowOsTaskTiming=found\?\.kind==="task"&&row\.kind==="task"/);
+  assert.match(source,/duration_minutes:preserveFlowOsTaskTiming\?found\.duration_minutes:row\.duration_minutes/);
+  assert.match(workspace,/preserveFlowOsTaskTiming=found\?\.kind==="task"&&row\.kind==="task"/);
+  assert.match(workspace,/deadline_at:preserveFlowOsTaskTiming\?preserveTaskDeadlineDate/);
 });
