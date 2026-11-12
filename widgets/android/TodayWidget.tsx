@@ -2,7 +2,7 @@ import React from 'react';
 import { widgetStrings, type Language } from '../../lib/i18n';
 import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
-export type AndroidWidgetItem = { id: string; title: string; time: string; kind: string; priority?: number; sourceColor?: string };
+export type AndroidWidgetItem = { id: string; title: string; time: string; duration?: string; kind: string; priority?: number; sourceColor?: string };
 export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string };
 const BG = '#F1F4FF'; const INK = '#172033'; const PRIMARY = '#4254C5'; const BORDER = '#C8CEDA';
 const uri=(action:string,id:string)=>`flowos://today?widgetAction=${action}&id=${encodeURIComponent(id)}`;
@@ -25,9 +25,9 @@ function titleLines(text:string,maxChars=32){
   if(current)lines.push(current);
   return lines;
 }
-function itemHeight(title:string,hasPriority=false){
-  const lines=titleLines(title,hasPriority?36:42).length;
-  return Math.max(48,12+lines*17+16+8);
+function itemHeight(item:AndroidWidgetItem){
+  const lines=titleLines(item.title,item.priority?36:42).length;
+  return Math.max(44,8+lines*17+(item.time?16:0)+(item.duration?14:0)+4);
 }
 export function TodayWidget({ items, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF' }: AndroidTodayWidgetProps) {
   const labels=widgetStrings(language);
@@ -41,12 +41,13 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
       </FlexWidget>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:backgroundColor as any }}>
-      {items.length ? items.map((item)=>{const lines=titleLines(item.title,item.priority?36:42);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item.title,Boolean(item.priority)), marginVertical:1, paddingHorizontal:8, paddingVertical:6, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:(item.sourceColor??'#F3F4F7') as any, flexDirection:'row', alignItems:'center' }}>
+      {items.length ? items.map((item)=>{const lines=titleLines(item.title,item.priority?36:42);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item), marginVertical:0, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:(item.sourceColor??'#F3F4F7') as any, flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
           <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }}>
             {lines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:12, lineHeight:17, fontWeight:'bold', color:textColor as any }}/>)}
             {item.time ? <TextWidget text={item.time} style={{ fontSize:9, lineHeight:16, color:textColor as any }}/> : null}
+            {item.duration ? <TextWidget text={item.duration} style={{ fontSize:9, lineHeight:14, fontWeight:'bold', color:textColor as any }}/> : null}
           </FlexWidget>
         </FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="POSTPONE" clickActionData={{ id:item.id }}><TextWidget text={language==='it'?'+1g':language==='fr'?'+1j':'+1d'} style={{ fontSize:9, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
