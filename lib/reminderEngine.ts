@@ -398,7 +398,7 @@ async function runReminderEngineInternal(commitments: Commitment[], now: Date = 
     DUE_SOON_ID_KEY,
     DUE_SOON_CHANNEL,
     plan.dueSoon,
-    (n) => ({ it: `${n} task in scadenza`, en: `${n} tasks due soon`, fr: `${n} tâches à échéance proche`, es: `${n} tareas próximas a vencer` } as const)[language],
+    (n) => ({ it: `${n} task in scadenza`, en: `${n} ${n === 1 ? 'task' : 'tasks'} due soon`, fr: `${n} ${n === 1 ? 'tâche à échéance proche' : 'tâches à échéance proche'}`, es: `${n} ${n === 1 ? 'tarea próxima a vencer' : 'tareas próximas a vencer'}` } as const)[language],
     summarizeTaskList(plan.dueSoon, 3, language),
     'due-soon',
   );
@@ -406,7 +406,7 @@ async function runReminderEngineInternal(commitments: Commitment[], now: Date = 
     OVERDUE_ID_KEY,
     OVERDUE_CHANNEL,
     plan.overdue,
-    (n) => ({ it: `${n} task scadut${n === 1 ? 'a' : 'e'}`, en: `${n} overdue tasks`, fr: `${n} tâches en retard`, es: `${n} tareas atrasadas` } as const)[language],
+    (n) => ({ it: `${n} task scadut${n === 1 ? 'a' : 'e'}`, en: `${n} ${n === 1 ? 'overdue task' : 'overdue tasks'}`, fr: `${n} ${n === 1 ? 'tâche en retard' : 'tâches en retard'}`, es: `${n} ${n === 1 ? 'tarea atrasada' : 'tareas atrasadas'}` } as const)[language],
     summarizeTaskList(plan.overdue, 3, language),
     'overdue',
   );
