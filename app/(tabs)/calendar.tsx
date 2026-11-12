@@ -138,7 +138,7 @@ const styles=StyleSheet.create({
   todayText:{color:palette.primary},
   dayActivities:{gap:2,paddingTop:3},
   item:{borderRadius:5,padding:2,borderWidth:1,gap:0},
-  itemTime:{fontSize:4,lineHeight:7,fontWeight:'800',color:palette.muted},
+  itemTime:{fontSize:4,lineHeight:7,fontWeight:'800',color:palette.muted},itemDuration:{fontSize:4,lineHeight:6,fontWeight:'700',color:palette.muted},
   overdueTag:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.warning},
   itemTitleRow:{flexDirection:'row',alignItems:'flex-start',gap:2,minWidth:0},itemPriority:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.primary},itemTitle:{flex:1,minWidth:0,flexShrink:1,fontSize:5,lineHeight:7,fontWeight:'900',color:palette.ink},
   itemMeta:{fontSize:6,lineHeight:8,color:palette.muted},
