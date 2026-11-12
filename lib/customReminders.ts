@@ -1,5 +1,5 @@
 import type { Commitment } from '../types';
-import { t, type Language } from './i18n';
+import { t, getCurrentLanguage, type Language } from './i18n';
 
 export type ScheduledReminder = {
   /** Unique per reminder instance (item + offset), not just per item — one item can have several. */
@@ -29,9 +29,19 @@ export function formatReminderOffsetLabel(minutesBefore: number, language?: Lang
 }
 
 /** Notification body: start-time reminders have no relative-time prefix. */
-export function formatReminderNotificationBody(minutesBefore: number, language?: Language): string {
-  const label = formatReminderOffsetLabel(minutesBefore, language);
-  return minutesBefore === 0 ? label : `Tra ${label}`;
+export function formatReminderNotificationBody(minutesBefore: number, language: Language = getCurrentLanguage()): string {
+  const unit = minutesBefore % 1440 === 0 && minutesBefore >= 1440
+    ? { value: minutesBefore / 1440, it: ['giorno', 'giorni'], en: ['day', 'days'], fr: ['jour', 'jours'], es: ['día', 'días'] }
+    : minutesBefore % 60 === 0 && minutesBefore >= 60
+      ? { value: minutesBefore / 60, it: ['ora', 'ore'], en: ['hour', 'hours'], fr: ['heure', 'heures'], es: ['hora', 'horas'] }
+      : { value: minutesBefore, it: ['minuto', 'minuti'], en: ['minute', 'minutes'], fr: ['minute', 'minutes'], es: ['minuto', 'minutos'] };
+  if (minutesBefore === 0) return ({ it: "All'ora di inizio", en: 'At start time', fr: 'À l’heure de début', es: 'A la hora de inicio' } as const)[language];
+  const amount = unit.value;
+  const unitLabel = unit[language][amount === 1 ? 0 : 1];
+  if (language === 'it') return `Tra ${amount} ${unitLabel}`;
+  if (language === 'en') return `In ${amount} ${unitLabel}`;
+  if (language === 'fr') return `Dans ${amount} ${unitLabel}`;
+  return `En ${amount} ${unitLabel}`;
 }
 
 /**
@@ -39,7 +49,7 @@ export function formatReminderNotificationBody(minutesBefore: number, language?:
  * the current copy. This also refreshes old start-time reminders that used the
  * obsolete `Tra All'ora di inizio` wording.
  */
-export function isReminderNotificationBodyCurrent(existingBody: string | null | undefined, minutesBefore: number, language?: Language): boolean {
+export function isReminderNotificationBodyCurrent(existingBody: string | null | undefined, minutesBefore: number, language: Language = getCurrentLanguage()): boolean {
   return existingBody === formatReminderNotificationBody(minutesBefore, language);
 }
 
