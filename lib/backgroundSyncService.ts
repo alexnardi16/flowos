@@ -101,6 +101,7 @@ export async function refreshNotificationsForLanguage(commitments: Commitment[],
   const summary = await isPastDailySummaryTime(now)
     ? tomorrowSummary
     : buildDailySummary(commitments, now, now, language);
+  await reconcilePresentedDailySummary(summary);
   await scheduleDailySummaryNotification(summary);
   await scheduleTomorrowMorningSummary(tomorrowSummary, now);
 }
