@@ -58,3 +58,13 @@ test('Today widget includes a multi-day task on days after its start date',()=>{
   const glance=buildTodayGlance([task],now);
   assert.equal(glance.items.some(item=>item.id==='multi-task'),true);
 });
+
+
+test('Today widget exposes the time range and explicit duration of a timed task',()=>{
+  const now=new Date(2026,6,23,8,0);
+  const task=commitment({id:'timed-task',title:'Timed task',kind:'task',status:'active',allDay:false,dueAt:new Date(2026,6,23,10,0).toISOString(),durationMinutes:90});
+  const glance=buildTodayGlance([task],now);
+  const item=glance.items.find(entry=>entry.id==='timed-task');
+  assert.equal(item.time,'10:00 - 11:30');
+  assert.equal(item.duration,'1 h 30 min');
+});
