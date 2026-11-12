@@ -410,3 +410,17 @@ test('Android Today widget handler supplies localized explicit task duration',()
   assert.match(handler,/formatDurationLabel\(item as Commitment\)/);
   assert.match(handler,/Durée/);
 });
+
+test('Android launcher can resize both FlowOS widgets from a compact minimum size',()=>{
+  const config=fs.readFileSync('app.config.js','utf8');
+  const today=config.match(/name: 'TodayAndroidWidget'[^\\n]+/);
+  const calendar=config.match(/name: 'CalendarAndroidWidget'[^\\n]+/);
+  assert.ok(today);
+  assert.ok(calendar);
+  for(const definition of [today[0],calendar[0]]){
+    assert.match(definition,/minWidth: '180dp'/);
+    assert.match(definition,/resizeMode: 'horizontal\\|vertical'/);
+  }
+  assert.match(today[0],/minHeight: '110dp'/);
+  assert.match(calendar[0],/minHeight: '160dp'/);
+});
