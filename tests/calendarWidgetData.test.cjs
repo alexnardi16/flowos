@@ -98,3 +98,13 @@ test('multi-day tasks appear on every calendar day covered by their duration',()
   for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(days.find(day=>day.dateKey===date).items.some(item=>item.id==='multi-task'),true,date);
   assert.equal(days.find(day=>day.dateKey==='2026-09-24').items.some(item=>item.id==='multi-task'),false);
 });
+
+
+test('Calendar widget shows the end time and explicit duration for timed tasks',()=>{
+  const now=new Date('2026-09-19T08:00:00');
+  const task={id:'timed-task',title:'Timed task',kind:'task',status:'active',allDay:false,dueAt:'2026-09-21T10:00:00',durationMinutes:90,energy:'medium',context:'test',confidence:1};
+  const data=buildCalendarWidgetData([task],new Date('2026-09-30T23:59:59'),now);
+  const item=data.weeks.flatMap(week=>week.days).find(day=>day.dateKey==='2026-09-21').items.find(entry=>entry.id==='timed-task');
+  assert.equal(item.time,'10:00 - 11:30');
+  assert.equal(item.duration,'1 h 30 min');
+});
