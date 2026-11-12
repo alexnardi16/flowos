@@ -216,7 +216,7 @@ export default function Me(){
     }
     setNotificationBusy(true);
     try{
-      const summary:DailySummary=buildDailySummary(commitments,new Date());
+      const summary:DailySummary=buildDailySummary(commitments,new Date(),new Date(),language);
       const identifier=await sendImmediateSummaryNotification(summary,false);
       if(identifier)showAlert('Notifiche','Notifica inviata.');
       else showAlert('Notifiche','Invio non riuscito: permesso notifiche non concesso. Controlla le impostazioni del telefono.');
