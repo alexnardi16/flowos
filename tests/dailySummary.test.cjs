@@ -141,3 +141,18 @@ test('all-day and timed commitments keep their intended local date around the Eu
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /timezone-dst-ok/);
 });
+
+
+test('daily summaries use the selected app language for title, copy and time formatting', () => {
+  const now = new Date(2026, 6, 23, 7, 30);
+  const item = commitment({ id: 'meeting', title: 'Meeting', scheduledAt: new Date(2026, 6, 23, 9, 0).toISOString(), durationMinutes: 30 });
+  const english = buildDailySummary([item], now, now, 'en');
+  const french = buildDailySummary([item], now, now, 'fr');
+  const spanish = buildDailySummary([], now, now, 'es');
+  assert.match(english.title, /Today/);
+  assert.match(english.body, /09:00 - 09:30/);
+  assert.match(french.title, /Aujourd’hui/);
+  assert.match(french.body, /09:00 - 09:30/);
+  assert.match(spanish.title, /Hoy|No hay compromisos/);
+  assert.match(spanish.body, /Día libre/);
+});
