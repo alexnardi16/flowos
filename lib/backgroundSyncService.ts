@@ -133,8 +133,10 @@ async function checkAndRecoverMissedDailySummaryInternal(now: Date): Promise<voi
 
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  await scheduleDailySummaryNotification(buildDailySummary(commitments, now, tomorrow));
-  await scheduleTomorrowMorningSummary(buildDailySummary(commitments, now, tomorrow), now);
+  const language = await getLanguage();
+  const tomorrowSummary = buildDailySummary(commitments, now, tomorrow, language);
+  await scheduleDailySummaryNotification(tomorrowSummary);
+  await scheduleTomorrowMorningSummary(tomorrowSummary, now);
   await logNotificationEvent('daily-summary-recovery-completed', { dateKey });
 }
 
