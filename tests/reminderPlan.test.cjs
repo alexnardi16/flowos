@@ -74,6 +74,6 @@ test('summarizeTaskList of an empty list is an empty string', () => {
 test('grouped notification task summaries are localized', () => {
   const tasks = ['A', 'B', 'C', 'D'].map((title, index) => ({ id: String(index), title, dueAt: new Date().toISOString() }));
   assert.equal(summarizeTaskList(tasks, 3, 'en'), 'A, B, C and 1 more');
-  assert.equal(summarizeTaskList(tasks, 3, 'fr'), 'A, B, C et 1 autres');
+  assert.equal(summarizeTaskList(tasks, 3, 'fr'), 'A, B, C et 1 autre');
   assert.equal(summarizeTaskList(tasks, 3, 'es'), 'A, B, C y 1 más');
 });
