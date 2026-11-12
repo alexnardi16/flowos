@@ -52,10 +52,9 @@ module.exports = {
     'expo-background-task',
     ['expo-widgets', { widgets: [{ name: 'TodayWidget', displayName: 'FlowOS Oggi', description: 'Tutte le attività previste per oggi.', supportedFamilies: ['systemSmall', 'systemMedium'] }] }],
     ['react-native-android-widget', { widgets: [
-      { name: 'TodayAndroidWidget', label: 'FlowOS Oggi', description: 'Tutte le attività di oggi.', minWidth: '320dp', minHeight: '180dp', targetCellWidth: 4, targetCellHeight: 3, resizeMode: 'horizontal|vertical', updatePeriodMillis: 1800000 },
-      { name: 'CalendarAndroidWidget', label: 'FlowOS Calendario', description: 'Agenda FlowOS per le prossime settimane.', minWidth: '320dp', minHeight: '260dp', targetCellWidth: 4, targetCellHeight: 5, resizeMode: 'horizontal|vertical', updatePeriodMillis: 1800000 }
+      { name: 'TodayAndroidWidget', label: 'FlowOS Oggi', description: 'Tutte le attività di oggi.', minWidth: '180dp', minHeight: '110dp', targetCellWidth: 4, targetCellHeight: 3, resizeMode: 'horizontal|vertical', updatePeriodMillis: 1800000 },
+      { name: 'CalendarAndroidWidget', label: 'FlowOS Calendario', description: 'Agenda FlowOS per le prossime settimane.', minWidth: '180dp', minHeight: '160dp', targetCellWidth: 4, targetCellHeight: 5, resizeMode: 'horizontal|vertical', updatePeriodMillis: 1800000 }
     ] }],
-    './plugins/withWidgetResizeConstraints.js',
   ],
   experiments: { typedRoutes: true },
   web: { bundler: 'metro', output: 'static' },
