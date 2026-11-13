@@ -6,7 +6,7 @@
 
 - Mobile-first Expo Router application
 - Unified Commitment domain model
-- Today, Plan, Inbox, Profile, Capture and Focus screens
+- Today, Plan, Inbox, Profile and Capture screens
 - Local voice-command parser and deterministic activity interpretation
 - Legacy `interpret-commitment` Edge Function with deterministic rules; it is not used by the current capture flow and does not call a hosted AI model
 - Supabase passwordless authentication
