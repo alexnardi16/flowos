@@ -464,9 +464,9 @@ test('Manage exposes the same one-day postpone action as the Today widget in all
   assert.match(manage,/const postpone = useFlowStore\(\(state\) => state\.postpone\)/);
   assert.match(manage,/await postpone\(item\.id\)/);
   assert.match(manage,/t\('Pulsante rinvia un giorno'\)/);
-  assert.match(i18n,/'Pulsante rinvia un giorno': '\+1g'/);
-  assert.match(i18n,/'Pulsante rinvia un giorno': '\+1d'/);
-  assert.match(i18n,/'Pulsante rinvia un giorno': '\+1j'/);
+  assert.match(i18n,/'Pulsante rinvia un giorno':'\+1g'/);
+  assert.match(i18n,/'Pulsante rinvia un giorno':'\+1d'/);
+  assert.match(i18n,/'Pulsante rinvia un giorno':'\+1j'/);
 });
 
 test('Google Play metadata does not advertise an unavailable Focus mode and includes four locales',()=>{
