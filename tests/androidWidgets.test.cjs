@@ -433,3 +433,20 @@ test('Android Today widget leaves unused space transparent and preserves vertica
   assert.match(source,/<ListWidget[\s\S]*items\.map/);
   assert.match(source,/height:'match_parent'/);
 });
+
+
+test('Today widget unused-space transparency is configurable and enabled by default',()=>{
+  const appearance=fs.readFileSync('lib/widgetAppearance.ts','utf8');
+  const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  const sync=fs.readFileSync('lib/widgetSync.ts','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
+  assert.match(appearance,/todayTransparentUnusedSpace: true/);
+  assert.match(appearance,/parsed\.todayTransparentUnusedSpace !== false/);
+  assert.match(widget,/transparentUnusedSpace\?=true/);
+  assert.match(widget,/backgroundColor:transparentUnusedSpace\?'transparent':backgroundColor as any/);
+  assert.match(sync,/transparentUnusedSpace:appearance\.todayTransparentUnusedSpace/);
+  assert.match(handler,/transparentUnusedSpace=\{appearance\.todayTransparentUnusedSpace\}/);
+  assert.match(settings,/Spazio inutilizzato trasparente nel widget Oggi/);
+  assert.match(settings,/Switch value=\{widgetAppearance\.todayTransparentUnusedSpace\}/);
+});
