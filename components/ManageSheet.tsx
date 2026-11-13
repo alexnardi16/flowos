@@ -10,6 +10,7 @@ import { buildRecurrenceOccurrences } from '@/lib/recurrence';
 import { createUuid } from '@/lib/uuid';
 import type { Commitment, CommitmentKind, ReminderOffset, RecurrenceFrequency } from '@/types';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
+import { formatDurationPreview } from '@/lib/durationPreview';
 
 type RepeatOption = 'none' | RecurrenceFrequency;
 const REPEAT_KEYS: Record<RepeatOption, string> = { none: 'Non ripetere', daily: 'Ogni giorno', weekly: 'Ogni settimana', monthly: 'Ogni mese', yearly: 'Ogni anno' };
@@ -201,6 +202,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     finally { setBusy(false); }
   }
 
+  const previewDurationMinutes=Math.max(1,(Number(days)||0)*1440+(Number(hours)||0)*60+(Number(minutes)||0));
   const isFlowOSOnly = !item.externalId;
   const destinationName = useMemo(() => {
     if (kind === 'event') { const calendar = calendars.find((entry) => entry.google_calendar_id === calendarId); return calendar ? friendlyCalendarName(calendar.summary, ownEmail, language) : undefined; }
@@ -233,6 +235,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       </Card>
       <Pressable onPress={() => setShowDetails((value) => !value)} style={styles.detailsToggle}><Text style={styles.detailsToggleText}>{showDetails ? t('Nascondi dettagli facoltativi') : t('Aggiungi descrizione, note, luogo o link')}</Text><Text style={styles.chevron}>{showDetails ? '−' : '+'}</Text></Pressable>{showDetails ? <Card><Field label={t('Descrizione')} value={description} onChangeText={setDescription} multiline placeholder={t('Informazioni principali')}/><Field label={t('Note private')} value={notes} onChangeText={setNotes} multiline placeholder={t('Dettagli utili per te')}/><Field label={t('Luogo')} value={location} onChangeText={setLocation} placeholder={t('Indirizzo o luogo')}/><Field label={t('Link')} value={link} onChangeText={setLink} keyboardType="url" autoCapitalize="none" placeholder="https://…"/></Card> : null}
 
+      <Card style={styles.preview}><View style={styles.previewRow}><Text style={styles.previewTitle}>{title.trim()||t('Titolo')}</Text><Text style={styles.previewDestination}>{destinationName??t('nessuna disponibile')}</Text></View><Text style={styles.previewMeta}>{dateStr}{allDay?' · '+t('Tutto il giorno'):' · '+timeStr+' · '+formatDurationPreview(previewDurationMinutes,language)}</Text></Card>
       {item.status!=='done' ? <Button secondary label={t('Completa')} onPress={() => requestComplete(item,(id,scope)=>complete(id,scope).then(()=>onClose()))} disabled={busy}/> : <Button secondary label={t('Annulla Completamento')} onPress={() => void undoCompletion()} disabled={busy}/>}
       <View style={styles.actionsRow}><Button secondary label={t('Annulla')} onPress={onClose} disabled={busy}/><Button label={t('Salva modifiche')} onPress={() => void save()} loading={busy}/></View>
       {isFlowOSOnly ? <View style={styles.section}><Text style={styles.sectionTitle}>{t('Solo su FlowOS')}</Text><Text style={styles.help}>{t('Questo elemento non è mai stato sincronizzato con Google.')}</Text><Button secondary label={t('Sincronizza con Google')} onPress={() => void syncNow()} disabled={busy}/></View> : null}
@@ -251,6 +254,11 @@ function Field({label,value,onChangeText,required,multiline,autoGrow,placeholder
 
 const styles = StyleSheet.create({
   wrap:{padding:20,paddingTop:50,paddingBottom:60,gap:8,backgroundColor:palette.bg},
+  preview:{gap:8,backgroundColor:'#FAFAFE',marginTop:12},
+  previewRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
+  previewTitle:{fontSize:16,fontWeight:'900',color:palette.ink,flexShrink:1},
+  previewDestination:{fontSize:12,color:palette.muted,flexShrink:1},
+  previewMeta:{fontSize:13,color:palette.muted},
   manageHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:10},
   title:{fontSize:26,fontWeight:'900',color:palette.ink,marginBottom:0,flexShrink:1},
   postponeButton:{backgroundColor:palette.primary,borderRadius:12,paddingHorizontal:13,paddingVertical:10,alignItems:'center',justifyContent:'center'},
