@@ -450,3 +450,30 @@ test('Today widget unused-space transparency is configurable and enabled by defa
   assert.match(settings,/Spazio inutilizzato trasparente nel widget Oggi/);
   assert.match(settings,/Switch value=\{widgetAppearance\.todayTransparentUnusedSpace\}/);
 });
+
+
+test('Android Today widget uses an explicit zero-alpha background for unused space',()=>{
+  const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  assert.match(source,/backgroundColor:transparentUnusedSpace\?'rgba\(0, 0, 0, 0\)':backgroundColor as any/);
+  assert.match(source,/<ListWidget style=\{\{ width:'match_parent', height:'match_parent', backgroundColor:transparentUnusedSpace\?'rgba\(0, 0, 0, 0\)':backgroundColor as any \}\}>/);
+});
+
+test('Manage exposes the same one-day postpone action as the Today widget in all four languages',()=>{
+  const manage=fs.readFileSync('components/ManageSheet.tsx','utf8');
+  const i18n=fs.readFileSync('lib/i18n.ts','utf8');
+  assert.match(manage,/const postpone = useFlowStore\(\(state\) => state\.postpone\)/);
+  assert.match(manage,/await postpone\(item\.id\)/);
+  assert.match(manage,/t\('Pulsante rinvia un giorno'\)/);
+  assert.match(i18n,/'Pulsante rinvia un giorno': '\+1g'/);
+  assert.match(i18n,/'Pulsante rinvia un giorno': '\+1d'/);
+  assert.match(i18n,/'Pulsante rinvia un giorno': '\+1j'/);
+});
+
+test('Google Play metadata does not advertise an unavailable Focus mode and includes four locales',()=>{
+  const metadata=fs.readFileSync('docs/google-play/STORE_METADATA.md','utf8');
+  assert.doesNotMatch(metadata,/Focus mode|mode Focus|Modalità Focus|modo Focus/i);
+  assert.match(metadata,/### Italian/);
+  assert.match(metadata,/### French/);
+  assert.match(metadata,/### Spanish/);
+  assert.match(metadata,/## Full description/);
+});
