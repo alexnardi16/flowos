@@ -66,3 +66,10 @@ test('resetting Add preserves a coherent default for the selected activity type'
   assert.match(reset,/setHours\(taskKind\?'0':'1'\)/);
   assert.match(reset,/setEndDate\(taskKind\?resetEndDate:resetDate\)/);
 });
+
+test('Manage title field grows with content without inheriting the larger fixed multiline minimum',()=>{
+  const manage=fs.readFileSync('components/ManageSheet.tsx','utf8');
+  assert.match(manage,/<Field autoGrow required label=\{t\('Titolo'\)\}/);
+  assert.match(manage,/onContentSizeChange=\{autoGrow\?event=>setContentHeight\(Math\.max\(48,event\.nativeEvent\.contentSize\.height\)\):undefined\}/);
+  assert.match(manage,/multiline&&!autoGrow&&styles\.multiline,autoGrow&&\{height:contentHeight,minHeight:48,textAlignVertical:'top'\}/);
+});
