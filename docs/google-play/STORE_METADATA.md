@@ -17,7 +17,6 @@ Capture commitments quickly, review your day at a glance, and keep your schedule
 - Organize tasks by priority and execution order.
 - Set start times, deadlines, duration and all-day activities.
 - Manage recurring activities and custom reminders.
-- Use Focus mode to concentrate on what matters now.
 
 ### Stay in sync
 - Synchronize supported Google Calendar events and Google Tasks when you connect your Google account.
@@ -62,3 +61,84 @@ The app requires account access. Before submission, create a dedicated reviewer 
 - At least 2 phone screenshots
 - Recommended feature graphic if requested by the current Play Console flow
 - Optional tablet screenshots if tablet support is enabled
+
+
+## Localized full descriptions
+
+### Italian
+
+FlowOS riunisce task, eventi e promemoria per trasformare ciò che devi fare in un piano chiaro e gestibile.
+
+Registra rapidamente i tuoi impegni, controlla la giornata a colpo d’occhio e organizza la tua agenda in FlowOS e nei servizi Google che scegli di collegare.
+
+#### Organizza la giornata
+- Visualizza task ed eventi di oggi in un unico posto.
+- Organizza i task per priorità e ordine di esecuzione.
+- Imposta orari di inizio, scadenze, durata e attività che occupano l’intera giornata.
+- Gestisci attività ricorrenti e promemoria personalizzati.
+
+#### Rimani sincronizzato
+- Sincronizza gli eventi supportati di Google Calendar e Google Tasks dopo aver collegato il tuo account Google.
+- Modifica le attività in FlowOS e invia le modifiche a Google.
+- Usa i widget Android per consultare rapidamente le attività di oggi e il calendario.
+- Ricevi promemoria locali e un riepilogo giornaliero se le notifiche sono abilitate.
+
+#### Mantieni il controllo
+- Usa i comandi vocali per aggiungere, modificare, spostare, completare o eliminare attività.
+- Consulta e gestisci i tuoi impegni nelle viste Oggi, Calendario e Lista.
+- Scollega Google dalle impostazioni quando non desideri più sincronizzare.
+- Richiedi l’eliminazione del tuo account FlowOS e dei relativi dati direttamente dall’app o tramite la pagina pubblica dedicata.
+
+FlowOS ti aiuta a organizzare i tuoi impegni, ma non modifica la tua agenda senza una tua azione. La sincronizzazione Google richiede il collegamento e l’autorizzazione del tuo account Google. Le funzioni che dipendono dalle notifiche richiedono i relativi permessi del dispositivo.
+
+### French
+
+FlowOS rassemble vos tâches, événements et rappels pour transformer ce que vous devez faire en un planning clair et facile à gérer.
+
+Ajoutez rapidement vos engagements, consultez votre journée en un coup d’œil et organisez votre planning dans FlowOS et dans les services Google que vous choisissez de connecter.
+
+#### Organisez votre journée
+- Consultez les tâches et événements du jour au même endroit.
+- Organisez vos tâches par priorité et ordre d’exécution.
+- Définissez les heures de début, les échéances, la durée et les activités sur toute la journée.
+- Gérez les activités récurrentes et les rappels personnalisés.
+
+#### Restez synchronisé
+- Synchronisez les événements Google Calendar compatibles et Google Tasks après avoir connecté votre compte Google.
+- Modifiez vos activités dans FlowOS et envoyez les changements à Google.
+- Utilisez les widgets Android pour consulter rapidement les activités du jour et votre calendrier.
+- Recevez des rappels locaux et un récapitulatif quotidien si les notifications sont activées.
+
+#### Gardez le contrôle
+- Utilisez les commandes vocales pour ajouter, modifier, déplacer, terminer ou supprimer des activités.
+- Consultez et gérez vos engagements dans les vues Aujourd’hui, Calendrier et Liste.
+- Déconnectez Google dans les paramètres lorsque vous ne souhaitez plus synchroniser.
+- Demandez la suppression de votre compte FlowOS et des données associées depuis l’application ou via la page publique dédiée.
+
+FlowOS vous aide à organiser vos engagements, mais ne modifie pas votre planning sans votre action. La synchronisation Google nécessite de connecter et d’autoriser votre compte Google. Les fonctionnalités qui utilisent les notifications nécessitent les autorisations correspondantes sur votre appareil.
+
+### Spanish
+
+FlowOS reúne tus tareas, eventos y recordatorios para convertir todo lo que tienes que hacer en un plan claro y fácil de gestionar.
+
+Añade tus compromisos rápidamente, consulta tu día de un vistazo y organiza tu agenda en FlowOS y en los servicios de Google que decidas conectar.
+
+#### Organiza tu día
+- Consulta las tareas y los eventos de hoy en un solo lugar.
+- Organiza las tareas por prioridad y orden de ejecución.
+- Define horas de inicio, fechas límite, duración y actividades de día completo.
+- Gestiona actividades recurrentes y recordatorios personalizados.
+
+#### Mantén todo sincronizado
+- Sincroniza los eventos compatibles de Google Calendar y Google Tasks cuando conectes tu cuenta de Google.
+- Modifica actividades en FlowOS y envía los cambios a Google.
+- Utiliza los widgets de Android para consultar rápidamente las actividades de hoy y tu calendario.
+- Recibe recordatorios locales y un resumen diario si las notificaciones están activadas.
+
+#### Mantén el control
+- Utiliza comandos de voz para añadir, modificar, mover, completar o eliminar actividades.
+- Consulta y gestiona tus compromisos en las vistas Hoy, Calendario y Lista.
+- Desconecta Google desde los ajustes cuando ya no quieras sincronizar.
+- Solicita la eliminación de tu cuenta de FlowOS y de los datos asociados desde la aplicación o mediante la página pública de eliminación.
+
+FlowOS te ayuda a organizar tus compromisos, pero no modifica tu agenda sin que tú lo decidas. La sincronización con Google requiere conectar y autorizar tu cuenta de Google. Las funciones que dependen de las notificaciones necesitan los permisos correspondientes del dispositivo.
