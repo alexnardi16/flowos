@@ -481,11 +481,18 @@ test('Google Play metadata does not advertise an unavailable Focus mode and incl
 
 test('duration preview uses localized hours and minutes rather than total minutes',()=>{
   const source=fs.readFileSync('lib/durationPreview.ts','utf8');
+  const {formatDurationPreview}=require('../.test-dist-widget/lib/durationPreview.js');
   assert.match(source,/formatDurationPreview/);
   assert.match(source,/it: \{ day:\['giorno','giorni'\], hour:\['ora','ore'\], minute:\['minuto','minuti'\]/);
   assert.match(source,/fr: \{ day:\['jour','jours'\], hour:\['heure','heures'\], minute:\['minute','minutes'\]/);
   assert.match(source,/es: \{ day:\['día','días'\], hour:\['hora','horas'\], minute:\['minuto','minutos'\]/);
   assert.match(source,/const hours=Math\.floor\(\(total%1440\)\/60\), minutes=total%60/);
+  assert.equal(formatDurationPreview(150,'it'),'2 ore e 30 minuti');
+  assert.equal(formatDurationPreview(150,'en'),'2 hours 30 minutes');
+  assert.equal(formatDurationPreview(150,'fr'),'2 heures et 30 minutes');
+  assert.equal(formatDurationPreview(150,'es'),'2 horas y 30 minutos');
+  assert.equal(formatDurationPreview(60,'it'),'1 ora');
+  assert.equal(formatDurationPreview(1440,'fr'),'1 jour');
   const capture=fs.readFileSync('app/(tabs)/capture.tsx','utf8');
   const manage=fs.readFileSync('components/ManageSheet.tsx','utf8');
   assert.match(capture,/allDay\?' · '\+t\('Tutto il giorno'\)/);
