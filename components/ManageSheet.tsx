@@ -40,6 +40,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const addCommitment = useFlowStore((state) => state.addCommitment);
   const commitments = useFlowStore((state) => state.commitments);
   const complete = useFlowStore((state) => state.complete);
+  const postpone = useFlowStore((state) => state.postpone);
   const uncomplete = useFlowStore((state) => state.uncomplete);
   const stopRecurrenceSeries = useFlowStore((state) => state.stopRecurrenceSeries);
   const removeOnlyFromFlowOS = useFlowStore((state) => state.removeOnlyFromFlowOS);
@@ -157,6 +158,13 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     }
   }
 
+  async function postponeOneDay() {
+    setBusy(true);
+    try { await postpone(item.id); onClose(); }
+    catch (error) { showAlert(t('Gestisci'), error instanceof Error ? error.message : t('Operazione non riuscita.')); }
+    finally { setBusy(false); }
+  }
+
   async function undoCompletion() {
     setBusy(true);
     try { await uncomplete(item.id); onClose(); }
@@ -201,7 +209,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
 
   return <Modal visible animationType="slide" onRequestClose={onClose}>
     <ScrollView showsVerticalScrollIndicator persistentScrollbar keyboardShouldPersistTaps="handled" contentContainerStyle={styles.wrap}>
-      <Text style={styles.title}>{t('Gestisci')}</Text>
+      <View style={styles.manageHeader}><Text style={styles.title}>{t('Gestisci')}</Text>{item.status!=='done' ? <Pressable disabled={busy} onPress={() => void postponeOneDay()} style={styles.postponeButton}><Text style={styles.postponeButtonText}>{t('Pulsante rinvia un giorno')}</Text></Pressable> : null}</View>
       <SectionTitle title={t('1. Tipo')} subtitle={t('Evento per un appuntamento fisso; task per un’attività.')}/>
       <View style={styles.kindRow}>{(['task','event'] as const).map((value) => <Pressable key={value} onPress={() => { if (value !== kind) { setKind(value); toggleAllDay(value === 'task'); } }} style={[styles.kindCard, kind === value && styles.kindCardActive]}><Text style={[styles.kindTitle, kind === value && styles.kindTitleActive]}>{value === 'event' ? t('Evento') : t('Task')}</Text><Text style={[styles.kindHelp, kind === value && styles.kindTitleActive]}>{value === 'event' ? t('Occupa uno spazio nel calendario') : t('Richiede un’azione')}</Text></Pressable>)}</View>
 
@@ -243,7 +251,10 @@ function Field({label,value,onChangeText,required,multiline,autoGrow,placeholder
 
 const styles = StyleSheet.create({
   wrap:{padding:20,paddingTop:50,paddingBottom:60,gap:8,backgroundColor:palette.bg},
-  title:{fontSize:26,fontWeight:'900',color:palette.ink,marginBottom:10},
+  manageHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:10},
+  title:{fontSize:26,fontWeight:'900',color:palette.ink,marginBottom:0,flexShrink:1},
+  postponeButton:{backgroundColor:palette.primary,borderRadius:12,paddingHorizontal:13,paddingVertical:10,alignItems:'center',justifyContent:'center'},
+  postponeButtonText:{fontSize:13,fontWeight:'900',color:'#FFF'},
   kindRow:{flexDirection:'row',gap:10,marginTop:4},
   kindCard:{flex:1,minWidth:0,borderWidth:1,borderColor:palette.border,borderRadius:16,padding:14,backgroundColor:'#FFF',gap:5},
   kindCardActive:{borderColor:palette.primary,backgroundColor:palette.soft},
