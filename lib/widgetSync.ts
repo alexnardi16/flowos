@@ -62,9 +62,9 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       const todayTextColor=colorWithOpacity(appearance.today.textColor,appearance.today.textOpacity);
       const todayButtonBackgroundColor=colorWithOpacity(appearance.today.buttonBackgroundColor,appearance.today.buttonBackgroundOpacity);
       const todayButtonTextColor=colorWithOpacity(appearance.today.buttonTextColor,appearance.today.buttonTextOpacity);
-      const todaySignature=JSON.stringify({dateKey:glance.dateKey,items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor});
+      const todaySignature=JSON.stringify({dateKey:glance.dateKey,items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace});
       if(todaySignature!==lastTodayWidgetSignature){
-        await requestWidgetUpdate({widgetName:'TodayAndroidWidget',renderWidget:()=>React.createElement(TodayWidget,{items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor})});
+        await requestWidgetUpdate({widgetName:'TodayAndroidWidget',renderWidget:()=>React.createElement(TodayWidget,{items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace})});
         lastTodayWidgetSignature=todaySignature;
       }else{
         recordDiagnostic('today-widget-render-skipped-unchanged',{dateKey:glance.dateKey,count:items.length});
