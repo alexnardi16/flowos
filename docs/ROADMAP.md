@@ -5,7 +5,7 @@ This roadmap describes the current product direction, not a historical sprint lo
 ## Implemented in the current codebase
 
 - Unified commitments for tasks, events and reminders.
-- Today, Calendar, List and Focus views.
+- Today, Calendar and List views.
 - Natural-language activity entry using deterministic application rules.
 - Date, time, duration, all-day, priority, recurrence and custom reminder editing.
 - Local notifications, configurable daily summary and reminder scheduling.
