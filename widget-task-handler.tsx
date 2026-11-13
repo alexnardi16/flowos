@@ -126,7 +126,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
   const calendarBackgroundColor=colorWithOpacity(appearance.calendar.backgroundColor,appearance.calendar.backgroundOpacity);
   if(props.widgetInfo.widgetName==='TodayAndroidWidget'){
     const data=todayData(raw,language,appearance);
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} language={language} backgroundColor={todayBackgroundColor} textColor={colorWithOpacity(appearance.today.textColor,appearance.today.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.today.buttonBackgroundColor,appearance.today.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.today.buttonTextColor,appearance.today.buttonTextOpacity)}/>);break;default:break;}
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<TodayWidget {...data} language={language} backgroundColor={todayBackgroundColor} textColor={colorWithOpacity(appearance.today.textColor,appearance.today.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.today.buttonBackgroundColor,appearance.today.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.today.buttonTextColor,appearance.today.buttonTextOpacity)} transparentUnusedSpace={appearance.todayTransparentUnusedSpace}/>);break;default:break;}
   }else if(props.widgetInfo.widgetName==='CalendarAndroidWidget'){
     let data=await loadCalendarCache(language);
     if(!data) {
