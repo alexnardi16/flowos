@@ -13,7 +13,6 @@
 - Manage commitments in **Calendar** and **List** views.
 - Create tasks, events and reminders with dates, times, durations, priorities and recurrence.
 - Use voice commands to add, edit, move, complete or delete activities.
-- Use **Focus** mode to concentrate on the next step.
 - Set local notifications, custom reminders and a daily summary.
 - Synchronize supported Google Calendar events and Google Tasks when you connect Google.
 - Use Android home-screen widgets for Today and Calendar.
