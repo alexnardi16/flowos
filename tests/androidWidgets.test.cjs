@@ -427,9 +427,9 @@ test('Android widgets retain default grid size and allow compact resizing',()=>{
 
 test('Android Today widget leaves unused space transparent and preserves vertical list scrolling',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/backgroundColor:transparentUnusedSpace\?'transparent':backgroundColor as any, borderRadius:20/);
+  assert.match(source,/backgroundColor:transparentUnusedSpace\?'rgba\(0, 0, 0, 0\)':backgroundColor as any, borderRadius:20/);
   assert.match(source,/backgroundColor:backgroundColor as any, borderRadius:12/);
-  assert.match(source,/<ListWidget style=\{\{ width:'match_parent', height:'match_parent', backgroundColor:transparentUnusedSpace\?'transparent':backgroundColor as any \}\}>/);
+  assert.match(source,/<ListWidget style=\{\{ width:'match_parent', height:'match_parent', backgroundColor:transparentUnusedSpace\?'rgba\(0, 0, 0, 0\)':backgroundColor as any \}\}>/);
   assert.match(source,/<ListWidget[\s\S]*items\.map/);
   assert.match(source,/height:'match_parent'/);
 });
@@ -444,7 +444,7 @@ test('Today widget unused-space transparency is configurable and enabled by defa
   assert.match(appearance,/todayTransparentUnusedSpace: true/);
   assert.match(appearance,/parsed\.todayTransparentUnusedSpace !== false/);
   assert.match(widget,/transparentUnusedSpace=true/);
-  assert.match(widget,/backgroundColor:transparentUnusedSpace\?'transparent':backgroundColor as any/);
+  assert.match(widget,/backgroundColor:transparentUnusedSpace\?'rgba\(0, 0, 0, 0\)':backgroundColor as any/);
   assert.match(sync,/transparentUnusedSpace:appearance\.todayTransparentUnusedSpace/);
   assert.match(handler,/transparentUnusedSpace=\{appearance\.todayTransparentUnusedSpace\}/);
   assert.match(settings,/Spazio inutilizzato trasparente nel widget Oggi/);
