@@ -20,6 +20,7 @@
     "../lib/commitmentVisibility.ts",
     "../lib/activityOrdering.ts",
     "../lib/activityColors.ts",
-    "../lib/i18n.ts"
+    "../lib/i18n.ts",
+    "../lib/durationPreview.ts"
   ]
 }
