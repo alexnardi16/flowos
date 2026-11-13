@@ -486,7 +486,7 @@ test('duration preview uses localized hours and minutes rather than total minute
   assert.match(source,/it: \{ day:\['giorno','giorni'\], hour:\['ora','ore'\], minute:\['minuto','minuti'\]/);
   assert.match(source,/fr: \{ day:\['jour','jours'\], hour:\['heure','heures'\], minute:\['minute','minutes'\]/);
   assert.match(source,/es: \{ day:\['día','días'\], hour:\['hora','horas'\], minute:\['minuto','minutos'\]/);
-  assert.match(source,/const hours=Math\.floor\(\(total%1440\)\/60\), minutes=total%60/);
+  assert.match(source,/const days=Math\.floor\(total\/1440\), hours=Math\.floor\(\(total%1440\)\/60\), minutes=total%60/);
   assert.equal(formatDurationPreview(150,'it'),'2 ore e 30 minuti');
   assert.equal(formatDurationPreview(150,'en'),'2 hours 30 minutes');
   assert.equal(formatDurationPreview(150,'fr'),'2 heures et 30 minutes');
