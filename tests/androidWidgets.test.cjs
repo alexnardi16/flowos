@@ -477,3 +477,31 @@ test('Google Play metadata does not advertise an unavailable Focus mode and incl
   assert.match(metadata,/### Spanish/);
   assert.match(metadata,/## Full description/);
 });
+
+
+test('duration preview uses localized hours and minutes rather than total minutes',()=>{
+  const source=fs.readFileSync('lib/durationPreview.ts','utf8');
+  assert.match(source,/formatDurationPreview/);
+  assert.match(source,/it: \{ day:\['giorno','giorni'\], hour:\['ora','ore'\], minute:\['minuto','minuti'\]/);
+  assert.match(source,/fr: \{ day:\['jour','jours'\], hour:\['heure','heures'\], minute:\['minute','minutes'\]/);
+  assert.match(source,/es: \{ day:\['día','días'\], hour:\['hora','horas'\], minute:\['minuto','minutos'\]/);
+  assert.match(source,/const hours=Math\.floor\(\(total%1440\)\/60\), minutes=total%60/);
+  const capture=fs.readFileSync('app/(tabs)/capture.tsx','utf8');
+  const manage=fs.readFileSync('components/ManageSheet.tsx','utf8');
+  assert.match(capture,/allDay\?' · '\+t\('Tutto il giorno'\)/);
+  assert.match(manage,/allDay\?' · '\+t\('Tutto il giorno'\)/);
+  assert.match(capture,/formatDurationPreview\(durationMinutes,language\)/);
+  assert.match(manage,/formatDurationPreview\(previewDurationMinutes,language\)/);
+});
+
+test('Focus feature is completely removed from app routing, store and public copy',()=>{
+  assert.equal(fs.existsSync('app/focus.tsx'),false);
+  const store=fs.readFileSync('lib/store.ts','utf8');
+  assert.doesNotMatch(store,/focusId|startFocus|stopFocus/);
+  const readme=fs.readFileSync('README.md','utf8');
+  const roadmap=fs.readFileSync('docs/ROADMAP.md','utf8');
+  const site=fs.readFileSync('public/about/index.html','utf8');
+  assert.doesNotMatch(readme,/Focus mode|\*\*Focus\*\*/i);
+  assert.doesNotMatch(roadmap,/Focus/i);
+  assert.doesNotMatch(site,/Focus mode|Focus on the next step/i);
+});
