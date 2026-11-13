@@ -424,3 +424,12 @@ test('Android widgets retain default grid size and allow compact resizing',()=>{
   assert.ok(today.includes("resizeMode: 'horizontal|vertical'"));
   assert.ok(calendar.includes("resizeMode: 'horizontal|vertical'"));
 });
+
+test('Android Today widget leaves unused space transparent and preserves vertical list scrolling',()=>{
+  const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  assert.match(source,/backgroundColor:'transparent', borderRadius:20/);
+  assert.match(source,/backgroundColor:backgroundColor as any, borderRadius:12/);
+  assert.match(source,/<ListWidget style=\{\{ width:'match_parent', height:'match_parent', backgroundColor:'transparent' \}\}>/);
+  assert.match(source,/<ListWidget[\s\S]*items\.map/);
+  assert.match(source,/height:'match_parent'/);
+});
