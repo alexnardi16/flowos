@@ -180,3 +180,13 @@ test('reminder notification body is localized in all supported languages', () =>
   assert.equal(isReminderNotificationBodyCurrent('In 15 minutes', 15, 'en'), true);
   assert.equal(isReminderNotificationBodyCurrent('Tra 15 minuti', 15, 'en'), false);
 });
+
+
+test('snoozed reminder notifications use the saved app language', () => {
+  const source = fs.readFileSync('lib/reminderActions.ts', 'utf8');
+  assert.match(source, /const language = await getLanguage\(\)/);
+  assert.match(source, /ensureReminderNotificationCategory\(language\)/);
+  assert.match(source, /FlowOS reminder postponed/);
+  assert.match(source, /Rappel FlowOS reporté/);
+  assert.match(source, /Recordatorio de FlowOS pospuesto/);
+});
