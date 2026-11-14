@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useFlowStore } from './store';
 import { logNotificationEvent } from './notificationLog';
+import { getLanguage } from './i18n';
 import { ensureReminderNotificationCategory, EVENT_REMINDER_CHANNEL, REMINDER_ACTION_COMPLETE, REMINDER_ACTION_POSTPONE, REMINDER_ACTION_CATEGORY } from './reminderEngine';
 
 export const PENDING_REMINDER_SNOOZE_KEY = 'flowos:notifications:pending-snooze';
@@ -64,11 +65,12 @@ export async function scheduleSnoozedReminder(commitmentId: string, notification
   if (!item) throw new Error('Attività non trovata.');
   if (triggerAt.getTime() <= Date.now()) throw new Error('Scegli una data e un orario futuri.');
 
-  await ensureReminderNotificationCategory();
+  const language = await getLanguage();
+  await ensureReminderNotificationCategory(language);
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
       title: item.title,
-      body: 'Promemoria FlowOS rimandato',
+      body: ({ it: 'Promemoria FlowOS rimandato', en: 'FlowOS reminder postponed', fr: 'Rappel FlowOS reporté', es: 'Recordatorio de FlowOS pospuesto' } as const)[language],
       sticky: Platform.OS === 'android',
       data: {
         source: 'reminder-snoozed',
