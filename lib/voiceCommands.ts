@@ -23,7 +23,7 @@ export async function listenForVoiceCommand(locale='it-IT'):Promise<string|null>
   if(Platform.OS!=='android')throw new Error('Il microfono dei comandi vocali è disponibile nell’app Android.');
   const IntentLauncher=await import('expo-intent-launcher');
   recordDiagnostic('voice-command-started',{locale});
-  const result=await IntentLauncher.startActivityAsync('android.speech.action.RECOGNIZE_SPEECH',{extra:{'android.speech.extra.LANGUAGE_MODEL':'free_form','android.speech.extra.LANGUAGE':locale,'android.speech.extra.MAX_RESULTS':5,'android.speech.extra.PROMPT':'Cosa vuoi fare con FlowOS?'}});
+  const result=await IntentLauncher.startActivityAsync('android.speech.action.RECOGNIZE_SPEECH',{extra:{'android.speech.extra.LANGUAGE_MODEL':'free_form','android.speech.extra.LANGUAGE':locale,'android.speech.extra.MAX_RESULTS':5,'android.speech.extra.PREFER_OFFLINE':true,'android.speech.extra.PROMPT':'Cosa vuoi fare con FlowOS?'}});
   const values=(result.extra as Record<string,unknown>|undefined)?.['android.speech.extra.RESULTS'];
   const transcript=Array.isArray(values)?String(values[0]??''):null;
   recordDiagnostic('voice-command-finished',{resultCode:result.resultCode,hasTranscript:Boolean(transcript)});
