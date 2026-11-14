@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const fs = require('node:fs');
 const { buildDailySummary, toDateKey } = require('../.test-dist-notifications/lib/dailySummary.js');
 
 function commitment(overrides) {
@@ -155,4 +156,25 @@ test('daily summaries use the selected app language for title, copy and time for
   assert.match(french.body, /09:00 - 09:30/);
   assert.match(spanish.title, /Hoy|No hay compromisos/);
   assert.match(spanish.body, /Día libre/);
+});
+
+
+test('legacy tomorrow notifications in every locale are recognized for cancellation', () => {
+  const source = fs.readFileSync('lib/notificationService.ts', 'utf8');
+  assert.match(source, /Mañana por la mañana/);
+  assert.match(source, /Tomorrow morning/);
+  assert.match(source, /Demain matin/);
+  assert.match(source, /requestedLanguage\?\?await getLanguage\(\)/);
+  const background = fs.readFileSync('lib/backgroundSyncService.ts', 'utf8');
+  assert.match(background, /scheduleTomorrowMorningSummary\(tomorrowSummary, now, language\)/);
+});
+
+test('Google synchronization and destination settings appear before widget customization', () => {
+  const source = fs.readFileSync('app/(tabs)/me.tsx', 'utf8');
+  const google = source.indexOf("t('Sincronizzazione con Google')");
+  const calendars = source.indexOf("t('Calendari sincronizzati')");
+  const taskLists = source.indexOf("t('Liste Google Tasks sincronizzate')");
+  const widgets = source.indexOf("t('Personalizzazione widget')");
+  assert.ok(google >= 0 && calendars > google && taskLists > calendars && widgets > taskLists);
+  assert.match(source, /refreshNotificationsForLanguage\(commitments,option\.code\)/);
 });
