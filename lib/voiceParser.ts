@@ -23,7 +23,8 @@ function nextWeekday(base:Date,target:number,forceNext=false){
 }
 function extractWhen(text:string){
   const lower=normalizeVoiceText(text),now=new Date();
-  const time=lower.match(/\b(?:alle|ore|verso le)\s*(\d{1,2})(?:[:.](\d{2}))?\b/);\n  if(time&&(Number(time[1])>23||Number(time[2]??0)>59))return undefined;
+  const time=lower.match(/\b(?:alle|ore|verso le)\s*(\d{1,2})(?:[:.](\d{2}))?\b/);
+  if(time&&(Number(time[1])>23||Number(time[2]??0)>59))return undefined;
   let date:Date|undefined;
   if(/\btra\s+(?:un|una)\s+(minuto|minuti|ora|ore|giorno|giorni)\b/.test(lower)){
     const unit=lower.match(/\btra\s+(?:un|una)\s+(minuto|minuti|ora|ore|giorno|giorni)\b/)?.[1]??'giorno';
