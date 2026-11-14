@@ -112,7 +112,7 @@ function semanticParse(transcript:string):VoiceCommand|null{
 }
 
 export function parseVoiceCommands(transcript:string):VoiceCommand[] {
-  const parts=transcript.trim().split(/\\s+(?:e\\s+poi|e\\s+quindi|poi|e)\\s+(?=(?:aggiungi|crea|inserisci|registra|programma|pianifica|ricordami|devo|elimina|cancella|rimuovi|togli|completa|termina|chiudi|finisci|fatto|segna|posticipa|rimanda|sposta|metti|fissa|rinomina|ribattezza|cambia)\\b)/i).map(part=>part.trim()).filter(Boolean);
+  const parts=transcript.trim().split(/\s+(?:e\s+poi|e\s+quindi|poi|e)\s+(?=(?:aggiungi|crea|inserisci|registra|programma|pianifica|ricordami|devo|elimina|cancella|rimuovi|togli|completa|termina|chiudi|finisci|fatto|segna|posticipa|rimanda|sposta|metti|fissa|rinomina|ribattezza|cambia)\b)/i).map(part=>part.trim()).filter(Boolean);
   if(parts.length<=1){const single=parseVoiceCommand(transcript);return single?[single]:[];}
   return parts.flatMap(part=>{const command=parseVoiceCommand(part);return command?[command]:[];});
 }
@@ -147,8 +147,9 @@ export function findBestVoiceMatch(items:Commitment[],query:string){
   const active=items.filter(item=>item.status!=='done'&&!item.deletedAt);
   const q=normalizeVoiceText(cleanQuery(query));
   if(!q)return null;
-  const exact=active.find(item=>normalizeVoiceText(item.title)===q);
-  if(exact)return exact;
+  const exact=active.filter(item=>normalizeVoiceText(item.title)===q);
+  if(exact.length===1)return exact[0];
+  if(exact.length>1)return null;
   const qTokens=q.split(' ').filter(token=>token.length>1);
   const scoreItem=(item:Commitment)=>{
     const title=normalizeVoiceText(item.title);
