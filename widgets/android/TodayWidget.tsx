@@ -41,7 +41,7 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
       </FlexWidget>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:transparentUnusedSpace?'rgba(0, 0, 0, 0)':backgroundColor as any }}>
-      {items.length ? items.map((item)=>{const lines=titleLines(item.title,item.priority?36:42);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item), marginVertical:0, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:(item.sourceColor??'#F3F4F7') as any, flexDirection:'row', alignItems:'center' }}>
+      {items.map((item)=>{const lines=titleLines(item.title,item.priority?36:42);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item), marginVertical:0, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:(item.sourceColor??'#F3F4F7') as any, flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
           <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }}>
