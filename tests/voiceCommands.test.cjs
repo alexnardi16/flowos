@@ -41,3 +41,20 @@ test('never leaves a completed activity eligible for voice commands', () => {
   ], 'comprare il latte');
   assert.equal(item, null);
 });
+
+
+test('rejects invalid calendar dates and clock times instead of silently rolling them over', () => {
+  const invalidDate = parseVoiceCommand('Aggiungi visita il 32 gennaio');
+  const invalidTime = parseVoiceCommand('Aggiungi visita domani alle 25:90');
+  assert.equal(invalidDate.when, undefined);
+  assert.equal(invalidTime.when, undefined);
+  assert.equal(invalidDate.title, 'visita');
+  assert.equal(invalidTime.title, 'visita');
+});
+
+test('does not match deleted activities', () => {
+  const item = findBestVoiceMatch([
+    { id: '1', title: 'Comprare il latte', status: 'active', deletedAt: '2026-01-01T00:00:00.000Z' },
+  ], 'comprare il latte');
+  assert.equal(item, null);
+});
