@@ -35,7 +35,7 @@ export function formatReminderNotificationBody(minutesBefore: number, language: 
     : minutesBefore % 60 === 0 && minutesBefore >= 60
       ? { value: minutesBefore / 60, it: ['ora', 'ore'], en: ['hour', 'hours'], fr: ['heure', 'heures'], es: ['hora', 'horas'] }
       : { value: minutesBefore, it: ['minuto', 'minuti'], en: ['minute', 'minutes'], fr: ['minute', 'minutes'], es: ['minuto', 'minutos'] };
-  if (minutesBefore === 0) return ({ it: "All'ora di inizio", en: 'At start time', fr: 'À l’heure de début', es: 'A la hora de inicio' } as const)[language];
+  if (minutesBefore === 0) return ({ it: 'Inizia adesso', en: 'Start now', fr: 'Commence maintenant', es: 'Empieza ahora' } as const)[language];
   const amount = unit.value;
   const unitLabel = unit[language][amount === 1 ? 0 : 1];
   if (language === 'it') return `Tra ${amount} ${unitLabel}`;
