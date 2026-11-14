@@ -28,6 +28,7 @@
     "../lib/activityOrdering.ts",
     "../lib/taskRollover.ts",
     "../lib/taskPriority.ts",
-    "../lib/logRedaction.ts"
+    "../lib/logRedaction.ts",
+    "../lib/activityMarkers.ts"
   ]
 }
