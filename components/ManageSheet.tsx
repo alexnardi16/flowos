@@ -11,6 +11,7 @@ import { createUuid } from '@/lib/uuid';
 import type { Commitment, CommitmentKind, ReminderOffset, RecurrenceFrequency } from '@/types';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { formatDurationPreview } from '@/lib/durationPreview';
+import { parseActivityTitle, formatActivityTitle, type ActivityMarkers } from '@/lib/activityMarkers';
 
 type RepeatOption = 'none' | RecurrenceFrequency;
 const REPEAT_KEYS: Record<RepeatOption, string> = { none: 'Non ripetere', daily: 'Ogni giorno', weekly: 'Ogni settimana', monthly: 'Ogni mese', yearly: 'Ogni anno' };
@@ -64,7 +65,9 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   }, [item.googleCalendarId, item.googleTaskListId]);
 
   const dateField = item.scheduledAt ? 'scheduledAt' : 'dueAt';
-  const [title, setTitle] = useState(item.title);
+  const parsedTitle = parseActivityTitle(item.title);
+  const [title, setTitle] = useState(parsedTitle.title);
+  const [markers, setMarkers] = useState<ActivityMarkers>(parsedTitle.markers);
   const [kind, setKind] = useState<CommitmentKind>(item.kind);
   const [allDay, setAllDay] = useState(Boolean(item.allDay));
   const [dateStr, setDateStr] = useState(toDateInput(item[dateField], item.allDay));
@@ -125,7 +128,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       if((repeat!=='none'||item.googleRecurringEventId)&&(!repeatUntil||!Number.isFinite(new Date(`${repeatUntil}T23:59:59.999`).getTime())||new Date(`${repeatUntil}T23:59:59.999`).getTime()<new Date(when??'').getTime())){showAlert(t('Gestisci'),t('Indica una data di fine della serie uguale o successiva alla data di inizio.'));return;}
       const updated: Commitment = {
         ...item,
-        title: title.trim() || item.title,
+        title: formatActivityTitle(title.trim() || parsedTitle.title, markers),
         kind,
         priority: kind === 'task' && priority.trim() ? Math.max(1, Number(priority)) : undefined,
         allDay,
@@ -223,6 +226,19 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
 
       <SectionTitle title={t('3. Informazioni essenziali')}/><Card>
         <Field autoGrow required label={t('Titolo')} value={title} onChangeText={setTitle} placeholder={kind === 'event' ? t('Es. Visita pediatrica') : t('Es. Preparare il budget')}/>
+        <Text style={[styles.fieldLabel,styles.fieldLabelSpaced]}>{t('Caratteristiche')}</Text>
+        <View style={styles.rowWrap}>
+          <Choice label={t('👤 Da solo')} active={markers.people==='solo'} onPress={()=>setMarkers(v=>({...v,people:v.people==='solo'?null:'solo'}))}/>
+          <Choice label={t('👥 Con altre persone')} active={markers.people==='together'} onPress={()=>setMarkers(v=>({...v,people:v.people==='together'?null:'together'}))}/>
+        </View>
+        <View style={styles.rowWrap}>
+          <Choice label={t('🏠 Solo a casa')} active={markers.place==='home'} onPress={()=>setMarkers(v=>({...v,place:v.place==='home'?null:'home'}))}/>
+          <Choice label={t('🌍 Ovunque')} active={markers.place==='anywhere'} onPress={()=>setMarkers(v=>({...v,place:v.place==='anywhere'?null:'anywhere'}))}/>
+        </View>
+        <View style={styles.rowWrap}>
+          <Choice label={t('💻 Online')} active={markers.online} onPress={()=>setMarkers(v=>({...v,online:!v.online}))}/>
+          <Choice label={t('🚗 Richiede spostamento')} active={markers.travel} onPress={()=>setMarkers(v=>({...v,travel:!v.travel}))}/>
+        </View>
         <View style={styles.rowBetween}><Text style={styles.fieldLabel}>{t('Giornata intera')}</Text><Switch value={allDay} onValueChange={toggleAllDay}/></View>
         <View style={styles.inline}><View style={[styles.flex, styles.field]}><Text numberOfLines={1} style={styles.fieldLabelFixed}>{t('Data di inizio')}<Text style={styles.required}> *</Text></Text><Pressable onPress={() => setDatePickerTarget('start')} style={styles.dateButton}><Text style={styles.dateButtonText}>{dateStr}</Text></Pressable></View><View style={styles.flex}><Field fixedLabel singleLineLabel required label={t('Orario di inizio')} value={timeStr} onChangeText={updateStartTime} placeholder="HH:MM"/></View></View>
         <View style={styles.inline}><View style={[styles.flex, styles.field]}><Text style={styles.fieldLabelFixed}>{t('Data di fine')}<Text style={styles.required}> *</Text></Text><Pressable onPress={() => setDatePickerTarget('end')} style={styles.dateButton}><Text style={styles.dateButtonText}>{endDate}</Text></Pressable></View><View style={styles.flex}><Field fixedLabel singleLineLabel required label={t('Orario di fine')} value={endTime} onChangeText={updateEndTime} placeholder="HH:MM"/></View></View>
@@ -235,7 +251,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
       </Card>
       <Pressable onPress={() => setShowDetails((value) => !value)} style={styles.detailsToggle}><Text style={styles.detailsToggleText}>{showDetails ? t('Nascondi dettagli facoltativi') : t('Aggiungi descrizione, note, luogo o link')}</Text><Text style={styles.chevron}>{showDetails ? '−' : '+'}</Text></Pressable>{showDetails ? <Card><Field label={t('Descrizione')} value={description} onChangeText={setDescription} multiline placeholder={t('Informazioni principali')}/><Field label={t('Note private')} value={notes} onChangeText={setNotes} multiline placeholder={t('Dettagli utili per te')}/><Field label={t('Luogo')} value={location} onChangeText={setLocation} placeholder={t('Indirizzo o luogo')}/><Field label={t('Link')} value={link} onChangeText={setLink} keyboardType="url" autoCapitalize="none" placeholder="https://…"/></Card> : null}
 
-      <Card style={styles.preview}><View style={styles.previewRow}><Text style={styles.previewTitle}>{title.trim()||t('Titolo')}</Text><Text style={styles.previewDestination}>{destinationName??t('nessuna disponibile')}</Text></View><Text style={styles.previewMeta}>{dateStr}{allDay?' · '+t('Tutto il giorno'):' · '+timeStr+' · '+formatDurationPreview(previewDurationMinutes,language)}</Text></Card>
+      <Card style={styles.preview}><View style={styles.previewRow}><Text style={styles.previewTitle}>{formatActivityTitle(title.trim()||parsedTitle.title,markers)||t('Titolo')}</Text><Text style={styles.previewDestination}>{destinationName??t('nessuna disponibile')}</Text></View><Text style={styles.previewMeta}>{dateStr}{allDay?' · '+t('Tutto il giorno'):' · '+timeStr+' · '+formatDurationPreview(previewDurationMinutes,language)}</Text></Card>
       {item.status!=='done' ? <Button secondary label={t('Completa')} onPress={() => requestComplete(item,(id,scope)=>complete(id,scope).then(()=>onClose()))} disabled={busy}/> : <Button secondary label={t('Annulla Completamento')} onPress={() => void undoCompletion()} disabled={busy}/>}
       <View style={styles.actionsRow}><Button secondary label={t('Annulla')} onPress={onClose} disabled={busy}/><Button label={t('Salva modifiche')} onPress={() => void save()} loading={busy}/></View>
       {isFlowOSOnly ? <View style={styles.section}><Text style={styles.sectionTitle}>{t('Solo su FlowOS')}</Text><Text style={styles.help}>{t('Questo elemento non è mai stato sincronizzato con Google.')}</Text><Button secondary label={t('Sincronizza con Google')} onPress={() => void syncNow()} disabled={busy}/></View> : null}
