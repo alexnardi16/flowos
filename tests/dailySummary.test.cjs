@@ -164,7 +164,7 @@ test('legacy tomorrow notifications in every locale are recognized for cancellat
   assert.match(source, /Mañana por la mañana/);
   assert.match(source, /Tomorrow morning/);
   assert.match(source, /Demain matin/);
-  assert.match(source, /requestedLanguage\?\?await getLanguage\(\)/);
+  assert.match(source, /requestedLanguage\\s*\\?\\?\\s*await getLanguage\\(\\)/);
   const background = fs.readFileSync('lib/backgroundSyncService.ts', 'utf8');
   assert.match(background, /scheduleTomorrowMorningSummary\(tomorrowSummary, now, language\)/);
 });
