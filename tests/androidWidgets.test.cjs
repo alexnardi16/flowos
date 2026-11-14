@@ -537,7 +537,7 @@ test('Android Calendar widget highlights today with the same color as its action
 
 test('Android Today widget renders no empty-state message when there are no activities in every language',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.doesNotMatch(source,/labels\\.noActivities/);
+  assert.equal(source.includes('labels.noActivities'),false);
   assert.doesNotMatch(source,/Nessuna attività prevista per oggi|No activities planned for today|Aucune activité prévue pour aujourd'hui|No hay actividades previstas para hoy/i);
-  assert.match(source,/items\\.length \\? items\\.map/);
+  assert.equal(source.includes('items.length ? items.map'),true);
 });
