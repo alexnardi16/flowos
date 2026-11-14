@@ -158,7 +158,7 @@ test('start-time reminder labels are localized in every supported app language',
 });
 
 test('start-time reminder notification body omits the relative-time prefix', () => {
-  assert.equal(formatReminderNotificationBody(0), "All'ora di inizio");
+  assert.equal(formatReminderNotificationBody(0), 'Inizia adesso');
   assert.equal(formatReminderNotificationBody(15), 'Tra 15 minuti');
   assert.equal(formatReminderNotificationBody(60), 'Tra 1 ora');
 });
@@ -166,15 +166,17 @@ test('start-time reminder notification body omits the relative-time prefix', () 
 
 test('old scheduled start-time notification copy is refreshed without the Tra prefix', () => {
   assert.equal(isReminderNotificationBodyCurrent("Tra All'ora di inizio", 0), false);
-  assert.equal(isReminderNotificationBodyCurrent("All'ora di inizio", 0), true);
+  assert.equal(isReminderNotificationBodyCurrent('Inizia adesso', 0), true);
   assert.equal(isReminderNotificationBodyCurrent('Tra 15 minuti prima', 15), false);
   assert.equal(isReminderNotificationBodyCurrent('Tra 15 minuti', 15), true);
 });
 
 
 test('reminder notification body is localized in all supported languages', () => {
-  assert.equal(formatReminderNotificationBody(0, 'en'), 'At start time');
+  assert.equal(formatReminderNotificationBody(0, 'en'), 'Start now');
   assert.equal(formatReminderNotificationBody(15, 'en'), 'In 15 minutes');
+  assert.equal(formatReminderNotificationBody(0, 'fr'), 'Commence maintenant');
+  assert.equal(formatReminderNotificationBody(0, 'es'), 'Empieza ahora');
   assert.equal(formatReminderNotificationBody(60, 'fr'), 'Dans 1 heure');
   assert.equal(formatReminderNotificationBody(1440, 'es'), 'En 1 día');
   assert.equal(isReminderNotificationBodyCurrent('In 15 minutes', 15, 'en'), true);
