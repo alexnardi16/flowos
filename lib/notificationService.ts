@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DailySummary } from './dailySummary';
 import { logNotificationEvent } from './notificationLog';
 import { hasRecoveredToday } from './notificationDedup';
-import { getLanguage } from './i18n';
+import { getLanguage, type Language } from './i18n';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -179,7 +179,8 @@ function looksLikeLegacyDailySummaryTitle(title: string): boolean {
     /^Oggi hai [0-9]+ impegn/.test(title) ||
     /^Domani hai [0-9]+ impegn/.test(title) ||
     /^Nessun impegno pianificato per (oggi|domani)$/.test(title) ||
-    /^Domani mattina · /.test(title)
+    /^(?:Domani mattina|Tomorrow morning|Demain matin|Mañana por la mañana)(?: · |$)/.test(title) ||
+    /^(?:Today|Tomorrow|Aujourd’hui|Demain|Hoy|Mañana) · /.test(title)
   );
 }
 
@@ -319,7 +320,7 @@ export async function scheduleDailySummaryNotification(summary: DailySummary): P
   return identifier;
 }
 
-export async function scheduleTomorrowMorningSummary(summary: DailySummary, now: Date = new Date()): Promise<string | null> {
+export async function scheduleTomorrowMorningSummary(summary: DailySummary, now: Date = new Date(), requestedLanguage?: Language): Promise<string | null> {
   const allowed = await requestNotificationPermission();
   if (!allowed) return null;
 
@@ -332,7 +333,7 @@ export async function scheduleTomorrowMorningSummary(summary: DailySummary, now:
 
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
-      title: ({ it: 'Domani mattina', en: 'Tomorrow morning', fr: 'Demain matin', es: 'Mañana por la mañana' } as const)[await getLanguage()] + ` · ${summary.title.replace(/^(Domani|Tomorrow|Demain|Mañana)(?:\s*·\s*|\s*)/, '')}`,
+      title: ({ it: 'Domani mattina', en: 'Tomorrow morning', fr: 'Demain matin', es: 'Mañana por la mañana' } as const)[requestedLanguage ?? await getLanguage()] + ` · ${summary.title.replace(/^(Domani|Tomorrow|Demain|Mañana)(?:\s*·\s*|\s*)/, '')}`,
       body: summary.body,
       sticky: Platform.OS === 'android',
       data: { source: 'tomorrow-morning', dateKey: summary.dateKey },
