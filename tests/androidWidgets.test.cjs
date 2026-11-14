@@ -523,7 +523,7 @@ test('List resets to the current day whenever its macrosection receives focus',(
 
 test('Calendar returns to today on focus unless opened with an explicit widget date',()=>{
   const source=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
-  assert.match(source,/useFocusEffect\(useCallback\(\(\)=>\{if\(!requestedDate\)setSelectedDateOverride\(dayKey\(new Date\(\)\)\)/);
+  assert.match(source,/useFocusEffect\(useCallback\(\(\)=>\{if\(hasCalendarFocused\.current\|\|!requestedDate\)setSelectedDateOverride\(dayKey\(new Date\(\)\)\)/);
   assert.match(source,/requestAnimationFrame\(\(\)=>scrollToSelectedWeek\(\)\)/);
   assert.match(source,/const selectedDateKey=selectedDateOverride\?\?requestedDate\?\?dayKey\(new Date\(\)\)/);
 });
