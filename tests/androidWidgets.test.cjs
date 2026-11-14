@@ -512,3 +512,24 @@ test('Focus feature is completely removed from app routing, store and public cop
   assert.doesNotMatch(roadmap,/Focus/i);
   assert.doesNotMatch(site,/Focus mode|Focus on the next step/i);
 });
+
+
+test('List resets to the current day whenever its macrosection receives focus',()=>{
+  const source=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
+  assert.match(source,/useFocusEffect\(useCallback\(\(\)=>\{didInitialScroll\.current=false;scrollToToday\(\);\}/);
+  assert.match(source,/pendingTodayScroll\.current=true/);
+  assert.match(source,/if\(filters\.period!=='all'\)setFilter\('period','all'\)/);
+});
+
+test('Calendar returns to today on focus unless opened with an explicit widget date',()=>{
+  const source=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
+  assert.match(source,/useFocusEffect\(useCallback\(\(\)=>\{if\(!requestedDate\)setSelectedDateOverride\(dayKey\(new Date\(\)\)\)/);
+  assert.match(source,/requestAnimationFrame\(\(\)=>scrollToSelectedWeek\(\)\)/);
+  assert.match(source,/const selectedDateKey=selectedDateOverride\?\?requestedDate\?\?dayKey\(new Date\(\)\)/);
+});
+
+test('Android Calendar widget highlights today with the same color as its action buttons',()=>{
+  const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
+  assert.match(source,/borderWidth: day\.isToday \? 2 : 1/);
+  assert.match(source,/borderColor: day\.isToday \? buttonBackgroundColor as any : BORDER/);
+});
