@@ -52,7 +52,7 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
         </FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="POSTPONE" clickActionData={{ id:item.id }}><TextWidget text={language==='it'?'+1g':language==='fr'?'+1j':'+1d'} style={{ fontSize:9, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:4, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="COMPLETE" clickActionData={{ id:item.id }}><TextWidget text="✓" style={{ fontSize:11, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
-      </FlexWidget>}) : <FlexWidget style={{ flex:1, height:50, justifyContent:'center', alignItems:'center' }}><TextWidget text={labels.noActivities} style={{ fontSize:12, color:textColor as any }}/></FlexWidget>}
+      </FlexWidget>})}
       <FlexWidget style={{ width:'match_parent',height:20 }}/>
     </ListWidget>
   </FlexWidget>;
