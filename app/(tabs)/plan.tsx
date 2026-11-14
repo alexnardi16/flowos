@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card, Chip, EmptyState, ScreenShell, SectionTitle, palette } from '@/components/ui';
@@ -100,7 +101,8 @@ export default function Plan(){
   },[items,calendarNames,now,filters.order]);
   const todayGroupKey=groupedItems.find(group=>group.key===todayKey)?.key??[...groupedItems].filter(group=>group.key>=todayKey).sort((a,b)=>a.key.localeCompare(b.key))[0]?.key??[...groupedItems].filter(group=>group.key<todayKey).sort((a,b)=>b.key.localeCompare(a.key))[0]?.key;
   const initialScrollKey=todayGroupKey;
-  function scrollToToday(){pendingTodayScroll.current=true;if(query.trim())setQuery('');if(filters.period!=='all')setFilter('period','all');const offset=todayGroupKey?groupOffsets.current.get(todayGroupKey):undefined;if(offset!==undefined){pendingTodayScroll.current=false;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:true}));}}
+  const scrollToToday=useCallback(()=>{pendingTodayScroll.current=true;if(query.trim())setQuery('');if(filters.period!=='all')setFilter('period','all');const offset=todayGroupKey?groupOffsets.current.get(todayGroupKey):undefined;if(offset!==undefined){pendingTodayScroll.current=false;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));}},[todayGroupKey,query,filters.period]);
+  useFocusEffect(useCallback(()=>{didInitialScroll.current=false;scrollToToday();},[scrollToToday]));
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   function formatStartEnd(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);const options={weekday:'short' as const,day:'2-digit' as const,month:'2-digit' as const,year:'numeric' as const};if(item.allDay){const date=new Date(value);return `${date.toLocaleDateString(localeForLanguage(language),{...options,timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),options);const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} · ${time(start)} - ${date(end)===date(start)?time(end):`${date(end)} · ${time(end)}`}`;}
 
