@@ -32,7 +32,7 @@ export async function refreshReminders(commitments?: import('@/types').Commitmen
   return null;
 }
 
-export async function refreshNotificationsForLanguage(commitments: import('@/types').Commitment[]) {
+export async function refreshNotificationsForLanguage(commitments: import('@/types').Commitment[], language?: import('./i18n').Language) {
   const service = await nativeBackgroundService();
-  if (service) await service.refreshNotificationsForLanguage(commitments);
+  if (service) await service.refreshNotificationsForLanguage(commitments, language);
 }
