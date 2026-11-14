@@ -41,6 +41,7 @@ function extractWhen(text:string){
     if(explicit){
       const day=Number(explicit[1]),month=MONTHS[explicit[2]],year=explicit[3]?Number(explicit[3]):now.getFullYear();
       date=new Date(year,month,day);
+      if(date.getFullYear()!==year||date.getMonth()!==month||date.getDate()!==day)return undefined;
       if(!explicit[3]&&date<new Date(now.getFullYear(),now.getMonth(),now.getDate()))date.setFullYear(year+1);
     }
   }
