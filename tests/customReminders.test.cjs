@@ -150,6 +150,13 @@ test('Add and Manage show the activity start-time reminder enabled by default wi
   assert.match(reminderSource, /All'ora di inizio/);
 });
 
+test('start-time reminder labels are localized in every supported app language', () => {
+  assert.equal(formatReminderOffsetLabel(0, 'it'), "All'ora di inizio");
+  assert.equal(formatReminderOffsetLabel(0, 'en'), 'At start time');
+  assert.equal(formatReminderOffsetLabel(0, 'fr'), 'À l’heure de début');
+  assert.equal(formatReminderOffsetLabel(0, 'es'), 'A la hora de inicio');
+});
+
 test('start-time reminder notification body omits the relative-time prefix', () => {
   assert.equal(formatReminderNotificationBody(0), "All'ora di inizio");
   assert.equal(formatReminderNotificationBody(15), 'Tra 15 minuti');
