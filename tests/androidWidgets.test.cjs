@@ -539,5 +539,5 @@ test('Android Today widget renders no empty-state message when there are no acti
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.equal(source.includes('labels.noActivities'),false);
   assert.doesNotMatch(source,/Nessuna attività prevista per oggi|No activities planned for today|Aucune activité prévue pour aujourd'hui|No hay actividades previstas para hoy/i);
-  assert.equal(source.includes('items.length ? items.map'),true);
+  assert.equal(source.includes('items.map((item)=>{'),true);
 });
