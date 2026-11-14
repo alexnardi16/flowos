@@ -34,7 +34,6 @@ export default function Calendar(){
   const[selectedDateOverride,setSelectedDateOverride]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const params=useLocalSearchParams<{widgetAction?:string;date?:string;id?:string}>();
-  const requestedDate=typeof params.date==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(params.date)?params.date:null;
   const scrollRef=useRef<import('react-native').ScrollView|null>(null);
   const weekOffsets=useRef(new Map<number,number>());
 
