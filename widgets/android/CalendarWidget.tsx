@@ -127,7 +127,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                     clickAction="OPEN_URI"
                     clickActionData={{ uri: `flowos://calendar?date=${day.dateKey}` }}
                     accessibilityLabel={`Apri ${day.label}`}
-                    style={{ width: 0, flex: 1, height, marginHorizontal: 1, padding: 2, borderRadius: 7, borderWidth: 1, borderColor: BORDER, backgroundColor: day.isToday ? '#E8ECFF' : '#FFFFFF', flexDirection: 'column' }}
+                    style={{ width: 0, flex: 1, height, marginHorizontal: 1, padding: 2, borderRadius: 7, borderWidth: day.isToday ? 2 : 1, borderColor: day.isToday ? buttonBackgroundColor as any : BORDER, backgroundColor: day.isToday ? '#E8ECFF' : '#FFFFFF', flexDirection: 'column' }}
                   >
                     <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}>
                       <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: textColor as any }} />
