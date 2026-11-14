@@ -12,7 +12,7 @@ import { isSupabaseConfigured, supabase } from './supabase';
 import { logNotificationEvent } from './notificationLog';
 import { rolloverIncompleteTasks } from './taskRollover';
 import type { Commitment } from '../types';
-import { getLanguage } from './i18n';
+import { getLanguage, type Language } from './i18n';
 import { getDailySummaryTime, getLastRecoveryDateKey, hasRecoveredToday, reconcilePresentedDailySummary, isDailySummaryEnabledStored, markRecovered, scheduleDailySummaryNotification, scheduleTomorrowMorningSummary, sendImmediateSummaryNotification } from './notificationService';
 
 export const DAILY_SUMMARY_TASK = 'flowos-daily-summary-sync';
@@ -72,7 +72,7 @@ async function runDailySummaryRefreshInternal(now: Date): Promise<ReturnType<typ
   // A DAILY trigger fires at the next occurrence. If today's configured time
   // has already passed, its content must describe tomorrow, not today's data.
   await scheduleDailySummaryNotification(afterConfiguredTime ? tomorrowSummary : summary);
-  await scheduleTomorrowMorningSummary(tomorrowSummary, now);
+  await scheduleTomorrowMorningSummary(tomorrowSummary, now, await getLanguage());
   await logNotificationEvent('daily-summary-refresh-completed', {
     dateKey: summary.dateKey,
     tomorrowDateKey: tomorrowSummary.dateKey,
@@ -91,8 +91,8 @@ export async function runDailySummaryRefresh(now: Date = new Date()) {
 
 export async function refreshReminders(now: Date = new Date()) { if (!(await hasAuthenticatedSession())) return null; const { commitments } = await loadFreshData(now); return safeRunReminderEngine(commitments, now); }
 
-export async function refreshNotificationsForLanguage(commitments: Commitment[], now: Date = new Date()) {
-  const language = await getLanguage();
+export async function refreshNotificationsForLanguage(commitments: Commitment[], requestedLanguage?: Language, now: Date = new Date()) {
+  const language = requestedLanguage ?? await getLanguage();
   await safeRunReminderEngine(commitments, now);
   if (!(await isDailySummaryEnabledStored())) return;
   const tomorrow = new Date(now);
@@ -103,7 +103,7 @@ export async function refreshNotificationsForLanguage(commitments: Commitment[],
     : buildDailySummary(commitments, now, now, language);
   await reconcilePresentedDailySummary(summary);
   await scheduleDailySummaryNotification(summary);
-  await scheduleTomorrowMorningSummary(tomorrowSummary, now);
+  await scheduleTomorrowMorningSummary(tomorrowSummary, now, language);
 }
 
 let dailySummaryRecoveryInFlight: Promise<void> | null = null;
