@@ -49,6 +49,34 @@ test('Manage keeps Save in a fixed footer and warns before discarding edits', ()
   assert.match(source, /REMINDER_PRESETS\.map\(\(offset\).*reminders\.some/);
 });
 
+test('Dark widget appearance adapts source cards, day surfaces and borders without changing source identity', () => {
+  const appearance = read('lib/widgetAppearance.ts');
+  const sync = read('lib/widgetSync.ts');
+  const today = read('widgets/android/TodayWidget.tsx');
+  const calendar = read('widgets/android/CalendarWidget.tsx');
+  const data = read('lib/calendarWidgetData.ts');
+  assert.match(appearance, /appearance\.theme==='flowos-dark'/);
+  assert.match(appearance, /DARK_SOURCE_COLORS/);
+  assert.match(sync, /widgetTodaySurfaceColor/);
+  assert.match(today, /borderColor=borderColor/);
+  assert.match(today, /item\.kind\.toUpperCase\(\)/);
+  assert.match(calendar, /todaySurfaceColor/);
+  assert.match(calendar, /item\.kind\.toUpperCase\(\)/);
+  assert.match(data, /kind:item\.kind==='event'\?strings\.event:strings\.task/);
+});
+
+test('Location and primary widget actions use consistent non-emoji labels or vector icons', () => {
+  const today = read('app/(tabs)/today.tsx');
+  const androidToday = read('widgets/android/TodayWidget.tsx');
+  const androidCalendar = read('widgets/android/CalendarWidget.tsx');
+  assert.match(today, /Ionicons name="location-outline"/);
+  assert.doesNotMatch(today, /📍/);
+  assert.match(androidToday, /labels\.addShort/);
+  assert.match(androidToday, /labels\.completeShort/);
+  assert.match(androidCalendar, /labels\.addShort/);
+  assert.doesNotMatch(androidToday+androidCalendar, /text="✓"|text="\+"/);
+});
+
 test('Widget themes, densities, live preview, WCAG contrast and category reset are wired', () => {
   const appearance = read('lib/widgetAppearance.ts');
   const settings = read('app/(tabs)/me.tsx');

@@ -29,7 +29,7 @@ function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'com
   const compact=density==='compact',comfortable=density==='comfortable';
   const lines=titleLines(item.title,item.priority?36:42).length;
   const base=compact?39:comfortable?52:44;
-  return Math.max(base,(compact?6:comfortable?12:8)+lines*(compact?15:comfortable?19:17)+(item.time?(compact?14:16):0)+(item.duration?(compact?12:14):0)+4);
+  return Math.max(base,(compact?6:comfortable?12:8)+lines*(compact?15:comfortable?19:17)+(item.time?(compact?14:16):0)+(item.duration?(compact?12:14):0)+9);
 }
 export function TodayWidget({ items, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', transparentUnusedSpace=true, density='balanced', borderColor=BORDER, surfaceColor='#F3F4F7' }: AndroidTodayWidgetProps) {
   const labels=widgetStrings(language);
