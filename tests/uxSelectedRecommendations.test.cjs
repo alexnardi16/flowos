@@ -39,6 +39,7 @@ test('Calendar widget gives day and activity distinct click targets', () => {
   assert.match(source, /flowos:\/\/calendar\?date=\$\{day\.dateKey\}/);
   assert.match(source, /flowos:\/\/calendar\?widgetAction=manage/);
   assert.doesNotMatch(source, /key=\{day\.dateKey\}[\s\S]{0,100}accessibilityLabel=\{`Giorno \$\{day\.label\}`\}[\s\S]{0,120}clickAction="OPEN_URI"/);
+  assert.doesNotMatch(source, /key=\{`\$\{week\.title\}-\$\{week\.days\[0\]\?\.dateKey\}`\} clickAction=/);
 });
 
 test('Manage keeps Save in a fixed footer and warns before discarding edits', () => {
