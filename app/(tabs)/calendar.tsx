@@ -87,11 +87,12 @@ export default function Calendar(){
   const scrollToSelectedWeek=useCallback(()=>{if(selectedWeekIndex<0)return;const offset=weekOffsets.current.get(selectedWeekIndex);if(offset===undefined)return;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));},[selectedWeekIndex]);
   useFocusEffect(useCallback(()=>{if(hasCalendarFocused.current||!requestedDate)setSelectedDateOverride(dayKey(new Date()));hasCalendarFocused.current=true;requestAnimationFrame(()=>scrollToSelectedWeek());},[requestedDate,scrollToSelectedWeek]));
   const goToToday=useCallback(()=>{setSelectedDateOverride(dayKey(new Date()));scrollToSelectedWeek();},[scrollToSelectedWeek]);
+  const moveSelectedDay=useCallback((delta:number)=>{const current=new Date(`${selectedDateKey}T12:00:00`);current.setDate(current.getDate()+delta);setSelectedDateOverride(dayKey(current));},[selectedDateKey]);
   useEffect(()=>{scrollToSelectedWeek();},[scrollToSelectedWeek,selectedDateKey]);
 
   const strings=widgetStrings(language);
 
-  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable></View>}>
+  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Giorno precedente')} onPress={()=>moveSelectedDay(-1)} style={styles.navButton}><Text style={styles.navButtonText}>‹</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Giorno successivo')} onPress={()=>moveSelectedDay(1)} style={styles.navButton}><Text style={styles.navButtonText}>›</Text></Pressable></View>}>
     {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week,index,strings.months);
       return <Card key={index} style={styles.weekCard} onLayout={(event)=>{weekOffsets.current.set(index,event.nativeEvent.layout.y);if(index===selectedWeekIndex)scrollToSelectedWeek();}}>
@@ -126,23 +127,24 @@ export default function Calendar(){
 
 const styles=StyleSheet.create({
   todayRow:{flexDirection:'row',justifyContent:'flex-end'},
-  todayButton:{backgroundColor:palette.primary,borderRadius:13,paddingHorizontal:16,paddingVertical:9},
+  todayButton:{backgroundColor:palette.primary,borderRadius:13,paddingHorizontal:16,paddingVertical:10,minHeight:44,justifyContent:'center'},
+  navButton:{width:44,height:44,borderRadius:13,backgroundColor:palette.soft,alignItems:'center',justifyContent:'center'},navButtonText:{fontSize:26,lineHeight:30,fontWeight:'600',color:palette.primary},
   todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'900'},
   weekCard:{padding:5,gap:3},
   monthTitle:{fontSize:18,lineHeight:22,fontWeight:'900',color:palette.primary,textTransform:'capitalize',paddingHorizontal:2},
   grid:{flexDirection:'row',gap:2,width:'100%'},
   dayBox:{flex:1,minWidth:0,minHeight:175,padding:2,borderRadius:7,borderWidth:1,borderColor:'#E1E4EC',backgroundColor:'#FFF'},
-  todayBox:{backgroundColor:'#F0EEFF',borderColor:'#D6D0FF'},
-  selectedBox:{borderColor:palette.primary,borderWidth:2,backgroundColor:'#F7F5FF'},
+  todayBox:{backgroundColor:'#F1EEFF',borderColor:'#BDB4F2'},
+  selectedBox:{borderColor:palette.primary,borderWidth:2,backgroundColor:'#FFFFFF'},
   dayHeader:{flexDirection:'row',alignItems:'center',gap:2,paddingBottom:3,borderBottomWidth:1,borderBottomColor:'#EEF0F5'},
-  dayName:{fontSize:10,fontWeight:'900',color:palette.ink},
-  dayNumber:{fontSize:15,lineHeight:17,fontWeight:'900',color:palette.ink},
+  dayName:{fontSize:10,fontWeight:'700',color:palette.ink},
+  dayNumber:{fontSize:15,lineHeight:17,fontWeight:'700',color:palette.ink},
   todayText:{color:palette.primary},
   dayActivities:{gap:2,paddingTop:3},
   item:{borderRadius:5,padding:2,borderWidth:1,gap:0},
-  itemTime:{fontSize:4,lineHeight:7,fontWeight:'800',color:palette.muted},itemDuration:{fontSize:4,lineHeight:6,fontWeight:'700',color:palette.muted},
+  itemTime:{fontSize:5,lineHeight:8,fontWeight:'700',color:palette.muted},itemDuration:{fontSize:5,lineHeight:7,fontWeight:'600',color:palette.muted},
   overdueTag:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.warning},
-  itemTitleRow:{flexDirection:'row',alignItems:'flex-start',gap:2,minWidth:0},itemPriority:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.primary},itemTitle:{flex:1,minWidth:0,flexShrink:1,fontSize:5,lineHeight:7,fontWeight:'900',color:palette.ink},
+  itemTitleRow:{flexDirection:'row',alignItems:'flex-start',gap:2,minWidth:0},itemPriority:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.primary},itemTitle:{flex:1,minWidth:0,flexShrink:1,fontSize:6,lineHeight:8,fontWeight:'700',color:palette.ink},
   itemMeta:{fontSize:6,lineHeight:8,color:palette.muted},
   itemPressed:{opacity:.78}
 });

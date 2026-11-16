@@ -26,9 +26,12 @@ export function showConfirm(title: string, message: string, confirmLabel = t('Co
 }
 
 export const palette = {
-  bg:'#F6F7FB', card:'#FFFFFF', ink:'#172033', muted:'#687086', primary:'#6658D3',
-  soft:'#ECE9FF', success:'#15866B', warning:'#B66A14', danger:'#A12626', border:'#E2E4EA',
+  bg:'#F6F7FB', card:'#FFFFFF', ink:'#172033', muted:'#5F687B', primary:'#6658D3',
+  soft:'#ECE9FF', success:'#15866B', warning:'#A65E0B', danger:'#A12626', border:'#E2E4EA',
 };
+
+export const layoutTokens = { cardRadius:16, buttonRadius:12, sectionGap:18, cardPadding:14, inlineGap:6 } as const;
+export const typeScale = { screenTitle:26, sectionTitle:18, cardTitle:16, body:14, metadata:12, label:12 } as const;
 
 export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef, headerActions }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps; scrollRef?:RefObject<ScrollView|null>; headerActions?:ReactNode }>) {
   const insets = useSafeAreaInsets();
@@ -88,15 +91,15 @@ const styles=StyleSheet.create({
   screenBrandLeft:{flexDirection:'row',alignItems:'center',gap:9},
   screenLogo:{width:34,height:34,borderRadius:9},
   screenBrand:{fontSize:16,lineHeight:20,fontWeight:'800',letterSpacing:0.2,color:palette.primary,marginTop:2},
-  screenTitle:{fontSize:30,lineHeight:36,fontWeight:'900',color:palette.ink,marginTop:-2},
+  screenTitle:{fontSize:typeScale.screenTitle,lineHeight:32,fontWeight:'700',color:palette.ink,marginTop:-2},
   screenSubtitle:{fontSize:14,lineHeight:20,color:palette.muted,marginTop:-4},
-  card:{backgroundColor:palette.card,borderRadius:22,padding:18,borderWidth:1,borderColor:'#EEF0F5',shadowColor:'#000',shadowOpacity:.045,shadowRadius:14,shadowOffset:{width:0,height:5},elevation:2},
+  card:{backgroundColor:palette.card,borderRadius:layoutTokens.cardRadius,padding:layoutTokens.cardPadding,borderWidth:1,borderColor:'#EEF0F5',shadowColor:'#000',shadowOpacity:.045,shadowRadius:14,shadowOffset:{width:0,height:5},elevation:2},
   chip:{alignSelf:'flex-start',borderRadius:99,paddingHorizontal:10,paddingVertical:6},
   chip_primary:{backgroundColor:palette.soft},chip_success:{backgroundColor:'#E8F6F1'},chip_warning:{backgroundColor:'#FFF3E5'},chip_neutral:{backgroundColor:'#EEF0F4'},
   chipText:{fontSize:11,fontWeight:'800',letterSpacing:.35},chipText_primary:{color:palette.primary},chipText_success:{color:palette.success},chipText_warning:{color:palette.warning},chipText_neutral:{color:palette.muted},
-  button:{backgroundColor:palette.primary,borderRadius:15,paddingVertical:13,paddingHorizontal:17,alignItems:'center',justifyContent:'center',minWidth:96,minHeight:46},
+  button:{backgroundColor:palette.primary,borderRadius:layoutTokens.buttonRadius,paddingVertical:12,paddingHorizontal:17,alignItems:'center',justifyContent:'center',minWidth:96,minHeight:48},
   secondary:{backgroundColor:palette.soft},danger:{backgroundColor:palette.danger},disabled:{opacity:.5},pressed:{transform:[{scale:.985}]},
-  buttonText:{color:'#fff',fontWeight:'800',fontSize:15,textAlign:'center'},secondaryText:{color:palette.primary,textAlign:'center'},
-  sectionHeader:{gap:3,marginTop:8},sectionTitle:{fontSize:19,fontWeight:'900',color:palette.ink},sectionSubtitle:{fontSize:13,lineHeight:18,color:palette.muted},
+  buttonText:{color:'#fff',fontWeight:'700',fontSize:15,textAlign:'center'},secondaryText:{color:palette.primary,textAlign:'center'},
+  sectionHeader:{gap:3,marginTop:8},sectionTitle:{fontSize:typeScale.sectionTitle,fontWeight:'700',color:palette.ink},sectionSubtitle:{fontSize:13,lineHeight:18,color:palette.muted},
   emptyCard:{gap:12},emptyTitle:{fontSize:20,fontWeight:'900',color:palette.ink},emptyMessage:{fontSize:14,lineHeight:20,color:palette.muted},
 });
