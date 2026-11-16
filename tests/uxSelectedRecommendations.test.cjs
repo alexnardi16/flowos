@@ -331,6 +331,14 @@ test('Multi-day events render as continuous segments in both the app and Android
   assert.match(calendar, /segment==='middle'&&styles\.multiDayMiddle/);
 });
 
+test('Primary navigation uses a consistent outline icon family', () => {
+  const source = read('app/(tabs)/_layout.tsx');
+  assert.match(source, /name="sparkles-outline"/);
+  assert.match(source, /name="document-text-outline"/);
+  assert.match(source, /name="calendar-outline"/);
+  assert.match(source, /name="person-outline"/);
+});
+
 test('The Add tab is visually distinct from navigation destinations', () => {
   const source = read('app/(tabs)/_layout.tsx');
   assert.match(source, /addTabIcon/);
