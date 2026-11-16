@@ -162,6 +162,26 @@ test('Android widgets use localized text controls instead of emoji or symbol gly
   assert.doesNotMatch(today+calendar, /🎙|↻/);
 });
 
+test('Create and Manage show a localized recurrence summary including the weekly weekday and series end', () => {
+  const helper = read('lib/recurrenceSummary.ts');
+  const capture = read('app/(tabs)/capture.tsx');
+  const manage = read('components/ManageSheet.tsx');
+  assert.match(helper, /frequency==='weekly'/);
+  assert.match(helper, /weekday:'long'/);
+  assert.match(helper, /untilDate\.toLocaleDateString/);
+  assert.match(capture, /formatRecurrenceSummary\(repeat,date,repeatUntil,language\)/);
+  assert.match(manage, /formatRecurrenceSummary\(repeat,dateStr,repeatUntil,language\)/);
+});
+
+test('Create keeps the calculated end time visible when start date, start time, duration or all-day state changes', () => {
+  const source = read('app/(tabs)/capture.tsx');
+  assert.match(source, /setDurationInput[\s\S]*?setEndFromDuration/);
+  assert.match(source, /function toggleAllDay[\s\S]*?setEndFromDuration/);
+  assert.match(source, /function setStartDateValue[\s\S]*?setEndFromDuration/);
+  assert.match(source, /function setStartTimeValue[\s\S]*?setEndFromDuration/);
+  assert.match(source, /label=\{t\('Orario di fine'\)\}/);
+});
+
 test('Reminder presets in Create reflect which offsets are already selected', () => {
   const source = read('app/(tabs)/capture.tsx');
   assert.match(source, /reminders\.some\(reminder=>reminder\.minutesBefore===m\)/);
