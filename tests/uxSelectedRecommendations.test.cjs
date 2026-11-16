@@ -261,6 +261,15 @@ test('App light, dark and system appearance modes are persisted and applied thro
   assert.match(root, /StatusBar style="auto"/);
 });
 
+test('Settings search and appearance summary include the selected app text size', () => {
+  const source = read('app/(tabs)/me.tsx');
+  const translations = read('lib/i18n.ts');
+  assert.match(source, /dimensione caratteri font size testo/);
+  assert.match(source, /t\('Dimensione caratteri attiva'\)/);
+  assert.match(source, /appFontSize==='small'/);
+  assert.match(translations, /'Dimensione caratteri attiva':'Active text size'/);
+});
+
 test('App appearance includes a persisted small, standard and large text-size preference', () => {
   const appearance = read('lib/widgetAppearance.ts');
   const ui = read('components/ui.tsx');
