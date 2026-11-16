@@ -9,7 +9,7 @@ export function QuickAddMenu({date}:{date?:string}) {
   const [visible,setVisible]=useState(false);
   function open(kind?:'task'|'event',voice=false) {
     setVisible(false);
-    router.push({pathname:'/capture',params:{...(kind?{kind}:{}),...(date?{date}:{}),...(voice?{voice:'1'}:{})}});
+    router.push({pathname:'/capture',params:{...(kind?{kind}:{}),...(date?{date}:{}),...(voice?{voice:String(Date.now())}:{})}});
   }
   return <>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Creazione rapida')} onPress={()=>setVisible(true)} style={styles.trigger}>

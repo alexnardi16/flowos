@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { BuildInfo } from './BuildInfo';
 import { getWidgetAppearance, type WidgetDensity } from '@/lib/widgetAppearance';
+import { supabase } from '@/lib/supabase';
 import { t } from '@/lib/i18n';
 
 export function showAlert(title: string, message?: string) {
@@ -38,7 +39,7 @@ export const typeScale = { screenTitle:26, sectionTitle:18, cardTitle:16, body:1
 const DensityContext=createContext<{density:WidgetDensity;setDensity:(density:WidgetDensity)=>void}>({density:'balanced',setDensity:()=>undefined});
 export function DensityProvider({children}:PropsWithChildren){
   const [density,setDensity]=useState<WidgetDensity>('balanced');
-  useEffect(()=>{let active=true;void getWidgetAppearance().then(value=>{if(active)setDensity(value.density);}).catch(()=>undefined);return()=>{active=false;};},[]);
+  useEffect(()=>{let active=true;const load=()=>{void getWidgetAppearance().then(value=>{if(active)setDensity(value.density);}).catch(()=>undefined);};load();const {data:{subscription}}=supabase.auth.onAuthStateChange(load);return()=>{active=false;subscription.unsubscribe();};},[]);
   return <DensityContext.Provider value={{density,setDensity}}>{children}</DensityContext.Provider>;
 }
 export function useAppDensity(){return useContext(DensityContext);}
