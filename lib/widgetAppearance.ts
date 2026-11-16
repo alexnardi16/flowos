@@ -4,7 +4,9 @@ import { supabase } from './supabase';
 export type SourceAppearance = { color: string; opacity: number };
 export type WidgetTheme = 'flowos-light' | 'flowos-dark' | 'minimal-transparent' | 'high-contrast' | 'soft-pastel';
 export type WidgetDensity = 'comfortable' | 'balanced' | 'compact';
+export type AppTheme = 'system' | 'light' | 'dark';
 export type WidgetAppearance = {
+  appTheme: AppTheme;
   theme: WidgetTheme;
   density: WidgetDensity;
   todayTransparentUnusedSpace: boolean;
@@ -14,6 +16,7 @@ export type WidgetAppearance = {
 };
 
 export const DEFAULT_WIDGET_APPEARANCE: WidgetAppearance = {
+  appTheme: 'system',
   theme: 'flowos-light',
   density: 'balanced',
   todayTransparentUnusedSpace: true,
@@ -38,6 +41,7 @@ export async function getWidgetAppearance(): Promise<WidgetAppearance> {
     if (!raw) return DEFAULT_WIDGET_APPEARANCE;
     const parsed = JSON.parse(raw) as Partial<WidgetAppearance>;
     return {
+      appTheme: ['system','light','dark'].includes(String(parsed.appTheme)) ? parsed.appTheme as AppTheme : DEFAULT_WIDGET_APPEARANCE.appTheme,
       theme: ['flowos-light','flowos-dark','minimal-transparent','high-contrast','soft-pastel'].includes(String(parsed.theme)) ? parsed.theme as WidgetTheme : DEFAULT_WIDGET_APPEARANCE.theme,
       density: ['comfortable','balanced','compact'].includes(String(parsed.density)) ? parsed.density as WidgetDensity : DEFAULT_WIDGET_APPEARANCE.density,
       todayTransparentUnusedSpace: parsed.todayTransparentUnusedSpace !== false,

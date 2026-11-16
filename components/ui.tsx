@@ -1,9 +1,9 @@
 import { PropsWithChildren, RefObject, ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
+import { ActivityIndicator, Alert, Appearance, DynamicColorIOS, Image, Platform, PlatformColor, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BuildInfo } from './BuildInfo';
-import { getWidgetAppearance, type WidgetDensity } from '@/lib/widgetAppearance';
+import { getWidgetAppearance, type AppTheme, type WidgetDensity } from '@/lib/widgetAppearance';
 import { supabase } from '@/lib/supabase';
 import { t } from '@/lib/i18n';
 
@@ -28,19 +28,30 @@ export function showConfirm(title: string, message: string, confirmLabel = t('Co
   });
 }
 
+const adaptiveColor=(light:string,dark:string,androidResource:string)=>Platform.OS==='ios'?DynamicColorIOS({light,dark}):Platform.OS==='android'?PlatformColor(androidResource):light;
 export const palette = {
-  bg:'#F6F7FB', card:'#FFFFFF', ink:'#172033', muted:'#5F687B', primary:'#6658D3',
-  soft:'#ECE9FF', success:'#15866B', warning:'#A65E0B', danger:'#A12626', border:'#E2E4EA',
+  bg:adaptiveColor('#F6F7FB','#10121A','?android:attr/colorBackground'),
+  card:adaptiveColor('#FFFFFF','#1B1E29','?android:attr/colorBackgroundFloating'),
+  ink:adaptiveColor('#172033','#F2F3F8','?android:attr/textColorPrimary'),
+  muted:adaptiveColor('#5F687B','#AAB1C2','?android:attr/textColorSecondary'),
+  primary:'#6658D3',
+  soft:adaptiveColor('#ECE9FF','#2A2546','?android:attr/colorControlHighlight'),
+  success:adaptiveColor('#15866B','#55C6A2','?android:attr/colorAccent'),
+  warning:adaptiveColor('#A65E0B','#F0B45B','?android:attr/colorAccent'),
+  danger:adaptiveColor('#A12626','#FF7777','?android:attr/colorAccent'),
+  border:adaptiveColor('#E2E4EA','#383D4C','?android:attr/colorControlHighlight'),
 };
 
 export const layoutTokens = { cardRadius:16, buttonRadius:12, sectionGap:18, cardPadding:14, inlineGap:6 } as const;
 export const typeScale = { screenTitle:26, sectionTitle:18, cardTitle:16, body:14, metadata:12, label:12 } as const;
 
-const DensityContext=createContext<{density:WidgetDensity;setDensity:(density:WidgetDensity)=>void}>({density:'balanced',setDensity:()=>undefined});
+const DensityContext=createContext<{density:WidgetDensity;setDensity:(density:WidgetDensity)=>void;appTheme:AppTheme;setAppTheme:(theme:AppTheme)=>void}>({density:'balanced',setDensity:()=>undefined,appTheme:'system',setAppTheme:()=>undefined});
 export function DensityProvider({children}:PropsWithChildren){
   const [density,setDensity]=useState<WidgetDensity>('balanced');
-  useEffect(()=>{let active=true;const load=()=>{void getWidgetAppearance().then(value=>{if(active)setDensity(value.density);}).catch(()=>undefined);};load();const {data:{subscription}}=supabase.auth.onAuthStateChange(load);return()=>{active=false;subscription.unsubscribe();};},[]);
-  return <DensityContext.Provider value={{density,setDensity}}>{children}</DensityContext.Provider>;
+  const [appThemeState,setAppThemeState]=useState<AppTheme>('system');
+  const setAppTheme=(theme:AppTheme)=>{setAppThemeState(theme);Appearance.setColorScheme(theme==='system'?'unspecified':theme);};
+  useEffect(()=>{let active=true;const load=()=>{void getWidgetAppearance().then(value=>{if(active){setDensity(value.density);setAppTheme(value.appTheme);}}).catch(()=>undefined);};load();const {data:{subscription}}=supabase.auth.onAuthStateChange(load);return()=>{active=false;subscription.unsubscribe();};},[]);
+  return <DensityContext.Provider value={{density,setDensity,appTheme:appThemeState,setAppTheme}}>{children}</DensityContext.Provider>;
 }
 export function useAppDensity(){return useContext(DensityContext);}
 
