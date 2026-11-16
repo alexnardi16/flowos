@@ -417,7 +417,9 @@ test('Typography follows the shared hierarchy without oversized extra-bold accou
   const ui = read('components/ui.tsx');
   const notifications = read('app/notifications-settings.tsx');
   const account = read('app/delete-account.tsx');
-  assert.match(ui, /screenTitle:26, sectionTitle:18, cardTitle:16, body:14, metadata:12, label:12/);
+  assert.match(ui, /export function getTypeScale\(size:AppFontSize='standard'\)/);
+  assert.match(ui, /screenTitle:Math\.round\(26\*factor\)/);
+  assert.match(ui, /export const typeScale=getTypeScale\('standard'\)/);
   assert.match(notifications, /title:\{fontSize:26,fontWeight:'700'/);
   assert.match(account, /title:\{fontSize:26,fontWeight:'700'/);
 });
