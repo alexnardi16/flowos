@@ -105,6 +105,31 @@ test('Quick create is available from Today, List and Calendar with the relevant 
   assert.match(calendar, /QuickAddMenu date=\{selectedDateKey\}/);
 });
 
+test('Quick create menu supports task, event, voice and contextual date routing', () => {
+  const menu = read('components/QuickAddMenu.tsx');
+  const capture = read('app/(tabs)/capture.tsx');
+  assert.match(menu, /router\.push\(\{pathname:'\/capture',params/);
+  assert.match(menu, /open\('task'\)/);
+  assert.match(menu, /open\('event'\)/);
+  assert.match(menu, /open\(undefined,true\)/);
+  assert.match(capture, /params\.kind==='event'/);
+  assert.match(capture, /params\.date/);
+});
+
+test('Quick create keeps advanced fields collapsed and provides a progressive hint', () => {
+  const capture = read('app/(tabs)/capture.tsx');
+  assert.match(capture, /showAdvancedOptions/);
+  assert.match(capture, /Opzioni avanzate/);
+  assert.match(capture, /ProgressiveHint id="quick-create"/);
+});
+
+test('Progressive onboarding hints are persisted and dismissible', () => {
+  const source = read('components/ProgressiveHint.tsx');
+  assert.match(source, /flowos-onboarding-/);
+  assert.match(source, /AsyncStorage\.setItem/);
+  assert.match(source, /setVisible\(false\)/);
+});
+
 test('Task and event types use consistent vector icons across Today, List, Calendar and Create preview', () => {
   const ui = read('components/ui.tsx');
   const today = read('app/(tabs)/today.tsx');
