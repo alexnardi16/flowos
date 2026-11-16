@@ -46,6 +46,9 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
     const items = glance.items.map((item) => {const source=commitmentById.get(item.id);return { id:item.id, title:item.title, time:item.time, kind:item.kind === 'event' ? labels.event : labels.task, priority:item.priority, sourceColor:source?sourceAppearanceColor(activitySourceKey(source),item.sourceColor??'#F3F4F7',appearance):item.sourceColor };});
     const todayBackgroundColor=colorWithOpacity(appearance.today.backgroundColor,appearance.today.backgroundOpacity);
     const calendarBackgroundColor=colorWithOpacity(appearance.calendar.backgroundColor,appearance.calendar.backgroundOpacity);
+    const widgetBorderColor=appearance.theme==='flowos-dark'?'#454B61':'#C8CEDA';
+    const widgetSurfaceColor=appearance.theme==='flowos-dark'?'#242838':'#FFFFFF';
+    const widgetTodaySurfaceColor=appearance.theme==='flowos-dark'?'#302D4F':'#E8ECFF';
     if (Platform.OS === 'ios') {
       const { default: TodayWidget } = await import('../widgets/TodayWidget');
       TodayWidget.updateSnapshot(glance);
@@ -62,9 +65,9 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       const todayTextColor=colorWithOpacity(appearance.today.textColor,appearance.today.textOpacity);
       const todayButtonBackgroundColor=colorWithOpacity(appearance.today.buttonBackgroundColor,appearance.today.buttonBackgroundOpacity);
       const todayButtonTextColor=colorWithOpacity(appearance.today.buttonTextColor,appearance.today.buttonTextOpacity);
-      const todaySignature=JSON.stringify({dateKey:glance.dateKey,items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace,density:appearance.density});
+      const todaySignature=JSON.stringify({dateKey:glance.dateKey,items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace,density:appearance.density,borderColor:widgetBorderColor,surfaceColor:widgetSurfaceColor});
       if(todaySignature!==lastTodayWidgetSignature){
-        await requestWidgetUpdate({widgetName:'TodayAndroidWidget',renderWidget:()=>React.createElement(TodayWidget,{items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace,density:appearance.density})});
+        await requestWidgetUpdate({widgetName:'TodayAndroidWidget',renderWidget:()=>React.createElement(TodayWidget,{items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace,density:appearance.density,borderColor:widgetBorderColor,surfaceColor:widgetSurfaceColor})});
         lastTodayWidgetSignature=todaySignature;
       }else{
         recordDiagnostic('today-widget-render-skipped-unchanged',{dateKey:glance.dateKey,count:items.length});
@@ -113,13 +116,13 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
         backgroundColor:calendarBackgroundColor,
         textColor:calendarTextColor,
         buttonBackgroundColor:calendarButtonBackgroundColor,
-        buttonTextColor:calendarButtonTextColor,density:appearance.density
+        buttonTextColor:calendarButtonTextColor,density:appearance.density,borderColor:widgetBorderColor,surfaceColor:widgetSurfaceColor,todaySurfaceColor:widgetTodaySurfaceColor
       });
       if(calendarRenderSignature!==lastCalendarRenderedSignature){
         await requestWidgetUpdate({widgetName:'CalendarAndroidWidget',renderWidget:()=>React.createElement(CalendarWidget,{
           weeks:page.weeks,hasOlderWeeks:page.hasOlderWeeks,hasNewerWeeks:page.hasNewerWeeks,language,
           backgroundColor:calendarBackgroundColor,textColor:calendarTextColor,
-          buttonBackgroundColor:calendarButtonBackgroundColor,buttonTextColor:calendarButtonTextColor,density:appearance.density
+          buttonBackgroundColor:calendarButtonBackgroundColor,buttonTextColor:calendarButtonTextColor,density:appearance.density,borderColor:widgetBorderColor,surfaceColor:widgetSurfaceColor,todaySurfaceColor:widgetTodaySurfaceColor
         })});
         lastCalendarRenderedSignature=calendarRenderSignature;
       }else{

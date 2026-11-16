@@ -74,6 +74,7 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
       const items=(byDate.get(key)??[]).map(item=>({
         id:item.id,
         title:item.title,
+        kind:item.kind==='event'?strings.event:strings.task,
         time:formatItemTime(item,language),
         duration:item.kind==='task'&&!item.allDay?`${({it:'Durata',en:'Duration',fr:'Durée',es:'Duración'} as const)[language]}: ${formatDurationLabel(item)}`:undefined,
         sourceColor:activitySourceColor(item,sourceColors),

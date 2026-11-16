@@ -2,14 +2,14 @@ import React from 'react';
 import { widgetStrings, type Language } from '../../lib/i18n';
 import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
-export type AndroidCalendarItem = { id: string; title: string; time: string; duration?: string; sourceColor: any; priority?: number; multiDaySegment?: 'start'|'middle'|'end' };
+export type AndroidCalendarItem = { id: string; title: string; kind:string; time: string; duration?: string; sourceColor: any; priority?: number; multiDaySegment?: 'start'|'middle'|'end' };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
-export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string; density?: 'comfortable'|'balanced'|'compact' };
+export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string; density?: 'comfortable'|'balanced'|'compact'; borderColor?:string; surfaceColor?:string; todaySurfaceColor?:string };
 
 const BG = '#F1F4FF';
 const INK = '#172033';
-const PRIMARY = '#4254C5';
+const PRIMARY = '#6658D3';
 const BORDER = '#C8CEDA';
 
 function capitalizeMonthTitle(value: string) {
@@ -69,7 +69,7 @@ function itemHeight(item: AndroidCalendarItem,density:'comfortable'|'balanced'|'
   const durationHeight=item.duration?(compact?6:comfortable?9:ITEM_DURATION_HEIGHT):0;
   const titleLine=compact?7:comfortable?12:ITEM_TITLE_LINE_HEIGHT;
   const vertical=compact?1:comfortable?3:ITEM_VERTICAL_PADDING;
-  return vertical*2+timeHeight+durationHeight+lines*titleLine;
+  return vertical*2+timeHeight+durationHeight+lines*titleLine+(item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:6);
 }
 
 function dayHeight(day: AndroidCalendarDay,density:'comfortable'|'balanced'|'compact'='balanced') {
@@ -82,7 +82,7 @@ function weekHeight(week: AndroidCalendarWeek,density:'comfortable'|'balanced'|'
   return Math.max(density==='compact'?76:density==='comfortable'?112:92,...week.days.map(day=>dayHeight(day,density)));
 }
 
-export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, isLoading=false, loadingProgress=0, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', density='balanced' }: AndroidCalendarWidgetProps) {
+export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, isLoading=false, loadingProgress=0, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', density='balanced', borderColor=BORDER, surfaceColor='#FFFFFF', todaySurfaceColor='#E8ECFF' }: AndroidCalendarWidgetProps) {
   const labels=widgetStrings(language);
   return (
     <FlexWidget
@@ -105,7 +105,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
             <TextWidget text={labels.voice} style={{ fontSize: 8, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
           <FlexWidget style={{ height: 26, paddingHorizontal: 9, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}>
-            <TextWidget text="+" style={{ fontSize: 10, fontWeight: 'bold', color: buttonTextColor as any }} />
+            <TextWidget text={labels.addShort} style={{ fontSize: 8, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
         </FlexWidget>
       </FlexWidget>
@@ -128,7 +128,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                   <FlexWidget
                     key={day.dateKey}
                     accessibilityLabel={`Giorno ${day.label}`}
-                    style={{ width: 0, flex: 1, height, marginHorizontal: 1, padding: 2, borderRadius: 7, borderWidth: day.isToday ? 2 : 1, borderColor: day.isToday ? buttonBackgroundColor as any : BORDER, backgroundColor: day.isToday ? '#E8ECFF' : '#FFFFFF', flexDirection: 'column' }}
+                    style={{ width: 0, flex: 1, height, marginHorizontal: 1, padding: 2, borderRadius: 7, borderWidth: day.isToday ? 2 : 1, borderColor: day.isToday ? buttonBackgroundColor as any : borderColor as any, backgroundColor: day.isToday ? todaySurfaceColor as any : surfaceColor as any, flexDirection: 'column' }}
                   >
                     <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?date=${day.dateKey}` }} accessibilityLabel={`Apri ${day.label}`}>
                       <TextWidget text={day.label} style={{ fontSize: 8, fontWeight: 'bold', color: textColor as any }} />
@@ -137,7 +137,8 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                       const lines = itemTitleLines(item);
                       const showDetails=item.multiDaySegment!=='middle'&&item.multiDaySegment!=='end';
                       return (
-                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item,density), marginTop: 3, padding: 2, borderTopLeftRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:5, borderBottomLeftRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:5, borderTopRightRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?0:5, borderBottomRightRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?0:5, marginLeft:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?-2:0, marginRight:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?-2:0, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
+                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item,density), marginTop: 3, padding: 2, borderTopLeftRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:5, borderBottomLeftRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:5, borderTopRightRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?0:5, borderBottomRightRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?0:5, marginLeft:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?-2:0, marginRight:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?-2:0, borderWidth: 1, borderColor: borderColor as any, backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
+                          {showDetails&&item.kind ? <TextWidget text={item.kind.toUpperCase()} style={{fontSize:4,lineHeight:6,fontWeight:'bold',color:textColor as any}}/> : null}
                           {showDetails&&item.time ? <TextWidget text={item.time} style={{ fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?7:density==='comfortable'?11:ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor as any }} /> : null}
                           {showDetails&&item.duration ? <TextWidget text={item.duration} style={{ fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?6:density==='comfortable'?9:ITEM_DURATION_HEIGHT, color: textColor as any }} /> : null}
                           {showDetails?<FlexWidget style={{ flex:1, flexDirection:'row', alignItems:'flex-start' }}>

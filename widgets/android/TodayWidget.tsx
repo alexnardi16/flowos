@@ -3,8 +3,8 @@ import { widgetStrings, type Language } from '../../lib/i18n';
 import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
 export type AndroidWidgetItem = { id: string; title: string; time: string; duration?: string; kind: string; priority?: number; sourceColor?: string };
-export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string; transparentUnusedSpace?: boolean; density?: 'comfortable'|'balanced'|'compact' };
-const BG = '#F1F4FF'; const INK = '#172033'; const PRIMARY = '#4254C5'; const BORDER = '#C8CEDA';
+export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string; transparentUnusedSpace?: boolean; density?: 'comfortable'|'balanced'|'compact'; borderColor?:string; surfaceColor?:string };
+const BG = '#F1F4FF'; const INK = '#172033'; const PRIMARY = '#6658D3'; const BORDER = '#C8CEDA';
 const uri=(action:string,id:string)=>`flowos://today?widgetAction=${action}&id=${encodeURIComponent(id)}`;
 function titleLines(text:string,maxChars=32){
   const clean=text.trim();
@@ -31,20 +31,21 @@ function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'com
   const base=compact?39:comfortable?52:44;
   return Math.max(base,(compact?6:comfortable?12:8)+lines*(compact?15:comfortable?19:17)+(item.time?(compact?14:16):0)+(item.duration?(compact?12:14):0)+4);
 }
-export function TodayWidget({ items, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', transparentUnusedSpace=true, density='balanced' }: AndroidTodayWidgetProps) {
+export function TodayWidget({ items, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', transparentUnusedSpace=true, density='balanced', borderColor=BORDER, surfaceColor='#F3F4F7' }: AndroidTodayWidgetProps) {
   const labels=widgetStrings(language);
   return <FlexWidget style={{ width:'match_parent', height:'match_parent', padding:10, backgroundColor:transparentUnusedSpace?'rgba(0, 0, 0, 0)':backgroundColor as any, borderRadius:20, flexDirection:'column' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://today' }} accessibilityLabel={labels.today}>
     <FlexWidget style={{ width:'match_parent', height:34, flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingHorizontal:6, paddingBottom:5, backgroundColor:backgroundColor as any, borderRadius:12 }}>
       <FlexWidget style={{ flexDirection:'row', alignItems:'center', flex:1 }}><ImageWidget image={require("../../assets/flowos-app-icon-512-store.png")} imageWidth={26} imageHeight={26} style={{ width:26, height:26, marginRight:7 }} radius={7} resizeMode="contain" /><TextWidget text={labels.today} style={{ fontSize:19, fontWeight:'bold', color:textColor as any,marginRight:5 }}/><TextWidget text={`${items.length}`} style={{ fontSize:10,fontWeight:'bold',color:textColor as any }}/></FlexWidget>
       <FlexWidget style={{ flexDirection:'row', alignItems:'center' }}>
-        <FlexWidget style={{ width:36, height:26, marginRight:4, borderRadius:13, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}><TextWidget text={labels.sync} style={{ fontSize:8, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
+        <FlexWidget style={{ width:50, height:26, marginRight:4, borderRadius:13, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}><TextWidget text={labels.sync} style={{ fontSize:8, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
         <FlexWidget style={{ width:30, height:26, marginRight:4, borderRadius:13, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}><TextWidget text={labels.voice} style={{ fontSize:8, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
-        <FlexWidget style={{ height:26, paddingHorizontal:9, borderRadius:13, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}><TextWidget text="+" style={{ fontSize:10, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
+        <FlexWidget style={{ height:26, paddingHorizontal:8, borderRadius:13, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}><TextWidget text={labels.addShort} style={{ fontSize:8, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
       </FlexWidget>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:transparentUnusedSpace?'rgba(0, 0, 0, 0)':backgroundColor as any }}>
-      {items.map((item)=>{const lines=titleLines(item.title,item.priority?36:42);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item,density), marginVertical:0, paddingHorizontal:8, paddingVertical:density==='compact'?2:density==='comfortable'?6:4, borderRadius:11, borderWidth:1, borderColor:BORDER, backgroundColor:(item.sourceColor??'#F3F4F7') as any, flexDirection:'row', alignItems:'center' }}>
+      {items.map((item)=>{const lines=titleLines(item.title,item.priority?36:42);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item,density), marginVertical:0, paddingHorizontal:8, paddingVertical:density==='compact'?2:density==='comfortable'?6:4, borderRadius:11, borderWidth:1, borderColor:borderColor as any, backgroundColor:(item.sourceColor??surfaceColor) as any, flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
+          <TextWidget text={item.kind.toUpperCase()} style={{ width:34, fontSize:6, lineHeight:9, fontWeight:'bold', color:textColor as any }}/>
           {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
           <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }}>
             {lines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:density==='compact'?11:density==='comfortable'?13:12, lineHeight:density==='compact'?15:density==='comfortable'?19:17, fontWeight:'bold', color:textColor as any }}/>)}
@@ -53,7 +54,7 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
           </FlexWidget>
         </FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="POSTPONE" clickActionData={{ id:item.id }}><TextWidget text={language==='it'?'+1g':language==='fr'?'+1j':'+1d'} style={{ fontSize:9, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
-        <FlexWidget style={{ width:28, height:28, marginLeft:4, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="COMPLETE" clickActionData={{ id:item.id }}><TextWidget text="✓" style={{ fontSize:11, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
+        <FlexWidget style={{ width:42, height:28, marginLeft:4, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="COMPLETE" clickActionData={{ id:item.id }}><TextWidget text={labels.completeShort} style={{ fontSize:7, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
       </FlexWidget>})}
       <FlexWidget style={{ width:'match_parent',height:20 }}/>
     </ListWidget>

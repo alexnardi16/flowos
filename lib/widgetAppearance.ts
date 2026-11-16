@@ -20,7 +20,7 @@ export const DEFAULT_WIDGET_APPEARANCE: WidgetAppearance = {
   theme: 'flowos-light',
   density: 'balanced',
   todayTransparentUnusedSpace: true,
-  today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#4254C5', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
+  today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#6658D3', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
   calendar: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#4254C5', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
   sources: {},
 };
@@ -79,7 +79,7 @@ export function colorWithOpacity(color: string, opacity: number) {
 
 export function applyWidgetTheme(appearance: WidgetAppearance, theme: WidgetTheme): WidgetAppearance {
   const presets: Record<WidgetTheme, { backgroundColor:string; textColor:string; buttonBackgroundColor:string; buttonTextColor:string; backgroundOpacity:number }> = {
-    'flowos-light': { backgroundColor:'#F1F4FF', textColor:'#172033', buttonBackgroundColor:'#4254C5', buttonTextColor:'#FFFFFF', backgroundOpacity:100 },
+    'flowos-light': { backgroundColor:'#F1F4FF', textColor:'#172033', buttonBackgroundColor:'#6658D3', buttonTextColor:'#FFFFFF', backgroundOpacity:100 },
     'flowos-dark': { backgroundColor:'#171A26', textColor:'#F7F7FC', buttonBackgroundColor:'#7669E8', buttonTextColor:'#FFFFFF', backgroundOpacity:100 },
     'minimal-transparent': { backgroundColor:'#F6F7FB', textColor:'#172033', buttonBackgroundColor:'#6658D3', buttonTextColor:'#FFFFFF', backgroundOpacity:0 },
     'high-contrast': { backgroundColor:'#FFFFFF', textColor:'#000000', buttonBackgroundColor:'#000000', buttonTextColor:'#FFFFFF', backgroundOpacity:100 },
@@ -102,7 +102,11 @@ export function contrastRatio(foreground:string,background:string){
   const a=luminance(fg),b=luminance(bg);return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05);
 }
 
+const DARK_SOURCE_COLORS=['#2D3D5B','#29483E','#55412A','#46345F','#542F43','#254A4A','#45452E','#3F3A5A'];
+function stableSourceIndex(key:string){let hash=2166136261;for(let index=0;index<key.length;index+=1){hash^=key.charCodeAt(index);hash=Math.imul(hash,16777619);}return (hash>>>0)%DARK_SOURCE_COLORS.length;}
 export function sourceAppearanceColor(key: string, fallback: string, appearance: WidgetAppearance) {
   const custom = appearance.sources[key];
-  return custom ? colorWithOpacity(custom.color, custom.opacity) : fallback;
+  if(custom)return colorWithOpacity(custom.color,custom.opacity);
+  if(appearance.theme==='flowos-dark')return key==='flowos'?'#303543':DARK_SOURCE_COLORS[stableSourceIndex(key)];
+  return fallback;
 }
