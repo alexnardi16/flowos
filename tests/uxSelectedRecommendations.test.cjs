@@ -61,6 +61,14 @@ test('Widget themes, densities, live preview, WCAG contrast and category reset a
   assert.match(sync, /density:appearance\.density/);
 });
 
+test('Settings are searchable and grouped by category, with readable sync and diagnostics status', () => {
+  const source = read('app/(tabs)/me.tsx');
+  assert.match(source, /settingsQuery/);
+  assert.match(source, /settingsCategory/);
+  assert.match(source, /syncStatusDot/);
+  assert.match(source, /diagnosticErrors/);
+});
+
 test('Create focuses the title for immediate entry', () => {
   const source = read('app/(tabs)/capture.tsx');
   assert.match(source, /<Field autoFocus autoGrow/);
