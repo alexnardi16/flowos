@@ -126,7 +126,7 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
   assert.match(source,/weeks\.map\(week =>/);
   assert.doesNotMatch(source,/weeks\.slice\(0, 8\)/);
-  assert.match(source,/flowos:\/\/calendar\?week=/);
+  assert.doesNotMatch(source,/key=\{`\$\{week\.title\}-\$\{week\.days\[0\]\?\.dateKey\}`\} clickAction=/);
   assert.match(source,/day\.items\.reduce\(\(total,item\)=>total\+itemHeight\(item,density\),0\)/);
   assert.match(source,/\{day\.items\.map\(item =>/);
   assert.doesNotMatch(source,/MAX_VISIBLE_ITEMS_PER_DAY|day\.items\.slice\(0,/);
@@ -311,7 +311,7 @@ test('Widget customization uses selectable color swatches and includes button co
   assert.match(settings,/Opacità dello sfondo dei pulsanti \(%\)/);
   assert.match(settings,/Opacità del testo e dei simboli dei pulsanti \(%\)/);
   assert.match(settings,/Testo e simboli dei pulsanti/);
-  assert.match(settings,/"#F1F4FF","#172033","#4254C5","#FFFFFF","#F3F4F7",\.\.\.ACTIVITY_SOURCE_COLORS/);
+  assert.match(settings,/"#F1F4FF","#172033","#6658D3","#FFFFFF","#F3F4F7",\.\.\.ACTIVITY_SOURCE_COLORS/);
   assert.match(settings,/ACTIVITY_SOURCE_COLORS, defaultActivitySourceColor/);
   assert.match(settings,/normalizedSwatchColor\(value\)/);
   assert.match(settings,/accessibilityState=\{\{selected:selected===color\}\}/);
