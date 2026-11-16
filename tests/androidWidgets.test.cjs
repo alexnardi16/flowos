@@ -22,7 +22,7 @@ test('Android Today widget completion stays in the widget handler without openin
 
 test('Android Today widget task cards fill the available list width',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/width:'match_parent', height:itemHeight\(item\)/);
+  assert.match(source,/width:'match_parent', height:itemHeight\(item,density\)/);
 });
 
 test('Android Today widget data is rendered synchronously from local storage',()=>{
@@ -35,9 +35,9 @@ test('Android Calendar widget reserves title width for task priority when measur
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
   assert.match(source,/function itemTitleLines\(item: AndroidCalendarItem\)/);
   assert.ok(source.includes('titleLines(item.title, item.priority ? 10 : 12)'));
-  assert.match(source,/const lines = itemTitleLines\(item\)\.length/);
+  assert.match(source,/const lines=itemTitleLines\(item\)\.length/);
   assert.match(source,/const lines = itemTitleLines\(item\)/);
-  assert.match(source,/height: itemHeight\(item\)/);
+  assert.match(source,/height: itemHeight\(item,density\)/);
 });
 
 test('Android Calendar widget always sizes root and list to the real launcher bounds',()=>{
@@ -82,7 +82,7 @@ test('Today widget reduces the trailing blank space while keeping list rows cont
 test('Today widget list rows never use flex for their outer height',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.doesNotMatch(source,/style=\{\{ flex:1, height:itemHeight/);
-  assert.match(source,/height:itemHeight\(item\)/);
+  assert.match(source,/height:itemHeight\(item,density\)/);
 });
 
 test('Android widget controls open the real Add and Voice flows in FlowOS',()=>{
@@ -127,7 +127,7 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(source,/weeks\.map\(week =>/);
   assert.doesNotMatch(source,/weeks\.slice\(0, 8\)/);
   assert.match(source,/flowos:\/\/calendar\?week=/);
-  assert.match(source,/day\.items\.reduce\(\(total, item\) => total \+ itemHeight\(item\), 0\)/);
+  assert.match(source,/day\.items\.reduce\(\(total,item\)=>total\+itemHeight\(item,density\),0\)/);
   assert.match(source,/\{day\.items\.map\(item =>/);
   assert.doesNotMatch(source,/MAX_VISIBLE_ITEMS_PER_DAY|day\.items\.slice\(0,/);
   assert.match(nativePatch,/setScrollPosition/);
@@ -390,16 +390,16 @@ test('widget payload caching verifies storage and restores the current calendar 
 
 test('Android Today widget accounts for multiline titles, time and explicit duration while reducing vertical padding',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/function itemHeight\(item:AndroidWidgetItem\)/);
-  assert.match(source,/item\.duration\?14:0/);
-  assert.match(source,/paddingVertical:4/);
+  assert.match(source,/function itemHeight\(item:AndroidWidgetItem,density:/);
+  assert.match(source,/item\.duration\?\(compact\?12:14\):0/);
+  assert.match(source,/paddingVertical:density==='compact'\?2:density==='comfortable'\?6:4/);
   assert.match(source,/marginVertical:0/);
   assert.match(source,/text=\{item\.duration\}/);
 });
 test('Android Calendar widget accounts for the extra task-duration line',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
   assert.match(source,/duration\?: string/);
-  assert.match(source,/durationHeight = item\.duration \? ITEM_DURATION_HEIGHT : 0/);
+  assert.match(source,/durationHeight=item\.duration\?\(compact\?6:comfortable\?9:ITEM_DURATION_HEIGHT\):0/);
   assert.match(source,/text=\{item\.duration\}/);
 });
 
