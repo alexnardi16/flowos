@@ -33,9 +33,9 @@ const styles=StyleSheet.create({
   trigger:{minHeight:44,minWidth:44,paddingHorizontal:12,borderRadius:13,backgroundColor:palette.primary,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:5},
   triggerText:{fontSize:12,fontWeight:'700',color:'#FFFFFF'},
   overlay:{flex:1,backgroundColor:'rgba(12,16,30,0.32)',justifyContent:'flex-end',padding:14},
-  menu:{backgroundColor:'#FFFFFF',borderRadius:20,padding:16,gap:8,borderWidth:1,borderColor:palette.border},
+  menu:{backgroundColor:palette.card,borderRadius:20,padding:16,gap:8,borderWidth:1,borderColor:palette.border},
   title:{fontSize:17,fontWeight:'700',color:palette.ink,marginBottom:4},
-  option:{minHeight:48,flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:12,borderRadius:12,backgroundColor:'#F6F7FB'},
+  option:{minHeight:48,flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:12,borderRadius:12,backgroundColor:palette.soft},
   optionText:{fontSize:15,fontWeight:'600',color:palette.ink},
   cancel:{minHeight:44,alignItems:'center',justifyContent:'center',marginTop:3},
   cancelText:{fontSize:14,fontWeight:'700',color:palette.muted}

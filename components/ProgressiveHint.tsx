@@ -18,7 +18,7 @@ export function ProgressiveHint({id,children}:{id:string;children:string}) {
   </View>;
 }
 const styles=StyleSheet.create({
-  container:{padding:12,borderRadius:12,backgroundColor:'#F1EEFF',borderWidth:1,borderColor:'#D8D1FF',gap:8},
+  container:{padding:12,borderRadius:12,backgroundColor:palette.soft,borderWidth:1,borderColor:palette.border,gap:8},
   message:{fontSize:12,lineHeight:17,color:palette.ink},
   dismiss:{alignSelf:'flex-end',minHeight:36,justifyContent:'center',paddingHorizontal:8},
   dismissText:{fontSize:12,fontWeight:'700',color:palette.primary}

@@ -36,9 +36,9 @@ export const palette = {
   muted:adaptiveColor('#5F687B','#AAB1C2','?android:attr/textColorSecondary'),
   primary:'#6658D3',
   soft:adaptiveColor('#ECE9FF','#2A2546','?android:attr/colorControlHighlight'),
-  success:adaptiveColor('#15866B','#55C6A2','?android:attr/colorAccent'),
-  warning:adaptiveColor('#A65E0B','#F0B45B','?android:attr/colorAccent'),
-  danger:adaptiveColor('#A12626','#FF7777','?android:attr/colorAccent'),
+  success:Platform.OS==='ios'?DynamicColorIOS({light:'#15866B',dark:'#55C6A2'}):'#15866B',
+  warning:Platform.OS==='ios'?DynamicColorIOS({light:'#A65E0B',dark:'#F0B45B'}):'#A65E0B',
+  danger:Platform.OS==='ios'?DynamicColorIOS({light:'#A12626',dark:'#FF7777'}):'#A12626',
   border:adaptiveColor('#E2E4EA','#383D4C','?android:attr/colorControlHighlight'),
 };
 
@@ -85,7 +85,7 @@ export function Card({ children, style, onLayout }: PropsWithChildren<{style?: S
 
 export function ActivityKindTag({kind,completed=false}:{kind:'task'|'event';completed?:boolean}) {
   const color=completed?palette.success:palette.primary;
-  return <View accessibilityRole="text" accessibilityLabel={completed?`${kind==='event'?t('EVENTO'):t('TASK')} · ${t('COMPLETATA')}`:kind==='event'?t('EVENTO'):t('TASK')} style={[styles.kindTag,{backgroundColor:completed?'#E8F6F1':palette.soft}]}><Ionicons name={kind==='event'?'calendar-outline':'checkbox-outline'} size={13} color={color}/><Text style={[styles.kindTagText,{color}]}>{completed?t('COMPLETATA'):kind==='event'?t('EVENTO'):t('TASK')}</Text></View>;
+  return <View accessibilityRole="text" accessibilityLabel={completed?`${kind==='event'?t('EVENTO'):t('TASK')} · ${t('COMPLETATA')}`:kind==='event'?t('EVENTO'):t('TASK')} style={[styles.kindTag,{backgroundColor:palette.soft}]}><Ionicons name={kind==='event'?'calendar-outline':'checkbox-outline'} size={13} color={color}/><Text style={[styles.kindTagText,{color}]}>{completed?t('COMPLETATA'):kind==='event'?t('EVENTO'):t('TASK')}</Text></View>;
 }
 
 export function Chip({ children, tone='primary' }: PropsWithChildren<{tone?:'primary'|'success'|'warning'|'neutral'}>) {
