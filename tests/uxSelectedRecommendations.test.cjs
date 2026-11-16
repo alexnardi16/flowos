@@ -49,6 +49,18 @@ test('Manage keeps Save in a fixed footer and warns before discarding edits', ()
   assert.match(source, /REMINDER_PRESETS\.map\(\(offset\).*reminders\.some/);
 });
 
+test('Widget themes, densities, live preview, WCAG contrast and category reset are wired', () => {
+  const appearance = read('lib/widgetAppearance.ts');
+  const settings = read('app/(tabs)/me.tsx');
+  const sync = read('lib/widgetSync.ts');
+  assert.match(appearance, /applyWidgetTheme/);
+  assert.match(appearance, /contrastRatio/);
+  assert.match(appearance, /resetWidgetAppearanceCategory/);
+  assert.match(settings, /Anteprima in tempo reale/);
+  assert.match(settings, /contrastRatio\(/);
+  assert.match(sync, /density:appearance\.density/);
+});
+
 test('Create focuses the title for immediate entry', () => {
   const source = read('app/(tabs)/capture.tsx');
   assert.match(source, /<Field autoFocus autoGrow/);

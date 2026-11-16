@@ -62,9 +62,9 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       const todayTextColor=colorWithOpacity(appearance.today.textColor,appearance.today.textOpacity);
       const todayButtonBackgroundColor=colorWithOpacity(appearance.today.buttonBackgroundColor,appearance.today.buttonBackgroundOpacity);
       const todayButtonTextColor=colorWithOpacity(appearance.today.buttonTextColor,appearance.today.buttonTextOpacity);
-      const todaySignature=JSON.stringify({dateKey:glance.dateKey,items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace});
+      const todaySignature=JSON.stringify({dateKey:glance.dateKey,items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace,density:appearance.density});
       if(todaySignature!==lastTodayWidgetSignature){
-        await requestWidgetUpdate({widgetName:'TodayAndroidWidget',renderWidget:()=>React.createElement(TodayWidget,{items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace})});
+        await requestWidgetUpdate({widgetName:'TodayAndroidWidget',renderWidget:()=>React.createElement(TodayWidget,{items,language,backgroundColor:todayBackgroundColor,textColor:todayTextColor,buttonBackgroundColor:todayButtonBackgroundColor,buttonTextColor:todayButtonTextColor,transparentUnusedSpace:appearance.todayTransparentUnusedSpace,density:appearance.density})});
         lastTodayWidgetSignature=todaySignature;
       }else{
         recordDiagnostic('today-widget-render-skipped-unchanged',{dateKey:glance.dateKey,count:items.length});
@@ -113,13 +113,13 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
         backgroundColor:calendarBackgroundColor,
         textColor:calendarTextColor,
         buttonBackgroundColor:calendarButtonBackgroundColor,
-        buttonTextColor:calendarButtonTextColor
+        buttonTextColor:calendarButtonTextColor,density:appearance.density
       });
       if(calendarRenderSignature!==lastCalendarRenderedSignature){
         await requestWidgetUpdate({widgetName:'CalendarAndroidWidget',renderWidget:()=>React.createElement(CalendarWidget,{
           weeks:page.weeks,hasOlderWeeks:page.hasOlderWeeks,hasNewerWeeks:page.hasNewerWeeks,language,
           backgroundColor:calendarBackgroundColor,textColor:calendarTextColor,
-          buttonBackgroundColor:calendarButtonBackgroundColor,buttonTextColor:calendarButtonTextColor
+          buttonBackgroundColor:calendarButtonBackgroundColor,buttonTextColor:calendarButtonTextColor,density:appearance.density
         })});
         lastCalendarRenderedSignature=calendarRenderSignature;
       }else{

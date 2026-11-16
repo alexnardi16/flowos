@@ -5,7 +5,7 @@ import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-an
 export type AndroidCalendarItem = { id: string; title: string; time: string; duration?: string; sourceColor: any; priority?: number };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
-export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string };
+export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string; density?: 'comfortable'|'balanced'|'compact' };
 
 const BG = '#F1F4FF';
 const INK = '#172033';
@@ -62,24 +62,27 @@ function itemTitleLines(item: AndroidCalendarItem) {
   return titleLines(item.title, item.priority ? 10 : 12);
 }
 
-function itemHeight(item: AndroidCalendarItem) {
-  const lines = itemTitleLines(item).length;
-  const timeHeight = item.time ? ITEM_TIME_HEIGHT : 0;
-  const durationHeight = item.duration ? ITEM_DURATION_HEIGHT : 0;
-  return ITEM_VERTICAL_PADDING * 2 + timeHeight + durationHeight + lines * ITEM_TITLE_LINE_HEIGHT;
+function itemHeight(item: AndroidCalendarItem,density:'comfortable'|'balanced'|'compact'='balanced') {
+  const compact=density==='compact',comfortable=density==='comfortable';
+  const lines=itemTitleLines(item).length;
+  const timeHeight=item.time?(compact?7:comfortable?11:ITEM_TIME_HEIGHT):0;
+  const durationHeight=item.duration?(compact?6:comfortable?9:ITEM_DURATION_HEIGHT):0;
+  const titleLine=compact?7:comfortable?12:ITEM_TITLE_LINE_HEIGHT;
+  const vertical=compact?1:comfortable?3:ITEM_VERTICAL_PADDING;
+  return vertical*2+timeHeight+durationHeight+lines*titleLine;
 }
 
-function dayHeight(day: AndroidCalendarDay) {
-  const itemsHeight = day.items.reduce((total, item) => total + itemHeight(item), 0);
-  const gaps = Math.max(0, day.items.length - 1) * ITEM_GAP;
-  return Math.max(92, DAY_HEADER_HEIGHT + itemsHeight + gaps + WEEK_BOTTOM_PADDING);
+function dayHeight(day: AndroidCalendarDay,density:'comfortable'|'balanced'|'compact'='balanced') {
+  const itemsHeight=day.items.reduce((total,item)=>total+itemHeight(item,density),0);
+  const gaps=Math.max(0,day.items.length-1)*(density==='compact'?2:density==='comfortable'?4:ITEM_GAP);
+  return Math.max(density==='compact'?76:density==='comfortable'?112:92,DAY_HEADER_HEIGHT+itemsHeight+gaps+WEEK_BOTTOM_PADDING);
 }
 
-function weekHeight(week: AndroidCalendarWeek) {
-  return Math.max(92, ...week.days.map(day => dayHeight(day)));
+function weekHeight(week: AndroidCalendarWeek,density:'comfortable'|'balanced'|'compact'='balanced') {
+  return Math.max(density==='compact'?76:density==='comfortable'?112:92,...week.days.map(day=>dayHeight(day,density)));
 }
 
-export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, isLoading=false, loadingProgress=0, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF' }: AndroidCalendarWidgetProps) {
+export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, isLoading=false, loadingProgress=0, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', density='balanced' }: AndroidCalendarWidgetProps) {
   const labels=widgetStrings(language);
   return (
     <FlexWidget
@@ -111,7 +114,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
         {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 16, flexDirection: 'row', alignItems: 'center', marginVertical: 2 }}><FlexWidget style={{ flex: 1, height: 5, backgroundColor: '#D9DFF8', borderRadius: 3, flexDirection: 'row' }}><FlexWidget style={{ flex: Math.max(1, loadingProgress), height: 5, backgroundColor: PRIMARY, borderRadius: 3 }} /><FlexWidget style={{ flex: Math.max(1, 100 - loadingProgress), height: 5 }} /></FlexWidget><TextWidget text={`${Math.round(loadingProgress)}%`} style={{ width: 32, marginLeft: 6, fontSize: 9, fontWeight: 'bold', color: PRIMARY }} /></FlexWidget> : null}
         {hasOlderWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:buttonBackgroundColor as any, borderRadius:8, marginVertical:2 }}><TextWidget text={`← ${labels.olderWeeks}`} style={{ fontSize:10, fontWeight:'bold', color:buttonTextColor as any }} /></FlexWidget> : null}
         {weeks.map(week => {
-          const height = weekHeight(week); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
+          const height = weekHeight(week,density); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
           return (
             <FlexWidget key={`${week.title}-${week.days[0]?.dateKey}`} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?week=${week.days[0]?.dateKey}` }} style={{ width: 'match_parent', height: weekContainerHeight, flexDirection: 'column', marginVertical: 2 }}>
               {week.title ? <TextWidget text={capitalizeMonthTitle(week.title)} style={{ fontSize: 10, fontWeight: 'bold', color: PRIMARY, marginBottom: 3 }} /> : null}
@@ -133,11 +136,11 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                     {day.items.map(item => {
                       const lines = itemTitleLines(item);
                       return (
-                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
-                          {item.time ? <TextWidget text={item.time} style={{ fontSize: 5, lineHeight: ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor as any }} /> : null}
-                          {item.duration ? <TextWidget text={item.duration} style={{ fontSize: 5, lineHeight: ITEM_DURATION_HEIGHT, color: textColor as any }} /> : null}
+                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item,density), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
+                          {item.time ? <TextWidget text={item.time} style={{ fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?7:density==='comfortable'?11:ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor as any }} /> : null}
+                          {item.duration ? <TextWidget text={item.duration} style={{ fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?6:density==='comfortable'?9:ITEM_DURATION_HEIGHT, color: textColor as any }} /> : null}
                           <FlexWidget style={{ flex:1, flexDirection:'row', alignItems:'flex-start' }}>
-                            {item.priority ? <TextWidget text={String(item.priority)} style={{ width:8, fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: PRIMARY }} /> : null}
+                            {item.priority ? <TextWidget text={String(item.priority)} style={{ width:8, fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?7:density==='comfortable'?12:ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: PRIMARY }} /> : null}
                             <FlexWidget style={{ flex:1, flexDirection:'column' }}>
                               {lines.map((line, index) => (
                                 <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: textColor as any }} />

@@ -2,7 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
 export type SourceAppearance = { color: string; opacity: number };
+export type WidgetTheme = 'flowos-light' | 'flowos-dark' | 'minimal-transparent' | 'high-contrast' | 'soft-pastel';
+export type WidgetDensity = 'comfortable' | 'balanced' | 'compact';
 export type WidgetAppearance = {
+  theme: WidgetTheme;
+  density: WidgetDensity;
   todayTransparentUnusedSpace: boolean;
   today: { backgroundColor: string; backgroundOpacity: number; textColor: string; textOpacity: number; buttonBackgroundColor: string; buttonBackgroundOpacity: number; buttonTextColor: string; buttonTextOpacity: number };
   calendar: { backgroundColor: string; backgroundOpacity: number; textColor: string; textOpacity: number; buttonBackgroundColor: string; buttonBackgroundOpacity: number; buttonTextColor: string; buttonTextOpacity: number };
@@ -10,6 +14,8 @@ export type WidgetAppearance = {
 };
 
 export const DEFAULT_WIDGET_APPEARANCE: WidgetAppearance = {
+  theme: 'flowos-light',
+  density: 'balanced',
   todayTransparentUnusedSpace: true,
   today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#4254C5', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
   calendar: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#4254C5', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
@@ -32,6 +38,8 @@ export async function getWidgetAppearance(): Promise<WidgetAppearance> {
     if (!raw) return DEFAULT_WIDGET_APPEARANCE;
     const parsed = JSON.parse(raw) as Partial<WidgetAppearance>;
     return {
+      theme: ['flowos-light','flowos-dark','minimal-transparent','high-contrast','soft-pastel'].includes(String(parsed.theme)) ? parsed.theme as WidgetTheme : DEFAULT_WIDGET_APPEARANCE.theme,
+      density: ['comfortable','balanced','compact'].includes(String(parsed.density)) ? parsed.density as WidgetDensity : DEFAULT_WIDGET_APPEARANCE.density,
       todayTransparentUnusedSpace: parsed.todayTransparentUnusedSpace !== false,
       today: { ...DEFAULT_WIDGET_APPEARANCE.today, ...(parsed.today ?? {}) },
       calendar: { ...DEFAULT_WIDGET_APPEARANCE.calendar, ...(parsed.calendar ?? {}) },
@@ -63,6 +71,30 @@ export function colorWithOpacity(color: string, opacity: number) {
   const green = parseInt(hex.slice(3, 5), 16);
   const blue = parseInt(hex.slice(5, 7), 16);
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+export function applyWidgetTheme(appearance: WidgetAppearance, theme: WidgetTheme): WidgetAppearance {
+  const presets: Record<WidgetTheme, { backgroundColor:string; textColor:string; buttonBackgroundColor:string; buttonTextColor:string; backgroundOpacity:number }> = {
+    'flowos-light': { backgroundColor:'#F1F4FF', textColor:'#172033', buttonBackgroundColor:'#4254C5', buttonTextColor:'#FFFFFF', backgroundOpacity:100 },
+    'flowos-dark': { backgroundColor:'#171A26', textColor:'#F7F7FC', buttonBackgroundColor:'#7669E8', buttonTextColor:'#FFFFFF', backgroundOpacity:100 },
+    'minimal-transparent': { backgroundColor:'#F6F7FB', textColor:'#172033', buttonBackgroundColor:'#6658D3', buttonTextColor:'#FFFFFF', backgroundOpacity:0 },
+    'high-contrast': { backgroundColor:'#FFFFFF', textColor:'#000000', buttonBackgroundColor:'#000000', buttonTextColor:'#FFFFFF', backgroundOpacity:100 },
+    'soft-pastel': { backgroundColor:'#FFF8F0', textColor:'#302B3A', buttonBackgroundColor:'#9278C8', buttonTextColor:'#FFFFFF', backgroundOpacity:100 },
+  };
+  const preset=presets[theme];
+  const apply=(section:WidgetAppearance['today'])=>({...section,...preset,textOpacity:100,buttonBackgroundOpacity:100,buttonTextOpacity:100});
+  return {...appearance,theme,todayTransparentUnusedSpace:theme==='minimal-transparent'?true:appearance.todayTransparentUnusedSpace,today:apply(appearance.today),calendar:apply(appearance.calendar)};
+}
+
+export function resetWidgetAppearanceCategory(appearance:WidgetAppearance,section:'today'|'calendar') {
+  return {...appearance,[section]:{...DEFAULT_WIDGET_APPEARANCE[section]}};
+}
+
+function linearChannel(value:number){const channel=value/255;return channel<=0.04045?channel/12.92:((channel+0.055)/1.055)**2.4;}
+export function contrastRatio(foreground:string,background:string){
+  const fg=normalizeHexColor(foreground,'#000000'),bg=normalizeHexColor(background,'#FFFFFF');
+  const luminance=(hex:string)=>0.2126*linearChannel(parseInt(hex.slice(1,3),16))+0.7152*linearChannel(parseInt(hex.slice(3,5),16))+0.0722*linearChannel(parseInt(hex.slice(5,7),16));
+  const a=luminance(fg),b=luminance(bg);return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05);
 }
 
 export function sourceAppearanceColor(key: string, fallback: string, appearance: WidgetAppearance) {
