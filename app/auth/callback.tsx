@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
     padding: 28,
     backgroundColor: palette.bg,
   },
-  title: { fontSize: 28, fontWeight: '800', color: palette.ink, textAlign: 'center' },
+  title: { fontSize: 26, fontWeight: '700', color: palette.ink, textAlign: 'center' },
   message: { marginTop: 16, fontSize: 16, lineHeight: 23, color: palette.muted, textAlign: 'center' },
   button: { marginTop: 24, borderRadius: 16, paddingVertical: 15, paddingHorizontal: 22, backgroundColor: palette.primary },
-  buttonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 16 },
+  buttonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
 });

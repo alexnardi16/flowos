@@ -35,4 +35,4 @@ export default function DeleteAccount() { useLanguage();
   </ScrollView></SafeAreaView>;
 }
 
-const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,gap:14},eyebrow:{fontSize:12,fontWeight:'900',letterSpacing:1.5,color:palette.primary},title:{fontSize:32,fontWeight:'900',color:palette.ink},heading:{fontSize:19,fontWeight:'900',color:palette.ink,marginBottom:8},body:{fontSize:14,lineHeight:21,color:palette.muted},spacer:{height:8}});
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},wrap:{padding:20,gap:14},eyebrow:{fontSize:12,fontWeight:'700',letterSpacing:1.5,color:palette.primary},title:{fontSize:26,fontWeight:'700',color:palette.ink},heading:{fontSize:18,fontWeight:'700',color:palette.ink,marginBottom:8},body:{fontSize:14,lineHeight:21,color:palette.muted},spacer:{height:8}});
