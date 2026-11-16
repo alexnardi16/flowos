@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Modal, ScrollView } from 'react-native';
+import { Modal, ScrollView, type GestureResponderEvent } from 'react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
 import { QuickAddMenu } from '@/components/QuickAddMenu';
@@ -46,6 +46,7 @@ export default function Calendar(){
   const params=useLocalSearchParams<{widgetAction?:string;date?:string;id?:string}>();
   const scrollRef=useRef<import('react-native').ScrollView|null>(null);
   const weekOffsets=useRef(new Map<number,number>());
+  const swipeStart=useRef<{x:number;y:number}|null>(null);
   const hasCalendarFocused=useRef(false);
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
@@ -98,11 +99,13 @@ export default function Calendar(){
   useFocusEffect(useCallback(()=>{if(!hasCalendarFocused.current){if(!requestedDate)setSelectedDateOverride(dayKey(new Date()));hasCalendarFocused.current=true;}requestAnimationFrame(()=>scrollToSelectedWeek());},[requestedDate,scrollToSelectedWeek]));
   const goToToday=useCallback(()=>{setSelectedDateOverride(dayKey(new Date()));scrollToSelectedWeek();},[scrollToSelectedWeek]);
   const moveSelectedDay=useCallback((delta:number)=>{const current=new Date(`${selectedDateKey}T12:00:00`);current.setDate(current.getDate()+delta);setSelectedDateOverride(dayKey(current));},[selectedDateKey]);
+  const handleCalendarTouchStart=useCallback((event:GestureResponderEvent)=>{swipeStart.current={x:event.nativeEvent.pageX,y:event.nativeEvent.pageY};},[]);
+  const handleCalendarTouchEnd=useCallback((event:GestureResponderEvent)=>{const start=swipeStart.current;swipeStart.current=null;if(!start)return;const deltaX=event.nativeEvent.pageX-start.x;const deltaY=event.nativeEvent.pageY-start.y;if(Math.abs(deltaX)>65&&Math.abs(deltaX)>Math.abs(deltaY)*1.3)moveSelectedDay(deltaX<0?7:-7);},[moveSelectedDay]);
   useEffect(()=>{scrollToSelectedWeek();},[scrollToSelectedWeek,selectedDateKey]);
 
   const strings=widgetStrings(language);
 
-  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana precedente')} onPress={()=>moveSelectedDay(-7)} style={styles.navButton}><Ionicons name="chevron-back" size={19} color={palette.primary}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Seleziona mese e anno')} onPress={()=>{setPickerMonth(new Date(`${selectedDateKey}T12:00:00`));setShowDatePicker(true);}} style={styles.monthButton}><Ionicons name="calendar-outline" size={14} color={palette.primary}/><Text style={styles.monthButtonText}>{new Date(`${selectedDateKey}T12:00:00`).toLocaleDateString(localeForLanguage(language),{month:'short',year:'numeric'})}</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana successiva')} onPress={()=>moveSelectedDay(7)} style={styles.navButton}><Ionicons name="chevron-forward" size={19} color={palette.primary}/></Pressable><QuickAddMenu date={selectedDateKey} compact/></View>}>
+  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} scrollProps={{onTouchStart:handleCalendarTouchStart,onTouchEnd:handleCalendarTouchEnd}} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana precedente')} onPress={()=>moveSelectedDay(-7)} style={styles.navButton}><Ionicons name="chevron-back" size={19} color={palette.primary}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Seleziona mese e anno')} onPress={()=>{setPickerMonth(new Date(`${selectedDateKey}T12:00:00`));setShowDatePicker(true);}} style={styles.monthButton}><Ionicons name="calendar-outline" size={14} color={palette.primary}/><Text style={styles.monthButtonText}>{new Date(`${selectedDateKey}T12:00:00`).toLocaleDateString(localeForLanguage(language),{month:'short',year:'numeric'})}</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana successiva')} onPress={()=>moveSelectedDay(7)} style={styles.navButton}><Ionicons name="chevron-forward" size={19} color={palette.primary}/></Pressable><QuickAddMenu date={selectedDateKey} compact/></View>}>
     <ProgressiveHint id="calendar-navigation">{t('Suggerimento Calendario: seleziona un giorno, usa le frecce per spostarti e crea un elemento già associato alla data selezionata.')}</ProgressiveHint>
     {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week,index,strings.months);
