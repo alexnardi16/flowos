@@ -144,11 +144,11 @@ export default function Plan(){
 
 const styles=StyleSheet.create({
   warning:{color:palette.warning},
-  filtersCard:{padding:10,gap:8},filterRow:{flexDirection:'row',alignItems:'center',gap:6,minHeight:34},filterLabel:{width:74,fontSize:11,fontWeight:'700',color:palette.muted},filterOptions:{alignItems:'center',gap:6,paddingRight:4},filterOption:{borderRadius:99,paddingHorizontal:10,paddingVertical:7,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},filterOptionSelected:{backgroundColor:palette.soft,borderColor:palette.primary},filterOptionText:{fontSize:11,fontWeight:'700',color:palette.muted},filterOptionTextSelected:{color:palette.primary},
+  filtersCard:{padding:10,gap:8},filterRow:{flexDirection:'row',alignItems:'center',gap:6,minHeight:34},filterLabel:{width:74,fontSize:11,fontWeight:'700',color:palette.muted},filterOptions:{alignItems:'center',gap:6,paddingRight:4},filterOption:{borderRadius:99,paddingHorizontal:10,paddingVertical:7,backgroundColor:palette.soft,borderWidth:1,borderColor:palette.border},filterOptionSelected:{backgroundColor:palette.soft,borderColor:palette.primary},filterOptionText:{fontSize:11,fontWeight:'700',color:palette.muted},filterOptionTextSelected:{color:palette.primary},
   searchRow:{flexDirection:'row',alignItems:'center',gap:6},
   clearSearch:{width:32,height:44,alignItems:'center',justifyContent:'center'},clearSearchText:{fontSize:24,lineHeight:28,color:palette.muted},
   filterToggle:{minHeight:44,paddingHorizontal:10,borderRadius:12,backgroundColor:palette.soft,alignItems:'center',justifyContent:'center'},filterToggleText:{fontSize:11,fontWeight:'700',color:palette.primary},
-  search:{flex:1,minWidth:0,backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:15,paddingHorizontal:15,paddingVertical:13,fontSize:15,color:palette.ink},
+  search:{flex:1,minWidth:0,backgroundColor:palette.card,borderWidth:1,borderColor:palette.border,borderRadius:15,paddingHorizontal:15,paddingVertical:13,fontSize:15,color:palette.ink},
   todayButton:{backgroundColor:palette.primary,borderRadius:13,paddingHorizontal:15,paddingVertical:13,justifyContent:'center',alignItems:'center'},
   todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'700'},
 dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:13,fontWeight:'700',color:palette.ink,textTransform:'capitalize'},todayGroupLabel:{color:palette.primary},

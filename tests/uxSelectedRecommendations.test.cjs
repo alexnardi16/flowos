@@ -167,6 +167,19 @@ test('Reminder presets in Create reflect which offsets are already selected', ()
   assert.match(source, /reminders\.some\(reminder=>reminder\.minutesBefore===m\)/);
 });
 
+test('App light, dark and system appearance modes are persisted and applied through adaptive colors', () => {
+  const appearance = read('lib/widgetAppearance.ts');
+  const ui = read('components/ui.tsx');
+  const settings = read('app/(tabs)/me.tsx');
+  const root = read('app/_layout.tsx');
+  assert.match(appearance, /appTheme: 'system'/);
+  assert.match(ui, /Appearance\.setColorScheme/);
+  assert.match(ui, /DynamicColorIOS/);
+  assert.match(ui, /PlatformColor/);
+  assert.match(settings, /widgetAppearance\.appTheme===option\.id/);
+  assert.match(root, /StatusBar style="auto"/);
+});
+
 test('Global density updates shared app components and is loaded at startup', () => {
   const ui = read('components/ui.tsx');
   const root = read('app/_layout.tsx');
