@@ -58,7 +58,9 @@ test('Dark widget appearance adapts source cards, day surfaces and borders witho
   assert.match(appearance, /appearance\.theme==='flowos-dark'/);
   assert.match(appearance, /DARK_SOURCE_COLORS/);
   assert.match(sync, /widgetTodaySurfaceColor/);
-  assert.match(today, /borderColor=borderColor/);
+  assert.match(today, /borderColor=BORDER/);
+  assert.match(today, /borderColor:borderColor as any/);
+  assert.match(calendar, /borderColor=BORDER/);
   assert.match(today, /item\.kind\.toUpperCase\(\)/);
   assert.match(calendar, /todaySurfaceColor/);
   assert.match(calendar, /item\.kind\.toUpperCase\(\)/);
