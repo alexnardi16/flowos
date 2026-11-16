@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
 import { ManageSheet } from '@/components/ManageSheet';
@@ -112,8 +113,8 @@ export default function Calendar(){
                   {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
                   {item.kind==='task'&&!item.allDay?<Text style={styles.itemDuration}>{t('Durata')}: {formatDurationLabel(item)}</Text>:null}
                   {isOverdueTask(item) ? <Text style={styles.overdueTag}>{t('Scaduta')}</Text> : null}
-                  <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Text style={styles.itemTitle}>{item.title}</Text></View>
-                  {item.location?<Text style={styles.itemMeta}>📍 {item.location}</Text>:null}
+                  <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Ionicons name={item.kind==='event'?'calendar-outline':'checkbox-outline'} size={8} color={palette.primary}/><Text style={styles.itemTitle}>{item.title}</Text></View>
+                  {item.location?<View style={styles.itemTitleRow}><Ionicons name="location-outline" size={8} color={palette.muted}/><Text style={styles.itemMeta}>{item.location}</Text></View>:null}
                 </Pressable>)}
               </View>
             </View>;

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Card, Chip, EmptyState, ScreenShell, SectionTitle, palette } from '@/components/ui';
+import { ActivityKindTag, Card, EmptyState, ScreenShell, SectionTitle, palette } from '@/components/ui';
 import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';
 import { ManageSheet } from '@/components/ManageSheet';
 import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
@@ -122,7 +122,7 @@ export default function Plan(){
         return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
           <Card style={[styles.itemCard,cardSourceStyle(item,sourceColors)]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
-              <Chip tone={item.status==='done'?'success':'primary'}>{item.kind==='event'?'EVENTO':item.status==='done'?'COMPLETATA':'TASK'}</Chip>
+              <ActivityKindTag kind={item.kind} completed={item.status==='done'}/>
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>

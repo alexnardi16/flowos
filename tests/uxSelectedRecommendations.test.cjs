@@ -74,6 +74,20 @@ test('Create focuses the title for immediate entry', () => {
   assert.match(source, /<Field autoFocus autoGrow/);
 });
 
+test('Task and event types use consistent vector icons across Today, List, Calendar and Create preview', () => {
+  const ui = read('components/ui.tsx');
+  const today = read('app/(tabs)/today.tsx');
+  const plan = read('app/(tabs)/plan.tsx');
+  const calendar = read('app/(tabs)/calendar.tsx');
+  const capture = read('app/(tabs)/capture.tsx');
+  assert.match(ui, /calendar-outline/);
+  assert.match(ui, /checkbox-outline/);
+  assert.match(today, /ActivityKindTag/);
+  assert.match(plan, /ActivityKindTag/);
+  assert.match(calendar, /Ionicons name=\{item\.kind/);
+  assert.match(capture, /ActivityKindTag/);
+});
+
 test('shared design tokens preserve minimum button touch target', () => {
   const source = read('components/ui.tsx');
   assert.match(source, /layoutTokens/);

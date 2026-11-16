@@ -1,6 +1,7 @@
 import { PropsWithChildren, RefObject, ReactNode } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { BuildInfo } from './BuildInfo';
 import { t } from '@/lib/i18n';
 
@@ -59,6 +60,11 @@ export function Card({ children, style, onLayout }: PropsWithChildren<{style?: S
   return <View style={[styles.card, style]} onLayout={onLayout}>{children}</View>;
 }
 
+export function ActivityKindTag({kind,completed=false}:{kind:'task'|'event';completed?:boolean}) {
+  const color=completed?palette.success:palette.primary;
+  return <View accessibilityRole="text" accessibilityLabel={completed?`${kind==='event'?t('EVENTO'):t('TASK')} · ${t('COMPLETATA')}`:kind==='event'?t('EVENTO'):t('TASK')} style={[styles.kindTag,{backgroundColor:completed?'#E8F6F1':palette.soft}]}><Ionicons name={kind==='event'?'calendar-outline':'checkbox-outline'} size={13} color={color}/><Text style={[styles.kindTagText,{color}]}>{completed?t('COMPLETATA'):kind==='event'?t('EVENTO'):t('TASK')}</Text></View>;
+}
+
 export function Chip({ children, tone='primary' }: PropsWithChildren<{tone?:'primary'|'success'|'warning'|'neutral'}>) {
   return <View style={[styles.chip, styles[`chip_${tone}`]]}><Text style={[styles.chipText, styles[`chipText_${tone}`]]}>{children}</Text></View>;
 }
@@ -94,6 +100,7 @@ const styles=StyleSheet.create({
   screenTitle:{fontSize:typeScale.screenTitle,lineHeight:32,fontWeight:'700',color:palette.ink,marginTop:-2},
   screenSubtitle:{fontSize:14,lineHeight:20,color:palette.muted,marginTop:-4},
   card:{backgroundColor:palette.card,borderRadius:layoutTokens.cardRadius,padding:layoutTokens.cardPadding,borderWidth:1,borderColor:'#EEF0F5',shadowColor:'#000',shadowOpacity:.045,shadowRadius:14,shadowOffset:{width:0,height:5},elevation:2},
+  kindTag:{alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:5,borderRadius:99,paddingHorizontal:9,paddingVertical:5},kindTagText:{fontSize:10,fontWeight:'700',letterSpacing:.2},
   chip:{alignSelf:'flex-start',borderRadius:99,paddingHorizontal:10,paddingVertical:6},
   chip_primary:{backgroundColor:palette.soft},chip_success:{backgroundColor:'#E8F6F1'},chip_warning:{backgroundColor:'#FFF3E5'},chip_neutral:{backgroundColor:'#EEF0F4'},
   chipText:{fontSize:11,fontWeight:'800',letterSpacing:.35},chipText_primary:{color:palette.primary},chipText_success:{color:palette.success},chipText_warning:{color:palette.warning},chipText_neutral:{color:palette.muted},
