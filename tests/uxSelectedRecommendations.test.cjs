@@ -364,6 +364,10 @@ test('Calendar provides week jumps and a native in-app month/date selector', () 
   assert.match(source, /<Modal visible=\{showDatePicker\}/);
   assert.match(source, /datePickerDaySelected/);
   assert.match(source, /setSelectedDateOverride\(key\)/);
+  assert.match(source, /onTouchStart:handleCalendarTouchStart/);
+  assert.match(source, /onTouchEnd:handleCalendarTouchEnd/);
+  assert.match(source, /Math\.abs\(deltaX\)>65/);
+  assert.match(source, /moveSelectedDay\(deltaX<0\?7:-7\)/);
 });
 
 test('Calendar month picker uses the same Monday-first week convention as the app', () => {
