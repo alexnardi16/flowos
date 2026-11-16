@@ -86,7 +86,7 @@ export default function Calendar(){
 
   const sortedByDay=useMemo(()=>{
     const result=new Map<string,Commitment[]>();
-    for(const [key,items] of byDay)result.set(key,sortCommitments(items,calendarNames));
+    for(const [key,items] of byDay){const ordered=sortCommitments(items,calendarNames);ordered.sort((a,b)=>Number(b.kind==='event'&&isMultiDayActivity(b))-Number(a.kind==='event'&&isMultiDayActivity(a)));result.set(key,ordered);}
     return result;
   },[byDay,calendarNames]);
 
