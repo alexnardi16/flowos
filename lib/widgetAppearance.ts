@@ -87,7 +87,8 @@ export function applyWidgetTheme(appearance: WidgetAppearance, theme: WidgetThem
 }
 
 export function resetWidgetAppearanceCategory(appearance:WidgetAppearance,section:'today'|'calendar') {
-  return {...appearance,[section]:{...DEFAULT_WIDGET_APPEARANCE[section]}};
+  const themedDefaults=applyWidgetTheme(DEFAULT_WIDGET_APPEARANCE,appearance.theme);
+  return {...appearance,[section]:{...themedDefaults[section]}};
 }
 
 function linearChannel(value:number){const channel=value/255;return channel<=0.04045?channel/12.92:((channel+0.055)/1.055)**2.4;}
