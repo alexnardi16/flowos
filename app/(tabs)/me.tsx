@@ -57,6 +57,7 @@ export default function Me(){
   const[timePickerOpen,setTimePickerOpen]=useState(false);
   const[timeSaving,setTimeSaving]=useState(false);
   const { language, setLanguage } = useLanguage();
+  const { setDensity } = useAppDensity();
   const [languageBusy,setLanguageBusy]=useState(false);
   const [widgetAppearance,setWidgetAppearance]=useState<WidgetAppearance>(DEFAULT_WIDGET_APPEARANCE);
   const [widgetAppearanceBusy,setWidgetAppearanceBusy]=useState(false);
