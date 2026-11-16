@@ -532,7 +532,8 @@ test('Calendar initializes on Today once and preserves the selected day on later
 test('Android Calendar widget highlights today with the same color as its action buttons',()=>{
   const source=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
   assert.match(source,/borderWidth: day\.isToday \? 2 : 1/);
-  assert.match(source,/borderColor: day\.isToday \? buttonBackgroundColor as any : BORDER/);
+  assert.match(source,/borderColor: day\.isToday \? buttonBackgroundColor as any : borderColor as any/);
+  assert.match(source,/backgroundColor: day\.isToday \? todaySurfaceColor as any : surfaceColor as any/);
 });
 
 
