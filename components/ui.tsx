@@ -48,6 +48,7 @@ export function getTypeScale(size:AppFontSize='standard'){
   const factor=size==='small'?0.92:size==='large'?1.12:1;
   return {screenTitle:Math.round(26*factor),sectionTitle:Math.round(18*factor),cardTitle:Math.round(16*factor),body:Math.round(14*factor),metadata:Math.round(12*factor),label:Math.round(12*factor)};
 }
+export const typeScale=getTypeScale('standard');
 
 const DensityContext=createContext<{density:WidgetDensity;setDensity:(density:WidgetDensity)=>void;appTheme:AppTheme;setAppTheme:(theme:AppTheme)=>void;appFontSize:AppFontSize;setAppFontSize:(size:AppFontSize)=>void}>({density:'balanced',setDensity:()=>undefined,appTheme:'system',setAppTheme:()=>undefined,appFontSize:'standard',setAppFontSize:()=>undefined});
 export function DensityProvider({children}:PropsWithChildren){
