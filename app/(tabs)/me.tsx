@@ -51,7 +51,6 @@ export default function Me(){
   const[notificationsEnabled,setNotificationsEnabled]=useState(true);
   const[notificationBusy,setNotificationBusy]=useState(false);
   const[notificationPermissionStatus,setNotificationPermissionStatus]=useState<'granted'|'denied'|'unknown'>('unknown');
-  const[notificationPermissionCanAskAgain,setNotificationPermissionCanAskAgain]=useState(true);
   const[lastRecovery,setLastRecovery]=useState<string|null>(null);
   const[notificationLogs,setNotificationLogs]=useState<NotificationLogEntry[]>([]);
   const[showNotificationLogs,setShowNotificationLogs]=useState(true);
@@ -101,7 +100,7 @@ export default function Me(){
   useEffect(()=>{const u=subscribeToSyncProgress(p=>{setProgress(p.percent);setStage(p.stage);});return u;},[]);
   useEffect(()=>{void getWidgetAppearance().then(setWidgetAppearance);},[]);
 
-  useEffect(()=>{if(!NOTIFICATIONS_SUPPORTED_HERE)return;void Notifications.getPermissionsAsync().then(result=>{setNotificationPermissionStatus(result.granted?'granted':'denied');setNotificationPermissionCanAskAgain(result.canAskAgain);}).catch(()=>setNotificationPermissionStatus('unknown'));},[]);
+  useEffect(()=>{if(!NOTIFICATIONS_SUPPORTED_HERE)return;void Notifications.getPermissionsAsync().then(result=>{setNotificationPermissionStatus(result.granted?'granted':'denied');}).catch(()=>setNotificationPermissionStatus('unknown'));},[]);
 
   useEffect(()=>{
     void isDailySummaryEnabledStored().then(setNotificationsEnabled);
@@ -116,7 +115,7 @@ export default function Me(){
     if(!NOTIFICATIONS_SUPPORTED_HERE){showAlert(t('Notifiche'),t('Notifiche non supportate su questa piattaforma.'));return;}
     try{
       const current=await Notifications.getPermissionsAsync();
-      if(!current.granted&&current.canAskAgain){const requested=await Notifications.requestPermissionsAsync();setNotificationPermissionStatus(requested.granted?'granted':'denied');setNotificationPermissionCanAskAgain(requested.canAskAgain);return;}
+      if(!current.granted&&current.canAskAgain){const requested=await Notifications.requestPermissionsAsync();setNotificationPermissionStatus(requested.granted?'granted':'denied');return;}
       await Linking.openSettings();
     }catch(error){showAlert(t('Notifiche'),error instanceof Error?error.message:'Impossibile aprire le impostazioni delle notifiche.');}
   }
@@ -295,7 +294,7 @@ export default function Me(){
   const connected=Boolean(google?.connection&&google.connection.last_sync_status!=='disconnected'&&!authMissing);
   const normalizedSettingsQuery=settingsQuery.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const showSettingsSection=(category:SettingsCategory,keywords:string)=> (settingsCategory==='all'||settingsCategory===category)&&(!normalizedSettingsQuery||`${category} ${keywords}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(normalizedSettingsQuery));
-  const hasSettingsMatch=[['appearance','lingua language aspetto'],['widgets','widget personalizzazione temi densità colori anteprima'],['google','google sincronizzazione calendari tasks'],['notifications','notifiche reminder riepilogo'],['diagnostics','diagnostica log errori avvisi'],['account','account privacy dati logout']].some(([category,keywords])=>showSettingsSection(category as SettingsCategory,keywords));
+  const hasSettingsMatch=[['appearance','lingua language aspetto'],['widgets','widget personalizzazione temi densità colori anteprima'],['google','google sincronizzazione calendari tasks'],['notifications','notifiche reminder riepilogo permessi android sistema activity reminders'],['diagnostics','diagnostica log errori avvisi'],['account','account privacy dati logout']].some(([category,keywords])=>showSettingsSection(category as SettingsCategory,keywords));
   const syncStatusColor=google?.connection?.last_sync_status==='ok'?'#15866B':google?.connection?.last_sync_status==='error'?'#A12626':google?.connection?.last_sync_status==='syncing'?'#2874C8':'#8A91A1';
   const diagnosticErrors=logs.filter(entry=>entry.level==='error').length;
   const diagnosticWarnings=logs.filter(entry=>entry.level==='warn').length;
