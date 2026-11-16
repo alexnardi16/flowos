@@ -91,6 +91,21 @@ test('Widget themes, densities, live preview, WCAG contrast and category reset a
   assert.match(sync, /density:appearance\.density/);
 });
 
+test('Notification settings are grouped into Android permissions, activity reminders, system notifications and automatic summaries', () => {
+  const source = read('app/(tabs)/me.tsx');
+  const translations = read('lib/i18n.ts');
+  assert.match(source, /Notifications\.getPermissionsAsync/);
+  assert.match(source, /Notifications\.requestPermissionsAsync/);
+  assert.match(source, /Linking\.openSettings/);
+  assert.match(source, /t\('Permessi Android'\)/);
+  assert.match(source, /t\('Reminder delle attività'\)/);
+  assert.match(source, /t\('Notifiche di sistema'\)/);
+  assert.match(source, /t\('Riepiloghi automatici'\)/);
+  assert.match(translations, /Object\.assign\(translations\.en/);
+  assert.match(translations, /Object\.assign\(translations\.fr/);
+  assert.match(translations, /Object\.assign\(translations\.es/);
+});
+
 test('Settings are searchable and grouped by category, with readable sync and diagnostics status', () => {
   const source = read('app/(tabs)/me.tsx');
   assert.match(source, /settingsQuery/);

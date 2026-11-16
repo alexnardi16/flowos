@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { Button, Card, ScreenShell, palette, showAlert, showConfirm, useAppDensity } from '@/components/ui';
@@ -49,6 +50,8 @@ export default function Me(){
   const[rangeEnd,setRangeEnd]=useState('');
   const[notificationsEnabled,setNotificationsEnabled]=useState(true);
   const[notificationBusy,setNotificationBusy]=useState(false);
+  const[notificationPermissionStatus,setNotificationPermissionStatus]=useState<'granted'|'denied'|'unknown'>('unknown');
+  const[notificationPermissionCanAskAgain,setNotificationPermissionCanAskAgain]=useState(true);
   const[lastRecovery,setLastRecovery]=useState<string|null>(null);
   const[notificationLogs,setNotificationLogs]=useState<NotificationLogEntry[]>([]);
   const[showNotificationLogs,setShowNotificationLogs]=useState(true);
@@ -98,6 +101,8 @@ export default function Me(){
   useEffect(()=>{const u=subscribeToSyncProgress(p=>{setProgress(p.percent);setStage(p.stage);});return u;},[]);
   useEffect(()=>{void getWidgetAppearance().then(setWidgetAppearance);},[]);
 
+  useEffect(()=>{if(!NOTIFICATIONS_SUPPORTED_HERE)return;void Notifications.getPermissionsAsync().then(result=>{setNotificationPermissionStatus(result.granted?'granted':'denied');setNotificationPermissionCanAskAgain(result.canAskAgain);}).catch(()=>setNotificationPermissionStatus('unknown'));},[]);
+
   useEffect(()=>{
     void isDailySummaryEnabledStored().then(setNotificationsEnabled);
     void getDailySummaryTime().then(({hour,minute})=>{setSummaryHour(hour);setSummaryMinute(minute);});
@@ -106,6 +111,15 @@ export default function Me(){
     void getNotificationLog().then(setNotificationLogs);
     return unsubscribe;
   },[]);
+
+  async function manageNotificationPermission(){
+    if(!NOTIFICATIONS_SUPPORTED_HERE){showAlert(t('Notifiche'),t('Notifiche non supportate su questa piattaforma.'));return;}
+    try{
+      const current=await Notifications.getPermissionsAsync();
+      if(!current.granted&&current.canAskAgain){const requested=await Notifications.requestPermissionsAsync();setNotificationPermissionStatus(requested.granted?'granted':'denied');setNotificationPermissionCanAskAgain(requested.canAskAgain);return;}
+      await Linking.openSettings();
+    }catch(error){showAlert(t('Notifiche'),error instanceof Error?error.message:'Impossibile aprire le impostazioni delle notifiche.');}
+  }
 
   function updateWidgetSection(section:'today'|'calendar',field:'backgroundColor'|'backgroundOpacity'|'textColor'|'textOpacity'|'buttonBackgroundColor'|'buttonBackgroundOpacity'|'buttonTextColor'|'buttonTextOpacity',value:string|number){
     setWidgetAppearance(current=>({...current,[section]:{...current[section],[field]:field.endsWith('Opacity')?Math.max(0,Math.min(100,Number(value)||0)):String(value)}}));
@@ -356,8 +370,23 @@ export default function Me(){
       <View style={styles.actions}><Button style={styles.actionButton} label={widgetAppearanceBusy?'Salvataggio…':t('Salva colori')} onPress={()=>{void saveAppearance();}} disabled={widgetAppearanceBusy}/><Button style={styles.actionButton} secondary label={t('Ripristina default')} onPress={()=>{void restoreAppearanceDefaults();}} disabled={widgetAppearanceBusy}/></View>
     </Card>
 
-    <Card style={{display:showSettingsSection('notifications','notifiche promemoria riepilogo giornaliero')?'flex':'none'}}>
-      <Text style={styles.label}>{t('Notifiche')}</Text>
+    <Card style={{display:showSettingsSection('notifications','permessi android autorizzazioni notification permission')?'flex':'none'}}>
+      <Text style={styles.label}>{t('Permessi Android')}</Text>
+      <Text style={styles.meta}>{notificationPermissionStatus==='granted'?t('Permessi notifiche concessi'):notificationPermissionStatus==='denied'?t('Permessi notifiche non concessi'):t('Stato permessi non disponibile')}</Text>
+      <Button secondary label={t('Abilita notifiche')} onPress={()=>{void manageNotificationPermission();}} disabled={!NOTIFICATIONS_SUPPORTED_HERE}/>
+    </Card>
+    <Card style={{display:showSettingsSection('notifications','reminder delle attività promemoria per attività preset personalizzato')?'flex':'none'}}>
+      <Text style={styles.label}>{t('Reminder delle attività')}</Text>
+      <Text style={styles.meta}>{t('I reminder si configurano per ogni attività in Aggiungi o Gestisci, usando i preset o un intervallo personalizzato.')}</Text>
+      <Button secondary label={t('Apri Aggiungi')} onPress={()=>router.push('/capture')}/>
+    </Card>
+    <Card style={{display:showSettingsSection('notifications','notifiche di sistema android impostazioni dispositivo')?'flex':'none'}}>
+      <Text style={styles.label}>{t('Notifiche di sistema')}</Text>
+      <Text style={styles.meta}>{t('Puoi gestire i canali e le preferenze delle notifiche nelle impostazioni del dispositivo.')}</Text>
+      <Button secondary label={t('Gestisci nelle impostazioni del dispositivo')} onPress={()=>{void Linking.openSettings().catch(error=>showAlert(t('Notifiche'),error instanceof Error?error.message:'Impossibile aprire le impostazioni.'));}} disabled={Platform.OS==='web'}/>
+    </Card>
+    <Card style={{display:showSettingsSection('notifications','notifiche promemoria riepilogo giornaliero riepiloghi automatici')?'flex':'none'}}>
+      <Text style={styles.label}>{t('Riepiloghi automatici')}</Text>
       <View style={styles.notificationRow}><View style={{flex:1}}><Text style={styles.item}>{t('Ricevi il riepilogo giornaliero')}</Text><Text style={styles.meta}>{t('FlowOS sincronizza Google Calendar e Google Tasks prima di inviarlo. Se il telefono era spento o offline, il riepilogo viene recuperato alla riapertura dell’app.')}</Text></View><Switch value={notificationsEnabled} disabled={notificationBusy} onValueChange={value=>{void toggleNotifications(value);}}/></View>
       <View style={styles.timeBox}>
         <View style={styles.timeHeader}><View style={{flex:1}}><Text style={styles.timeTitle}>{t('Orario di invio')}</Text><Text style={styles.meta}>{t('Fuso orario del dispositivo:')} {timeZone}</Text></View><Text style={styles.timeValue}>{timeLabel(summaryHour,summaryMinute)}</Text></View>
