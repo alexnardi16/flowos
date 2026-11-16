@@ -17,6 +17,10 @@ on:
       - "providers/**"
       - "widgets/**"
 
+concurrency:
+  group: flowos-android-preview
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build installable Android APK (GitHub Actions + Gradle)
