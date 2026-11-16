@@ -144,6 +144,20 @@ test('Task and event types use consistent vector icons across Today, List, Calen
   assert.match(capture, /ActivityKindTag/);
 });
 
+test('Source tags remain compact while preserving their full accessible source label', () => {
+  const source = read('components/CommitmentSourceTag.tsx');
+  assert.match(source, /accessibilityLabel=\{label\}/);
+  assert.match(source, /Google Calendar/);
+  assert.match(source, /Google Tasks/);
+  assert.match(source, /Ionicons/);
+});
+
+test('Widget settings summarize the active theme and density', () => {
+  const source = read('app/(tabs)/me.tsx');
+  assert.match(source, /widgetAppearance\.theme/);
+  assert.match(source, /widgetAppearance\.density/);
+});
+
 test('shared design tokens preserve minimum button touch target', () => {
   const source = read('components/ui.tsx');
   assert.match(source, /layoutTokens/);
