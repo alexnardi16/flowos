@@ -295,9 +295,10 @@ export default function Me(){
   const normalizedSettingsQuery=settingsQuery.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const showSettingsSection=(category:SettingsCategory,keywords:string)=> (settingsCategory==='all'||settingsCategory===category)&&(!normalizedSettingsQuery||`${category} ${keywords}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(normalizedSettingsQuery));
   const hasSettingsMatch=[['appearance','lingua language aspetto'],['widgets','widget personalizzazione temi densità colori anteprima'],['google','google sincronizzazione calendari tasks'],['notifications','notifiche reminder riepilogo permessi android sistema activity reminders'],['diagnostics','diagnostica log errori avvisi'],['account','account privacy dati logout']].some(([category,keywords])=>showSettingsSection(category as SettingsCategory,keywords));
-  const syncStatusColor=google?.connection?.last_sync_status==='ok'?'#15866B':google?.connection?.last_sync_status==='error'?'#A12626':google?.connection?.last_sync_status==='syncing'?'#2874C8':'#8A91A1';
+  const syncStatusColor=google?.connection?.last_sync_status==='ok'?palette.success:google?.connection?.last_sync_status==='error'?palette.danger:google?.connection?.last_sync_status==='syncing'?'#2874C8':palette.muted;
   const diagnosticErrors=logs.filter(entry=>entry.level==='error').length;
   const diagnosticWarnings=logs.filter(entry=>entry.level==='warn').length;
+  const diagnosticInfo=logs.filter(entry=>entry.level==='info').length;
   const todayContrast=Math.min(contrastRatio(widgetAppearance.today.textColor,widgetAppearance.today.backgroundColor),contrastRatio(widgetAppearance.today.buttonTextColor,widgetAppearance.today.buttonBackgroundColor));
   const calendarContrast=Math.min(contrastRatio(widgetAppearance.calendar.textColor,widgetAppearance.calendar.backgroundColor),contrastRatio(widgetAppearance.calendar.buttonTextColor,widgetAppearance.calendar.buttonBackgroundColor));
   const todayContrastReliable=[widgetAppearance.today.backgroundOpacity,widgetAppearance.today.textOpacity,widgetAppearance.today.buttonBackgroundOpacity,widgetAppearance.today.buttonTextOpacity].every(value=>value===100);
@@ -406,9 +407,9 @@ export default function Me(){
 
     <Card style={{display:showSettingsSection('diagnostics','diagnostica log errori avvisi informazioni')?'flex':'none'}}>
       <Text style={styles.label}>{t('Diagnostica')}</Text>
-      <View style={styles.diagnosticHeader}><Text style={styles.meta}>FlowOS {Application.nativeApplicationVersion??'unknown'} · versionCode {Application.nativeBuildVersion??'unknown'} · {logs.length} {t('eventi')}</Text><Text style={styles.meta}>{diagnosticErrors} {t('errori')} · {diagnosticWarnings} {t('avvisi')}</Text></View>
+      <View style={styles.diagnosticHeader}><Text style={styles.meta}>FlowOS {Application.nativeApplicationVersion??'unknown'} · versionCode {Application.nativeBuildVersion??'unknown'} · {logs.length} {t('eventi')}</Text><Text style={styles.meta}>{diagnosticErrors} {t('errori')} · {diagnosticWarnings} {t('avvisi')} · {diagnosticInfo} {t('info')}</Text></View>
       <View style={styles.actions}><Button secondary style={styles.actionButton} label={showLogs?t('Nascondi log'):t('Mostra log')} onPress={()=>setShowLogs(v=>!v)}/><Button secondary style={styles.actionButton} label={t('Copia log')} onPress={()=>{void copyLogs();}}/><Button secondary style={styles.actionButton} label={t('Pulisci log')} onPress={()=>{clearDiagnostics();setLogs([]);}}/></View>
-      {showLogs?<ScrollView style={styles.logBox} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.logContent}>{logs.length?logs.map((entry,index)=><Text key={`${entry.at}-${index}`} selectable style={[styles.logText,entry.level==='error'&&styles.logError,entry.level==='warn'&&styles.logWarn]}>{logLine(entry)}</Text>):<Text style={styles.logText}>{t('Nessun evento registrato.')}</Text>}</ScrollView>:null}
+      {showLogs?<ScrollView style={styles.logBox} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.logContent}>{logs.length?logs.map((entry,index)=><Text key={`${entry.at}-${index}`} selectable style={[styles.logText,entry.level==='error'&&styles.logError,entry.level==='warn'&&styles.logWarn,entry.level==='info'&&styles.logInfo]}>{logLine(entry)}</Text>):<Text style={styles.logText}>{t('Nessun evento registrato.')}</Text>}</ScrollView>:null}
     </Card>
 
     <Card style={{display:showSettingsSection('account','dati account privacy elimina attività')?'flex':'none'}}><Text style={styles.label}>{t('Dati FlowOS')}</Text><Text style={styles.meta}>{t('Puoi cancellare le attività locali in qualsiasi momento, indipendentemente dal collegamento Google.')}</Text><Pressable onPress={()=>{void wipe();}} style={styles.dangerButton}><Text style={styles.danger}>{t('Elimina ogni attività su FlowOS senza alcun impatto su Google')}</Text></Pressable></Card>
@@ -456,7 +457,7 @@ const styles=StyleSheet.create({languageGrid:{flexDirection:'row',flexWrap:'wrap
   diagnosticHeader:{gap:2},
   logBox:{marginTop:10,height:420,maxHeight:420,borderRadius:12,backgroundColor:palette.card,borderWidth:1,borderColor:palette.border},
   logContent:{padding:10,paddingBottom:48,gap:3},
-  logWarn:{color:palette.warning},logError:{color:palette.danger},logText:{fontFamily:'monospace',fontSize:10,lineHeight:15,color:palette.ink},
+  logInfo:{color:palette.muted},logWarn:{color:palette.warning},logError:{color:palette.danger},logText:{fontFamily:'monospace',fontSize:10,lineHeight:15,color:palette.ink},
   dangerButton:{marginTop:10,padding:12,borderRadius:12,backgroundColor:palette.soft},
   danger:{fontSize:12,fontWeight:'700',color:palette.danger},
   delete:{marginTop:12,padding:8,alignItems:'center'}

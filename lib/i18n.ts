@@ -68,6 +68,11 @@ Object.assign(translations.es,{
   'Permessi Android':'Permisos de Android','Permessi notifiche concessi':'Permiso de notificaciones concedido','Permessi notifiche non concessi':'Permiso de notificaciones no concedido','Stato permessi non disponibile':'Estado de permisos no disponible','Abilita notifiche':'Activar notificaciones','Reminder delle attività':'Recordatorios de actividades','I reminder si configurano per ogni attività in Aggiungi o Gestisci, usando i preset o un intervallo personalizzato.':'Configura recordatorios para cada actividad en Añadir o Gestionar, con ajustes predefinidos o un intervalo personalizado.','Apri Aggiungi':'Abrir Añadir','Notifiche di sistema':'Notificaciones del sistema','Puoi gestire i canali e le preferenze delle notifiche nelle impostazioni del dispositivo.':'Gestiona los canales y las preferencias de notificación en los ajustes del dispositivo.','Gestisci nelle impostazioni del dispositivo':'Gestionar en los ajustes del dispositivo','Riepiloghi automatici':'Resúmenes automáticos','Notifiche non supportate su questa piattaforma.':'Las notificaciones no son compatibles con esta plataforma.'
 });
 
+Object.assign(translations.it,{'info':'info'});
+Object.assign(translations.en,{'info':'info'});
+Object.assign(translations.fr,{'info':'infos'});
+Object.assign(translations.es,{'info':'info'});
+
 export function t(key:string,params?:Record<string,string|number>,language:Language=currentLanguage){return interpolate(translations[language][key]??key,params);}
 export function getCurrentLanguage():Language{return currentLanguage;}
 export function localeForLanguage(language:Language=currentLanguage){return language==='it'?'it-IT':language==='fr'?'fr-FR':language==='es'?'es-ES':'en-US';}

@@ -106,6 +106,14 @@ test('Notification settings are grouped into Android permissions, activity remin
   assert.match(translations, /Object\.assign\(translations\.es/);
 });
 
+test('Diagnostics distinguish errors, warnings and informational entries', () => {
+  const source = read('app/(tabs)/me.tsx');
+  assert.match(source, /diagnosticInfo=logs\.filter\(entry=>entry\.level==='info'\)/);
+  assert.match(source, /diagnosticErrors\} \{t\('errori'\)\} · \{diagnosticWarnings\} \{t\('avvisi'\)\} · \{diagnosticInfo\} \{t\('info'\)\}/);
+  assert.match(source, /entry\.level==='info'&&styles\.logInfo/);
+  assert.match(source, /logInfo:\{color:palette\.muted\}/);
+});
+
 test('Settings are searchable and grouped by category, with readable sync and diagnostics status', () => {
   const source = read('app/(tabs)/me.tsx');
   assert.match(source, /settingsQuery/);
