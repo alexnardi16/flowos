@@ -261,6 +261,25 @@ test('App light, dark and system appearance modes are persisted and applied thro
   assert.match(root, /StatusBar style="auto"/);
 });
 
+test('App appearance includes a persisted small, standard and large text-size preference', () => {
+  const appearance = read('lib/widgetAppearance.ts');
+  const ui = read('components/ui.tsx');
+  const settings = read('app/(tabs)/me.tsx');
+  assert.match(appearance, /appFontSize: 'standard'/);
+  assert.match(appearance, /parsed\.appFontSize/);
+  assert.match(ui, /getTypeScale/);
+  assert.match(ui, /setAppFontSize/);
+  assert.match(settings, /Dimensione caratteri/);
+  assert.match(settings, /appFontSize===option\.id/);
+});
+
+test('Widget personalization opens in a dedicated full-screen editor', () => {
+  const settings = read('app/(tabs)/me.tsx');
+  assert.match(settings, /Modal visible=\{widgetPersonalizationOpen\}/);
+  assert.match(settings, /ScreenShell title=\{t\('Personalizzazione widget'\)\}/);
+  assert.match(settings, /Apri personalizzazione widget/);
+});
+
 test('Global density updates shared app components and is loaded at startup', () => {
   const ui = read('components/ui.tsx');
   const root = read('app/_layout.tsx');

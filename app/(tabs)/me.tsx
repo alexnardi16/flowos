@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AppState, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { AppState, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -59,12 +59,13 @@ export default function Me(){
   const[timePickerOpen,setTimePickerOpen]=useState(false);
   const[timeSaving,setTimeSaving]=useState(false);
   const { language, setLanguage } = useLanguage();
-  const { setDensity, setAppTheme } = useAppDensity();
+  const { setDensity, setAppTheme, setAppFontSize } = useAppDensity();
   const [languageBusy,setLanguageBusy]=useState(false);
   const [widgetAppearance,setWidgetAppearance]=useState<WidgetAppearance>(DEFAULT_WIDGET_APPEARANCE);
   const [widgetAppearanceBusy,setWidgetAppearanceBusy]=useState(false);
   const [settingsQuery,setSettingsQuery]=useState('');
   const [settingsCategory,setSettingsCategory]=useState<SettingsCategory>('all');
+  const [widgetPersonalizationOpen,setWidgetPersonalizationOpen]=useState(false);
 
   const commitments=useFlowStore(state=>state.commitments);
   const hydrate=useFlowStore(s=>s.hydrateFromCloud);
@@ -129,7 +130,7 @@ export default function Me(){
   async function saveAppearance(){
     if(widgetAppearanceBusy)return;
     setWidgetAppearanceBusy(true);
-    try{const sanitized:WidgetAppearance={appTheme:widgetAppearance.appTheme,theme:widgetAppearance.theme,density:widgetAppearance.density,todayTransparentUnusedSpace:widgetAppearance.todayTransparentUnusedSpace,today:{...widgetAppearance.today,backgroundColor:normalizeHexColor(widgetAppearance.today.backgroundColor),textColor:normalizeHexColor(widgetAppearance.today.textColor,'#172033'),textOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.textOpacity)||0)),buttonBackgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.buttonBackgroundOpacity)||0)),buttonTextOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.buttonTextOpacity)||0)),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.backgroundOpacity)||0)),buttonBackgroundColor:normalizeHexColor(widgetAppearance.today.buttonBackgroundColor,'#4254C5'),buttonTextColor:normalizeHexColor(widgetAppearance.today.buttonTextColor,'#FFFFFF')},calendar:{...widgetAppearance.calendar,backgroundColor:normalizeHexColor(widgetAppearance.calendar.backgroundColor),textColor:normalizeHexColor(widgetAppearance.calendar.textColor,'#172033'),textOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.textOpacity)||0)),buttonBackgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.buttonBackgroundOpacity)||0)),buttonTextOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.buttonTextOpacity)||0)),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.backgroundOpacity)||0)),buttonBackgroundColor:normalizeHexColor(widgetAppearance.calendar.buttonBackgroundColor,'#4254C5'),buttonTextColor:normalizeHexColor(widgetAppearance.calendar.buttonTextColor,'#FFFFFF')},sources:Object.fromEntries(Object.entries(widgetAppearance.sources).map(([key,value])=>[key,{color:normalizeHexColor(value.color),opacity:Math.max(0,Math.min(100,Number(value.opacity)||0))}]))};setWidgetAppearance(sanitized);await saveWidgetAppearance(sanitized);setDensity(sanitized.density);setAppTheme(sanitized.appTheme);await syncTodayWidget(commitments);showAlert('Widget',t('Personalizzazione salvata.'));}
+    try{const sanitized:WidgetAppearance={appTheme:widgetAppearance.appTheme,appFontSize:widgetAppearance.appFontSize,theme:widgetAppearance.theme,density:widgetAppearance.density,todayTransparentUnusedSpace:widgetAppearance.todayTransparentUnusedSpace,today:{...widgetAppearance.today,backgroundColor:normalizeHexColor(widgetAppearance.today.backgroundColor),textColor:normalizeHexColor(widgetAppearance.today.textColor,'#172033'),textOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.textOpacity)||0)),buttonBackgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.buttonBackgroundOpacity)||0)),buttonTextOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.buttonTextOpacity)||0)),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.backgroundOpacity)||0)),buttonBackgroundColor:normalizeHexColor(widgetAppearance.today.buttonBackgroundColor,'#4254C5'),buttonTextColor:normalizeHexColor(widgetAppearance.today.buttonTextColor,'#FFFFFF')},calendar:{...widgetAppearance.calendar,backgroundColor:normalizeHexColor(widgetAppearance.calendar.backgroundColor),textColor:normalizeHexColor(widgetAppearance.calendar.textColor,'#172033'),textOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.textOpacity)||0)),buttonBackgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.buttonBackgroundOpacity)||0)),buttonTextOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.buttonTextOpacity)||0)),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.backgroundOpacity)||0)),buttonBackgroundColor:normalizeHexColor(widgetAppearance.calendar.buttonBackgroundColor,'#4254C5'),buttonTextColor:normalizeHexColor(widgetAppearance.calendar.buttonTextColor,'#FFFFFF')},sources:Object.fromEntries(Object.entries(widgetAppearance.sources).map(([key,value])=>[key,{color:normalizeHexColor(value.color),opacity:Math.max(0,Math.min(100,Number(value.opacity)||0))}]))};setWidgetAppearance(sanitized);await saveWidgetAppearance(sanitized);setDensity(sanitized.density);setAppTheme(sanitized.appTheme);setAppFontSize(sanitized.appFontSize);await syncTodayWidget(commitments);showAlert('Widget',t('Personalizzazione salvata.'));}
     catch(e){showAlert('Widget',e instanceof Error?e.message:'Salvataggio non riuscito.');}
     finally{setWidgetAppearanceBusy(false);}
   }
@@ -143,7 +144,7 @@ export default function Me(){
   async function restoreAppearanceDefaults(){
     if(widgetAppearanceBusy)return;
     setWidgetAppearanceBusy(true);
-    try{const defaults=await resetWidgetAppearance();setWidgetAppearance(defaults);setDensity(defaults.density);setAppTheme(defaults.appTheme);await syncTodayWidget(commitments);showAlert('Widget',t('Valori predefiniti ripristinati.'));}
+    try{const defaults=await resetWidgetAppearance();setWidgetAppearance(defaults);setDensity(defaults.density);setAppTheme(defaults.appTheme);setAppFontSize(defaults.appFontSize);await syncTodayWidget(commitments);showAlert('Widget',t('Valori predefiniti ripristinati.'));}
     catch(e){showAlert('Widget',e instanceof Error?e.message:'Ripristino non riuscito.');}
     finally{setWidgetAppearanceBusy(false);}
   }
@@ -319,6 +320,7 @@ export default function Me(){
       <Text style={styles.label}>{t('Aspetto applicazione')}</Text><Text style={styles.meta}>{t('Scegli il tema chiaro, scuro o automatico in base al dispositivo.')}</Text>
       <View style={styles.presetRow}>{([{id:'system',label:'Tema automatico'},{id:'light',label:'Chiaro'},{id:'dark',label:'Scuro'}] as const).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:widgetAppearance.appTheme===option.id}} onPress={()=>setWidgetAppearance(current=>({...current,appTheme:option.id}))} style={[styles.presetChip,widgetAppearance.appTheme===option.id&&styles.presetChipActive]}><Text style={[styles.presetChipText,widgetAppearance.appTheme===option.id&&styles.presetChipTextActive]}>{t(option.label)}</Text></Pressable>)}</View>
       <Text style={styles.meta}>{t('Tema attivo')}: {t(widgetAppearance.appTheme==='system'?'Tema automatico':widgetAppearance.appTheme==='light'?'Chiaro':'Scuro')}</Text>
+      <Text style={styles.item}>{t('Dimensione caratteri')}</Text><View style={styles.presetRow}>{([{id:'small',label:'Piccola'},{id:'standard',label:'Standard'},{id:'large',label:'Grande'}] as const).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:widgetAppearance.appFontSize===option.id}} onPress={()=>setWidgetAppearance(current=>({...current,appFontSize:option.id}))} style={[styles.presetChip,widgetAppearance.appFontSize===option.id&&styles.presetChipActive]}><Text style={[styles.presetChipText,widgetAppearance.appFontSize===option.id&&styles.presetChipTextActive]}>{t(option.label)}</Text></Pressable>)}</View>
       <Button label={t('Salva aspetto')} onPress={()=>void saveAppearance()} loading={widgetAppearanceBusy}/>
     </Card>
 
@@ -342,6 +344,14 @@ export default function Me(){
     <Card style={{display:showSettingsSection('google','google tasks liste sincronizzate')?'flex':'none'}}><Text style={styles.label}>{t('Liste Google Tasks sincronizzate')}</Text>{google?.taskLists.map(l=><View key={l.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{l.title}</Text><Text style={styles.meta}>{l.is_default?t('Predefinita'):t('Lista attività')}</Text></View><Switch value={l.selected} onValueChange={v=>{void run(()=>setTaskListSelected(l.id,v));}}/><Pressable disabled={!l.selected||l.is_default} onPress={()=>{void run(()=>setDefaultTaskList(l.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card></>:null}
 
     <Card style={{display:showSettingsSection('widgets','widget personalizzazione temi densità colori anteprima')?'flex':'none'}}>
+      <Text style={styles.label}>{t('Personalizzazione widget')}</Text>
+      <Text style={styles.meta}>{t('Scegli sfondo, opacità e colori di testo e pulsanti per ciascun widget. I colori delle schede possono essere personalizzati per ogni calendario e lista Google Tasks.')}</Text>
+      <Text style={styles.meta}>{t(widgetAppearance.theme==='flowos-light'?'FlowOS Light':widgetAppearance.theme==='flowos-dark'?'FlowOS Dark':widgetAppearance.theme==='minimal-transparent'?'Minimal Transparent':widgetAppearance.theme==='high-contrast'?'High Contrast':'Soft / Pastel')} · {t(widgetAppearance.density==='compact'?'Compatta':widgetAppearance.density==='comfortable'?'Confortevole':'Bilanciata')}</Text>
+      <Button label={t('Apri personalizzazione widget')} onPress={()=>setWidgetPersonalizationOpen(true)}/>
+    </Card>
+    <Modal visible={widgetPersonalizationOpen} animationType="slide" onRequestClose={()=>setWidgetPersonalizationOpen(false)}>
+      <ScreenShell title={t('Personalizzazione widget')} headerActions={<Button secondary label={t('Indietro')} onPress={()=>setWidgetPersonalizationOpen(false)}/>}>
+        <Card>
       <Text style={styles.label}>{t('Personalizzazione widget')}</Text>
       <Text style={styles.meta}>{t('Scegli sfondo, opacità e colori di testo e pulsanti per ciascun widget. I colori delle schede possono essere personalizzati per ogni calendario e lista Google Tasks.')}</Text>
       <Text style={styles.meta}>{t(widgetAppearance.theme==='flowos-light'?'FlowOS Light':widgetAppearance.theme==='flowos-dark'?'FlowOS Dark':widgetAppearance.theme==='minimal-transparent'?'Minimal Transparent':widgetAppearance.theme==='high-contrast'?'High Contrast':'Soft / Pastel')} · {t(widgetAppearance.density==='compact'?'Compatta':widgetAppearance.density==='comfortable'?'Confortevole':'Bilanciata')}</Text>
@@ -369,7 +379,8 @@ export default function Me(){
       {!google?.calendars.length&&!google?.taskLists.length?<Text style={styles.meta}>{t('Collega Google per personalizzare i colori delle singole sorgenti.')}</Text>:null}
       <View style={styles.actions}><Button style={styles.actionButton} label={widgetAppearanceBusy?'Salvataggio…':t('Salva colori')} onPress={()=>{void saveAppearance();}} disabled={widgetAppearanceBusy}/><Button style={styles.actionButton} secondary label={t('Ripristina default')} onPress={()=>{void restoreAppearanceDefaults();}} disabled={widgetAppearanceBusy}/></View>
     </Card>
-
+      </ScreenShell>
+    </Modal>
     <Card style={{display:showSettingsSection('notifications','permessi android autorizzazioni notification permission')?'flex':'none'}}>
       <Text style={styles.label}>{t('Permessi Android')}</Text>
       <Text style={styles.meta}>{notificationPermissionStatus==='granted'?t('Permessi notifiche concessi'):notificationPermissionStatus==='denied'?t('Permessi notifiche non concessi'):t('Stato permessi non disponibile')}</Text>
