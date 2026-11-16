@@ -76,8 +76,8 @@ test('Create focuses the title for immediate entry', () => {
 
 test('List search includes Google calendar and task-list source names', () => {
   const source = read('app/(tabs)/plan.tsx');
-  assert.match(source, /google\\?\.calendars\.find/);
-  assert.match(source, /google\\?\.taskLists\.find/);
+  assert.match(source, /google\?\.calendars\.find/);
+  assert.match(source, /google\?\.taskLists\.find/);
   assert.match(source, /searchable\(item,sourceName/);
 });
 
@@ -229,7 +229,7 @@ test('Undo is available for completion, postponement and local deletion', () => 
 
 test('Recurring completion asks for scope while ordinary completion stays immediate', () => {
   const source = read('lib/completePrompt.ts');
-  assert.match(source, /if\(!recurring\)/);
+  assert.match(source, /if\s*\(!recurring\)/);
   assert.match(source, /complete\(item\.id, 'occurrence'\)/);
   assert.match(source, /Solo questa occorrenza/);
   assert.match(source, /Tutta la serie/);
