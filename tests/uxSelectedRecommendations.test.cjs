@@ -177,6 +177,18 @@ test('Global density updates shared app components and is loaded at startup', ()
   assert.match(settings, /setDensity\(sanitized\.density\)/);
 });
 
+test('Today completion combines a subtle layout transition and haptic feedback', () => {
+  const source = read('app/(tabs)/today.tsx');
+  assert.match(source, /LayoutAnimation\.configureNext\(LayoutAnimation\.Presets\.easeInEaseOut\)/);
+  assert.match(source, /Haptics\.notificationAsync/);
+});
+
+test('List day separators emphasize weekday and identify Today distinctly', () => {
+  const source = read('app/(tabs)/plan.tsx');
+  assert.match(source, /groupWeekday/);
+  assert.match(source, /todayGroupBadge/);
+});
+
 test('Undo is available for completion, postponement and local deletion', () => {
   const store = read('lib/store.ts');
   assert.match(store, /showSnackbar\(t\('Attività completata'\),t\('Annulla'/);

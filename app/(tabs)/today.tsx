@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, View } from 'react-native';
 import { ActivityKindTag, Card, EmptyState, ScreenShell, palette } from '@/components/ui';
 import { QuickAddMenu } from '@/components/QuickAddMenu';
 import { ProgressiveHint } from '@/components/ProgressiveHint';
@@ -18,6 +18,7 @@ import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
 import { isVisibleInToday } from '@/lib/commitmentVisibility';
+if(Platform.OS==='android'&&UIManager.setLayoutAnimationEnabledExperimental)UIManager.setLayoutAnimationEnabledExperimental(true);
 function when(item: Commitment) { return item.scheduledAt ?? item.dueAt; }
 function localTodayKey(){const date=new Date();return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function isToday(item: Commitment) { const value=when(item); if(!value)return false; const date=new Date(value),now=new Date(); if(item.allDay)return date.getUTCFullYear()===now.getFullYear()&&date.getUTCMonth()===now.getMonth()&&date.getUTCDate()===now.getDate(); return date.getFullYear()===now.getFullYear()&&date.getMonth()===now.getMonth()&&date.getDate()===now.getDate(); }
@@ -26,7 +27,7 @@ function cardSourceStyle(item:Commitment,sourceColors:Map<string,string>){return
 export default function Today() {
   const { language } = useLanguage();
   const quickAddDate=localTodayKey();
-  const commitments = useFlowStore((state) => state.commitments); const completeAction=useFlowStore(state=>state.complete); const complete=useCallback(async(...args:Parameters<typeof completeAction>)=>{await completeAction(...args);void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>undefined);},[completeAction]); const postpone=useFlowStore(state=>state.postpone); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
+  const commitments = useFlowStore((state) => state.commitments); const completeAction=useFlowStore(state=>state.complete); const complete=useCallback(async(...args:Parameters<typeof completeAction>)=>{LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);await completeAction(...args);void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>undefined);},[completeAction]); const postpone=useFlowStore(state=>state.postpone); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
   const params=useLocalSearchParams<{widgetAction?:string;id?:string}>();
   const [manageId,setManageId]=useState<string|null>(null); const [google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
