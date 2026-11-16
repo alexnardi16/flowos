@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
 import { QuickAddMenu } from '@/components/QuickAddMenu';
@@ -39,7 +40,7 @@ function sourceStyle(item:Commitment,sourceColors:Map<string,string>){return {ba
 export default function Calendar(){
   const { language } = useLanguage();
   const commitments=useFlowStore(state=>state.commitments); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
-  const[manageId,setManageId]=useState<string|null>(null);
+  const[manageId,setManageId]=useState<string|null>(null);const[showDatePicker,setShowDatePicker]=useState(false);
   const[selectedDateOverride,setSelectedDateOverride]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const params=useLocalSearchParams<{widgetAction?:string;date?:string;id?:string}>();
@@ -101,7 +102,7 @@ export default function Calendar(){
 
   const strings=widgetStrings(language);
 
-  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Giorno precedente')} onPress={()=>moveSelectedDay(-1)} style={styles.navButton}><Text style={styles.navButtonText}>‹</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Giorno successivo')} onPress={()=>moveSelectedDay(1)} style={styles.navButton}><Text style={styles.navButtonText}>›</Text></Pressable><QuickAddMenu date={selectedDateKey}/></View>}>
+  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana precedente')} onPress={()=>moveSelectedDay(-7)} style={styles.navButton}><Text style={styles.navButtonText}>‹</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Seleziona mese e anno')} onPress={()=>setShowDatePicker(true)} style={styles.monthButton}><Ionicons name="calendar-outline" size={14} color={palette.primary}/><Text style={styles.monthButtonText}>{new Date(`${selectedDateKey}T12:00:00`).toLocaleDateString(localeForLanguage(language),{month:'short',year:'numeric'})}</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana successiva')} onPress={()=>moveSelectedDay(7)} style={styles.navButton}><Text style={styles.navButtonText}>›</Text></Pressable><QuickAddMenu date={selectedDateKey}/></View>}>
     <ProgressiveHint id="calendar-navigation">{t('Suggerimento Calendario: seleziona un giorno, usa le frecce per spostarti e crea un elemento già associato alla data selezionata.')}</ProgressiveHint>
     {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week,index,strings.months);
@@ -133,12 +134,13 @@ export default function Calendar(){
         </View>
       </Card>;
     })}
+    {showDatePicker?<DateTimePicker value={new Date(`${selectedDateKey}T12:00:00`)} mode="date" display="default" onChange={(event,date)=>{setShowDatePicker(false);if(event.type!=='dismissed'&&date)setSelectedDateOverride(dayKey(date));}}/>:null}
     {manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}
   </ScreenShell>;
 }
 
 const styles=StyleSheet.create({
-  todayRow:{flexDirection:'row',justifyContent:'flex-end'},
+  todayRow:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:6},monthButton:{minHeight:44,paddingHorizontal:9,borderRadius:12,borderWidth:1,borderColor:palette.border,backgroundColor:palette.soft,flexDirection:'row',alignItems:'center',gap:5},monthButtonText:{fontSize:12,fontWeight:'700',color:palette.ink},
   todayButton:{backgroundColor:palette.primary,borderRadius:13,paddingHorizontal:16,paddingVertical:10,minHeight:44,justifyContent:'center'},
   navButton:{width:44,height:44,borderRadius:13,backgroundColor:palette.soft,alignItems:'center',justifyContent:'center'},navButtonText:{fontSize:26,lineHeight:30,fontWeight:'600',color:palette.primary},
   todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'700'},
