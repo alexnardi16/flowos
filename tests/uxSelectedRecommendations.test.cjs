@@ -152,6 +152,31 @@ test('Source tags remain compact while preserving their full accessible source l
   assert.match(source, /Ionicons/);
 });
 
+test('Android widgets use localized text controls instead of emoji or symbol glyphs for primary actions', () => {
+  const today = read('widgets/android/TodayWidget.tsx');
+  const calendar = read('widgets/android/CalendarWidget.tsx');
+  assert.match(today, /text=\{labels\.sync\}/);
+  assert.match(today, /text=\{labels\.voice\}/);
+  assert.match(calendar, /text=\{labels\.sync\}/);
+  assert.match(calendar, /text=\{labels\.voice\}/);
+  assert.doesNotMatch(today+calendar, /🎙|↻/);
+});
+
+test('Reminder presets in Create reflect which offsets are already selected', () => {
+  const source = read('app/(tabs)/capture.tsx');
+  assert.match(source, /reminders\.some\(reminder=>reminder\.minutesBefore===m\)/);
+});
+
+test('Global density updates shared app components and is loaded at startup', () => {
+  const ui = read('components/ui.tsx');
+  const root = read('app/_layout.tsx');
+  const settings = read('app/(tabs)/me.tsx');
+  assert.match(ui, /export function DensityProvider/);
+  assert.match(ui, /padding:density==='compact'/);
+  assert.match(root, /<DensityProvider>/);
+  assert.match(settings, /setDensity\(sanitized\.density\)/);
+});
+
 test('Undo is available for completion, postponement and local deletion', () => {
   const store = read('lib/store.ts');
   assert.match(store, /showSnackbar\(t\('Attività completata'\),t\('Annulla'/);

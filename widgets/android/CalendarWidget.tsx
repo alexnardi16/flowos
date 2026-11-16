@@ -98,11 +98,11 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <FlexWidget style={{ height: 26, paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel={labels.today}><TextWidget text={labels.today} style={{ fontSize: 9, fontWeight: 'bold', color: buttonTextColor as any }} /></FlexWidget>
-          <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
-            <TextWidget text="↻" style={{ fontSize: 16, fontWeight: 'bold', color: buttonTextColor as any }} />
+          <FlexWidget style={{ width: 36, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
+            <TextWidget text={labels.sync} style={{ fontSize: 8, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
           <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}>
-            <TextWidget text="🎙" style={{ fontSize: 14, color: buttonTextColor as any }} />
+            <TextWidget text={labels.voice} style={{ fontSize: 8, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
           <FlexWidget style={{ height: 26, paddingHorizontal: 9, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}>
             <TextWidget text="+" style={{ fontSize: 10, fontWeight: 'bold', color: buttonTextColor as any }} />
