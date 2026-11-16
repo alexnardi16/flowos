@@ -5,16 +5,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { palette } from '@/components/ui';
 import { t } from '@/lib/i18n';
 
-export function QuickAddMenu({date}:{date?:string}) {
+export function QuickAddMenu({date,compact=false}:{date?:string;compact?:boolean}) {
   const [visible,setVisible]=useState(false);
   function open(kind?:'task'|'event',voice=false) {
     setVisible(false);
     router.push({pathname:'/capture',params:{...(kind?{kind}:{}),...(date?{date}:{}),...(voice?{voice:String(Date.now())}:{})}});
   }
   return <>
-    <Pressable accessibilityRole="button" accessibilityLabel={t('Creazione rapida')} onPress={()=>setVisible(true)} style={styles.trigger}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Creazione rapida')} onPress={()=>setVisible(true)} style={[styles.trigger,compact&&styles.triggerCompact]}>
       <Ionicons name="add" size={20} color="#FFFFFF"/>
-      <Text style={styles.triggerText}>{t('Aggiungi')}</Text>
+      {!compact?<Text style={styles.triggerText}>{t('Aggiungi')}</Text>:null}
     </Pressable>
     <Modal visible={visible} transparent animationType="fade" onRequestClose={()=>setVisible(false)}>
       <Pressable style={styles.overlay} onPress={()=>setVisible(false)}>
@@ -31,7 +31,7 @@ export function QuickAddMenu({date}:{date?:string}) {
 }
 const styles=StyleSheet.create({
   trigger:{minHeight:44,minWidth:44,paddingHorizontal:12,borderRadius:13,backgroundColor:palette.primary,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:5},
-  triggerText:{fontSize:12,fontWeight:'700',color:'#FFFFFF'},
+  triggerCompact:{width:44,paddingHorizontal:0},triggerText:{fontSize:12,fontWeight:'700',color:'#FFFFFF'},
   overlay:{flex:1,backgroundColor:'rgba(12,16,30,0.32)',justifyContent:'flex-end',padding:14},
   menu:{backgroundColor:palette.card,borderRadius:20,padding:16,gap:8,borderWidth:1,borderColor:palette.border},
   title:{fontSize:17,fontWeight:'700',color:palette.ink,marginBottom:4},
