@@ -406,6 +406,7 @@ test('Semantic colors and spacing tokens stay consistent across light and dark t
   assert.match(ui, /cardRadius:16, buttonRadius:12, sectionGap:18, cardPadding:14/);
   assert.match(settings, /palette\.info/);
   assert.doesNotMatch(settings, /#4254C5/);
+  assert.doesNotMatch(appearance, /#4254C5/);
 });
 
 test('Typography follows the shared hierarchy without oversized extra-bold account screens', () => {
