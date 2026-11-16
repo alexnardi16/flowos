@@ -32,6 +32,7 @@ function ColorSwatches({value,onSelect}:{value:string;onSelect:(color:string)=>v
 function OpacityField({label,value,onChange}:{label:string;value:number;onChange:(value:string)=>void}){return <View style={styles.opacityField}><Text style={styles.meta}>{label}</Text><TextInput value={String(value)} onChangeText={onChange} keyboardType="numeric" maxLength={3} style={styles.colorInput}/></View>;}
 function timeLabel(hour:number,minute:number){return `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;}
 function deviceTimeZone(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'fuso orario locale';}catch{return'fuso orario locale';}}
+type SettingsCategory='all'|'appearance'|'widgets'|'google'|'notifications'|'diagnostics'|'account';
 function missingAuth(status:GoogleWorkspaceStatus|null,error:string|null){return /google account is not connected|account google non.*collegato|google authorization expired|unable to refresh google token|autorizzazione google.*ripristinata/i.test(`${status?.connection?.last_sync_error??''} ${error??''}`);}
 
 export default function Me(){
@@ -58,6 +59,8 @@ export default function Me(){
   const [languageBusy,setLanguageBusy]=useState(false);
   const [widgetAppearance,setWidgetAppearance]=useState<WidgetAppearance>(DEFAULT_WIDGET_APPEARANCE);
   const [widgetAppearanceBusy,setWidgetAppearanceBusy]=useState(false);
+  const [settingsQuery,setSettingsQuery]=useState('');
+  const [settingsCategory,setSettingsCategory]=useState<SettingsCategory>('all');
 
   const commitments=useFlowStore(state=>state.commitments);
   const hydrate=useFlowStore(s=>s.hydrateFromCloud);
@@ -274,15 +277,26 @@ export default function Me(){
 
   const authMissing=missingAuth(google,error);
   const connected=Boolean(google?.connection&&google.connection.last_sync_status!=='disconnected'&&!authMissing);
+  const normalizedSettingsQuery=settingsQuery.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const showSettingsSection=(category:SettingsCategory,keywords:string)=> (settingsCategory==='all'||settingsCategory===category)&&(!normalizedSettingsQuery||`${category} ${keywords}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(normalizedSettingsQuery));
+  const hasSettingsMatch=[['appearance','lingua language aspetto'],['widgets','widget personalizzazione temi densità colori anteprima'],['google','google sincronizzazione calendari tasks'],['notifications','notifiche reminder riepilogo'],['diagnostics','diagnostica log errori avvisi'],['account','account privacy dati logout']].some(([category,keywords])=>showSettingsSection(category as SettingsCategory,keywords));
+  const syncStatusColor=google?.connection?.last_sync_status==='ok'?'#15866B':google?.connection?.last_sync_status==='error'?'#A12626':google?.connection?.last_sync_status==='syncing'?'#2874C8':'#8A91A1';
+  const diagnosticErrors=logs.filter(entry=>entry.level==='error').length;
+  const diagnosticWarnings=logs.filter(entry=>entry.level==='warn').length;
 
   return <ScreenShell title={t('Impostazioni')}>
-    <Card>
+    <Card style={styles.settingsSearchCard}>
+      <TextInput value={settingsQuery} onChangeText={setSettingsQuery} placeholder={t('Cerca impostazioni')} placeholderTextColor={palette.muted} style={styles.settingsSearchInput} accessibilityLabel={t('Cerca impostazioni')}/>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.settingsCategoryRow}>{([{id:'all',label:'Tutte'},{id:'appearance',label:'Aspetto'},{id:'widgets',label:'Widget'},{id:'google',label:'Google e sincronizzazione'},{id:'notifications',label:'Notifiche'},{id:'diagnostics',label:'Diagnostica'},{id:'account',label:'Account e privacy'}] as const).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:settingsCategory===option.id}} onPress={()=>setSettingsCategory(option.id)} style={[styles.settingsCategoryChip,settingsCategory===option.id&&styles.settingsCategoryChipActive]}><Text style={[styles.settingsCategoryText,settingsCategory===option.id&&styles.settingsCategoryTextActive]}>{t(option.label)}</Text></Pressable>)}</ScrollView>
+    </Card>
+    {!hasSettingsMatch?<Text style={styles.meta}>{t('Nessuna impostazione trovata.')}</Text>:null}
+    <Card style={{display:showSettingsSection('appearance','lingua language aspetto')?'flex':'none'}}>
       <Text style={styles.label}>{t('Lingua')}</Text>
       <Text style={styles.meta}>{t('Lingua app e widget')}</Text>
       <View style={styles.languageGrid}>{LANGUAGES.map(option=><Pressable key={option.code} onPress={()=>{void (async()=>{if(languageBusy)return;setLanguageBusy(true);try{await setLanguage(option.code);await syncTodayWidget(commitments);await refreshNotificationsForLanguage(commitments,option.code);}finally{setLanguageBusy(false);}})();}} style={[styles.languageOption,language===option.code&&styles.languageOptionActive]}><Text style={[styles.languageOptionText,language===option.code&&styles.languageOptionTextActive]}>{option.label}</Text></Pressable>)}</View> 
      </Card>
 
-    <Card>
+    <Card style={{display:showSettingsSection('google','google sincronizzazione calendario tasks intervallo')?'flex':'none'}}>
       <Text style={styles.label}>{t('Sincronizzazione con Google')}</Text>
       <Text style={styles.meta}>{t('Intervallo importazione:')} {google?.range?`${google.range.labelStart} → ${google.range.labelEnd}`:t('caricamento…')}</Text>
       <View style={styles.inline}><TextInput value={rangeStart} onChangeText={setRangeStart} placeholder={t('GG-MM-AAAA')} style={styles.input}/><TextInput value={rangeEnd} onChangeText={setRangeEnd} placeholder="GG-MM-AAAA" style={styles.input}/><Button secondary label={t('Salva')} onPress={()=>{void saveRange();}}/></View>
@@ -298,10 +312,10 @@ export default function Me(){
       </>}
     </Card>
 
-    {connected?<><Card><Text style={styles.label}>{t('Calendari sincronizzati')}</Text>{google?.calendars.map(c=><View key={c.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{friendlyCalendarName(c.summary,google?.connection?.google_email,language)}</Text><Text style={styles.meta}>{t(c.access_role)}{c.is_default?` · ${t('predefinito')}`:''}</Text></View><Switch value={c.selected} onValueChange={v=>{void run(()=>setCalendarSelected(c.id,v));}}/><Pressable disabled={!c.selected||!['owner','writer'].includes(c.access_role)||c.is_default} onPress={()=>{void run(()=>setDefaultCalendar(c.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card>
-    <Card><Text style={styles.label}>{t('Liste Google Tasks sincronizzate')}</Text>{google?.taskLists.map(l=><View key={l.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{l.title}</Text><Text style={styles.meta}>{l.is_default?t('Predefinita'):t('Lista attività')}</Text></View><Switch value={l.selected} onValueChange={v=>{void run(()=>setTaskListSelected(l.id,v));}}/><Pressable disabled={!l.selected||l.is_default} onPress={()=>{void run(()=>setDefaultTaskList(l.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card></>:null}
+    {connected?<><Card style={{display:showSettingsSection('google','google calendario calendari sincronizzati')?'flex':'none'}}><Text style={styles.label}>{t('Calendari sincronizzati')}</Text>{google?.calendars.map(c=><View key={c.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{friendlyCalendarName(c.summary,google?.connection?.google_email,language)}</Text><Text style={styles.meta}>{t(c.access_role)}{c.is_default?` · ${t('predefinito')}`:''}</Text></View><Switch value={c.selected} onValueChange={v=>{void run(()=>setCalendarSelected(c.id,v));}}/><Pressable disabled={!c.selected||!['owner','writer'].includes(c.access_role)||c.is_default} onPress={()=>{void run(()=>setDefaultCalendar(c.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card>
+    <Card style={{display:showSettingsSection('google','google tasks liste sincronizzate')?'flex':'none'}}><Text style={styles.label}>{t('Liste Google Tasks sincronizzate')}</Text>{google?.taskLists.map(l=><View key={l.id} style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{l.title}</Text><Text style={styles.meta}>{l.is_default?t('Predefinita'):t('Lista attività')}</Text></View><Switch value={l.selected} onValueChange={v=>{void run(()=>setTaskListSelected(l.id,v));}}/><Pressable disabled={!l.selected||l.is_default} onPress={()=>{void run(()=>setDefaultTaskList(l.id));}}><Text style={styles.link}>{t('Default')}</Text></Pressable></View>)}</Card></>:null}
 
-    <Card>
+    <Card style={{display:showSettingsSection('widgets','widget personalizzazione temi densità colori anteprima')?'flex':'none'}}>
       <Text style={styles.label}>{t('Personalizzazione widget')}</Text>
       <Text style={styles.meta}>{t('Scegli sfondo, opacità e colori di testo e pulsanti per ciascun widget. I colori delle schede possono essere personalizzati per ogni calendario e lista Google Tasks.')}</Text>
       <Text style={styles.item}>{t('Tema')}</Text><View style={styles.presetRow}>{([{id:'flowos-light',label:'FlowOS Light'},{id:'flowos-dark',label:'FlowOS Dark'},{id:'minimal-transparent',label:'Minimal Transparent'},{id:'high-contrast',label:'High Contrast'},{id:'soft-pastel',label:'Soft / Pastel'}] as const).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:widgetAppearance.theme===option.id}} onPress={()=>chooseWidgetTheme(option.id)} style={[styles.presetChip,widgetAppearance.theme===option.id&&styles.presetChipActive]}><Text style={[styles.presetChipText,widgetAppearance.theme===option.id&&styles.presetChipTextActive]}>{t(option.label)}</Text></Pressable>)}</View>
@@ -327,7 +341,7 @@ export default function Me(){
       <View style={styles.actions}><Button style={styles.actionButton} label={widgetAppearanceBusy?'Salvataggio…':t('Salva colori')} onPress={()=>{void saveAppearance();}} disabled={widgetAppearanceBusy}/><Button style={styles.actionButton} secondary label={t('Ripristina default')} onPress={()=>{void restoreAppearanceDefaults();}} disabled={widgetAppearanceBusy}/></View>
     </Card>
 
-    <Card>
+    <Card style={{display:showSettingsSection('notifications','notifiche promemoria riepilogo giornaliero')?'flex':'none'}}>
       <Text style={styles.label}>{t('Notifiche')}</Text>
       <View style={styles.notificationRow}><View style={{flex:1}}><Text style={styles.item}>{t('Ricevi il riepilogo giornaliero')}</Text><Text style={styles.meta}>{t('FlowOS sincronizza Google Calendar e Google Tasks prima di inviarlo. Se il telefono era spento o offline, il riepilogo viene recuperato alla riapertura dell’app.')}</Text></View><Switch value={notificationsEnabled} disabled={notificationBusy} onValueChange={value=>{void toggleNotifications(value);}}/></View>
       <View style={styles.timeBox}>
@@ -340,27 +354,28 @@ export default function Me(){
       <Text style={styles.note}>{t('L’orario scelto è un’ora locale, non UTC: se cambi fuso orario, il trigger segue l’ora locale del dispositivo.')}</Text>
     </Card>
 
-    <Card>
+    <Card style={{display:showSettingsSection('notifications','notifiche log logger registro')?'flex':'none'}}>
       <Text style={styles.label}>{t('Logger notifiche')}</Text>
       <Text style={styles.meta}>{t('Registra pianificazione, invio e sincronizzazione legati alle notifiche.')}</Text>
       <View style={styles.actions}><Button secondary style={styles.actionButton} label={showNotificationLogs?t('Nascondi log'):t('Mostra log')} onPress={()=>setShowNotificationLogs(value=>!value)}/><Button secondary style={styles.actionButton} label={t('Copia log')} onPress={()=>{void copyNotificationLogs();}}/><Button secondary style={styles.actionButton} label={t('Pulisci log')} onPress={clearNotificationLogs}/></View>
       {showNotificationLogs?<ScrollView style={styles.notificationLogBox} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.notificationLogContent}>{notificationLogs.length?notificationLogs.map((entry,index)=><Text key={`${entry.at}-${index}`} selectable style={[styles.notificationLogText,entry.level==='error'&&styles.notificationLogError,entry.level==='warn'&&styles.notificationLogWarn]}>{notificationLogLine(entry)}</Text>):<Text style={styles.meta}>{t('Nessun evento registrato.')}</Text>}</ScrollView>:null}
     </Card>
 
-    <Card>
+    <Card style={{display:showSettingsSection('diagnostics','diagnostica log errori avvisi informazioni')?'flex':'none'}}>
       <Text style={styles.label}>{t('Diagnostica')}</Text>
-      <View style={styles.diagnosticHeader}><Text style={styles.meta}>FlowOS {Application.nativeApplicationVersion??'unknown'} · versionCode {Application.nativeBuildVersion??'unknown'} · {logs.length} {t('eventi')}</Text></View>
+      <View style={styles.diagnosticHeader}><Text style={styles.meta}>FlowOS {Application.nativeApplicationVersion??'unknown'} · versionCode {Application.nativeBuildVersion??'unknown'} · {logs.length} {t('eventi')}</Text><Text style={styles.meta}>{diagnosticErrors} {t('errori')} · {diagnosticWarnings} {t('avvisi')}</Text></View>
       <View style={styles.actions}><Button secondary style={styles.actionButton} label={showLogs?t('Nascondi log'):t('Mostra log')} onPress={()=>setShowLogs(v=>!v)}/><Button secondary style={styles.actionButton} label={t('Copia log')} onPress={()=>{void copyLogs();}}/><Button secondary style={styles.actionButton} label={t('Pulisci log')} onPress={()=>{clearDiagnostics();setLogs([]);}}/></View>
       {showLogs?<ScrollView style={styles.logBox} nestedScrollEnabled showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.logContent}>{logs.length?logs.map((entry,index)=><Text key={`${entry.at}-${index}`} selectable style={[styles.logText,entry.level==='error'&&styles.logError,entry.level==='warn'&&styles.logWarn]}>{logLine(entry)}</Text>):<Text style={styles.logText}>{t('Nessun evento registrato.')}</Text>}</ScrollView>:null}
     </Card>
 
-    <Card><Text style={styles.label}>{t('Dati FlowOS')}</Text><Text style={styles.meta}>{t('Puoi cancellare le attività locali in qualsiasi momento, indipendentemente dal collegamento Google.')}</Text><Pressable onPress={()=>{void wipe();}} style={styles.dangerButton}><Text style={styles.danger}>{t('Elimina ogni attività su FlowOS senza alcun impatto su Google')}</Text></Pressable></Card>
-    <Card><Text style={styles.label}>{t('Account FlowOS')}</Text><Button secondary label={t('Esci da FlowOS')} onPress={()=>{void logout();}} disabled={busy}/><Pressable onPress={()=>{void deleteAccount();}} style={styles.delete}><Text style={styles.danger}>{t('Elimina definitivamente l’account FlowOS')}</Text></Pressable></Card>
+    <Card style={{display:showSettingsSection('account','dati account privacy elimina attività')?'flex':'none'}}><Text style={styles.label}>{t('Dati FlowOS')}</Text><Text style={styles.meta}>{t('Puoi cancellare le attività locali in qualsiasi momento, indipendentemente dal collegamento Google.')}</Text><Pressable onPress={()=>{void wipe();}} style={styles.dangerButton}><Text style={styles.danger}>{t('Elimina ogni attività su FlowOS senza alcun impatto su Google')}</Text></Pressable></Card>
+    <Card style={{display:showSettingsSection('account','account privacy logout esci elimina')?'flex':'none'}}><Text style={styles.label}>{t('Account FlowOS')}</Text><Button secondary label={t('Esci da FlowOS')} onPress={()=>{void logout();}} disabled={busy}/><Pressable onPress={()=>{void deleteAccount();}} style={styles.delete}><Text style={styles.danger}>{t('Elimina definitivamente l’account FlowOS')}</Text></Pressable></Card>
   </ScreenShell>;
 }
 
 const styles=StyleSheet.create({languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageOption:{borderRadius:12,paddingHorizontal:14,paddingVertical:10,backgroundColor:'#ECEEF4',borderWidth:1,borderColor:palette.border},languageOptionActive:{backgroundColor:palette.primary,borderColor:palette.primary},languageOptionText:{fontSize:12,fontWeight:'800',color:palette.muted},languageOptionTextActive:{color:'#FFF'},
   label:{fontSize:17,fontWeight:'900',color:palette.ink,marginBottom:6},
+  settingsSearchCard:{padding:12,gap:10},settingsSearchInput:{backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:12,paddingHorizontal:13,paddingVertical:11,fontSize:14,color:palette.ink},settingsCategoryRow:{flexDirection:'row',alignItems:'center',gap:7},settingsCategoryChip:{paddingHorizontal:11,paddingVertical:8,borderRadius:99,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},settingsCategoryChipActive:{backgroundColor:palette.soft,borderColor:palette.primary},settingsCategoryText:{fontSize:11,fontWeight:'600',color:palette.muted},settingsCategoryTextActive:{color:palette.primary,fontWeight:'700'},
   widgetAppearanceSection:{marginTop:12,paddingTop:10,borderTopWidth:1,borderTopColor:palette.border,gap:7},widgetSectionHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},presetRow:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:6,marginBottom:8},presetChip:{paddingHorizontal:10,paddingVertical:8,borderRadius:11,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},presetChipActive:{backgroundColor:palette.soft,borderColor:palette.primary},presetChipText:{fontSize:11,fontWeight:'600',color:palette.ink},presetChipTextActive:{color:palette.primary,fontWeight:'700'},widgetPreview:{borderRadius:14,padding:12,gap:8,borderWidth:1,minHeight:92},previewButton:{alignSelf:'flex-start',paddingHorizontal:12,paddingVertical:7,borderRadius:9},contrastWarning:{color:palette.danger,fontWeight:'700'},colorFields:{flexDirection:'row',gap:7,alignItems:'flex-end'},colorSwatches:{flexDirection:'row',flexWrap:'wrap',gap:7,paddingVertical:5},colorSwatch:{width:25,height:25,borderRadius:13,borderWidth:1,borderColor:'#AAB1C0'},colorSwatchSelected:{borderWidth:3,borderColor:palette.primary,width:27,height:27},colorField:{flex:1,minWidth:0},opacityField:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},colorInput:{width:76,borderWidth:1,borderColor:palette.border,borderRadius:9,paddingHorizontal:9,paddingVertical:8,fontSize:12,color:palette.ink,marginTop:3},sourceAppearanceRow:{paddingTop:8,marginTop:5,borderTopWidth:1,borderTopColor:palette.border,gap:5},
   meta:{fontSize:12,lineHeight:17,color:palette.muted},
   item:{fontSize:14,fontWeight:'800',color:palette.ink},
