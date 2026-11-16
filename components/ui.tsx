@@ -1,8 +1,9 @@
-import { PropsWithChildren, RefObject, ReactNode } from 'react';
+import { PropsWithChildren, RefObject, ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BuildInfo } from './BuildInfo';
+import { getWidgetAppearance, type WidgetDensity } from '@/lib/widgetAppearance';
 import { t } from '@/lib/i18n';
 
 export function showAlert(title: string, message?: string) {
@@ -34,8 +35,17 @@ export const palette = {
 export const layoutTokens = { cardRadius:16, buttonRadius:12, sectionGap:18, cardPadding:14, inlineGap:6 } as const;
 export const typeScale = { screenTitle:26, sectionTitle:18, cardTitle:16, body:14, metadata:12, label:12 } as const;
 
+const DensityContext=createContext<{density:WidgetDensity;setDensity:(density:WidgetDensity)=>void}>({density:'balanced',setDensity:()=>undefined});
+export function DensityProvider({children}:PropsWithChildren){
+  const [density,setDensity]=useState<WidgetDensity>('balanced');
+  useEffect(()=>{let active=true;void getWidgetAppearance().then(value=>{if(active)setDensity(value.density);}).catch(()=>undefined);return()=>{active=false;};},[]);
+  return <DensityContext.Provider value={{density,setDensity}}>{children}</DensityContext.Provider>;
+}
+export function useAppDensity(){return useContext(DensityContext);}
+
 export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef, headerActions }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps; scrollRef?:RefObject<ScrollView|null>; headerActions?:ReactNode }>) {
   const insets = useSafeAreaInsets();
+  const {density}=useAppDensity();
   const contentPaddingBottom = Math.max(118, insets.bottom + 112);
   return <SafeAreaView edges={['top','bottom']} style={styles.screenSafe}>
     <View style={styles.screenHeader}>
@@ -50,14 +60,15 @@ export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef,
       {subtitle ? <Text style={styles.screenSubtitle}>{subtitle}</Text> : null}
       {headerActions}
     </View>
-    <ScrollView ref={scrollRef} {...scrollProps} style={styles.screenScroll} showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingBottom: contentPaddingBottom }]}>
+    <ScrollView ref={scrollRef} {...scrollProps} style={styles.screenScroll} showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingHorizontal:density==='compact'?16:density==='comfortable'?22:20,gap:density==='compact'?10:density==='comfortable'?18:14,paddingBottom:contentPaddingBottom }]}>
       {children}
     </ScrollView>
   </SafeAreaView>;
 }
 
 export function Card({ children, style, onLayout }: PropsWithChildren<{style?: StyleProp<ViewStyle>; onLayout?: ViewProps['onLayout']}>) {
-  return <View style={[styles.card, style]} onLayout={onLayout}>{children}</View>;
+  const {density}=useAppDensity();
+  return <View style={[styles.card,{padding:density==='compact'?10:density==='comfortable'?18:14},style]} onLayout={onLayout}>{children}</View>;
 }
 
 export function ActivityKindTag({kind,completed=false}:{kind:'task'|'event';completed?:boolean}) {
@@ -72,16 +83,18 @@ export function Chip({ children, tone='primary' }: PropsWithChildren<{tone?:'pri
 export function Button({ label, onPress, secondary=false, danger=false, disabled=false, loading=false, style }: {
   label:string; onPress:()=>void; secondary?:boolean; danger?:boolean; disabled?:boolean; loading?:boolean; style?: StyleProp<ViewStyle>;
 }) {
+  const {density}=useAppDensity();
   const inactive = disabled || loading;
   return <Pressable disabled={inactive} onPress={onPress} accessibilityRole="button" accessibilityState={{disabled:inactive,busy:loading}} style={({pressed})=>[
-    styles.button, secondary&&styles.secondary, danger&&styles.danger, inactive&&styles.disabled, pressed&&!inactive&&styles.pressed, style,
+    styles.button,{minHeight:density==='comfortable'?52:48,paddingVertical:density==='compact'?10:12}, secondary&&styles.secondary, danger&&styles.danger, inactive&&styles.disabled, pressed&&!inactive&&styles.pressed, style,
   ]}>
     {loading ? <ActivityIndicator color={secondary ? palette.primary : '#fff'} size="small"/> : <Text style={[styles.buttonText,secondary&&styles.secondaryText]}>{label}</Text>}
   </Pressable>;
 }
 
 export function SectionTitle({ title, subtitle }: {title:string; subtitle?:string}) {
-  return <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{title}</Text>{subtitle?<Text style={styles.sectionSubtitle}>{subtitle}</Text>:null}</View>;
+  const {density}=useAppDensity();
+  return <View style={[styles.sectionHeader,{marginTop:density==='compact'?4:8,gap:density==='compact'?1:3}]}><Text style={styles.sectionTitle}>{title}</Text>{subtitle?<Text style={styles.sectionSubtitle}>{subtitle}</Text>:null}</View>;
 }
 
 export function EmptyState({ title, message, actionLabel, onAction }: {title:string; message:string; actionLabel?:string; onAction?:()=>void}) {

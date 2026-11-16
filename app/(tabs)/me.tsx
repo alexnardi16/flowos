@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
-import { Button, Card, ScreenShell, palette, showAlert, showConfirm } from '@/components/ui';
+import { Button, Card, ScreenShell, palette, showAlert, showConfirm, useAppDensity } from '@/components/ui';
 import { ProgressiveHint } from '@/components/ProgressiveHint';
 import { clearDiagnostics, readDiagnostics, recordDiagnostic, subscribeDiagnostics, type DiagnosticEntry } from '@/lib/diagnostics';
 import { deleteAllFlowOSOnlyData } from '@/lib/commitmentsRepository';
@@ -115,7 +115,7 @@ export default function Me(){
   async function saveAppearance(){
     if(widgetAppearanceBusy)return;
     setWidgetAppearanceBusy(true);
-    try{const sanitized:WidgetAppearance={theme:widgetAppearance.theme,density:widgetAppearance.density,todayTransparentUnusedSpace:widgetAppearance.todayTransparentUnusedSpace,today:{...widgetAppearance.today,backgroundColor:normalizeHexColor(widgetAppearance.today.backgroundColor),textColor:normalizeHexColor(widgetAppearance.today.textColor,'#172033'),textOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.textOpacity)||0)),buttonBackgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.buttonBackgroundOpacity)||0)),buttonTextOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.buttonTextOpacity)||0)),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.backgroundOpacity)||0)),buttonBackgroundColor:normalizeHexColor(widgetAppearance.today.buttonBackgroundColor,'#4254C5'),buttonTextColor:normalizeHexColor(widgetAppearance.today.buttonTextColor,'#FFFFFF')},calendar:{...widgetAppearance.calendar,backgroundColor:normalizeHexColor(widgetAppearance.calendar.backgroundColor),textColor:normalizeHexColor(widgetAppearance.calendar.textColor,'#172033'),textOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.textOpacity)||0)),buttonBackgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.buttonBackgroundOpacity)||0)),buttonTextOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.buttonTextOpacity)||0)),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.backgroundOpacity)||0)),buttonBackgroundColor:normalizeHexColor(widgetAppearance.calendar.buttonBackgroundColor,'#4254C5'),buttonTextColor:normalizeHexColor(widgetAppearance.calendar.buttonTextColor,'#FFFFFF')},sources:Object.fromEntries(Object.entries(widgetAppearance.sources).map(([key,value])=>[key,{color:normalizeHexColor(value.color),opacity:Math.max(0,Math.min(100,Number(value.opacity)||0))}]))};setWidgetAppearance(sanitized);await saveWidgetAppearance(sanitized);await syncTodayWidget(commitments);showAlert('Widget',t('Personalizzazione salvata.'));}
+    try{const sanitized:WidgetAppearance={theme:widgetAppearance.theme,density:widgetAppearance.density,todayTransparentUnusedSpace:widgetAppearance.todayTransparentUnusedSpace,today:{...widgetAppearance.today,backgroundColor:normalizeHexColor(widgetAppearance.today.backgroundColor),textColor:normalizeHexColor(widgetAppearance.today.textColor,'#172033'),textOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.textOpacity)||0)),buttonBackgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.buttonBackgroundOpacity)||0)),buttonTextOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.buttonTextOpacity)||0)),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.today.backgroundOpacity)||0)),buttonBackgroundColor:normalizeHexColor(widgetAppearance.today.buttonBackgroundColor,'#4254C5'),buttonTextColor:normalizeHexColor(widgetAppearance.today.buttonTextColor,'#FFFFFF')},calendar:{...widgetAppearance.calendar,backgroundColor:normalizeHexColor(widgetAppearance.calendar.backgroundColor),textColor:normalizeHexColor(widgetAppearance.calendar.textColor,'#172033'),textOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.textOpacity)||0)),buttonBackgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.buttonBackgroundOpacity)||0)),buttonTextOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.buttonTextOpacity)||0)),backgroundOpacity:Math.max(0,Math.min(100,Number(widgetAppearance.calendar.backgroundOpacity)||0)),buttonBackgroundColor:normalizeHexColor(widgetAppearance.calendar.buttonBackgroundColor,'#4254C5'),buttonTextColor:normalizeHexColor(widgetAppearance.calendar.buttonTextColor,'#FFFFFF')},sources:Object.fromEntries(Object.entries(widgetAppearance.sources).map(([key,value])=>[key,{color:normalizeHexColor(value.color),opacity:Math.max(0,Math.min(100,Number(value.opacity)||0))}]))};setWidgetAppearance(sanitized);await saveWidgetAppearance(sanitized);setDensity(sanitized.density);await syncTodayWidget(commitments);showAlert('Widget',t('Personalizzazione salvata.'));}
     catch(e){showAlert('Widget',e instanceof Error?e.message:'Salvataggio non riuscito.');}
     finally{setWidgetAppearanceBusy(false);}
   }
@@ -123,13 +123,13 @@ export default function Me(){
   function chooseWidgetDensity(density:WidgetDensity){setWidgetAppearance(current=>({...current,density}));}
   async function resetWidgetCategory(section:'today'|'calendar'){
     const next=resetWidgetAppearanceCategory(widgetAppearance,section);setWidgetAppearance(next);
-    try{await saveWidgetAppearance(next);await syncTodayWidget(commitments);}catch(e){showAlert('Widget',e instanceof Error?e.message:'Ripristino non riuscito.');}
+    try{await saveWidgetAppearance(next);setDensity(next.density);await syncTodayWidget(commitments);catch(e){showAlert('Widget',e instanceof Error?e.message:'Ripristino non riuscito.');}
   }
 
   async function restoreAppearanceDefaults(){
     if(widgetAppearanceBusy)return;
     setWidgetAppearanceBusy(true);
-    try{const defaults=await resetWidgetAppearance();setWidgetAppearance(defaults);await syncTodayWidget(commitments);showAlert('Widget',t('Valori predefiniti ripristinati.'));}
+    try{const defaults=await resetWidgetAppearance();setWidgetAppearance(defaults);setDensity(defaults.density);await syncTodayWidget(commitments);showAlert('Widget',t('Valori predefiniti ripristinati.'));}
     catch(e){showAlert('Widget',e instanceof Error?e.message:'Ripristino non riuscito.');}
     finally{setWidgetAppearanceBusy(false);}
   }
