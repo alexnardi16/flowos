@@ -152,6 +152,43 @@ test('Source tags remain compact while preserving their full accessible source l
   assert.match(source, /Ionicons/);
 });
 
+test('Undo is available for completion, postponement and local deletion', () => {
+  const store = read('lib/store.ts');
+  assert.match(store, /showSnackbar\(t\('Attività completata'\),t\('Annulla'/);
+  assert.match(store, /showSnackbar\(t\('Attività rimandata di 1 giorno'\),t\('Annulla'/);
+  assert.match(store, /showSnackbar\(t\('Attività eliminata da FlowOS'\),t\('Annulla'/);
+});
+
+test('Recurring completion asks for scope while ordinary completion stays immediate', () => {
+  const source = read('lib/completePrompt.ts');
+  assert.match(source, /if\(!recurring\)/);
+  assert.match(source, /complete\(item\.id, 'occurrence'\)/);
+  assert.match(source, /Solo questa occorrenza/);
+  assert.match(source, /Tutta la serie/);
+});
+
+test('Google sync progress remains local and does not block the app', () => {
+  const source = read('components/AppChrome.tsx');
+  assert.match(source, /subscribeToSyncProgress/);
+  assert.match(source, /pointerEvents="none"/);
+  assert.match(source, /progress\.percent/);
+});
+
+test('Manage and quick-create use lightweight native transitions', () => {
+  const manage = read('components/ManageSheet.tsx');
+  const quickAdd = read('components/QuickAddMenu.tsx');
+  assert.match(manage, /animationType="slide"/);
+  assert.match(quickAdd, /animationType="fade"/);
+});
+
+test('Manage unsaved-change guard includes duration and recurrence edits', () => {
+  const source = read('components/ManageSheet.tsx');
+  assert.match(source, /hasUnsavedChanges/);
+  assert.match(source, /Number\(days\)!==Math\.floor\(item\.durationMinutes\/1440\)/);
+  assert.match(source, /currentReminderMinutes!==initialReminderMinutes/);
+  assert.match(source, /requestClose\(\)/);
+});
+
 test('Widget settings summarize the active theme and density', () => {
   const source = read('app/(tabs)/me.tsx');
   assert.match(source, /widgetAppearance\.theme/);
