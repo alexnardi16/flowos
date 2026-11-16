@@ -373,7 +373,8 @@ test('widget visual refresh never waits for a network Google status lookup',()=>
 test('Calendar memoizes sorted day buckets instead of sorting every day during render',()=>{
   const source=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
   assert.match(source,/const sortedByDay=useMemo\(\(\)=>/);
-  assert.match(source,/for\(const \[key,items\] of byDay\)\{const ordered=sortCommitments\(items,calendarNames\);ordered\.sort\(/);\n  assert.match(source,/result\.set\(key,ordered\)/);
+  assert.match(source,/for\(const \[key,items\] of byDay\)\{const ordered=sortCommitments\(items,calendarNames\);ordered\.sort\(/);
+  assert.match(source,/result\.set\(key,ordered\)/);
   assert.match(source,/const items=sortedByDay\.get\(dayKey\(date\)\)\?\?\[\]/);
   assert.doesNotMatch(source,/sortCommitments\(byDay\.get/);
 });
