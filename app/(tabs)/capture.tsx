@@ -16,6 +16,7 @@ import { localeForLanguage, t, useLanguage, type Language } from '@/lib/i18n';
 import { logNotificationEvent } from '@/lib/notificationLog';
 import { buildRecurrenceOccurrences } from '@/lib/recurrence';
 import { formatDurationPreview } from '@/lib/durationPreview';
+import { formatRecurrenceSummary } from '@/lib/recurrenceSummary';
 import { EMPTY_ACTIVITY_MARKERS, formatActivityTitle, type ActivityMarkers } from '@/lib/activityMarkers';
 
 type CreatableKind=Extract<CommitmentKind,'event'|'task'>;type RepeatOption='none'|RecurrenceFrequency;const REPEAT_KEYS:Record<RepeatOption,string>={none:'Non ripetere',daily:'Ogni giorno',weekly:'Ogni settimana',monthly:'Ogni mese',yearly:'Ogni anno'};const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};function localIso(date:string,time:string){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{2}:\d{2}$/.test(time))return;const value=new Date(`${date}T${time}:00`);return Number.isNaN(value.getTime())?undefined:value.toISOString();}function allDayIso(date:string){if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;const[y,m,d]=date.split('-').map(Number);return new Date(Date.UTC(y,m-1,d,0,0)).toISOString();}function formatDateSummary(value:string,language:Language){const date=new Date(`${value}T12:00:00`);return Number.isNaN(date.getTime())?value:date.toLocaleDateString(localeForLanguage(language),{day:'numeric',month:'long',year:'numeric'});}

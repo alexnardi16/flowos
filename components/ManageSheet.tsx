@@ -11,6 +11,7 @@ import { createUuid } from '@/lib/uuid';
 import type { Commitment, CommitmentKind, ReminderOffset, RecurrenceFrequency } from '@/types';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { formatDurationPreview } from '@/lib/durationPreview';
+import { formatRecurrenceSummary } from '@/lib/recurrenceSummary';
 import { parseActivityTitle, formatActivityTitle, type ActivityMarkers } from '@/lib/activityMarkers';
 
 type RepeatOption = 'none' | RecurrenceFrequency;
