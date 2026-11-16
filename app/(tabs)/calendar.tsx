@@ -139,9 +139,9 @@ const styles=StyleSheet.create({
   todayRow:{flexDirection:'row',justifyContent:'flex-end'},
   todayButton:{backgroundColor:palette.primary,borderRadius:13,paddingHorizontal:16,paddingVertical:10,minHeight:44,justifyContent:'center'},
   navButton:{width:44,height:44,borderRadius:13,backgroundColor:palette.soft,alignItems:'center',justifyContent:'center'},navButtonText:{fontSize:26,lineHeight:30,fontWeight:'600',color:palette.primary},
-  todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'900'},
+  todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'700'},
   weekCard:{padding:5,gap:3},
-  monthTitle:{fontSize:18,lineHeight:22,fontWeight:'900',color:palette.primary,textTransform:'capitalize',paddingHorizontal:2},
+  monthTitle:{fontSize:18,lineHeight:22,fontWeight:'700',color:palette.primary,textTransform:'capitalize',paddingHorizontal:2},
   grid:{flexDirection:'row',gap:2,width:'100%'},
   dayBox:{flex:1,minWidth:0,minHeight:175,padding:2,borderRadius:7,borderWidth:1,borderColor:'#E1E4EC',backgroundColor:'#FFF'},
   todayBox:{backgroundColor:'#F1EEFF',borderColor:'#BDB4F2'},
@@ -153,8 +153,8 @@ const styles=StyleSheet.create({
   dayActivities:{gap:2,paddingTop:3},
   item:{borderRadius:5,padding:2,borderWidth:1,gap:0},multiDayStart:{borderTopRightRadius:0,borderBottomRightRadius:0,marginRight:-2},multiDayMiddle:{borderRadius:0,marginHorizontal:-2},multiDayEnd:{borderTopLeftRadius:0,borderBottomLeftRadius:0,marginLeft:-2},
   itemTime:{fontSize:5,lineHeight:8,fontWeight:'700',color:palette.muted},itemDuration:{fontSize:5,lineHeight:7,fontWeight:'600',color:palette.muted},
-  overdueTag:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.warning},
-  itemTitleRow:{flexDirection:'row',alignItems:'flex-start',gap:2,minWidth:0},itemPriority:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.primary},itemTitle:{flex:1,minWidth:0,flexShrink:1,fontSize:6,lineHeight:8,fontWeight:'700',color:palette.ink},
+  overdueTag:{fontSize:5,lineHeight:7,fontWeight:'700',color:palette.warning},
+  itemTitleRow:{flexDirection:'row',alignItems:'flex-start',gap:2,minWidth:0},itemPriority:{fontSize:5,lineHeight:7,fontWeight:'700',color:palette.primary},itemTitle:{flex:1,minWidth:0,flexShrink:1,fontSize:6,lineHeight:8,fontWeight:'700',color:palette.ink},
   itemMeta:{fontSize:6,lineHeight:8,color:palette.muted},
   itemPressed:{opacity:.78}
 });

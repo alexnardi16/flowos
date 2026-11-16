@@ -144,18 +144,18 @@ export default function Plan(){
 
 const styles=StyleSheet.create({
   warning:{color:palette.warning},
-  filtersCard:{padding:10,gap:8},filterRow:{flexDirection:'row',alignItems:'center',gap:6,minHeight:34},filterLabel:{width:74,fontSize:11,fontWeight:'900',color:palette.muted},filterOptions:{alignItems:'center',gap:6,paddingRight:4},filterOption:{borderRadius:99,paddingHorizontal:10,paddingVertical:7,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},filterOptionSelected:{backgroundColor:palette.soft,borderColor:palette.primary},filterOptionText:{fontSize:11,fontWeight:'700',color:palette.muted},filterOptionTextSelected:{color:palette.primary},
+  filtersCard:{padding:10,gap:8},filterRow:{flexDirection:'row',alignItems:'center',gap:6,minHeight:34},filterLabel:{width:74,fontSize:11,fontWeight:'700',color:palette.muted},filterOptions:{alignItems:'center',gap:6,paddingRight:4},filterOption:{borderRadius:99,paddingHorizontal:10,paddingVertical:7,backgroundColor:'#F0F1F6',borderWidth:1,borderColor:palette.border},filterOptionSelected:{backgroundColor:palette.soft,borderColor:palette.primary},filterOptionText:{fontSize:11,fontWeight:'700',color:palette.muted},filterOptionTextSelected:{color:palette.primary},
   searchRow:{flexDirection:'row',alignItems:'center',gap:6},
   clearSearch:{width:32,height:44,alignItems:'center',justifyContent:'center'},clearSearchText:{fontSize:24,lineHeight:28,color:palette.muted},
   filterToggle:{minHeight:44,paddingHorizontal:10,borderRadius:12,backgroundColor:palette.soft,alignItems:'center',justifyContent:'center'},filterToggleText:{fontSize:11,fontWeight:'700',color:palette.primary},
   search:{flex:1,minWidth:0,backgroundColor:'#FFF',borderWidth:1,borderColor:palette.border,borderRadius:15,paddingHorizontal:15,paddingVertical:13,fontSize:15,color:palette.ink},
   todayButton:{backgroundColor:palette.primary,borderRadius:13,paddingHorizontal:15,paddingVertical:13,justifyContent:'center',alignItems:'center'},
-  todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'900'},
+  todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'700'},
 dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8},dayDividerLine:{flex:1,height:1,backgroundColor:palette.border},dayDividerText:{fontSize:13,fontWeight:'700',color:palette.ink,textTransform:'capitalize'},todayGroupLabel:{color:palette.primary},
   itemCard:{padding:7,gap:2},
   tagRow:{alignItems:'center',gap:6,paddingRight:4},
-  titleRow:{flexDirection:'row',alignItems:'flex-start',gap:7,minWidth:0},priorityBadge:{fontSize:12,lineHeight:18,fontWeight:'900',color:palette.primary,backgroundColor:palette.soft,borderRadius:8,paddingHorizontal:6},item:{flex:1,minWidth:0,flexShrink:1,fontSize:16,lineHeight:20,fontWeight:'900',color:palette.ink},
-  date:{fontSize:13,lineHeight:17,fontWeight:'800',color:palette.primary},duration:{fontSize:12,lineHeight:15,fontWeight:'700',color:palette.muted},
+  titleRow:{flexDirection:'row',alignItems:'flex-start',gap:7,minWidth:0},priorityBadge:{fontSize:12,lineHeight:18,fontWeight:'700',color:palette.primary,backgroundColor:palette.soft,borderRadius:8,paddingHorizontal:6},item:{flex:1,minWidth:0,flexShrink:1,fontSize:16,lineHeight:20,fontWeight:'700',color:palette.ink},
+  date:{fontSize:13,lineHeight:17,fontWeight:'700',color:palette.primary},duration:{fontSize:12,lineHeight:15,fontWeight:'700',color:palette.muted},
   meta:{fontSize:12,lineHeight:16,color:palette.muted},
   description:{fontSize:12,lineHeight:16,color:palette.ink,marginTop:1},
   cardPressed:{opacity:.96,transform:[{scale:.995}]}
