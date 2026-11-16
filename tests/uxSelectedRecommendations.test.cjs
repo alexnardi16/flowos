@@ -376,6 +376,18 @@ test('The Add tab is visually distinct from navigation destinations', () => {
   assert.match(source, /tabBarItemStyle:\{marginTop:-9\}/);
 });
 
+test('Semantic colors and spacing tokens stay consistent across light and dark themes', () => {
+  const ui = read('components/ui.tsx');
+  const settings = read('app/(tabs)/me.tsx');
+  assert.match(ui, /info:Platform\.OS==='ios'\?DynamicColorIOS/);
+  assert.match(ui, /success:Platform\.OS==='ios'\?DynamicColorIOS/);
+  assert.match(ui, /warning:Platform\.OS==='ios'\?DynamicColorIOS/);
+  assert.match(ui, /danger:Platform\.OS==='ios'\?DynamicColorIOS/);
+  assert.match(ui, /cardRadius:16, buttonRadius:12, sectionGap:18, cardPadding:14/);
+  assert.match(settings, /palette\.info/);
+  assert.doesNotMatch(settings, /#4254C5/);
+});
+
 test('Typography follows the shared hierarchy without oversized extra-bold account screens', () => {
   const ui = read('components/ui.tsx');
   const notifications = read('app/notifications-settings.tsx');

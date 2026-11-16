@@ -37,6 +37,7 @@ export const palette = {
   primary:'#6658D3',
   soft:adaptiveColor('#ECE9FF','#2A2546','?android:attr/colorControlHighlight'),
   success:Platform.OS==='ios'?DynamicColorIOS({light:'#15866B',dark:'#55C6A2'}):'#15866B',
+  info:Platform.OS==='ios'?DynamicColorIOS({light:'#2874C8',dark:'#69A7F2'}):'#2874C8',
   warning:Platform.OS==='ios'?DynamicColorIOS({light:'#A65E0B',dark:'#F0B45B'}):'#A65E0B',
   danger:Platform.OS==='ios'?DynamicColorIOS({light:'#A12626',dark:'#FF7777'}):'#A12626',
   border:adaptiveColor('#E2E4EA','#383D4C','?android:attr/colorControlHighlight'),
