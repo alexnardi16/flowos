@@ -301,9 +301,10 @@ export default function Me(){
       <Text style={styles.meta}>{t('Lingua app e widget')}</Text>
       <View style={styles.languageGrid}>{LANGUAGES.map(option=><Pressable key={option.code} onPress={()=>{void (async()=>{if(languageBusy)return;setLanguageBusy(true);try{await setLanguage(option.code);await syncTodayWidget(commitments);await refreshNotificationsForLanguage(commitments,option.code);}finally{setLanguageBusy(false);}})();}} style={[styles.languageOption,language===option.code&&styles.languageOptionActive]}><Text style={[styles.languageOptionText,language===option.code&&styles.languageOptionTextActive]}>{option.label}</Text></Pressable>)}</View> 
      </Card>
-    <Card style={{display:showSettingsSection('appearance','tema applicazione chiaro scuro automatico')?'flex':'none'}}>
+    <Card style={{display:showSettingsSection('appearance','tema applicazione chiaro scuro automatico app appearance theme dark light system')?'flex':'none'}}>
       <Text style={styles.label}>{t('Aspetto applicazione')}</Text><Text style={styles.meta}>{t('Scegli il tema chiaro, scuro o automatico in base al dispositivo.')}</Text>
       <View style={styles.presetRow}>{([{id:'system',label:'Tema automatico'},{id:'light',label:'Chiaro'},{id:'dark',label:'Scuro'}] as const).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:widgetAppearance.appTheme===option.id}} onPress={()=>setWidgetAppearance(current=>({...current,appTheme:option.id}))} style={[styles.presetChip,widgetAppearance.appTheme===option.id&&styles.presetChipActive]}><Text style={[styles.presetChipText,widgetAppearance.appTheme===option.id&&styles.presetChipTextActive]}>{t(option.label)}</Text></Pressable>)}</View>
+      <Text style={styles.meta}>{t('Tema attivo')}: {t(widgetAppearance.appTheme==='system'?'Tema automatico':widgetAppearance.appTheme==='light'?'Chiaro':'Scuro')}</Text>
       <Button label={t('Salva aspetto')} onPress={()=>void saveAppearance()} loading={widgetAppearanceBusy}/>
     </Card>
 

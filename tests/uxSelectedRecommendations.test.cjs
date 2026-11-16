@@ -167,6 +167,13 @@ test('Reminder presets in Create reflect which offsets are already selected', ()
   assert.match(source, /reminders\.some\(reminder=>reminder\.minutesBefore===m\)/);
 });
 
+test('Settings search can find app theme options and shows the active theme summary', () => {
+  const source = read('app/(tabs)/me.tsx');
+  assert.match(source, /app appearance theme dark light system/);
+  assert.match(source, /Tema attivo/);
+  assert.match(source, /widgetAppearance\.appTheme/);
+});
+
 test('App light, dark and system appearance modes are persisted and applied through adaptive colors', () => {
   const appearance = read('lib/widgetAppearance.ts');
   const ui = read('components/ui.tsx');
