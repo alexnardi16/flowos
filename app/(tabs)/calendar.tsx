@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Modal, ScrollView } from 'react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
 import { QuickAddMenu } from '@/components/QuickAddMenu';
@@ -40,7 +40,7 @@ function sourceStyle(item:Commitment,sourceColors:Map<string,string>){return {ba
 export default function Calendar(){
   const { language } = useLanguage();
   const commitments=useFlowStore(state=>state.commitments); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
-  const[manageId,setManageId]=useState<string|null>(null);const[showDatePicker,setShowDatePicker]=useState(false);
+  const[manageId,setManageId]=useState<string|null>(null);const[showDatePicker,setShowDatePicker]=useState(false);const[pickerMonth,setPickerMonth]=useState(()=>new Date());
   const[selectedDateOverride,setSelectedDateOverride]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const params=useLocalSearchParams<{widgetAction?:string;date?:string;id?:string}>();
@@ -102,7 +102,7 @@ export default function Calendar(){
 
   const strings=widgetStrings(language);
 
-  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana precedente')} onPress={()=>moveSelectedDay(-7)} style={styles.navButton}><Ionicons name="chevron-back" size={19} color={palette.primary}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Seleziona mese e anno')} onPress={()=>setShowDatePicker(true)} style={styles.monthButton}><Ionicons name="calendar-outline" size={14} color={palette.primary}/><Text style={styles.monthButtonText}>{new Date(`${selectedDateKey}T12:00:00`).toLocaleDateString(localeForLanguage(language),{month:'short',year:'numeric'})}</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana successiva')} onPress={()=>moveSelectedDay(7)} style={styles.navButton}><Ionicons name="chevron-forward" size={19} color={palette.primary}/></Pressable><QuickAddMenu date={selectedDateKey} compact/></View>}>
+  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana precedente')} onPress={()=>moveSelectedDay(-7)} style={styles.navButton}><Ionicons name="chevron-back" size={19} color={palette.primary}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Seleziona mese e anno')} onPress={()=>{setPickerMonth(new Date(`${selectedDateKey}T12:00:00`));setShowDatePicker(true);}} style={styles.monthButton}><Ionicons name="calendar-outline" size={14} color={palette.primary}/><Text style={styles.monthButtonText}>{new Date(`${selectedDateKey}T12:00:00`).toLocaleDateString(localeForLanguage(language),{month:'short',year:'numeric'})}</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana successiva')} onPress={()=>moveSelectedDay(7)} style={styles.navButton}><Ionicons name="chevron-forward" size={19} color={palette.primary}/></Pressable><QuickAddMenu date={selectedDateKey} compact/></View>}>
     <ProgressiveHint id="calendar-navigation">{t('Suggerimento Calendario: seleziona un giorno, usa le frecce per spostarti e crea un elemento già associato alla data selezionata.')}</ProgressiveHint>
     {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week,index,strings.months);
@@ -134,13 +134,45 @@ export default function Calendar(){
         </View>
       </Card>;
     })}
-    {showDatePicker?<DateTimePicker value={new Date(`${selectedDateKey}T12:00:00`)} mode="date" display="default" onChange={(event,date)=>{setShowDatePicker(false);if(event.type!=='dismissed'&&date)setSelectedDateOverride(dayKey(date));}}/>:null}
+    <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={()=>setShowDatePicker(false)}>
+      <View style={styles.datePickerBackdrop}>
+        <View style={styles.datePickerCard}>
+          <View style={styles.datePickerHeader}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Mese precedente')} onPress={()=>setPickerMonth(current=>new Date(current.getFullYear(),current.getMonth()-1,1))} style={styles.datePickerNav}><Ionicons name="chevron-back" size={20} color={palette.primary}/></Pressable>
+            <Text style={styles.datePickerTitle}>{pickerMonth.toLocaleDateString(localeForLanguage(language),{month:'long',year:'numeric'})}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Mese successivo')} onPress={()=>setPickerMonth(current=>new Date(current.getFullYear(),current.getMonth()+1,1))} style={styles.datePickerNav}><Ionicons name="chevron-forward" size={20} color={palette.primary}/></Pressable>
+          </View>
+          <View style={styles.datePickerWeek}>{['D','L','M','M','G','V','S'].map((day,index)=><Text key={index} style={styles.datePickerWeekday}>{day}</Text>)}</View>
+          <View style={styles.datePickerGrid}>
+            {Array.from({length:new Date(pickerMonth.getFullYear(),pickerMonth.getMonth(),1).getDay()},(_,index)=><View key={'blank-'+index} style={styles.datePickerDay}/>)}
+            {Array.from({length:new Date(pickerMonth.getFullYear(),pickerMonth.getMonth()+1,0).getDate()},(_,index)=>{const date=new Date(pickerMonth.getFullYear(),pickerMonth.getMonth(),index+1);const key=dayKey(date);const selected=key===selectedDateKey;const today=key===dayKey(new Date());return <Pressable key={key} accessibilityRole="button" accessibilityLabel={date.toLocaleDateString(localeForLanguage(language))} accessibilityState={{selected}} onPress={()=>{setSelectedDateOverride(key);setShowDatePicker(false);}} style={[styles.datePickerDay,selected&&styles.datePickerDaySelected,today&&styles.datePickerDayToday]}><Text style={[styles.datePickerDayText,selected&&styles.datePickerDayTextSelected]}>{index+1}</Text></Pressable>;})}
+          </View>
+          <View style={styles.datePickerActions}>
+            <Pressable accessibilityRole="button" onPress={()=>{setSelectedDateOverride(dayKey(new Date()));setShowDatePicker(false);}} style={styles.datePickerToday}><Text style={styles.datePickerTodayText}>{t('Oggi')}</Text></Pressable>
+            <Pressable accessibilityRole="button" onPress={()=>setShowDatePicker(false)} style={styles.datePickerCancel}><Text style={styles.datePickerCancelText}>{t('Annulla')}</Text></Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
     {manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}
   </ScreenShell>;
 }
 
 const styles=StyleSheet.create({
-  todayRow:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:6},monthButton:{minHeight:44,paddingHorizontal:9,borderRadius:12,borderWidth:1,borderColor:palette.border,backgroundColor:palette.soft,flexDirection:'row',alignItems:'center',gap:5},monthButtonText:{fontSize:12,fontWeight:'700',color:palette.ink},
+  todayRow:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:6},
+  datePickerBackdrop:{flex:1,backgroundColor:'rgba(12,16,28,0.48)',justifyContent:'center',alignItems:'center',padding:20},
+  datePickerCard:{width:'100%',maxWidth:360,borderRadius:22,padding:16,backgroundColor:palette.card,gap:12},
+  datePickerHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+  datePickerTitle:{fontSize:17,fontWeight:'800',color:palette.ink,textTransform:'capitalize'},
+  datePickerNav:{width:44,height:44,borderRadius:12,backgroundColor:palette.soft,alignItems:'center',justifyContent:'center'},
+  datePickerWeek:{flexDirection:'row'},datePickerWeekday:{width:'14.2857%',textAlign:'center',fontSize:12,fontWeight:'700',color:palette.muted,paddingVertical:6},
+  datePickerGrid:{flexDirection:'row',flexWrap:'wrap'},
+  datePickerDay:{width:'14.2857%',aspectRatio:1,alignItems:'center',justifyContent:'center',borderRadius:12},
+  datePickerDaySelected:{backgroundColor:palette.primary},datePickerDayToday:{borderWidth:1,borderColor:palette.primary},
+  datePickerDayText:{fontSize:14,fontWeight:'600',color:palette.ink},datePickerDayTextSelected:{color:'#FFFFFF',fontWeight:'800'},
+  datePickerActions:{flexDirection:'row',justifyContent:'flex-end',gap:8},
+  datePickerToday:{minHeight:40,paddingHorizontal:14,borderRadius:11,backgroundColor:palette.soft,justifyContent:'center'},datePickerTodayText:{color:palette.primary,fontWeight:'700'},
+  datePickerCancel:{minHeight:40,paddingHorizontal:14,borderRadius:11,justifyContent:'center'},datePickerCancelText:{color:palette.muted,fontWeight:'700'},monthButton:{minHeight:44,paddingHorizontal:9,borderRadius:12,borderWidth:1,borderColor:palette.border,backgroundColor:palette.soft,flexDirection:'row',alignItems:'center',gap:5},monthButtonText:{fontSize:12,fontWeight:'700',color:palette.ink},
   todayButton:{backgroundColor:palette.primary,borderRadius:13,paddingHorizontal:16,paddingVertical:10,minHeight:44,justifyContent:'center'},
   navButton:{width:44,height:44,borderRadius:13,backgroundColor:palette.soft,alignItems:'center',justifyContent:'center'},navButtonText:{fontSize:26,lineHeight:30,fontWeight:'600',color:palette.primary},
   todayButtonText:{color:'#FFF',fontSize:14,fontWeight:'700'},

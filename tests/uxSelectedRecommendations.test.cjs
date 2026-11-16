@@ -263,12 +263,14 @@ test('Widget settings summarize the active theme and density', () => {
   assert.match(source, /widgetAppearance\.density/);
 });
 
-test('Calendar provides week jumps and a native month/year date selector', () => {
+test('Calendar provides week jumps and a native in-app month/date selector', () => {
   const source = read('app/(tabs)/calendar.tsx');
   assert.match(source, /moveSelectedDay\(-7\)/);
   assert.match(source, /moveSelectedDay\(7\)/);
   assert.match(source, /setShowDatePicker\(true\)/);
-  assert.match(source, /DateTimePicker value=\{new Date/);
+  assert.match(source, /<Modal visible=\{showDatePicker\}/);
+  assert.match(source, /datePickerDaySelected/);
+  assert.match(source, /setSelectedDateOverride\(key\)/);
 });
 
 test('Multi-day events render as continuous segments in both the app and Android calendar widget', () => {
