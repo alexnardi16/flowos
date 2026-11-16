@@ -398,6 +398,43 @@ test('Typography follows the shared hierarchy without oversized extra-bold accou
   assert.match(account, /title:\{fontSize:26,fontWeight:'700'/);
 });
 
+test('Create and Manage keep date, time, duration and all-day controls coherent', () => {
+  const capture = read('app/(tabs)/capture.tsx');
+  const manage = read('components/ManageSheet.tsx');
+  for (const label of ["Giornata intera","Data di inizio","Orario di inizio","Data di fine","Orario di fine","Durata"]) {
+    assert.ok(capture.includes(label) || manage.includes(label), label);
+  }
+  assert.match(capture, /setEndFromDuration/);
+  assert.match(manage, /setEndFromDuration/);
+});
+
+test('Manage separates Save from completion and reserves confirmations for destructive or series-wide actions', () => {
+  const manage = read('components/ManageSheet.tsx');
+  const completion = read('lib/completePrompt.ts');
+  assert.match(manage, /stickyFooter/);
+  assert.match(manage, /Salva modifiche/);
+  assert.match(manage, /Eliminare definitivamente/);
+  assert.match(completion, /if\s*\(!recurring\)/);
+  assert.match(completion, /Alert\.alert/);
+});
+
+test('List and Calendar restore their selected scroll position after managing an item', () => {
+  const plan = read('app/(tabs)/plan.tsx');
+  const calendar = read('app/(tabs)/calendar.tsx');
+  assert.match(plan, /scrollRef/);
+  assert.match(plan, /scrollToToday/);
+  assert.match(calendar, /scrollRef/);
+  assert.match(calendar, /scrollToSelectedWeek/);
+});
+
+test('Notification permission status refreshes when the app returns from device settings', () => {
+  const source = read('app/(tabs)/me.tsx');
+  assert.match(source, /AppState\.addEventListener\('change'/);
+  assert.match(source, /state==='active'/);
+  assert.match(source, /Notifications\.getPermissionsAsync/);
+  assert.match(source, /notificationPermissionStatus==='granted'/);
+});
+
 test('shared design tokens preserve minimum button touch target', () => {
   const source = read('components/ui.tsx');
   assert.match(source, /layoutTokens/);
