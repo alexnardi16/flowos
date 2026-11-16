@@ -119,11 +119,13 @@ export default function Calendar(){
               </View>
               <View style={styles.dayActivities}>
                 {items.map(item=>{const segment=multiDaySegment(item,date);return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),segment==='start'&&styles.multiDayStart,segment==='middle'&&styles.multiDayMiddle,segment==='end'&&styles.multiDayEnd,pressed&&styles.itemPressed]}>
+                  {segment==='start'||segment==='single'?<>
                   {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
                   {item.kind==='task'&&!item.allDay?<Text style={styles.itemDuration}>{t('Durata')}: {formatDurationLabel(item)}</Text>:null}
                   {isOverdueTask(item) ? <Text style={styles.overdueTag}>{t('Scaduta')}</Text> : null}
                   <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Ionicons name={item.kind==='event'?'calendar-outline':'checkbox-outline'} size={8} color={palette.primary}/><Text style={styles.itemTitle}>{item.title}</Text></View>
                   {item.location?<View style={styles.itemTitleRow}><Ionicons name="location-outline" size={8} color={palette.muted}/><Text style={styles.itemMeta}>{item.location}</Text></View>:null}
+                  </>:null}
                 </Pressable>;})}
               </View>
             </View>;

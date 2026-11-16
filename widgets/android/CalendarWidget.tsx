@@ -2,7 +2,7 @@ import React from 'react';
 import { widgetStrings, type Language } from '../../lib/i18n';
 import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-android-widget';
 
-export type AndroidCalendarItem = { id: string; title: string; time: string; duration?: string; sourceColor: any; priority?: number };
+export type AndroidCalendarItem = { id: string; title: string; time: string; duration?: string; sourceColor: any; priority?: number; multiDaySegment?: 'start'|'middle'|'end' };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
 export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string; density?: 'comfortable'|'balanced'|'compact' };
@@ -135,18 +135,19 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                     </FlexWidget>
                     {day.items.map(item => {
                       const lines = itemTitleLines(item);
+                      const showDetails=item.multiDaySegment!=='middle'&&item.multiDaySegment!=='end';
                       return (
-                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item,density), marginTop: 3, padding: 2, borderRadius: 5, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
-                          {item.time ? <TextWidget text={item.time} style={{ fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?7:density==='comfortable'?11:ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor as any }} /> : null}
-                          {item.duration ? <TextWidget text={item.duration} style={{ fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?6:density==='comfortable'?9:ITEM_DURATION_HEIGHT, color: textColor as any }} /> : null}
-                          <FlexWidget style={{ flex:1, flexDirection:'row', alignItems:'flex-start' }}>
+                        <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item,density), marginTop: 3, padding: 2, borderTopLeftRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:5, borderBottomLeftRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:5, borderTopRightRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?0:5, borderBottomRightRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?0:5, marginHorizontal:item.multiDaySegment==='middle'?-2:0, borderWidth: 1, borderColor: '#D9DDE7', backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
+                          {showDetails&&item.time ? <TextWidget text={item.time} style={{ fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?7:density==='comfortable'?11:ITEM_TIME_HEIGHT, fontWeight: 'bold', color: textColor as any }} /> : null}
+                          {showDetails&&item.duration ? <TextWidget text={item.duration} style={{ fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?6:density==='comfortable'?9:ITEM_DURATION_HEIGHT, color: textColor as any }} /> : null}
+                          {showDetails?<FlexWidget style={{ flex:1, flexDirection:'row', alignItems:'flex-start' }}>
                             {item.priority ? <TextWidget text={String(item.priority)} style={{ width:8, fontSize: density==='compact'?4:density==='comfortable'?6:5, lineHeight: density==='compact'?7:density==='comfortable'?12:ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: PRIMARY }} /> : null}
                             <FlexWidget style={{ flex:1, flexDirection:'column' }}>
                               {lines.map((line, index) => (
                                 <TextWidget key={`${item.id}-line-${index}`} text={line} style={{ fontSize: 5, lineHeight: ITEM_TITLE_LINE_HEIGHT, fontWeight: 'bold', color: textColor as any }} />
                               ))}
                             </FlexWidget>
-                          </FlexWidget>
+                          </FlexWidget>:null}
                         </FlexWidget>
                       );
                     })}

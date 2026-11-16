@@ -158,6 +158,22 @@ test('Widget settings summarize the active theme and density', () => {
   assert.match(source, /widgetAppearance\.density/);
 });
 
+test('Multi-day events render as continuous segments in both the app and Android calendar widget', () => {
+  const data = read('lib/calendarWidgetData.ts');
+  const widget = read('widgets/android/CalendarWidget.tsx');
+  const calendar = read('app/(tabs)/calendar.tsx');
+  assert.match(data, /multiDaySegment:multiDaySegment\(item,day\)/);
+  assert.match(widget, /multiDaySegment==='middle'/);
+  assert.match(widget, /showDetails=item\.multiDaySegment/);
+  assert.match(calendar, /segment==='middle'&&styles\.multiDayMiddle/);
+});
+
+test('The Add tab is visually distinct from navigation destinations', () => {
+  const source = read('app/(tabs)/_layout.tsx');
+  assert.match(source, /addTabIcon/);
+  assert.match(source, /tabBarItemStyle:\{marginTop:-9\}/);
+});
+
 test('shared design tokens preserve minimum button touch target', () => {
   const source = read('components/ui.tsx');
   assert.match(source, /layoutTokens/);

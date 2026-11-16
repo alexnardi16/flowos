@@ -12,6 +12,12 @@ export type CalendarWidgetData = { weeks: AndroidCalendarWeek[] };
 const MONTHS=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 function dateKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function monthTitle(month:number,year:number,language?:Language){const name=(language?widgetStrings(language).months:MONTHS)[month]??'';return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${year}`;}
+function multiDaySegment(item:Commitment,day:Date){
+  if(item.kind!=='event'||!isMultiDayActivity(item))return undefined;
+  const keyFor=(value:Date)=>item.allDay?`${value.getUTCFullYear()}-${String(value.getUTCMonth()+1).padStart(2,'0')}-${String(value.getUTCDate()).padStart(2,'0')}`:dateKey(value);
+  const dates=activityDayDates(item);const current=keyFor(day);const first=keyFor(dates[0]);const last=keyFor(dates[dates.length-1]);
+  return current===first?'start':current===last?'end':'middle';
+}
 function formatItemTime(item:Commitment,language:Language='it'){
   if(item.allDay)return '';
   const startValue=item.scheduledAt??item.dueAt;
@@ -71,7 +77,8 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
         time:formatItemTime(item,language),
         duration:item.kind==='task'&&!item.allDay?`${({it:'Durata',en:'Duration',fr:'Durée',es:'Duración'} as const)[language]}: ${formatDurationLabel(item)}`:undefined,
         sourceColor:activitySourceColor(item,sourceColors),
-        priority:item.kind==='task'?item.priority:undefined
+        priority:item.kind==='task'?item.priority:undefined,
+        multiDaySegment:multiDaySegment(item,day)
       }));
       return {label:`${strings.dayNames[i]} ${day.getDate()}`,dateKey:key,isToday:key===todayKey,items};
     });
