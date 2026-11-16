@@ -12,7 +12,7 @@ export type CalendarWidgetData = { weeks: AndroidCalendarWeek[] };
 const MONTHS=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 function dateKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function monthTitle(month:number,year:number,language?:Language){const name=(language?widgetStrings(language).months:MONTHS)[month]??'';return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${year}`;}
-function multiDaySegment(item:Commitment,day:Date){
+function multiDaySegment(item:Commitment,day:Date):'start'|'middle'|'end'|undefined{
   if(item.kind!=='event'||!isMultiDayActivity(item))return undefined;
   const keyFor=(value:Date)=>item.allDay?`${value.getUTCFullYear()}-${String(value.getUTCMonth()+1).padStart(2,'0')}-${String(value.getUTCDate()).padStart(2,'0')}`:dateKey(value);
   const dates=activityDayDates(item);const current=keyFor(day);const first=keyFor(dates[0]);const last=keyFor(dates[dates.length-1]);
@@ -65,7 +65,7 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
     for(const date of activityDayDates(item))append(dateKey(date),item);
   }
 
-  for(const [key,list] of byDate)byDate.set(key,sortCommitments(list,calendarNames));
+  for(const [key,list] of byDate){const ordered=sortCommitments(list,calendarNames);ordered.sort((a,b)=>Number(b.kind==='event'&&isMultiDayActivity(b))-Number(a.kind==='event'&&isMultiDayActivity(a)));byDate.set(key,ordered);}
 
   const todayKey=dateKey(now);
   const weeks:AndroidCalendarWeek[]=timelineWeeks.map((week,w)=>{
