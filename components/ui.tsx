@@ -44,11 +44,11 @@ export const palette = {
 };
 
 export const layoutTokens = { cardRadius:16, buttonRadius:12, sectionGap:18, cardPadding:14, inlineGap:6 } as const;
+export const typeScale = { screenTitle:26, sectionTitle:18, cardTitle:16, body:14, metadata:12, label:12 } as const;
 export function getTypeScale(size:AppFontSize='standard'){
   const factor=size==='small'?0.92:size==='large'?1.12:1;
-  return {screenTitle:Math.round(26*factor),sectionTitle:Math.round(18*factor),cardTitle:Math.round(16*factor),body:Math.round(14*factor),metadata:Math.round(12*factor),label:Math.round(12*factor)};
+  return {screenTitle:Math.round(typeScale.screenTitle*factor),sectionTitle:Math.round(typeScale.sectionTitle*factor),cardTitle:Math.round(typeScale.cardTitle*factor),body:Math.round(typeScale.body*factor),metadata:Math.round(typeScale.metadata*factor),label:Math.round(typeScale.label*factor)};
 }
-export const typeScale=getTypeScale('standard');
 
 const DensityContext=createContext<{density:WidgetDensity;setDensity:(density:WidgetDensity)=>void;appTheme:AppTheme;setAppTheme:(theme:AppTheme)=>void;appFontSize:AppFontSize;setAppFontSize:(size:AppFontSize)=>void}>({density:'balanced',setDensity:()=>undefined,appTheme:'system',setAppTheme:()=>undefined,appFontSize:'standard',setAppFontSize:()=>undefined});
 export function DensityProvider({children}:PropsWithChildren){
