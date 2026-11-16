@@ -6,6 +6,7 @@ import { recordDiagnostic } from '../lib/diagnostics';
 import { finishNativeGoogleOAuth, signInWithGoogleWithoutForcedConsent } from '../lib/googleLogin';
 import { useAuth } from '../providers/AuthProvider';
 import { t, useLanguage } from '../lib/i18n';
+import { palette } from '@/components/ui';
 
 const GOOGLE_TIMEOUT_MS = 120_000;
 
@@ -111,17 +112,17 @@ export default function LoginScreen() { useLanguage();
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: '#F7F6F2', paddingHorizontal: 28, paddingTop: 24, paddingBottom: 64 },
+  container: { flexGrow: 1, backgroundColor: palette.bg, paddingHorizontal: 28, paddingTop: 24, paddingBottom: 64 },
   main: { width: '100%' },
   appIcon: { width: 92, height: 92, borderRadius: 20, alignSelf: 'center', marginBottom: 12 },
   featureGraphic: { width: '100%', height: 145, borderRadius: 16, marginBottom: 18 },
   eyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: 10, textAlign: 'center' },
-  title: { fontSize: 36, lineHeight: 40, fontWeight: '800', color: '#111' },
-  subtitle: { fontSize: 16, lineHeight: 23, color: '#5E5E5E', marginTop: 14, marginBottom: 22 },
-  googleButton: { borderRadius: 16, padding: 17, backgroundColor: '#fff', alignItems: 'center', borderWidth: 1, borderColor: '#D8D5CB' },
-  googleText: { fontWeight: '800', fontSize: 16, color: '#172033' },
-  status: { marginTop: 12, fontSize: 11, fontWeight: '800', color: '#555' },
-  permissions: { fontSize: 12, lineHeight: 17, color: '#777', marginTop: 10 },
+  title: { fontSize: 36, lineHeight: 40, fontWeight: '800', color: palette.ink },
+  subtitle: { fontSize: 16, lineHeight: 23, color: palette.muted, marginTop: 14, marginBottom: 22 },
+  googleButton: { borderRadius: 16, padding: 17, backgroundColor: palette.card, alignItems: 'center', borderWidth: 1, borderColor: palette.border },
+  googleText: { fontWeight: '800', fontSize: 16, color: palette.ink },
+  status: { marginTop: 12, fontSize: 11, fontWeight: '800', color: palette.muted },
+  permissions: { fontSize: 12, lineHeight: 17, color: palette.muted, marginTop: 10 },
   buttonDisabled: { opacity: .55 },
-  error: { marginTop: 16, fontSize: 14, lineHeight: 20, color: '#A12626' },
+  error: { marginTop: 16, fontSize: 14, lineHeight: 20, color: palette.danger },
 });

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { palette } from '@/components/ui';
 
 export default function AuthCallbackScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -79,10 +80,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 28,
-    backgroundColor: '#F7F6F2',
+    backgroundColor: palette.bg,
   },
-  title: { fontSize: 28, fontWeight: '800', color: '#111', textAlign: 'center' },
-  message: { marginTop: 16, fontSize: 16, lineHeight: 23, color: '#5E5E5E', textAlign: 'center' },
-  button: { marginTop: 24, borderRadius: 16, paddingVertical: 15, paddingHorizontal: 22, backgroundColor: '#111' },
-  buttonText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
+  title: { fontSize: 28, fontWeight: '800', color: palette.ink, textAlign: 'center' },
+  message: { marginTop: 16, fontSize: 16, lineHeight: 23, color: palette.muted, textAlign: 'center' },
+  button: { marginTop: 24, borderRadius: 16, paddingVertical: 15, paddingHorizontal: 22, backgroundColor: palette.primary },
+  buttonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 16 },
 });

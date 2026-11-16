@@ -124,7 +124,7 @@ const styles=StyleSheet.create({
   screenBrand:{fontSize:16,lineHeight:20,fontWeight:'700',letterSpacing:0.2,color:palette.primary,marginTop:2},
   screenTitle:{fontSize:typeScale.screenTitle,lineHeight:32,fontWeight:'700',color:palette.ink,marginTop:-2},
   screenSubtitle:{fontSize:14,lineHeight:20,color:palette.muted,marginTop:-4},
-  card:{backgroundColor:palette.card,borderRadius:layoutTokens.cardRadius,padding:layoutTokens.cardPadding,borderWidth:1,borderColor:'#EEF0F5',shadowColor:'#000',shadowOpacity:.045,shadowRadius:14,shadowOffset:{width:0,height:5},elevation:2},
+  card:{backgroundColor:palette.card,borderRadius:layoutTokens.cardRadius,padding:layoutTokens.cardPadding,borderWidth:1,borderColor:palette.border,shadowColor:'#000',shadowOpacity:.045,shadowRadius:14,shadowOffset:{width:0,height:5},elevation:2},
   kindTag:{alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:5,borderRadius:99,paddingHorizontal:9,paddingVertical:5},kindTagText:{fontSize:10,fontWeight:'700',letterSpacing:.2},
   chip:{alignSelf:'flex-start',borderRadius:99,paddingHorizontal:10,paddingVertical:6},
   chip_primary:{backgroundColor:palette.soft},chip_success:{backgroundColor:palette.soft},chip_warning:{backgroundColor:palette.soft},chip_neutral:{backgroundColor:palette.soft},

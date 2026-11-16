@@ -71,14 +71,14 @@ export default function ReminderSnooze() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.bg, justifyContent: 'center', padding: 20 },
-  card: { backgroundColor: '#FFF', borderRadius: 20, padding: 22, borderWidth: 1, borderColor: palette.border },
+  card: { backgroundColor: palette.card, borderRadius: 20, padding: 22, borderWidth: 1, borderColor: palette.border },
   eyebrow: { fontSize: 11, fontWeight: '900', letterSpacing: 1.4, color: palette.primary },
   title: { fontSize: 26, fontWeight: '900', color: palette.ink, marginTop: 6 },
   subtitle: { fontSize: 15, color: palette.muted, marginTop: 5, marginBottom: 18 },
   label: { fontSize: 12, fontWeight: '800', color: palette.muted, marginTop: 12 },
-  input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E4EA', borderRadius: 12, padding: 12, marginTop: 5, color: palette.ink },
+  input: { backgroundColor: palette.card, borderWidth: 1, borderColor: palette.border, borderRadius: 12, padding: 12, marginTop: 5, color: palette.ink },
   actions: { flexDirection: 'row', gap: 10, marginTop: 22 },
-  secondary: { flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 12, backgroundColor: '#ECEEF4' },
+  secondary: { flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 12, backgroundColor: palette.soft },
   secondaryText: { fontWeight: '800', color: palette.ink },
   primary: { flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 12, backgroundColor: palette.primary },
   primaryText: { fontWeight: '900', color: '#FFF' },
