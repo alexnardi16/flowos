@@ -123,7 +123,7 @@ export default function Plan(){
       <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><Text style={[styles.dayDividerText,group.key===todayKey&&styles.todayGroupLabel]}>{group.key===todayKey?<Text style={styles.todayGroupBadge}>{t('Oggi')}</Text>:null}<Text style={styles.groupWeekday}>{group.label.split(' ')[0]}</Text>{group.label.includes(' ')?` ${group.label.split(' ').slice(1).join(' ')}`:''}</Text><View style={styles.dayDividerLine}/></View>
       {group.items.map(item=>{
         const overdue=isOverdueTask(item);
-        return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
+        return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${t('Gestisci')}: ${item.title}`} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
           <Card style={[styles.itemCard,cardSourceStyle(item,sourceColors)]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
               <ActivityKindTag kind={item.kind} completed={item.status==='done'}/>

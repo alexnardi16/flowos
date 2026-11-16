@@ -118,7 +118,7 @@ export default function Calendar(){
                 <Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text>
               </View>
               <View style={styles.dayActivities}>
-                {items.map(item=>{const segment=multiDaySegment(item,date);return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),segment==='start'&&styles.multiDayStart,segment==='middle'&&styles.multiDayMiddle,segment==='end'&&styles.multiDayEnd,pressed&&styles.itemPressed]}>
+                {items.map(item=>{const segment=multiDaySegment(item,date);return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${t('Gestisci')}: ${item.title}`} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),segment==='start'&&styles.multiDayStart,segment==='middle'&&styles.multiDayMiddle,segment==='end'&&styles.multiDayEnd,pressed&&styles.itemPressed]}>
                   {segment==='start'||segment==='single'?<>
                   {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
                   {item.kind==='task'&&!item.allDay?<Text style={styles.itemDuration}>{t('Durata')}: {formatDurationLabel(item)}</Text>:null}

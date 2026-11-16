@@ -189,6 +189,17 @@ test('List day separators emphasize weekday and identify Today distinctly', () =
   assert.match(source, /todayGroupBadge/);
 });
 
+test('Primary activity cards and quick actions expose accessible labels', () => {
+  const today = read('app/(tabs)/today.tsx');
+  const plan = read('app/(tabs)/plan.tsx');
+  const calendar = read('app/(tabs)/calendar.tsx');
+  assert.match(today, /accessibilityLabel=\{`\$\{t\('Gestisci'\)\}: \$\{item\.title\}`\}/);
+  assert.match(today, /accessibilityLabel=\{`\$\{t\('Completa'\)\}: \$\{item\.title\}`\}/);
+  assert.match(plan, /accessibilityLabel=\{`\$\{t\('Gestisci'\)\}: \$\{item\.title\}`\}/);
+  assert.match(calendar, /accessibilityLabel=\{`\$\{t\('Gestisci'\)\}: \$\{item\.title\}`\}/);
+  assert.doesNotMatch(today+plan+calendar, /allowFontScaling=\{false\}/);
+});
+
 test('Undo is available for completion, postponement and local deletion', () => {
   const store = read('lib/store.ts');
   assert.match(store, /showSnackbar\(t\('Attività completata'\),t\('Annulla'/);
