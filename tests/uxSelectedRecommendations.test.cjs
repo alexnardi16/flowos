@@ -38,7 +38,7 @@ test('Calendar widget gives day and activity distinct click targets', () => {
   const source = read('widgets/android/CalendarWidget.tsx');
   assert.match(source, /flowos:\/\/calendar\?date=\$\{day\.dateKey\}/);
   assert.match(source, /flowos:\/\/calendar\?widgetAction=manage/);
-  assert.doesNotMatch(source, /key=\{day\.dateKey\}[\s\S]{0,180}clickAction="OPEN_URI"/);
+  assert.doesNotMatch(source, /key=\{day\.dateKey\}[\s\S]{0,100}accessibilityLabel=\{`Giorno \$\{day\.label\}`\}[\s\S]{0,120}clickAction="OPEN_URI"/);
 });
 
 test('shared design tokens preserve minimum button touch target', () => {
