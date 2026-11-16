@@ -514,16 +514,16 @@ test('Focus feature is completely removed from app routing, store and public cop
 });
 
 
-test('List resets to the current day whenever its macrosection receives focus',()=>{
+test('List initializes on Today once and preserves filters and scroll context on later focus',()=>{
   const source=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
-  assert.match(source,/useFocusEffect\(useCallback\(\(\)=>\{didInitialScroll\.current=false;scrollToToday\(\);\}/);
+  assert.match(source,/if\(!hasPlanFocused\.current\)\{hasPlanFocused\.current=true;didInitialScroll\.current=false;scrollToToday\(\);\}/);
   assert.match(source,/pendingTodayScroll\.current=true/);
   assert.match(source,/if\(filters\.period!=='all'\)setFilter\('period','all'\)/);
 });
 
-test('Calendar returns to today on focus unless opened with an explicit widget date',()=>{
+test('Calendar initializes on Today once and preserves the selected day on later focus',()=>{
   const source=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
-  assert.match(source,/useFocusEffect\(useCallback\(\(\)=>\{if\(hasCalendarFocused\.current\|\|!requestedDate\)setSelectedDateOverride\(dayKey\(new Date\(\)\)\)/);
+  assert.match(source,/if\(!hasCalendarFocused\.current\)\{if\(!requestedDate\)setSelectedDateOverride\(dayKey\(new Date\(\)\)\);hasCalendarFocused\.current=true;\}/);
   assert.match(source,/requestAnimationFrame\(\(\)=>scrollToSelectedWeek\(\)\)/);
   assert.match(source,/const selectedDateKey=selectedDateOverride\?\?requestedDate\?\?dayKey\(new Date\(\)\)/);
 });
