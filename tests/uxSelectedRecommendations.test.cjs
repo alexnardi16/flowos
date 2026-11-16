@@ -41,7 +41,20 @@ test('Calendar widget gives day and activity distinct click targets', () => {
   assert.doesNotMatch(source, /key=\{day\.dateKey\}[\s\S]{0,100}accessibilityLabel=\{`Giorno \$\{day\.label\}`\}[\s\S]{0,120}clickAction="OPEN_URI"/);
 });
 
-test('Manage keeps Save in a fixed footer and warns before discarding edits', () => {\n  const source = read('components/ManageSheet.tsx');\n  assert.match(source, /stickyFooter/);\n  assert.match(source, /hasUnsavedChanges/);\n  assert.match(source, /requestClose/);\n  assert.match(source, /REMINDER_PRESETS\.map\(\(offset\).*reminders\.some/);\n});\n\ntest('Create focuses the title for immediate entry', () => {\n  const source = read('app/(tabs)/capture.tsx');\n  assert.match(source, /<Field autoFocus autoGrow/);\n});\n\ntest('shared design tokens preserve minimum button touch target', () => {
+test('Manage keeps Save in a fixed footer and warns before discarding edits', () => {
+  const source = read('components/ManageSheet.tsx');
+  assert.match(source, /stickyFooter/);
+  assert.match(source, /hasUnsavedChanges/);
+  assert.match(source, /requestClose/);
+  assert.match(source, /REMINDER_PRESETS\.map\(\(offset\).*reminders\.some/);
+});
+
+test('Create focuses the title for immediate entry', () => {
+  const source = read('app/(tabs)/capture.tsx');
+  assert.match(source, /<Field autoFocus autoGrow/);
+});
+
+test('shared design tokens preserve minimum button touch target', () => {
   const source = read('components/ui.tsx');
   assert.match(source, /layoutTokens/);
   assert.match(source, /minHeight:48/);
