@@ -346,6 +346,12 @@ test('Calendar provides week jumps and a native in-app month/date selector', () 
   assert.match(source, /setSelectedDateOverride\(key\)/);
 });
 
+test('Calendar month picker uses the same Monday-first week convention as the app', () => {
+  const source = read('app/(tabs)/calendar.tsx');
+  assert.match(source, /\['L','M','M','G','V','S','D'\]/);
+  assert.match(source, /\(new Date\(pickerMonth\.getFullYear\(\),pickerMonth\.getMonth\(\),1\)\.getDay\(\)\+6\)%7/);
+});
+
 test('Multi-day events render as continuous segments in both the app and Android calendar widget', () => {
   const data = read('lib/calendarWidgetData.ts');
   const widget = read('widgets/android/CalendarWidget.tsx');

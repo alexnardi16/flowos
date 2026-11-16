@@ -142,9 +142,9 @@ export default function Calendar(){
             <Text style={styles.datePickerTitle}>{pickerMonth.toLocaleDateString(localeForLanguage(language),{month:'long',year:'numeric'})}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={t('Mese successivo')} onPress={()=>setPickerMonth(current=>new Date(current.getFullYear(),current.getMonth()+1,1))} style={styles.datePickerNav}><Ionicons name="chevron-forward" size={20} color={palette.primary}/></Pressable>
           </View>
-          <View style={styles.datePickerWeek}>{['D','L','M','M','G','V','S'].map((day,index)=><Text key={index} style={styles.datePickerWeekday}>{day}</Text>)}</View>
+          <View style={styles.datePickerWeek}>{['L','M','M','G','V','S','D'].map((day,index)=><Text key={index} style={styles.datePickerWeekday}>{day}</Text>)}</View>
           <View style={styles.datePickerGrid}>
-            {Array.from({length:new Date(pickerMonth.getFullYear(),pickerMonth.getMonth(),1).getDay()},(_,index)=><View key={'blank-'+index} style={styles.datePickerDay}/>)}
+            {Array.from({length:(new Date(pickerMonth.getFullYear(),pickerMonth.getMonth(),1).getDay()+6)%7},(_,index)=><View key={'blank-'+index} style={styles.datePickerDay}/>)}
             {Array.from({length:new Date(pickerMonth.getFullYear(),pickerMonth.getMonth()+1,0).getDate()},(_,index)=>{const date=new Date(pickerMonth.getFullYear(),pickerMonth.getMonth(),index+1);const key=dayKey(date);const selected=key===selectedDateKey;const today=key===dayKey(new Date());return <Pressable key={key} accessibilityRole="button" accessibilityLabel={date.toLocaleDateString(localeForLanguage(language))} accessibilityState={{selected}} onPress={()=>{setSelectedDateOverride(key);setShowDatePicker(false);}} style={[styles.datePickerDay,selected&&styles.datePickerDaySelected,today&&styles.datePickerDayToday]}><Text style={[styles.datePickerDayText,selected&&styles.datePickerDayTextSelected]}>{index+1}</Text></Pressable>;})}
           </View>
           <View style={styles.datePickerActions}>
