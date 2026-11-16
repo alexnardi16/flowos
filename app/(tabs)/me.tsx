@@ -124,7 +124,7 @@ export default function Me(){
   function chooseWidgetDensity(density:WidgetDensity){setWidgetAppearance(current=>({...current,density}));}
   async function resetWidgetCategory(section:'today'|'calendar'){
     const next=resetWidgetAppearanceCategory(widgetAppearance,section);setWidgetAppearance(next);
-    try{await saveWidgetAppearance(next);setDensity(next.density);await syncTodayWidget(commitments);catch(e){showAlert('Widget',e instanceof Error?e.message:'Ripristino non riuscito.');}
+    try{await saveWidgetAppearance(next);setDensity(next.density);await syncTodayWidget(commitments);}catch(e){showAlert('Widget',e instanceof Error?e.message:'Ripristino non riuscito.');}
   }
 
   async function restoreAppearanceDefaults(){
