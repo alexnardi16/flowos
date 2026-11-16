@@ -74,6 +74,37 @@ test('Create focuses the title for immediate entry', () => {
   assert.match(source, /<Field autoFocus autoGrow/);
 });
 
+test('List search includes Google calendar and task-list source names', () => {
+  const source = read('app/(tabs)/plan.tsx');
+  assert.match(source, /google\\?\.calendars\.find/);
+  assert.match(source, /google\\?\.taskLists\.find/);
+  assert.match(source, /searchable\(item,sourceName/);
+});
+
+test('List and Calendar preserve their selected state when regaining focus', () => {
+  const plan = read('app/(tabs)/plan.tsx');
+  const calendar = read('app/(tabs)/calendar.tsx');
+  assert.match(plan, /hasPlanFocused\.current/);
+  assert.match(calendar, /if\(!hasCalendarFocused\.current\)/);
+});
+
+test('Calendar marks the start, middle and end of multi-day events as continuous segments', () => {
+  const source = read('app/(tabs)/calendar.tsx');
+  assert.match(source, /multiDaySegment/);
+  assert.match(source, /multiDayStart/);
+  assert.match(source, /multiDayMiddle/);
+  assert.match(source, /multiDayEnd/);
+});
+
+test('Quick create is available from Today, List and Calendar with the relevant date', () => {
+  const today = read('app/(tabs)/today.tsx');
+  const plan = read('app/(tabs)/plan.tsx');
+  const calendar = read('app/(tabs)/calendar.tsx');
+  assert.match(today, /QuickAddMenu date=\{quickAddDate\}/);
+  assert.match(plan, /QuickAddMenu date=\{todayKey\}/);
+  assert.match(calendar, /QuickAddMenu date=\{selectedDateKey\}/);
+});
+
 test('Task and event types use consistent vector icons across Today, List, Calendar and Create preview', () => {
   const ui = read('components/ui.tsx');
   const today = read('app/(tabs)/today.tsx');

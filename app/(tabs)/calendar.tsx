@@ -3,6 +3,8 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
+import { QuickAddMenu } from '@/components/QuickAddMenu';
+import { ProgressiveHint } from '@/components/ProgressiveHint';
 import { ManageSheet } from '@/components/ManageSheet';
 import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleWorkspaceStatus } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
@@ -16,6 +18,12 @@ import { formatDurationLabel } from '@/lib/itemTiming';
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
+function multiDaySegment(item:Commitment,date:Date){
+  if(item.kind!=='event'||!isMultiDayActivity(item))return 'single';
+  const keyFor=(value:Date)=>item.allDay?`${value.getUTCFullYear()}-${String(value.getUTCMonth()+1).padStart(2,'0')}-${String(value.getUTCDate()).padStart(2,'0')}`:dayKey(value);
+  const dates=activityDayDates(item);const current=keyFor(date);const first=keyFor(dates[0]);const last=keyFor(dates[dates.length-1]);
+  return current===first?'start':current===last?'end':'middle';
+}
 function formatItemTime(item:Commitment,language:import('@/lib/i18n').Language){
   if(item.allDay)return '';
   const value=itemDate(item);if(!value)return '';
@@ -86,14 +94,15 @@ export default function Calendar(){
   const selectedDateKey=selectedDateOverride??requestedDate??dayKey(new Date());
   const selectedWeekIndex=weeks.findIndex(week=>week.some(date=>dayKey(date)===selectedDateKey));
   const scrollToSelectedWeek=useCallback(()=>{if(selectedWeekIndex<0)return;const offset=weekOffsets.current.get(selectedWeekIndex);if(offset===undefined)return;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));},[selectedWeekIndex]);
-  useFocusEffect(useCallback(()=>{if(hasCalendarFocused.current||!requestedDate)setSelectedDateOverride(dayKey(new Date()));hasCalendarFocused.current=true;requestAnimationFrame(()=>scrollToSelectedWeek());},[requestedDate,scrollToSelectedWeek]));
+  useFocusEffect(useCallback(()=>{if(!hasCalendarFocused.current){if(!requestedDate)setSelectedDateOverride(dayKey(new Date()));hasCalendarFocused.current=true;}requestAnimationFrame(()=>scrollToSelectedWeek());},[requestedDate,scrollToSelectedWeek]));
   const goToToday=useCallback(()=>{setSelectedDateOverride(dayKey(new Date()));scrollToSelectedWeek();},[scrollToSelectedWeek]);
   const moveSelectedDay=useCallback((delta:number)=>{const current=new Date(`${selectedDateKey}T12:00:00`);current.setDate(current.getDate()+delta);setSelectedDateOverride(dayKey(current));},[selectedDateKey]);
   useEffect(()=>{scrollToSelectedWeek();},[scrollToSelectedWeek,selectedDateKey]);
 
   const strings=widgetStrings(language);
 
-  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Giorno precedente')} onPress={()=>moveSelectedDay(-1)} style={styles.navButton}><Text style={styles.navButtonText}>‹</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Giorno successivo')} onPress={()=>moveSelectedDay(1)} style={styles.navButton}><Text style={styles.navButtonText}>›</Text></Pressable></View>}>
+  return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Giorno precedente')} onPress={()=>moveSelectedDay(-1)} style={styles.navButton}><Text style={styles.navButtonText}>‹</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Giorno successivo')} onPress={()=>moveSelectedDay(1)} style={styles.navButton}><Text style={styles.navButtonText}>›</Text></Pressable><QuickAddMenu date={selectedDateKey}/></View>}>
+    <ProgressiveHint id="calendar-navigation">{t('Suggerimento Calendario: seleziona un giorno, usa le frecce per spostarti e crea un elemento già associato alla data selezionata.')}</ProgressiveHint>
     {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week,index,strings.months);
       return <Card key={index} style={styles.weekCard} onLayout={(event)=>{weekOffsets.current.set(index,event.nativeEvent.layout.y);if(index===selectedWeekIndex)scrollToSelectedWeek();}}>
@@ -109,13 +118,13 @@ export default function Calendar(){
                 <Text style={[styles.dayNumber,today&&styles.todayText]}>{date.getDate()}</Text>
               </View>
               <View style={styles.dayActivities}>
-                {items.map(item=><Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),pressed&&styles.itemPressed]}>
+                {items.map(item=>{const segment=multiDaySegment(item,date);return <Pressable key={item.id} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),segment==='start'&&styles.multiDayStart,segment==='middle'&&styles.multiDayMiddle,segment==='end'&&styles.multiDayEnd,pressed&&styles.itemPressed]}>
                   {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
                   {item.kind==='task'&&!item.allDay?<Text style={styles.itemDuration}>{t('Durata')}: {formatDurationLabel(item)}</Text>:null}
                   {isOverdueTask(item) ? <Text style={styles.overdueTag}>{t('Scaduta')}</Text> : null}
                   <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Ionicons name={item.kind==='event'?'calendar-outline':'checkbox-outline'} size={8} color={palette.primary}/><Text style={styles.itemTitle}>{item.title}</Text></View>
                   {item.location?<View style={styles.itemTitleRow}><Ionicons name="location-outline" size={8} color={palette.muted}/><Text style={styles.itemMeta}>{item.location}</Text></View>:null}
-                </Pressable>)}
+                </Pressable>;})}
               </View>
             </View>;
           })}
@@ -142,7 +151,7 @@ const styles=StyleSheet.create({
   dayNumber:{fontSize:15,lineHeight:17,fontWeight:'700',color:palette.ink},
   todayText:{color:palette.primary},
   dayActivities:{gap:2,paddingTop:3},
-  item:{borderRadius:5,padding:2,borderWidth:1,gap:0},
+  item:{borderRadius:5,padding:2,borderWidth:1,gap:0},multiDayStart:{borderTopRightRadius:0,borderBottomRightRadius:0,marginRight:-2},multiDayMiddle:{borderRadius:0,marginHorizontal:-2},multiDayEnd:{borderTopLeftRadius:0,borderBottomLeftRadius:0,marginLeft:-2},
   itemTime:{fontSize:5,lineHeight:8,fontWeight:'700',color:palette.muted},itemDuration:{fontSize:5,lineHeight:7,fontWeight:'600',color:palette.muted},
   overdueTag:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.warning},
   itemTitleRow:{flexDirection:'row',alignItems:'flex-start',gap:2,minWidth:0},itemPriority:{fontSize:5,lineHeight:7,fontWeight:'900',color:palette.primary},itemTitle:{flex:1,minWidth:0,flexShrink:1,fontSize:6,lineHeight:8,fontWeight:'700',color:palette.ink},
