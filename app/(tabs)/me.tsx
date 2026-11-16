@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { AppState, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -100,7 +100,7 @@ export default function Me(){
   useEffect(()=>{const u=subscribeToSyncProgress(p=>{setProgress(p.percent);setStage(p.stage);});return u;},[]);
   useEffect(()=>{void getWidgetAppearance().then(setWidgetAppearance);},[]);
 
-  useEffect(()=>{if(!NOTIFICATIONS_SUPPORTED_HERE)return;void Notifications.getPermissionsAsync().then(result=>{setNotificationPermissionStatus(result.granted?'granted':'denied');}).catch(()=>setNotificationPermissionStatus('unknown'));},[]);
+  useEffect(()=>{const refresh=()=>{if(!NOTIFICATIONS_SUPPORTED_HERE)return;void Notifications.getPermissionsAsync().then(result=>{setNotificationPermissionStatus(result.granted?'granted':'denied');}).catch(()=>setNotificationPermissionStatus('unknown'));};refresh();const subscription=AppState.addEventListener('change',state=>{if(state==='active')refresh();});return()=>subscription.remove();},[]);
 
   useEffect(()=>{
     void isDailySummaryEnabledStored().then(setNotificationsEnabled);
@@ -373,7 +373,7 @@ export default function Me(){
     <Card style={{display:showSettingsSection('notifications','permessi android autorizzazioni notification permission')?'flex':'none'}}>
       <Text style={styles.label}>{t('Permessi Android')}</Text>
       <Text style={styles.meta}>{notificationPermissionStatus==='granted'?t('Permessi notifiche concessi'):notificationPermissionStatus==='denied'?t('Permessi notifiche non concessi'):t('Stato permessi non disponibile')}</Text>
-      <Button secondary label={t('Abilita notifiche')} onPress={()=>{void manageNotificationPermission();}} disabled={!NOTIFICATIONS_SUPPORTED_HERE}/>
+      <Button secondary label={t(notificationPermissionStatus==='granted'?'Gestisci nelle impostazioni del dispositivo':'Abilita notifiche')} onPress={()=>{void manageNotificationPermission();}} disabled={!NOTIFICATIONS_SUPPORTED_HERE}/>
     </Card>
     <Card style={{display:showSettingsSection('notifications','reminder delle attività promemoria per attività preset personalizzato')?'flex':'none'}}>
       <Text style={styles.label}>{t('Reminder delle attività')}</Text>
