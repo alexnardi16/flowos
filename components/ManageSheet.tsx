@@ -101,6 +101,10 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const [customHours, setCustomHours] = useState('');
   const [customMinutes, setCustomMinutes] = useState('');
   const [busy, setBusy] = useState(false);
+  const initialReminderMinutes=[...(item.reminders??[]).map(reminder=>reminder.minutesBefore),...((item.reminders??[]).some(reminder=>reminder.minutesBefore===0)?[]:[0])].sort((a,b)=>a-b).join(',');
+  const currentReminderMinutes=reminders.map(reminder=>reminder.minutesBefore).sort((a,b)=>a-b).join(',');
+  const hasUnsavedChanges=title!==parsedTitle.title||JSON.stringify(markers)!==JSON.stringify(parsedTitle.markers)||kind!==item.kind||allDay!==Boolean(item.allDay)||dateStr!==toDateInput(item[dateField],item.allDay)||timeStr!==toTimeInput(item[dateField],item.allDay)||repeat!==(item.recurrenceRule?.frequency??'none')||repeatUntil!==(item.recurrenceRule?.until?toDateInput(item.recurrenceRule.until,false):item.recurrenceSeriesEndAt?toDateInput(item.recurrenceSeriesEndAt,false):'')||priority!==String(item.priority??'')||location!==(item.location??'')||notes!==(item.notes??'')||link!==(item.link??'')||description!==(item.description??'')||currentReminderMinutes!==initialReminderMinutes;
+  async function requestClose(){if(hasUnsavedChanges){const message=language==='fr'?'Les modifications non enregistrées seront perdues. Voulez-vous quitter ?':language==='en'?'Unsaved changes will be lost. Do you want to leave?':language==='es'?'Se perderán los cambios no guardados. ¿Quieres salir?':'Le modifiche non salvate andranno perse. Vuoi uscire?';const title=language==='fr'?'Modifications non enregistrées':language==='en'?'Unsaved changes':language==='es'?'Cambios sin guardar':'Modifiche non salvate';const leave=language==='fr'?'Quitter':language==='en'?'Leave':language==='es'?'Salir':'Esci';const confirmed=await showConfirm(title,message,leave);if(!confirmed)return;}onClose();}
 
   function addReminder(minutesBefore: number) {
     if (reminders.some((r) => r.minutesBefore === minutesBefore)) return;
@@ -212,8 +216,8 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
     return taskLists.find((entry) => entry.google_task_list_id === taskListId)?.title;
   }, [kind, calendars, taskLists, calendarId, taskListId, ownEmail, language]);
 
-  return <Modal visible animationType="slide" onRequestClose={onClose}>
-    <ScrollView showsVerticalScrollIndicator persistentScrollbar keyboardShouldPersistTaps="handled" contentContainerStyle={styles.wrap}>
+  return <Modal visible animationType="slide" onRequestClose={()=>{void requestClose();}}>
+    <View style={styles.modalRoot}><ScrollView showsVerticalScrollIndicator persistentScrollbar keyboardShouldPersistTaps="handled" contentContainerStyle={styles.wrap}>
       <View style={styles.manageHeader}><Text style={styles.title}>{t('Gestisci')}</Text>{item.status!=='done' ? <Pressable disabled={busy} onPress={() => void postponeOneDay()} style={styles.postponeButton}><Text style={styles.postponeButtonText}>{t('Pulsante rinvia un giorno')}</Text></Pressable> : null}</View>
       <SectionTitle title={t('1. Tipo')} subtitle={t('Evento per un appuntamento fisso; task per un’attività.')}/>
       <View style={styles.kindRow}>{(['task','event'] as const).map((value) => <Pressable key={value} onPress={() => { if (value !== kind) { setKind(value); toggleAllDay(value === 'task'); } }} style={[styles.kindCard, kind === value && styles.kindCardActive]}><Text style={[styles.kindTitle, kind === value && styles.kindTitleActive]}>{value === 'event' ? t('Evento') : t('Task')}</Text><Text style={[styles.kindHelp, kind === value && styles.kindTitleActive]}>{value === 'event' ? t('Occupa uno spazio nel calendario') : t('Richiede un’azione')}</Text></Pressable>)}</View>
@@ -246,14 +250,13 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         {kind === 'task' ? <><Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Priorità')}</Text><Field label={t('Ordine di esecuzione')} value={priority} onChangeText={(value) => setPriority(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder={t('Facoltativa')}/><Text style={styles.help}>{t('priority-order-help')}</Text></> : null}
         <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Ripeti')}{kind === 'task' ? ' (' + t('Ripetizione task gestita da FlowOS: Google Tasks non supporta la ricorrenza.') + ')' : ''}</Text><View style={styles.choices}>{(['none','daily','weekly','monthly','yearly'] as const).map((option) => <Choice key={option} label={t(REPEAT_KEYS[option])} active={repeat === option} onPress={() => setRepeat(option)}/>)}</View>{repeat!=='none'||item.googleRecurringEventId||item.recurrenceSeriesId?<View style={styles.field}><Text style={styles.fieldLabelFixed}>{t('Fine della serie')} *</Text><Pressable onPress={()=>setDatePickerTarget('recurrence')} style={styles.dateButton}><Text style={styles.dateButtonText}>{repeatUntil||t('Seleziona una data')}</Text></Pressable><Text style={styles.help}>{t('Tutte le occorrenze fino a questa data saranno create e mostrate.')}</Text></View>:null}
         <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Notifiche promemoria')}</Text>{reminders.length ? <View style={styles.remindersList}>{reminders.map((reminder) => <View key={reminder.id} style={styles.reminderChip}><Text style={styles.reminderChipText}>{formatReminderOffsetLabel(reminder.minutesBefore, language)}</Text><Pressable onPress={() => removeReminder(reminder.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable></View>)}</View> : null}
-        <View style={styles.choices}>{REMINDER_PRESETS.map((offset) => <Choice key={offset} label={formatReminderOffsetLabel(offset, language)} active={false} onPress={() => addReminder(offset)}/>)}</View>
+        <View style={styles.choices}>{REMINDER_PRESETS.map((offset) => <Choice key={offset} label={formatReminderOffsetLabel(offset, language)} active={reminders.some(reminder=>reminder.minutesBefore===offset)} onPress={() => addReminder(offset)}/>)}</View>
         <View style={styles.inline}><View style={styles.flex}><Field fixedLabel label={t('giorni prima').replace(/\s+/, '\n')} value={customDays} onChangeText={(value) => setCustomDays(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field fixedLabel label={t('ore prima').replace(/\s+/, '\n')} value={customHours} onChangeText={(value) => setCustomHours(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field fixedLabel label={t('minuti prima').replace(/\s+/, '\n')} value={customMinutes} onChangeText={(value) => setCustomMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><Pressable onPress={() => { const offset = (Number(customDays)||0)*1440+(Number(customHours)||0)*60+(Number(customMinutes)||0); if(customDays !== '' || customHours !== '' || customMinutes !== '') { addReminder(offset); setCustomDays(''); setCustomHours(''); setCustomMinutes(''); } }} style={styles.addReminderButton}><Text style={styles.addReminderButtonText}>{t('Aggiungi')}</Text></Pressable></View>
       </Card>
       <Pressable onPress={() => setShowDetails((value) => !value)} style={styles.detailsToggle}><Text style={styles.detailsToggleText}>{showDetails ? t('Nascondi dettagli facoltativi') : t('Aggiungi descrizione, note, luogo o link')}</Text><Text style={styles.chevron}>{showDetails ? '−' : '+'}</Text></Pressable>{showDetails ? <Card><Field label={t('Descrizione')} value={description} onChangeText={setDescription} multiline placeholder={t('Informazioni principali')}/><Field label={t('Note private')} value={notes} onChangeText={setNotes} multiline placeholder={t('Dettagli utili per te')}/><Field label={t('Luogo')} value={location} onChangeText={setLocation} placeholder={t('Indirizzo o luogo')}/><Field label={t('Link')} value={link} onChangeText={setLink} keyboardType="url" autoCapitalize="none" placeholder="https://…"/></Card> : null}
 
       <Card style={styles.preview}><View style={styles.previewRow}><Text style={styles.previewTitle}>{formatActivityTitle(title.trim()||parsedTitle.title,markers)||t('Titolo')}</Text><Text style={styles.previewDestination}>{destinationName??t('nessuna disponibile')}</Text></View><Text style={styles.previewMeta}>{dateStr}{allDay?' · '+t('Tutto il giorno'):' · '+timeStr+' · '+formatDurationPreview(previewDurationMinutes,language)}</Text></Card>
       {item.status!=='done' ? <Button secondary label={t('Completa')} onPress={() => requestComplete(item,(id,scope)=>complete(id,scope).then(()=>onClose()))} disabled={busy}/> : <Button secondary label={t('Annulla Completamento')} onPress={() => void undoCompletion()} disabled={busy}/>}
-      <View style={styles.actionsRow}><Button secondary label={t('Annulla')} onPress={onClose} disabled={busy}/><Button label={t('Salva modifiche')} onPress={() => void save()} loading={busy}/></View>
       {isFlowOSOnly ? <View style={styles.section}><Text style={styles.sectionTitle}>{t('Solo su FlowOS')}</Text><Text style={styles.help}>{t('Questo elemento non è mai stato sincronizzato con Google.')}</Text><Button secondary label={t('Sincronizza con Google')} onPress={() => void syncNow()} disabled={busy}/></View> : null}
 
       <View style={styles.section}><Text style={styles.sectionTitle}>{t('Elimina')}</Text>
@@ -262,14 +265,16 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         {item.googleRecurringEventId ? <Pressable disabled={busy} onPress={() => void removeSeries()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{t('Elimina tutta la serie')}</Text></Pressable> : null}
       </View>
       {datePickerTarget ? <DateTimePicker value={new Date(`${datePickerTarget === 'start' ? dateStr : datePickerTarget === 'end' ? endDate : repeatUntil || dateStr}T12:00:00`)} mode="date" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_, selectedDate) => handleDatePicked(selectedDate)} onDismiss={() => setDatePickerTarget(null)}/> : null}
-    </ScrollView>
+    </ScrollView><View style={styles.stickyFooter}><Button secondary label={t('Annulla')} onPress={()=>void requestClose()} disabled={busy}/><Button label={t('Salva modifiche')} onPress={() => void save()} loading={busy} disabled={busy}/></View></View>
   </Modal>}
 function Choice({label, active, onPress}:{label:string;active:boolean;onPress:()=>void}) { return <Pressable onPress={onPress} style={[styles.choice, active && styles.choiceActive]}><Text style={[styles.choiceText, active && styles.choiceTextActive]}>{label}</Text></Pressable>; }
 type FieldProps = {label:string; value:string; onChangeText:(value:string)=>void; required?:boolean; multiline?:boolean; autoGrow?:boolean; placeholder?:string; keyboardType?:'default'|'number-pad'|'url'; autoCapitalize?:'none'|'sentences'; fixedLabel?:boolean; singleLineLabel?:boolean};
 function Field({label,value,onChangeText,required,multiline,autoGrow,placeholder,keyboardType,autoCapitalize,fixedLabel,singleLineLabel}:FieldProps) { const [contentHeight,setContentHeight]=useState(48); return <View style={styles.field}><Text numberOfLines={singleLineLabel ? 1 : undefined} style={fixedLabel ? styles.fieldLabelFixed : styles.fieldLabel}>{label}{required ? <Text style={styles.required}> *</Text> : null}</Text><TextInput value={value} onChangeText={onChangeText} multiline={Boolean(multiline||autoGrow)} scrollEnabled={autoGrow?false:undefined} onContentSizeChange={autoGrow?event=>setContentHeight(Math.max(48,event.nativeEvent.contentSize.height)):undefined} placeholder={placeholder} placeholderTextColor="#979DAE" keyboardType={keyboardType} autoCapitalize={autoCapitalize} style={[styles.input,multiline&&!autoGrow&&styles.multiline,autoGrow&&{height:contentHeight,minHeight:48,textAlignVertical:'top'}]}/></View>; }
 
 const styles = StyleSheet.create({
-  wrap:{padding:20,paddingTop:50,paddingBottom:60,gap:8,backgroundColor:palette.bg},
+  modalRoot:{flex:1,backgroundColor:palette.bg},
+  wrap:{padding:20,paddingTop:50,paddingBottom:24,gap:8,backgroundColor:palette.bg},
+  stickyFooter:{flexDirection:'row',gap:8,paddingHorizontal:20,paddingTop:10,paddingBottom:12,borderTopWidth:1,borderTopColor:palette.border,backgroundColor:palette.bg},
   preview:{gap:8,backgroundColor:'#FAFAFE',marginTop:12},
   previewRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
   previewTitle:{fontSize:16,fontWeight:'900',color:palette.ink,flexShrink:1},
@@ -309,7 +314,7 @@ const styles = StyleSheet.create({
   choiceActive:{backgroundColor:palette.primary,borderColor:palette.primary},
   choiceText:{fontSize:13,fontWeight:'700',color:palette.ink},
   choiceTextActive:{color:'#FFF'},
-  actionsRow:{flexDirection:'row',gap:8,marginTop:20},
+
   section:{marginTop:24,paddingTop:16,borderTopWidth:1,borderTopColor:palette.border,gap:8},
   sectionTitle:{fontSize:14,fontWeight:'900',color:palette.ink},
   help:{fontSize:12,color:palette.muted},
