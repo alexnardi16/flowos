@@ -127,7 +127,7 @@ const styles=StyleSheet.create({
   card:{backgroundColor:palette.card,borderRadius:layoutTokens.cardRadius,padding:layoutTokens.cardPadding,borderWidth:1,borderColor:'#EEF0F5',shadowColor:'#000',shadowOpacity:.045,shadowRadius:14,shadowOffset:{width:0,height:5},elevation:2},
   kindTag:{alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:5,borderRadius:99,paddingHorizontal:9,paddingVertical:5},kindTagText:{fontSize:10,fontWeight:'700',letterSpacing:.2},
   chip:{alignSelf:'flex-start',borderRadius:99,paddingHorizontal:10,paddingVertical:6},
-  chip_primary:{backgroundColor:palette.soft},chip_success:{backgroundColor:'#E8F6F1'},chip_warning:{backgroundColor:'#FFF3E5'},chip_neutral:{backgroundColor:'#EEF0F4'},
+  chip_primary:{backgroundColor:palette.soft},chip_success:{backgroundColor:palette.soft},chip_warning:{backgroundColor:palette.soft},chip_neutral:{backgroundColor:palette.soft},
   chipText:{fontSize:11,fontWeight:'700',letterSpacing:.35},chipText_primary:{color:palette.primary},chipText_success:{color:palette.success},chipText_warning:{color:palette.warning},chipText_neutral:{color:palette.muted},
   button:{backgroundColor:palette.primary,borderRadius:layoutTokens.buttonRadius,paddingVertical:12,paddingHorizontal:17,alignItems:'center',justifyContent:'center',minWidth:96,minHeight:48},
   secondary:{backgroundColor:palette.soft},danger:{backgroundColor:palette.danger},disabled:{opacity:.5},pressed:{transform:[{scale:.985}]},

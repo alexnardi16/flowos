@@ -15,7 +15,7 @@ export function AppChrome(){
 }
 
 const styles=StyleSheet.create({
-  sync:{position:'absolute',left:12,right:12,height:25,borderRadius:13,borderWidth:1,borderColor:'#A8B1CE',overflow:'hidden',justifyContent:'center',backgroundColor:'#ECEEF4',zIndex:9998,elevation:20},
+  sync:{position:'absolute',left:12,right:12,height:25,borderRadius:13,borderWidth:1,borderColor:palette.border,overflow:'hidden',justifyContent:'center',backgroundColor:palette.soft,zIndex:9998,elevation:20},
   syncFill:{position:'absolute',left:0,top:0,bottom:0,backgroundColor:palette.soft},
   syncText:{textAlign:'center',fontSize:10,fontWeight:'800',color:palette.primary},
 });
