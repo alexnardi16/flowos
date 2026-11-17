@@ -1,5 +1,5 @@
 import { PropsWithChildren, RefObject, ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Appearance, DynamicColorIOS, Image, Platform, PlatformColor, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
+import { ActivityIndicator, Alert, Appearance, DynamicColorIOS, Image, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BuildInfo } from './BuildInfo';
@@ -28,7 +28,9 @@ export function showConfirm(title: string, message: string, confirmLabel = t('Co
   });
 }
 
-const adaptiveColor=(light:string,dark:string,androidResource:string)=>Platform.OS==='ios'?DynamicColorIOS({light,dark}):Platform.OS==='android'?PlatformColor(androidResource):light;
+// Android theme attributes can resolve to low-contrast colors in OEM themes such as Samsung One UI.
+// Use explicit app colors on Android instead of PlatformColor resource aliases.
+const adaptiveColor=(light:string,dark:string,_androidResource?:string)=>Platform.OS==='ios'?DynamicColorIOS({light,dark}):light;
 export const palette = {
   bg:adaptiveColor('#F6F7FB','#10121A','?android:attr/colorBackground'),
   card:adaptiveColor('#FFFFFF','#1B1E29','?android:attr/colorBackgroundFloating'),
