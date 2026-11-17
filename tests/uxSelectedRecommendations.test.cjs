@@ -422,6 +422,28 @@ test('Semantic colors and spacing tokens stay consistent across light and dark t
   assert.doesNotMatch(settings, /#4254C5/);
 });
 
+test('List filters open in a compact bottom sheet and expose active count, reset and apply actions', () => {
+  const source = read('app/(tabs)/plan.tsx');
+  assert.match(source, /<Modal visible=\{filtersExpanded\} transparent animationType="slide"/);
+  assert.match(source, /filterModalRoot/);
+  assert.match(source, /filterBackdrop/);
+  assert.match(source, /Azzera filtri/);
+  assert.match(source, /Mostra risultati/);
+  assert.match(source, /Object\.values\(filters\)\.filter/);
+});
+
+test('Secondary settings screens follow the user-selected shared typography scale', () => {
+  const notifications = read('app/notifications-settings.tsx');
+  const account = read('app/delete-account.tsx');
+  for (const source of [notifications, account]) {
+    assert.match(source, /useAppDensity\(\)/);
+    assert.match(source, /getTypeScale\(appFontSize\)/);
+  }
+  assert.match(notifications, /fontSize:textScale\.screenTitle/);
+  assert.match(account, /fontSize:textScale\.screenTitle/);
+  assert.match(account, /fontSize:textScale\.body/);
+});
+
 test('Typography follows the shared hierarchy without oversized extra-bold account screens', () => {
   const ui = read('components/ui.tsx');
   const notifications = read('app/notifications-settings.tsx');
@@ -429,8 +451,8 @@ test('Typography follows the shared hierarchy without oversized extra-bold accou
   assert.match(ui, /export const typeScale = \{ screenTitle:26, sectionTitle:18, cardTitle:16, body:14, metadata:12, label:12 \}/);
   assert.match(ui, /export function getTypeScale\(size:AppFontSize='standard'\)/);
   assert.match(ui, /screenTitle:Math\.round\(typeScale\.screenTitle\*factor\)/);
-  assert.match(notifications, /title:\{fontSize:26,fontWeight:'700'/);
-  assert.match(account, /title:\{fontSize:26,fontWeight:'700'/);
+  assert.match(notifications, /fontSize:textScale\.screenTitle/);
+  assert.match(account, /fontSize:textScale\.screenTitle/);
 });
 
 test('Create and Manage keep date, time, duration and all-day controls coherent', () => {

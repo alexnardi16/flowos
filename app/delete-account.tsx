@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Button, Card, palette, showAlert, showConfirm } from '@/components/ui';
+import { Button, Card, palette, showAlert, showConfirm, getTypeScale, useAppDensity } from '@/components/ui';
 import { deleteFlowOSAccount } from '@/lib/account';
 import { t, useLanguage } from '@/lib/i18n';
 
-export default function DeleteAccount() { useLanguage();
+export default function DeleteAccount() { useLanguage(); const {appFontSize}=useAppDensity(); const textScale=getTypeScale(appFontSize);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -28,8 +28,8 @@ export default function DeleteAccount() { useLanguage();
 
   return <SafeAreaView style={styles.safe}><ScrollView showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={styles.wrap}>
     <Text style={styles.eyebrow}>FLOWOS</Text>
-    <Text style={styles.title}>{t('Eliminazione account')}</Text>
-    {done ? <Card><Text style={styles.heading}>{t('Account eliminato')}</Text><Text style={styles.body}>L'account FlowOS e i dati associati sono stati eliminati definitivamente.</Text></Card> : <>
+    <Text style={[styles.title,{fontSize:textScale.screenTitle,lineHeight:Math.round(textScale.screenTitle*1.25)}]}>{t('Eliminazione account')}</Text>
+    {done ? <Card><Text style={[styles.heading,{fontSize:textScale.sectionTitle}]}>{t('Account eliminato')}</Text><Text style={[styles.body,{fontSize:textScale.body,lineHeight:Math.round(textScale.body*1.5)}]}>L'account FlowOS e i dati associati sono stati eliminati definitivamente.</Text></Card> : <>
       <Card><Text style={styles.heading}>{t('Attenzione')}</Text><Text style={styles.body}>L'eliminazione è irreversibile. Verranno eliminati i dati FlowOS, le impostazioni e i token di Google salvati da FlowOS, oltre all'account di autenticazione.</Text><View style={styles.spacer}/><Button danger label={busy ? 'Eliminazione…' : t('Elimina definitivamente il mio account')} onPress={() => { void handleDelete(); }} disabled={busy} /></Card>
     </>}
   </ScrollView></SafeAreaView>;
