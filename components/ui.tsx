@@ -29,7 +29,7 @@ export function showConfirm(title: string, message: string, confirmLabel = t('Co
 }
 
 // Android theme attributes can resolve to low-contrast colors in OEM themes such as Samsung One UI.
-// Use explicit app colors on Android instead of PlatformColor resource aliases.
+// Use explicit app colors on Android instead of native theme resource aliases.
 const adaptiveColor=(light:string,dark:string,_androidResource?:string)=>Platform.OS==='ios'?DynamicColorIOS({light,dark}):light;
 export const palette = {
   bg:adaptiveColor('#F6F7FB','#10121A','?android:attr/colorBackground'),
