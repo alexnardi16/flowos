@@ -455,6 +455,36 @@ test('Typography follows the shared hierarchy without oversized extra-bold accou
   assert.match(account, /fontSize:textScale\.screenTitle/);
 });
 
+test('Quick Create puts the title first and keeps optional characteristics inside advanced details', () => {
+  const source = read('app/(tabs)/capture.tsx');
+  const title = source.indexOf("title={t('1. Titolo')}");
+  const type = source.indexOf("title={t('2. Tipo')}");
+  const destination = source.indexOf("title={t('3. Destinazione Google')}");
+  const dateTime = source.indexOf("title={t('4. Data e ora')}");
+  assert.ok(title >= 0 && title < type && type < destination && destination < dateTime);
+  const advanced = source.indexOf('{showAdvancedOptions ? <>');
+  const characteristics = source.indexOf("t('Caratteristiche')");
+  assert.ok(characteristics > advanced);
+  assert.match(source, /<Field autoFocus/);
+});
+
+test('Widget density labels clearly communicate compact, standard and detailed layouts', () => {
+  const settings = read('app/(tabs)/me.tsx');
+  const translations = read('lib/i18n.ts');
+  assert.match(settings, /id:'compact',label:'Compatta'/);
+  assert.match(settings, /id:'balanced',label:'Standard'/);
+  assert.match(settings, /id:'comfortable',label:'Dettagliata'/);
+  for (const language of ['it','en','fr','es']) assert.match(translations, new RegExp('translations\\.'+language));
+});
+
+test('Manage form typography follows the global text-size preference', () => {
+  const source = read('components/ManageSheet.tsx');
+  assert.match(source, /useAppDensity\(\)/);
+  assert.match(source, /getTypeScale\(appFontSize\)/);
+  assert.match(source, /fontSize:textScale\.screenTitle/);
+  assert.match(source, /fontSize:textScale\.body/);
+});
+
 test('Create and Manage keep date, time, duration and all-day controls coherent', () => {
   const capture = read('app/(tabs)/capture.tsx');
   const manage = read('components/ManageSheet.tsx');

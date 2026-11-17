@@ -73,6 +73,12 @@ Object.assign(translations.en,{'info':'info'});
 Object.assign(translations.fr,{'info':'infos'});
 Object.assign(translations.es,{'info':'info'});
 
+
+Object.assign(translations.it,{'1. Titolo':'1. Titolo','2. Tipo':'2. Tipo','3. Destinazione Google':'3. Destinazione Google','4. Data e ora':'4. Data e ora','Dettagliata':'Dettagliata','Standard':'Standard'});
+Object.assign(translations.en,{'1. Titolo':'1. Title','2. Tipo':'2. Type','3. Destinazione Google':'3. Google destination','4. Data e ora':'4. Date and time','Dettagliata':'Detailed','Standard':'Standard'});
+Object.assign(translations.fr,{'1. Titolo':'1. Titre','2. Tipo':'2. Type','3. Destinazione Google':'3. Destination Google','4. Data e ora':'4. Date et heure','Dettagliata':'Détaillée','Standard':'Standard'});
+Object.assign(translations.es,{'1. Titolo':'1. Título','2. Tipo':'2. Tipo','3. Destinazione Google':'3. Destino de Google','4. Data e ora':'4. Fecha y hora','Dettagliata':'Detallada','Standard':'Estándar'});
+
 export function t(key:string,params?:Record<string,string|number>,language:Language=currentLanguage){return interpolate(translations[language][key]??key,params);}
 export function getCurrentLanguage():Language{return currentLanguage;}
 export function localeForLanguage(language:Language=currentLanguage){return language==='it'?'it-IT':language==='fr'?'fr-FR':language==='es'?'es-ES':'en-US';}
