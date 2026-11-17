@@ -265,9 +265,39 @@ test('App light, dark and system appearance modes are persisted and applied thro
   assert.match(appearance, /appTheme: 'system'/);
   assert.match(ui, /Appearance\.setColorScheme/);
   assert.match(ui, /DynamicColorIOS/);
-  assert.match(ui, /PlatformColor/);
+  assert.match(ui, /const adaptiveColor=.*DynamicColorIOS.*:light/);
+  assert.doesNotMatch(ui, /PlatformColor/);
   assert.match(settings, /widgetAppearance\.appTheme===option\.id/);
   assert.match(root, /StatusBar style="auto"/);
+});
+
+test('Android app text palette never relies on OEM theme attributes that can render invisible text', () => {
+  const ui = read('components/ui.tsx');
+  assert.match(ui, /Use explicit app colors on Android/);
+  assert.match(ui, /const adaptiveColor=.*Platform\.OS==='ios'\?DynamicColorIOS\(\{light,dark\}\):light/);
+  assert.doesNotMatch(ui, /PlatformColor/);
+});
+
+test('Calendar tab resolves to the actual calendar route and uses a supported outline icon', () => {
+  const source = read('app/(tabs)/_layout.tsx');
+  assert.match(source, /Tabs\.Screen name="calendar"/);
+  assert.match(source, /Ionicons name="calendar-outline"/);
+  assert.doesNotMatch(source, /Tabs\.Screen name="calendar-outline"/);
+});
+
+test('Calendar multi-day segments reserve the same vertical space on every day', () => {
+  const source = read('widgets/android/CalendarWidget.tsx');
+  assert.match(source, /return vertical\*2\+timeHeight\+durationHeight\+lines\*titleLine\+6/);
+  assert.doesNotMatch(source, /multiDaySegment==='middle'\|\|item\.multiDaySegment==='end'\?0:6/);
+});
+
+test('Android widget action labels use larger touch targets and compact text sizing', () => {
+  const today = read('widgets/android/TodayWidget.tsx');
+  const calendar = read('widgets/android/CalendarWidget.tsx');
+  assert.match(today, /width:56, height:26/);
+  assert.match(today, /width:38, height:26/);
+  assert.match(calendar, /width: 44, height: 26/);
+  assert.match(calendar, /width: 38, height: 26/);
 });
 
 test('Settings search and appearance summary include the selected app text size', () => {
