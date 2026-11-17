@@ -69,7 +69,7 @@ function itemHeight(item: AndroidCalendarItem,density:'comfortable'|'balanced'|'
   const durationHeight=item.duration?(compact?6:comfortable?9:ITEM_DURATION_HEIGHT):0;
   const titleLine=compact?7:comfortable?12:ITEM_TITLE_LINE_HEIGHT;
   const vertical=compact?1:comfortable?3:ITEM_VERTICAL_PADDING;
-  return vertical*2+timeHeight+durationHeight+lines*titleLine+(item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:6);
+  return vertical*2+timeHeight+durationHeight+lines*titleLine+6;
 }
 
 function dayHeight(day: AndroidCalendarDay,density:'comfortable'|'balanced'|'compact'='balanced') {
@@ -98,10 +98,10 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <FlexWidget style={{ height: 26, paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel={labels.today}><TextWidget text={labels.today} style={{ fontSize: 9, fontWeight: 'bold', color: buttonTextColor as any }} /></FlexWidget>
-          <FlexWidget style={{ width: 36, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
-            <TextWidget text={labels.sync} style={{ fontSize: 8, fontWeight: 'bold', color: buttonTextColor as any }} />
+          <FlexWidget style={{ width: 44, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
+            <TextWidget text={labels.sync} style={{ fontSize: 7, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
-          <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}>
+          <FlexWidget style={{ width: 38, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}>
             <TextWidget text={labels.voice} style={{ fontSize: 8, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
           <FlexWidget style={{ height: 26, paddingHorizontal: 9, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}>
