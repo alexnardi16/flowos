@@ -80,6 +80,15 @@ test('Location and primary widget actions use consistent non-emoji labels or vec
   assert.doesNotMatch(androidToday+androidCalendar, /text="✓"|text="\+"/);
 });
 
+test('Widget editor previews both Today and Calendar with live theme, color and opacity values', () => {
+  const source = read('app/(tabs)/me.tsx');
+  assert.match(source, /widgetAppearance\.today\.backgroundColor/);
+  assert.match(source, /widgetAppearance\.calendar\.backgroundColor/);
+  assert.match(source, /widgetAppearance\.calendar\.buttonBackgroundOpacity/);
+  assert.match(source, /calendarPreviewDays/);
+  assert.match(source, /calendarPreviewEvent/);
+});
+
 test('Widget themes, densities, live preview, WCAG contrast and category reset are wired', () => {
   const appearance = read('lib/widgetAppearance.ts');
   const settings = read('app/(tabs)/me.tsx');
