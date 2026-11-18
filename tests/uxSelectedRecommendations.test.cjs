@@ -415,7 +415,7 @@ test('List day separators emphasize weekday and identify Today distinctly', () =
   assert.match(source, /groupWeekday/);
   assert.match(source, /todayGroupBadge:[^}]*marginRight:9/);
   assert.match(source, /todayGroupBadge/);
-  assert.match(source, /dayDividerText:\\{flexDirection:'row',alignItems:'center',gap:9/);
+  assert.match(source, /dayDividerText:\{flexDirection:'row',alignItems:'center',gap:9/);
 });
 
 test('Primary activity cards and quick actions expose accessible labels', () => {
