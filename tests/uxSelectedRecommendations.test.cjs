@@ -13,7 +13,7 @@ test('settings diagnostics do not create a navigation badge', () => {
 
 test('Today keeps completion primary, overdue state semantic, and descriptions compact', () => {
   const source = read('app/(tabs)/today.tsx');
-  assert.match(source, /Haptics\.notificationAsync/);
+  assert.doesNotMatch(source, /Haptics|Vibration|vibrate/);
   assert.match(source, /expiredDate/);
   assert.match(source, /numberOfLines=\{2\} style=\{s\.description\}/);
   assert.match(source, /minHeight:30/);
@@ -406,7 +406,7 @@ test('Global density updates shared app components and is loaded at startup', ()
 test('Today completion combines a subtle layout transition without vibration', () => {
   const source = read('app/(tabs)/today.tsx');
   assert.match(source, /LayoutAnimation\.configureNext\(LayoutAnimation\.Presets\.easeInEaseOut\)/);
-  assert.match(source, /Haptics\.notificationAsync/);
+  assert.doesNotMatch(source, /Haptics|Vibration|vibrate/);
 });
 
 test('List day separators emphasize weekday and identify Today distinctly', () => {
