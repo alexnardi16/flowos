@@ -97,15 +97,15 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
           <TextWidget text={labels.calendar} style={{ fontSize: 19, fontWeight: 'bold', color: textColor as any }} />
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <FlexWidget style={{ height: 26, paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel={labels.today}><TextWidget text={labels.today} style={{ fontSize: 9, fontWeight: 'bold', color: buttonTextColor as any }} /></FlexWidget>
+          <FlexWidget style={{ width: 30, height: 26, paddingHorizontal: 0, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="CALENDAR_PAGE_TODAY" accessibilityLabel={labels.today}><TextWidget text={labels.today} style={{ fontSize: 9, fontWeight: 'bold', color: buttonTextColor as any }} /></FlexWidget>
           <FlexWidget style={{ width: 44, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="SYNC_GOOGLE" accessibilityLabel={labels.sync}>
-            <TextWidget text={labels.sync} style={{ fontSize: 7, fontWeight: 'bold', color: buttonTextColor as any }} />
+            <TextWidget text="↻" style={{ fontSize: 18, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
-          <FlexWidget style={{ width: 38, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}>
-            <TextWidget text={labels.voice} style={{ fontSize: 8, fontWeight: 'bold', color: buttonTextColor as any }} />
+          <FlexWidget style={{ width: 30, height: 26, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture?voice=1' }} accessibilityLabel={labels.voice}>
+            <TextWidget text="🎙" style={{ fontSize: 13, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
-          <FlexWidget style={{ height: 26, paddingHorizontal: 9, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}>
-            <TextWidget text={labels.addShort} style={{ fontSize: 8, fontWeight: 'bold', color: buttonTextColor as any }} />
+          <FlexWidget style={{ width: 30, height: 26, paddingHorizontal: 0, borderRadius: 13, backgroundColor: buttonBackgroundColor as any, justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_URI" clickActionData={{ uri:'flowos://capture' }}>
+            <TextWidget text="+" style={{ fontSize: 20, fontWeight: 'bold', color: buttonTextColor as any }} />
           </FlexWidget>
         </FlexWidget>
       </FlexWidget>
@@ -135,7 +135,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
                     </FlexWidget>
                     {day.items.map(item => {
                       const lines = itemTitleLines(item);
-                      const showDetails=item.multiDaySegment!=='middle'&&item.multiDaySegment!=='end';
+                      const showDetails=true;
                       return (
                         <FlexWidget key={item.id} style={{ width: 'match_parent', height: itemHeight(item,density), marginTop: 3, padding: 2, borderTopLeftRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:5, borderBottomLeftRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?0:5, borderTopRightRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?0:5, borderBottomRightRadius:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?0:5, marginLeft:item.multiDaySegment==='middle'||item.multiDaySegment==='end'?-2:0, marginRight:item.multiDaySegment==='middle'||item.multiDaySegment==='start'?-2:0, borderWidth: 1, borderColor: borderColor as any, backgroundColor: item.sourceColor, flexDirection: 'column' }} clickAction="OPEN_URI" clickActionData={{ uri: `flowos://calendar?widgetAction=manage&id=${encodeURIComponent(item.id)}` }} accessibilityLabel={`Gestisci ${item.title}`}>
                           {showDetails&&item.kind ? <TextWidget text={item.kind.toUpperCase()} style={{fontSize:4,lineHeight:6,fontWeight:'bold',color:textColor as any}}/> : null}
