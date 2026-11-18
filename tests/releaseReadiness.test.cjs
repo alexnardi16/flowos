@@ -8,7 +8,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 
 test('all macrosections use the exact FlowOS brand casing beside the logo', () => {
   const ui = read('components/ui.tsx');
-  assert.match(ui, /<Text style={styles\.screenBrand}>FlowOS<\/Text>/);
+  assert.match(ui, /<Text style=\{\[styles\.screenBrand,\{color:screenForeground\}\]\}>FlowOS<\/Text>/);
   assert.doesNotMatch(ui, /<Text style={styles\.screenBrand}>FLOWOS<\/Text>/);
 });
 
