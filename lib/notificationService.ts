@@ -80,7 +80,7 @@ AppState.addEventListener('change', (nextState) => {
 });
 
 export const NOTIFICATIONS_SUPPORTED_HERE = Platform.OS !== 'web';
-export const DAILY_SUMMARY_CHANNEL = 'flowos-daily-summary';
+export const DAILY_SUMMARY_CHANNEL = 'flowos-daily-summary-silent-v2';
 export const DEFAULT_DAILY_SUMMARY_HOUR = 7;
 export const DEFAULT_DAILY_SUMMARY_MINUTE = 30;
 export const DAILY_SUMMARY_HOUR = DEFAULT_DAILY_SUMMARY_HOUR;
@@ -112,6 +112,7 @@ export async function ensureDailySummaryChannel() {
   await Notifications.setNotificationChannelAsync(DAILY_SUMMARY_CHANNEL, {
     name: ({ it: 'Riepilogo giornaliero FlowOS', en: 'FlowOS daily summary', fr: 'Résumé quotidien FlowOS', es: 'Resumen diario de FlowOS' } as const)[language],
     importance: Notifications.AndroidImportance.HIGH,
+    enableVibrate: false,
   });
 }
 
