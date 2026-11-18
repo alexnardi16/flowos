@@ -77,6 +77,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
   const [repeat, setRepeat] = useState<RepeatOption>(item.recurrenceRule?.frequency ?? 'none');
   const [repeatUntil, setRepeatUntil] = useState(item.recurrenceRule?.until ? toDateInput(item.recurrenceRule.until, false) : item.recurrenceSeriesEndAt ? toDateInput(item.recurrenceSeriesEndAt, false) : '');
   const [showDetails, setShowDetails] = useState(Boolean(item.description || item.notes || item.location || item.link));
+  const [showAdvancedOptions,setShowAdvancedOptions] = useState(false);
   const [days, setDays] = useState(String(Math.floor(item.durationMinutes / 1440)));
   const [hours, setHours] = useState(String(Math.floor((item.durationMinutes % 1440) / 60)));
   const [minutes, setMinutes] = useState(String(item.durationMinutes % 60));
@@ -219,7 +220,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
 
   return <Modal visible animationType="slide" onRequestClose={()=>{void requestClose();}}>
     <View style={styles.modalRoot}><ScrollView showsVerticalScrollIndicator persistentScrollbar keyboardShouldPersistTaps="handled" contentContainerStyle={styles.wrap}>
-      <View style={styles.manageHeader}><Text style={[styles.title,{fontSize:textScale.screenTitle,lineHeight:Math.round(textScale.screenTitle*1.25)}]}>{t('Gestisci')}</Text>{item.status!=='done' ? <Pressable disabled={busy} onPress={() => void postponeOneDay()} style={styles.postponeButton}><Text style={styles.postponeButtonText}>{t('Pulsante rinvia un giorno')}</Text></Pressable> : null}</View>
+      <View style={styles.manageHeader}><Text style={[styles.title,{fontSize:textScale.screenTitle,lineHeight:Math.round(textScale.screenTitle*1.25)}]}>{t('Gestisci')}</Text>{item.status!=='done' ? <Pressable disabled={busy} onPress={() => void postponeOneDay()} style={styles.postponeButton}><Text style={styles.postponeButtonText}>{t('Rimanda di 1 giorno')}</Text></Pressable> : null}</View>
       <SectionTitle title={t('1. Tipo')} subtitle={t('Evento per un appuntamento fisso; task per un’attività.')}/>
       <View style={styles.kindRow}>{(['task','event'] as const).map((value) => <Pressable key={value} onPress={() => { if (value !== kind) { setKind(value); toggleAllDay(value === 'task'); } }} style={[styles.kindCard, kind === value && styles.kindCardActive]}><Text style={[styles.kindTitle, kind === value && styles.kindTitleActive]}>{value === 'event' ? t('Evento') : t('Task')}</Text><Text style={[styles.kindHelp, kind === value && styles.kindTitleActive]}>{value === 'event' ? t('Occupa uno spazio nel calendario') : t('Richiede un’azione')}</Text></Pressable>)}</View>
 
@@ -231,6 +232,8 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
 
       <SectionTitle title={t('3. Informazioni essenziali')}/><Card>
         <Field autoGrow required label={t('Titolo')} value={title} onChangeText={setTitle} placeholder={kind === 'event' ? t('Es. Visita pediatrica') : t('Es. Preparare il budget')}/>
+        <Pressable accessibilityRole="button" accessibilityState={{expanded:showAdvancedOptions}} onPress={()=>setShowAdvancedOptions(value=>!value)} style={styles.detailsToggle}><Text style={styles.detailsToggleText}>{showAdvancedOptions?t('Nascondi opzioni avanzate'):t('Opzioni avanzate')}</Text><Text style={styles.chevron}>{showAdvancedOptions?'−':'+'}</Text></Pressable>
+        {showAdvancedOptions ? <>
         <Text style={[styles.fieldLabel,styles.fieldLabelSpaced,{fontSize:textScale.label}]}>{t('Caratteristiche')}</Text>
         <View style={styles.rowWrap}>
           <Choice label={t('👤 Da solo')} active={markers.people==='solo'} onPress={()=>setMarkers(v=>({...v,people:v.people==='solo'?null:'solo'}))}/>
@@ -253,6 +256,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         <Text style={[styles.fieldLabel, styles.fieldLabelSpaced]}>{t('Notifiche promemoria')}</Text>{reminders.length ? <View style={styles.remindersList}>{reminders.map((reminder) => <View key={reminder.id} style={styles.reminderChip}><Text style={styles.reminderChipText}>{formatReminderOffsetLabel(reminder.minutesBefore, language)}</Text><Pressable onPress={() => removeReminder(reminder.id)}><Text style={styles.reminderRemove}>✕</Text></Pressable></View>)}</View> : null}
         <View style={styles.choices}>{REMINDER_PRESETS.map((offset) => <Choice key={offset} label={formatReminderOffsetLabel(offset, language)} active={reminders.some(reminder=>reminder.minutesBefore===offset)} onPress={() => addReminder(offset)}/>)}</View>
         <View style={styles.inline}><View style={styles.flex}><Field fixedLabel label={t('giorni prima').replace(/\s+/, '\n')} value={customDays} onChangeText={(value) => setCustomDays(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field fixedLabel label={t('ore prima').replace(/\s+/, '\n')} value={customHours} onChangeText={(value) => setCustomHours(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><View style={styles.flex}><Field fixedLabel label={t('minuti prima').replace(/\s+/, '\n')} value={customMinutes} onChangeText={(value) => setCustomMinutes(value.replace(/\D/g,''))} keyboardType="number-pad" placeholder="0"/></View><Pressable onPress={() => { const offset = (Number(customDays)||0)*1440+(Number(customHours)||0)*60+(Number(customMinutes)||0); if(customDays !== '' || customHours !== '' || customMinutes !== '') { addReminder(offset); setCustomDays(''); setCustomHours(''); setCustomMinutes(''); } }} style={styles.addReminderButton}><Text style={styles.addReminderButtonText}>{t('Aggiungi')}</Text></Pressable></View>
+        </> : null}
       </Card>
       <Pressable onPress={() => setShowDetails((value) => !value)} style={styles.detailsToggle}><Text style={styles.detailsToggleText}>{showDetails ? t('Nascondi dettagli facoltativi') : t('Aggiungi descrizione, note, luogo o link')}</Text><Text style={styles.chevron}>{showDetails ? '−' : '+'}</Text></Pressable>{showDetails ? <Card><Field label={t('Descrizione')} value={description} onChangeText={setDescription} multiline placeholder={t('Informazioni principali')}/><Field label={t('Note private')} value={notes} onChangeText={setNotes} multiline placeholder={t('Dettagli utili per te')}/><Field label={t('Luogo')} value={location} onChangeText={setLocation} placeholder={t('Indirizzo o luogo')}/><Field label={t('Link')} value={link} onChangeText={setLink} keyboardType="url" autoCapitalize="none" placeholder="https://…"/></Card> : null}
 
@@ -274,7 +278,7 @@ function Field({label,value,onChangeText,required,multiline,autoGrow,placeholder
 
 const styles = StyleSheet.create({
   modalRoot:{flex:1,backgroundColor:palette.bg},
-  wrap:{padding:20,paddingTop:50,paddingBottom:24,gap:8,backgroundColor:palette.bg},
+  wrap:{padding:20,paddingTop:50,paddingBottom:64,gap:8,backgroundColor:palette.bg},
   stickyFooter:{flexDirection:'row',gap:8,paddingHorizontal:20,paddingTop:10,paddingBottom:12,borderTopWidth:1,borderTopColor:palette.border,backgroundColor:palette.bg},
   preview:{gap:8,backgroundColor:palette.card,marginTop:12},
   previewRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
