@@ -157,9 +157,27 @@ export async function saveCommitment(item: Commitment): Promise<boolean> {
         'external_etag', 'external_updated_at', 'google_calendar_id',
         'google_task_list_id',
       ]);
-      const comparableKeys = Object.keys(row).filter(key => !syncMetadataKeys.has(key));
+      const comparableKeys = Object.keys(row).filter(key => !syncMetadataKeys.has(key) && key !== 'ai_metadata');
       const unchanged = comparableKeys.every(key => JSON.stringify(existing[key]) === JSON.stringify((row as Record<string, unknown>)[key]));
-      if (unchanged) {
+      const existingMetadata = { ...(existing.ai_metadata ?? {}) };
+      const nextMetadata = { ...(((row as Record<string, unknown>).ai_metadata as Record<string, unknown>) ?? {}) };
+      const previousDailyDates = existingMetadata.dailyCompletedDates;
+      const nextDailyDates = nextMetadata.dailyCompletedDates;
+      delete existingMetadata.dailyCompletedDates;
+      delete nextMetadata.dailyCompletedDates;
+      const onlyDailyCompletionChanged = unchanged
+        && JSON.stringify(existingMetadata) === JSON.stringify(nextMetadata)
+        && JSON.stringify(previousDailyDates ?? []) !== JSON.stringify(nextDailyDates ?? []);
+      if (onlyDailyCompletionChanged) {
+        const { error: dailyMarkerError } = await supabase.from('commitments').update({
+          ai_metadata: row.ai_metadata,
+          updated_at: new Date().toISOString(),
+        }).eq('id', item.id).eq('user_id', userId);
+        if (dailyMarkerError) throw dailyMarkerError;
+        await logNotificationEvent('commitment-daily-completion-saved',{id:item.id,dailyCompletedDates:nextDailyDates});
+        return true;
+      }
+      if (unchanged && JSON.stringify(existing.ai_metadata ?? {}) === JSON.stringify((row as Record<string, unknown>).ai_metadata ?? {})) {
         await logNotificationEvent('commitment-save-stage-no-change',{id:item.id,elapsedMs:Date.now()-startedAt});
         return true;
       }
