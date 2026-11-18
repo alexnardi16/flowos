@@ -311,7 +311,7 @@ test('Widget customization uses selectable color swatches and includes button co
   assert.match(settings,/Opacità dello sfondo dei pulsanti \(%\)/);
   assert.match(settings,/Opacità del testo e dei simboli dei pulsanti \(%\)/);
   assert.match(settings,/Testo e simboli dei pulsanti/);
-  assert.match(settings,/const WIDGET_COLOR_SWATCHES=\[\.\.\.new Set\(\[/);
+  assert.match(settings,/const WIDGET_COLOR_SWATCHES=Object\.freeze\(\[\.\.\.new Set\(\[/);
   assert.match(settings,/\.\.\.ACTIVITY_SOURCE_COLORS/);
   assert.match(settings,/ACTIVITY_SOURCE_COLORS, defaultActivitySourceColor/);
   assert.match(settings,/normalizedSwatchColor\(value\)/);
@@ -473,7 +473,7 @@ test('Manage exposes the same one-day postpone action as the Today widget in all
 
 test('Widget color swatches use one consistent light-to-dark palette including all defaults',()=>{
   const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
-  assert.match(settings,/const WIDGET_COLOR_SWATCHES=\[\.\.\.new Set\(/);
+  assert.match(settings,/const WIDGET_COLOR_SWATCHES=Object\.freeze\(\[\.\.\.new Set\(/);
   assert.match(settings,/return brightness\(b\)-brightness\(a\)/);
   assert.match(settings,/const colors=WIDGET_COLOR_SWATCHES/);
   assert.doesNotMatch(settings,/\[\.\.\.WIDGET_COLOR_SWATCHES,normalizedSwatchColor\(value\)\]/);
