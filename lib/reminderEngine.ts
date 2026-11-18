@@ -9,12 +9,12 @@ import { logNotificationEvent } from './notificationLog';
 import type { Commitment } from '../types';
 import { getLanguage, type Language } from './i18n';
 
-export const EVENT_REMINDER_CHANNEL = 'flowos-event-reminders';
+export const EVENT_REMINDER_CHANNEL = 'flowos-event-reminders-silent-v2';
 export const REMINDER_ACTION_CATEGORY = 'flowos_reminder_actions';
 export const REMINDER_ACTION_POSTPONE = 'reminder_postpone';
 export const REMINDER_ACTION_COMPLETE = 'reminder_complete';
-export const DUE_SOON_CHANNEL = 'flowos-due-soon';
-export const OVERDUE_CHANNEL = 'flowos-overdue';
+export const DUE_SOON_CHANNEL = 'flowos-due-soon-silent-v2';
+export const OVERDUE_CHANNEL = 'flowos-overdue-silent-v2';
 
 const EVENT_REMINDER_MAP_KEY = 'flowos:notifications:event-reminder-map';
 const DUE_SOON_ID_KEY = 'flowos:notifications:due-soon-scheduled-id';
@@ -30,10 +30,12 @@ async function ensureReminderChannels(language: Language) {
   await Notifications.setNotificationChannelAsync(EVENT_REMINDER_CHANNEL, {
     name: ({ it: 'Promemoria FlowOS', en: 'FlowOS reminders', fr: 'Rappels FlowOS', es: 'Recordatorios de FlowOS' } as const)[language],
     importance: Notifications.AndroidImportance.HIGH,
+    enableVibrate: false,
   });
   await Notifications.setNotificationChannelAsync(DUE_SOON_CHANNEL, {
     name: ({ it: 'Task in scadenza', en: 'Tasks due soon', fr: 'Tâches à échéance proche', es: 'Tareas próximas a vencer' } as const)[language],
     importance: Notifications.AndroidImportance.DEFAULT,
+    enableVibrate: false,
   });
   await Notifications.setNotificationChannelAsync(OVERDUE_CHANNEL, {
     name: ({ it: 'Task scadute', en: 'Overdue tasks', fr: 'Tâches en retard', es: 'Tareas atrasadas' } as const)[language],
