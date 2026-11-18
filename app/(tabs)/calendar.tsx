@@ -20,7 +20,7 @@ import { formatDurationLabel } from '@/lib/itemTiming';
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
 function multiDaySegment(item:Commitment,date:Date){
-  if(item.kind!=='event'||!isMultiDayActivity(item))return 'single';
+  if(!isMultiDayActivity(item))return 'single';
   const keyFor=(value:Date)=>item.allDay?`${value.getUTCFullYear()}-${String(value.getUTCMonth()+1).padStart(2,'0')}-${String(value.getUTCDate()).padStart(2,'0')}`:dayKey(value);
   const dates=activityDayDates(item);const current=keyFor(date);const first=keyFor(dates[0]);const last=keyFor(dates[dates.length-1]);
   return current===first?'start':current===last?'end':'middle';
@@ -123,7 +123,7 @@ export default function Calendar(){
               </View>
               <View style={styles.dayActivities}>
                 {items.map(item=>{const segment=multiDaySegment(item,date);return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${t('Gestisci')}: ${item.title}`} onPress={()=>setManageId(item.id)} style={({pressed})=>[styles.item,sourceStyle(item,sourceColors),segment==='start'&&styles.multiDayStart,segment==='middle'&&styles.multiDayMiddle,segment==='end'&&styles.multiDayEnd,pressed&&styles.itemPressed]}>
-                  {segment==='start'||segment==='single'?<>
+                  {true?<>
                   {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
                   {item.kind==='task'&&!item.allDay?<Text style={styles.itemDuration}>{t('Durata')}: {formatDurationLabel(item)}</Text>:null}
                   {isOverdueTask(item) ? <Text style={styles.overdueTag}>{t('Scaduta')}</Text> : null}
