@@ -467,7 +467,16 @@ test('Manage exposes the same one-day postpone action as the Today widget in all
   assert.match(manage,/t\('Rimanda di 1 giorno'\)/);
   assert.match(i18n,/'Rimanda di 1 giorno':'Postpone 1 day'/);
   assert.match(i18n,/'Rimanda di 1 giorno':'Reporter d’un jour'/);
-  assert.match(i18n,/'Rimanda di 1 giorno':'Aplazar 1 día'/);
+  assert.match(i18n,/'Rimanda di 1 giorno':'Posponer 1 día'/);
+});
+
+test('Widget color swatches use one consistent light-to-dark palette including all defaults',()=>{
+  const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
+  assert.match(settings,/const WIDGET_COLOR_SWATCHES=\[\.\.\.new Set\(/);
+  assert.match(settings,/return brightness\(b\)-brightness\(a\)/);
+  assert.match(settings,/const colors=WIDGET_COLOR_SWATCHES/);
+  assert.doesNotMatch(settings,/\[\.\.\.WIDGET_COLOR_SWATCHES,normalizedSwatchColor\(value\)\]/);
+  for(const color of ['#F1F4FF','#172033','#6658D3','#FFFFFF','#F3F4F7','#F3F4F7']) assert.ok(settings.includes(color));
 });
 
 test('Google Play metadata does not advertise an unavailable Focus mode and includes four locales',()=>{
