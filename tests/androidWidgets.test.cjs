@@ -311,7 +311,7 @@ test('Widget customization uses selectable color swatches and includes button co
   assert.match(settings,/Opacità dello sfondo dei pulsanti \(%\)/);
   assert.match(settings,/Opacità del testo e dei simboli dei pulsanti \(%\)/);
   assert.match(settings,/Testo e simboli dei pulsanti/);
-  assert.match(settings,/"#F1F4FF","#172033","#6658D3","#FFFFFF","#F3F4F7",\.\.\.ACTIVITY_SOURCE_COLORS/);
+  assert.match(settings,/const WIDGET_COLOR_SWATCHES=\[\.\.\.new Set\(\[/);\n  assert.match(settings,/\.\.\.ACTIVITY_SOURCE_COLORS/);
   assert.match(settings,/ACTIVITY_SOURCE_COLORS, defaultActivitySourceColor/);
   assert.match(settings,/normalizedSwatchColor\(value\)/);
   assert.match(settings,/accessibilityState=\{\{selected:selected===color\}\}/);
