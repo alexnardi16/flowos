@@ -1,5 +1,4 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, View } from 'react-native';
@@ -28,7 +27,7 @@ function cardSourceStyle(item:Commitment,sourceColors:Map<string,string>){return
 export default function Today() {
   const { language } = useLanguage();
   const quickAddDate=localTodayKey();
-  const commitments = useFlowStore((state) => state.commitments); const completeAction=useFlowStore(state=>state.complete); const complete=useCallback(async(...args:Parameters<typeof completeAction>)=>{LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);await completeAction(...args);void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>undefined);},[completeAction]); const postpone=useFlowStore(state=>state.postpone); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
+  const commitments = useFlowStore((state) => state.commitments); const completeAction=useFlowStore(state=>state.complete); const complete=useCallback(async(...args:Parameters<typeof completeAction>)=>{LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);await completeAction(...args);},[completeAction]); const postpone=useFlowStore(state=>state.postpone); const syncWithGoogle=useFlowStore(state=>state.syncWithGoogle);
   const params=useLocalSearchParams<{widgetAction?:string;id?:string}>();
   const [manageId,setManageId]=useState<string|null>(null); const [google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
