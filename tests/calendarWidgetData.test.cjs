@@ -1,4 +1,5 @@
-const test=require('node:test');const assert=require('node:assert/strict');const {buildCalendarWidgetData}=require('../.test-dist-widget/lib/calendarWidgetData.js');const {buildActivitySourceColors,activitySourceColor}=require('../.test-dist-widget/lib/activityColors.js');
+const test=require('node:test');const assert=require('node:assert/strict');const {buildCalendarWidgetData}=require('../.test-dist-widget/lib/calendarWidgetData.js');
+const {isVisibleInToday,isCompletedOnDate}=require('../.test-dist-widget/lib/commitmentVisibility.js');const {buildActivitySourceColors,activitySourceColor}=require('../.test-dist-widget/lib/activityColors.js');
 test('calendar widget data keeps active items on the correct day',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Test',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T15:00:00'}],new Date('2026-09-30T23:59:59'),now);const day=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21');assert.equal(day.items.length,1);assert.equal(day.items[0].title,'Test');});
 test('calendar widget data excludes completed and deleted items',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Done',kind:'task',status:'done',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T15:00:00'},{id:'2',title:'Deleted',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T16:00:00',deletedAt:'2026-09-19T00:00:00'}],new Date('2026-09-30T23:59:59'),now);assert.equal(data.weeks.flatMap(w=>w.days).reduce((n,d)=>n+d.items.length,0),0);});
 test('the week that starts in September and contains October 1 is titled October',()=>{
@@ -107,4 +108,27 @@ test('Calendar widget shows the end time and explicit duration for timed tasks',
   const item=data.weeks.flatMap(week=>week.days).find(day=>day.dateKey==='2026-09-21').items.find(entry=>entry.id==='timed-task');
   assert.equal(item.time,'10:00 - 11:30');
   assert.equal(item.duration,'Durata: 1 h 30 min');
+});
+
+
+test('multi-day activities completed today disappear only today and return tomorrow',()=>{
+  const start=new Date(2026,10,17,9,0);
+  const today=new Date(2026,10,18,12,0);
+  const tomorrow=new Date(2026,10,19,12,0);
+  const dayKey='2026-11-18';
+  for(const kind of ['task','event']){
+    const item={id:'multi-'+kind,title:'Multi-day '+kind,kind,status:kind==='event'?'scheduled':'active',scheduledAt:start.toISOString(),dueAt:start.toISOString(),durationMinutes:72*60,energy:'medium',context:'test',confidence:1,dailyCompletedDates:[dayKey]};
+    assert.equal(isCompletedOnDate(item,today),true);
+    assert.equal(isVisibleInToday(item,today),false,kind+' should be hidden on its completed date');
+    assert.equal(isVisibleInToday(item,tomorrow),true,kind+' should reappear on the following date');
+    assert.equal(item.status==='done',false,'daily completion must not globally complete the activity');
+  }
+});
+
+test('multi-day activity remains visible on every uncompleted intersected day',()=>{
+  const start=new Date(2026,10,17,9,0);
+  const item={id:'multi-open',title:'Multi-day',kind:'task',status:'active',scheduledAt:start.toISOString(),dueAt:start.toISOString(),durationMinutes:72*60,energy:'medium',context:'test',confidence:1,dailyCompletedDates:['2026-11-18']};
+  assert.equal(isVisibleInToday(item,new Date(2026,10,17,12,0)),true);
+  assert.equal(isVisibleInToday(item,new Date(2026,10,18,12,0)),false);
+  assert.equal(isVisibleInToday(item,new Date(2026,10,19,12,0)),true);
 });
