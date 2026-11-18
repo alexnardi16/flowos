@@ -4,7 +4,7 @@ import { formatDurationLabel, isExpired } from './itemTiming';
 import { toDateKey } from './dailySummary';
 import { sortCommitments } from './activityOrdering';
 import { activitySourceColor, buildActivitySourceColors } from './activityColors';
-import { isVisibleCompletedMultiDayForDate, isOverdueTask, eventOccursOnDate, activityOccursOnDate, isMultiDayActivity } from './commitmentVisibility';
+import { isVisibleCompletedMultiDayForDate, isOverdueTask, eventOccursOnDate, activityOccursOnDate, isMultiDayActivity, isCompletedOnDate } from './commitmentVisibility';
 import { type Language } from './i18n';
 
 export type WidgetItem = { id: string; title: string; time: string; duration?: string; kind: Commitment['kind']; priority?: number; sourceColor?: string };
@@ -22,6 +22,7 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
   let overdueCount=0;
 
   for(const item of commitments){
+    if(isActive(item)&&isMultiDayActivity(item)&&isCompletedOnDate(item,now))continue;
     const completedMultiDayVisible=isVisibleCompletedMultiDayForDate(item,now);
     if(!isActive(item)&&!completedMultiDayVisible)continue;
     const value=item.scheduledAt??item.dueAt;
