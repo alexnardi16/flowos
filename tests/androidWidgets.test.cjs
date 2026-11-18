@@ -184,7 +184,7 @@ test('All macrosection headers remain outside the scrollable content',()=>{
   const source=fs.readFileSync('components/ui.tsx','utf8');
   assert.match(source,/<View style=\{\[styles\.screenHeader,\{backgroundColor:screenBackground\}\]\}>/);
   assert.match(source,/styles\.screenTitle/);
-  assert.match(source,/<ScrollView ref=\{scrollRef\} \{\.\.\.scrollProps\} style=\{styles\.screenScroll\}/);
+  assert.match(source,/<ScrollView ref=\{scrollRef\} \{\.\.\.scrollProps\} style=\{\[styles\.screenScroll,\{backgroundColor:screenBackground\}\]\}/);
   assert.match(source,/screenHeader:\{[^}]*backgroundColor:palette\.bg/);
   assert.match(fs.readFileSync('app/(tabs)/plan.tsx','utf8'),/headerActions=\{<View style=\{styles\.searchRow\}/);
 });
