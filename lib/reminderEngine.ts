@@ -40,6 +40,7 @@ async function ensureReminderChannels(language: Language) {
   await Notifications.setNotificationChannelAsync(OVERDUE_CHANNEL, {
     name: ({ it: 'Task scadute', en: 'Overdue tasks', fr: 'Tâches en retard', es: 'Tareas atrasadas' } as const)[language],
     importance: Notifications.AndroidImportance.DEFAULT,
+    enableVibrate: false,
   });
 }
 
