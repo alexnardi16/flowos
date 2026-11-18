@@ -37,6 +37,8 @@ export interface Commitment {
   syncStatus?: 'pending' | 'syncing' | 'synced' | 'error' | 'local_only' | 'conflict';
   syncError?: string;
   completedAt?: string;
+  /** Local-only completion markers for each calendar day of a multi-day activity. */
+  dailyCompletedDates?: string[];
   resolutionPending?: boolean;
   deletedAt?: string;
 }
