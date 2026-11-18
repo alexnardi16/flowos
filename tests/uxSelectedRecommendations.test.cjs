@@ -108,7 +108,7 @@ test('Notification settings are grouped into Android permissions, activity remin
   assert.match(source, /Notifications\.requestPermissionsAsync/);
   assert.match(source, /Linking\.openSettings/);
   assert.match(source, /t\('Permessi Android'\)/);
-  assert.match(source, /t\('Reminder delle attività'\)/);
+  assert.doesNotMatch(source, /t\('Reminder delle attività'\)/);
   assert.match(source, /t\('Notifiche di sistema'\)/);
   assert.match(source, /t\('Riepiloghi automatici'\)/);
   assert.match(translations, /Object\.assign\(translations\.en/);
