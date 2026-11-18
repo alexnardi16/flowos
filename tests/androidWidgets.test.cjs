@@ -553,3 +553,16 @@ test('Android Today widget renders no empty-state message when there are no acti
   assert.doesNotMatch(source,/Nessuna attività prevista per oggi|No activities planned for today|Aucune activité prévue pour aujourd'hui|No hay actividades previstas para hoy/i);
   assert.equal(source.includes('items.map((item)=>{'),true);
 });
+
+test('multi-day completion from the Android widget is occurrence-scoped and does not globally complete or push the series',()=>{
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  const start=handler.indexOf('async function runWidgetComplete');
+  const end=handler.indexOf('async function runWidgetPostpone',start);
+  const complete=handler.slice(start,end);
+  assert.match(complete,/if\(isMultiDayActivity\(item\)\)/);
+  assert.match(complete,/activityOccursOnDate\(item,now\)/);
+  assert.match(complete,/dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
+  assert.match(complete,/await saveCommitment\(updated\)/);
+  assert.doesNotMatch(complete.slice(0,complete.indexOf("const updated={...item,status:'done'")),/status:'done'/);
+  assert.match(complete,/await pushPendingToGoogle\(\)/);
+});
