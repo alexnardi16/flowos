@@ -96,6 +96,7 @@ test('Widget themes, densities, live preview, WCAG contrast and category reset a
   assert.match(appearance, /applyWidgetTheme/);
   assert.match(appearance, /contrastRatio/);
   assert.match(appearance, /resetWidgetAppearanceCategory/);
+  assert.match(settings, /#7669E8.*#9278C8.*#302B3A.*#F6F7FB.*#FFF8F0/);
   assert.match(settings, /Anteprima in tempo reale/);
   assert.match(settings, /contrastRatio\(/);
   assert.match(sync, /density:appearance\.density/);
@@ -402,7 +403,7 @@ test('Global density updates shared app components and is loaded at startup', ()
   assert.match(settings, /setDensity\(sanitized\.density\)/);
 });
 
-test('Today completion combines a subtle layout transition and haptic feedback', () => {
+test('Today completion combines a subtle layout transition without vibration', () => {
   const source = read('app/(tabs)/today.tsx');
   assert.match(source, /LayoutAnimation\.configureNext\(LayoutAnimation\.Presets\.easeInEaseOut\)/);
   assert.match(source, /Haptics\.notificationAsync/);
@@ -411,6 +412,7 @@ test('Today completion combines a subtle layout transition and haptic feedback',
 test('List day separators emphasize weekday and identify Today distinctly', () => {
   const source = read('app/(tabs)/plan.tsx');
   assert.match(source, /groupWeekday/);
+  assert.match(source, /todayGroupBadge:[^}]*marginRight:13/);
   assert.match(source, /todayGroupBadge/);
 });
 
@@ -630,4 +632,12 @@ test('shared design tokens preserve minimum button touch target', () => {
   assert.match(source, /layoutTokens/);
   assert.match(source, /minHeight:48/);
   assert.match(source, /typeScale/);
+});
+
+
+test('Multi-day completion handles both scheduled events and due-date tasks without global completion', () => {
+  const store = read('lib/store.ts');
+  assert.match(store, /isMultiDayActivity\(item\)/);
+  assert.match(store, /activityOccursOnDate\(item,now\)/);
+  assert.match(store, /dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
 });
