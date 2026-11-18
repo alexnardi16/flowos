@@ -143,7 +143,7 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(source,/isLoading=false, loadingProgress=0/);
   assert.match(source,/Math\.round\(loadingProgress\)/);
   assert.match(source,/labels\.today/);
-  assert.match(source,/paddingHorizontal: 8, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor/);
+  assert.match(source,/width: 30, height: 26, paddingHorizontal: 0, marginRight: 4, borderRadius: 13, backgroundColor: buttonBackgroundColor/);
   assert.match(source,/flex: Math\.max\(1, loadingProgress\)/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/CALENDAR_WIDGET_PAGE_SIZE = 8/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/CALENDAR_WIDGET_PAGE_OVERLAP = 0/);
@@ -182,7 +182,7 @@ test('Macrosection headers do not render descriptive subtitles',()=>{
 
 test('All macrosection headers remain outside the scrollable content',()=>{
   const source=fs.readFileSync('components/ui.tsx','utf8');
-  assert.match(source,/<View style=\{styles\.screenHeader\}>/);
+  assert.match(source,/<View style=\{\[styles\.screenHeader,\{backgroundColor:screenBackground\}\]\}>/);
   assert.match(source,/styles\.screenTitle/);
   assert.match(source,/<ScrollView ref=\{scrollRef\} \{\.\.\.scrollProps\} style=\{styles\.screenScroll\}/);
   assert.match(source,/screenHeader:\{[^}]*backgroundColor:palette\.bg/);
@@ -464,10 +464,10 @@ test('Manage exposes the same one-day postpone action as the Today widget in all
   const i18n=fs.readFileSync('lib/i18n.ts','utf8');
   assert.match(manage,/const postpone = useFlowStore\(\(state\) => state\.postpone\)/);
   assert.match(manage,/await postpone\(item\.id\)/);
-  assert.match(manage,/t\('Pulsante rinvia un giorno'\)/);
-  assert.match(i18n,/'Pulsante rinvia un giorno':'\+1g'/);
-  assert.match(i18n,/'Pulsante rinvia un giorno':'\+1d'/);
-  assert.match(i18n,/'Pulsante rinvia un giorno':'\+1j'/);
+  assert.match(manage,/t\('Rimanda di 1 giorno'\)/);
+  assert.match(i18n,/'Rimanda di 1 giorno':'Postpone 1 day'/);
+  assert.match(i18n,/'Rimanda di 1 giorno':'Reporter d’un jour'/);
+  assert.match(i18n,/'Rimanda di 1 giorno':'Aplazar 1 día'/);
 });
 
 test('Google Play metadata does not advertise an unavailable Focus mode and includes four locales',()=>{
