@@ -291,6 +291,62 @@ test('Calendar multi-day segments reserve the same vertical space on every day',
   assert.doesNotMatch(source, /multiDaySegment==='middle'\|\|item\.multiDaySegment==='end'\?0:6/);
 });
 
+test('Multi-day completion is stored per date without globally completing the activity', () => {
+  const visibility = read('lib/commitmentVisibility.ts');
+  const store = read('lib/store.ts');
+  const repository = read('lib/commitmentsRepository.ts');
+  const widgetData = read('lib/widgetData.ts');
+  assert.match(visibility, /isCompletedOnDate/);
+  assert.match(visibility, /return !isCompletedOnDate\(item, now\)/);
+  assert.match(store, /dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
+  assert.match(store, /item\.durationMinutes>24\*60/);
+  assert.match(repository, /dailyCompletedDates: item\.dailyCompletedDates/);
+  assert.match(repository, /row\.ai_metadata\?\.dailyCompletedDates/);
+  assert.match(widgetData, /isCompletedOnDate\(item,now\)/);
+});
+
+test('Calendar app and widget show multi-day details on every intersected date', () => {
+  const calendar = read('app/(tabs)/calendar.tsx');
+  const widget = read('widgets/android/CalendarWidget.tsx');
+  assert.match(calendar, /formatItemTime\(item,language\)/);
+  assert.match(calendar, /<Text style=\{styles\.itemTitle\}>\{item\.title\}/);
+  assert.match(widget, /const showDetails=true/);
+});
+
+test('Widget header actions use icons and Today widget completion uses a checkmark', () => {
+  const today = read('widgets/android/TodayWidget.tsx');
+  const calendar = read('widgets/android/CalendarWidget.tsx');
+  assert.match(today, /text="↻"/);
+  assert.match(today, /text="🎙"/);
+  assert.match(today, /text="✓"/);
+  assert.match(calendar, /text="↻"/);
+  assert.match(calendar, /text="🎙"/);
+  assert.match(calendar, /text="\+"/);
+  assert.match(calendar, /text=\{labels\.today\}/);
+});
+
+test('List search placeholder is concise and settings category chips wrap', () => {
+  const plan = read('app/(tabs)/plan.tsx');
+  const settings = read('app/(tabs)/me.tsx');
+  assert.match(plan, /placeholder=\{t\('Cerca'\)\}/);
+  assert.match(settings, /settingsCategoryRow:\{[^}]*flexWrap:'wrap'/);
+  assert.doesNotMatch(settings, /settingsCategoryRow\}>.*ScrollView/);
+});
+
+test('Manage exposes Add-style advanced options and renamed postpone action', () => {
+  const manage = read('components/ManageSheet.tsx');
+  assert.match(manage, /t\('Opzioni avanzate'\)/);
+  assert.match(manage, /showAdvancedOptions\?\s*<>/);
+  assert.match(manage, /t\('Rimanda di 1 giorno'\)/);
+  assert.match(manage, /t\('Elimina da FlowOS e Google'\)/);
+});
+
+test('Add tab is lowered and Calendar is placed before Settings', () => {
+  const tabs = read('app/(tabs)/_layout.tsx');
+  assert.ok(tabs.indexOf('name="calendar"') < tabs.indexOf('name="me"'));
+  assert.match(tabs, /marginTop:-3/);
+});
+
 test('Android widget action labels use larger touch targets and compact text sizing', () => {
   const today = read('widgets/android/TodayWidget.tsx');
   const calendar = read('widgets/android/CalendarWidget.tsx');
