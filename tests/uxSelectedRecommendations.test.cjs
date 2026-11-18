@@ -413,8 +413,9 @@ test('Today completion combines a subtle layout transition without vibration', (
 test('List day separators emphasize weekday and identify Today distinctly', () => {
   const source = read('app/(tabs)/plan.tsx');
   assert.match(source, /groupWeekday/);
-  assert.match(source, /todayGroupBadge:[^}]*marginRight:13/);
+  assert.match(source, /todayGroupBadge:[^}]*marginRight:9/);
   assert.match(source, /todayGroupBadge/);
+  assert.match(source, /dayDividerText:\\{flexDirection:'row',alignItems:'center',gap:9/);
 });
 
 test('Primary activity cards and quick actions expose accessible labels', () => {
