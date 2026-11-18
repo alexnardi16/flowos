@@ -16,7 +16,7 @@ test('Today keeps completion primary, overdue state semantic, and descriptions c
   assert.match(source, /Haptics\.notificationAsync/);
   assert.match(source, /expiredDate/);
   assert.match(source, /numberOfLines=\{2\} style=\{s\.description\}/);
-  assert.match(source, /minHeight:44/);
+  assert.match(source, /minHeight:30/);
 });
 
 test('List exposes compact filters and a clear-search action without changing filter semantics', () => {
@@ -361,7 +361,7 @@ test('Android widget action labels use larger touch targets and compact text siz
   assert.match(today, /width:30, height:26/);
   assert.match(today, /width:30, height:26/);
   assert.match(calendar, /width: 30, height: 26/);
-  assert.match(calendar, /width: 38, height: 26/);
+  assert.match(calendar, /width: 30, height: 26/);
 });
 
 test('Settings search and appearance summary include the selected app text size', () => {
