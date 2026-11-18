@@ -27,7 +27,7 @@ function notificationLogLine(entry:NotificationLogEntry){const time=new Date(ent
 const WIDGET_COLOR_SWATCHES=Object.freeze([...new Set(["#F1F4FF","#172033","#6658D3","#FFFFFF","#F3F4F7","#171A26","#F7F7FC","#7669E8","#9278C8","#302B3A","#F6F7FB","#FFF8F0",...ACTIVITY_SOURCE_COLORS,"#F5F5F5","#D9D9D9","#A6A6A6","#737373","#404040","#000000","#FCE4D6","#F4B183","#ED7D31","#C65911","#843C0C","#FFF2CC","#FFE699","#FFD966","#BF9000","#7F6000","#E2F0D9","#A9D18E","#70AD47","#548235","#375623","#DDEBF7","#9DC3E6","#5B9BD5","#2F75B5","#1F4E78","#D9EAD3","#A2D39B","#00A86B","#008080","#006666","#E4DFEC","#B4A7D6","#8064A2","#5F497A","#F4CCCC","#EA9999","#E06666","#CC0000","#990000","#CFE2F3","#6FA8DC","#3C78D8","#1155CC","#073763","#D0E0E3","#76A5AF","#45818E","#134F5C"])].sort((a,b)=>{
   const brightness=(hex:string)=>{const values=[1,3,5].map(index=>parseInt(hex.slice(index,index+2),16)/255).map(value=>value<=0.04045?value/12.92:((value+0.055)/1.055)**2.4);return 0.2126*values[0]+0.7152*values[1]+0.0722*values[2];};
   return brightness(b)-brightness(a)||a.localeCompare(b);
-});
+}));
 function normalizedSwatchColor(value:string){return value.trim().toUpperCase();}
 function ColorSwatches({value,onSelect}:{value:string;onSelect:(color:string)=>void}){
   const colors=WIDGET_COLOR_SWATCHES;
