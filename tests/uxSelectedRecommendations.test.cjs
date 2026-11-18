@@ -305,6 +305,14 @@ test('Multi-day completion is stored per date without globally completing the ac
   assert.match(widgetData, /isCompletedOnDate\(item,now\)/);
 });
 
+test('Per-day completion metadata is persisted without marking Google items pending', () => {
+  const repository = read('lib/commitmentsRepository.ts');
+  assert.match(repository, /onlyDailyCompletionChanged/);
+  assert.match(repository, /commitment-daily-completion-saved/);
+  assert.match(repository, /ai_metadata: row\.ai_metadata/);
+  assert.match(repository, /if \(onlyDailyCompletionChanged\)/);
+});
+
 test('Calendar app and widget show multi-day details on every intersected date', () => {
   const calendar = read('app/(tabs)/calendar.tsx');
   const widget = read('widgets/android/CalendarWidget.tsx');
