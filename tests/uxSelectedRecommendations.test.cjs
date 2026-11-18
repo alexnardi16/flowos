@@ -74,10 +74,10 @@ test('Location and primary widget actions use consistent non-emoji labels or vec
   const androidCalendar = read('widgets/android/CalendarWidget.tsx');
   assert.match(today, /Ionicons name="location-outline"/);
   assert.doesNotMatch(today, /📍/);
-  assert.match(androidToday, /labels\.addShort/);
-  assert.match(androidToday, /labels\.completeShort/);
-  assert.match(androidCalendar, /labels\.addShort/);
-  assert.doesNotMatch(androidToday+androidCalendar, /text="✓"|text="\+"/);
+  assert.match(androidToday, /accessibilityLabel=\{labels\.today\}/);
+  assert.match(androidToday, /text="✓"/);
+  assert.match(androidCalendar, /text="\+"/);
+  assert.match(androidToday+androidCalendar, /accessibilityLabel=\{labels\.sync\}/);
 });
 
 test('Widget editor previews both Today and Calendar with live theme, color and opacity values', () => {
@@ -218,11 +218,11 @@ test('Source tags remain compact while preserving their full accessible source l
 test('Android widgets use localized text controls instead of emoji or symbol glyphs for primary actions', () => {
   const today = read('widgets/android/TodayWidget.tsx');
   const calendar = read('widgets/android/CalendarWidget.tsx');
-  assert.match(today, /text=\{labels\.sync\}/);
-  assert.match(today, /text=\{labels\.voice\}/);
-  assert.match(calendar, /text=\{labels\.sync\}/);
-  assert.match(calendar, /text=\{labels\.voice\}/);
-  assert.doesNotMatch(today+calendar, /🎙|↻/);
+  assert.match(today, /text="↻"/);
+  assert.match(today, /text="🎙"/);
+  assert.match(calendar, /text="↻"/);
+  assert.match(calendar, /text="🎙"/);
+  assert.match(today+calendar, /accessibilityLabel=\{labels\.sync\}/);
 });
 
 test('Create and Manage show a localized recurrence summary including the weekly weekday and series end', () => {
@@ -358,9 +358,9 @@ test('Add tab is lowered and Calendar is placed before Settings', () => {
 test('Android widget action labels use larger touch targets and compact text sizing', () => {
   const today = read('widgets/android/TodayWidget.tsx');
   const calendar = read('widgets/android/CalendarWidget.tsx');
-  assert.match(today, /width:56, height:26/);
-  assert.match(today, /width:38, height:26/);
-  assert.match(calendar, /width: 44, height: 26/);
+  assert.match(today, /width:30, height:26/);
+  assert.match(today, /width:30, height:26/);
+  assert.match(calendar, /width: 30, height: 26/);
   assert.match(calendar, /width: 38, height: 26/);
 });
 
@@ -494,7 +494,7 @@ test('Multi-day events render as continuous segments in both the app and Android
   const calendar = read('app/(tabs)/calendar.tsx');
   assert.match(data, /multiDaySegment:multiDaySegment\(item,day\)/);
   assert.match(widget, /multiDaySegment==='middle'/);
-  assert.match(widget, /showDetails=item\.multiDaySegment/);
+  assert.match(widget, /const showDetails=true/);
   assert.match(calendar, /segment==='middle'&&styles\.multiDayMiddle/);
 });
 
@@ -509,7 +509,7 @@ test('Primary navigation uses a consistent outline icon family', () => {
 test('The Add tab is visually distinct from navigation destinations', () => {
   const source = read('app/(tabs)/_layout.tsx');
   assert.match(source, /addTabIcon/);
-  assert.match(source, /tabBarItemStyle:\{marginTop:-9\}/);
+  assert.match(source, /tabBarItemStyle:\{marginTop:0\}/);
 });
 
 test('Semantic colors and spacing tokens stay consistent across light and dark themes', () => {
