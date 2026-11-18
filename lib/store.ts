@@ -18,6 +18,7 @@ import { normalizeTaskPriorities, reorderTaskPriorities } from './taskPriority';
 import { isSupabaseConfigured } from './supabase';
 import { createUuid, isValidUuid } from './uuid';
 import { t } from './i18n';
+import { activityOccursOnDate, isMultiDayActivity } from './commitmentVisibility';
 
 function refreshWidget(commitments:Commitment[]){void syncTodayWidget(commitments).catch(()=>undefined);}
 function refreshNotifications(commitments:Commitment[]){if(Platform.OS==='web')return;void import('./reminderEngine').then(({runReminderEngine})=>runReminderEngine(commitments)).catch(()=>undefined);}
@@ -73,14 +74,10 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
     const current=get().commitments;
     const item=current.find(c=>c.id===id);
     if(!item||item.status==='done')return;
-    if(scope==='occurrence'&&item.durationMinutes>24*60&&item.scheduledAt){
+    if(scope==='occurrence'&&isMultiDayActivity(item)){
       const now=new Date();
       const dayKey=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-      const start=new Date(item.scheduledAt);
-      const end=new Date(start.getTime()+item.durationMinutes*60000);
-      const dayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-      const dayEnd=new Date(dayStart);dayEnd.setDate(dayEnd.getDate()+1);
-      if(start<dayEnd&&end>dayStart&&!item.dailyCompletedDates?.includes(dayKey)){
+      if(activityOccursOnDate(item,now)&&!item.dailyCompletedDates?.includes(dayKey)){
         const updated={...item,dailyCompletedDates:[...(item.dailyCompletedDates??[]),dayKey]};
         const nextCommitments=current.map(candidate=>candidate.id===id?updated:candidate);
         set({commitments:nextCommitments});refreshWidget(nextCommitments);await saveCommitment(updated);
