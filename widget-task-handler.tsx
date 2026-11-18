@@ -13,7 +13,7 @@ import { createUuid } from './lib/uuid';
 import { normalizeTaskPriorities } from './lib/taskPriority';
 import { sortCommitments } from './lib/activityOrdering';
 import { getLanguage, widgetStrings, t } from './lib/i18n';
-import { isVisibleInToday } from './lib/commitmentVisibility';
+import { activityOccursOnDate, isCompletedOnDate, isMultiDayActivity, isVisibleInToday } from './lib/commitmentVisibility';
 import { formatDurationLabel } from './lib/itemTiming';
 import { materializeNextOccurrence } from './lib/recurrence';
 import { activitySourceColor, activitySourceKey, buildActivitySourceColors } from './lib/activityColors';
@@ -54,6 +54,16 @@ async function runWidgetComplete(id:string){
   const items=await loadCommitments();
   const item=items.find(candidate=>candidate.id===id);
   if(!item||item.status==='done')return;
+  const now=new Date();
+  if(isMultiDayActivity(item)){
+    if(!activityOccursOnDate(item,now)||isCompletedOnDate(item,now))return;
+    const dayKey=dateKey(now);
+    const updated={...item,dailyCompletedDates:[...(item.dailyCompletedDates??[]),dayKey]};
+    await saveCommitment(updated);
+    const refreshed=await loadCommitments();
+    await writeCommitments(normalizeTaskPriorities(refreshed));
+    return;
+  }
   const updated={...item,status:'done' as const,completedAt:new Date().toISOString(),syncStatus:item.externalId&&item.kind==='task'?'pending':item.syncStatus};
   const next=materializeNextOccurrence(updated,items);
   await saveCommitment(updated);
