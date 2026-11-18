@@ -48,7 +48,7 @@ export const palette = {
 export const layoutTokens = { cardRadius:16, buttonRadius:12, sectionGap:18, cardPadding:14, inlineGap:6 } as const;
 export const typeScale = { screenTitle:26, sectionTitle:18, cardTitle:16, body:14, metadata:12, label:12 } as const;
 export function getTypeScale(size:AppFontSize='standard'){
-  const factor=size==='small'?0.92:size==='large'?1.12:1;
+  const factor=size==='small'?0.86:size==='large'?1.22:1;
   return {screenTitle:Math.round(typeScale.screenTitle*factor),sectionTitle:Math.round(typeScale.sectionTitle*factor),cardTitle:Math.round(typeScale.cardTitle*factor),body:Math.round(typeScale.body*factor),metadata:Math.round(typeScale.metadata*factor),label:Math.round(typeScale.label*factor)};
 }
 
@@ -65,23 +65,26 @@ export function useAppDensity(){return useContext(DensityContext);}
 
 export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef, headerActions }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps; scrollRef?:RefObject<ScrollView|null>; headerActions?:ReactNode }>) {
   const insets = useSafeAreaInsets();
-  const {density,appFontSize}=useAppDensity();
+  const {density,appFontSize,appTheme}=useAppDensity();
   const textScale=getTypeScale(appFontSize);
+  const darkAppearance=appTheme==='dark'||(appTheme==='system'&&Appearance.getColorScheme()==='dark');
+  const screenBackground=darkAppearance?'#10121A':palette.bg;
+  const screenForeground=darkAppearance?'#F2F3F8':palette.ink;
   const contentPaddingBottom = Math.max(118, insets.bottom + 112);
-  return <SafeAreaView edges={['top','bottom']} style={styles.screenSafe}>
-    <View style={styles.screenHeader}>
+  return <SafeAreaView edges={['top','bottom']} style={[styles.screenSafe,{backgroundColor:screenBackground}]}>
+    <View style={[styles.screenHeader,{backgroundColor:screenBackground}]}>
       <View style={styles.screenBrandRow}>
         <View style={styles.screenBrandLeft}>
           <Image source={require("../assets/flowos-app-icon-512-store.png")} style={styles.screenLogo} resizeMode="contain" accessibilityLabel="Logo FlowOS" />
-          <Text style={styles.screenBrand}>FlowOS</Text>
+          <Text style={[styles.screenBrand,{color:screenForeground}]}>FlowOS</Text>
         </View>
         <BuildInfo inline />
       </View>
-      <Text style={[styles.screenTitle,{fontSize:textScale.screenTitle,lineHeight:Math.round(textScale.screenTitle*1.23)}]}>{title}</Text>
-      {subtitle ? <Text style={[styles.screenSubtitle,{fontSize:textScale.body}]}>{subtitle}</Text> : null}
+      <Text style={[styles.screenTitle,{fontSize:textScale.screenTitle,lineHeight:Math.round(textScale.screenTitle*1.23),color:screenForeground}]}>{title}</Text>
+      {subtitle ? <Text style={[styles.screenSubtitle,{fontSize:textScale.body,color:darkAppearance?'#AAB1C2':palette.muted}]}>{subtitle}</Text> : null}
       {headerActions}
     </View>
-    <ScrollView ref={scrollRef} {...scrollProps} style={styles.screenScroll} showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingHorizontal:density==='compact'?16:density==='comfortable'?22:20,gap:density==='compact'?10:density==='comfortable'?18:14,paddingBottom:contentPaddingBottom }]}>
+    <ScrollView ref={scrollRef} {...scrollProps} style={[styles.screenScroll,{backgroundColor:screenBackground}]} showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingHorizontal:density==='compact'?16:density==='comfortable'?22:20,gap:density==='compact'?10:density==='comfortable'?18:14,paddingBottom:contentPaddingBottom,backgroundColor:screenBackground }]}>
       {children}
     </ScrollView>
   </SafeAreaView>;
