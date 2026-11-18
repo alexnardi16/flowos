@@ -73,6 +73,21 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
     const current=get().commitments;
     const item=current.find(c=>c.id===id);
     if(!item||item.status==='done')return;
+    if(scope==='occurrence'&&item.durationMinutes>24*60&&item.scheduledAt){
+      const now=new Date();
+      const dayKey=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+      const start=new Date(item.scheduledAt);
+      const end=new Date(start.getTime()+item.durationMinutes*60000);
+      const dayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      const dayEnd=new Date(dayStart);dayEnd.setDate(dayEnd.getDate()+1);
+      if(start<dayEnd&&end>dayStart&&!item.dailyCompletedDates?.includes(dayKey)){
+        const updated={...item,dailyCompletedDates:[...(item.dailyCompletedDates??[]),dayKey]};
+        const nextCommitments=current.map(candidate=>candidate.id===id?updated:candidate);
+        set({commitments:nextCommitments});refreshWidget(nextCommitments);await saveCommitment(updated);
+        showSnackbar(t('Attività completata'),t('Annulla'),()=>{void(async()=>{const latest=get().commitments.find(candidate=>candidate.id===id);if(!latest)return;const restored={...latest,dailyCompletedDates:(latest.dailyCompletedDates??[]).filter(value=>value!==dayKey)};const values=get().commitments.map(candidate=>candidate.id===id?restored:candidate);set({commitments:values});await saveCommitment(restored);refreshWidget(values);refreshNotifications(values);})();});
+        return;
+      }
+    }
     const completedAt=new Date().toISOString();
     const makeDone=(candidate:Commitment):Commitment=>({...candidate,status:'done',completedAt,syncStatus:candidate.externalId&&candidate.kind==='task'?'pending':candidate.syncStatus,...(scope==='series'?{recurrenceRule:undefined}:{})});
     let changedItems:Commitment[];
