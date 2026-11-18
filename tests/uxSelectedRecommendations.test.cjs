@@ -300,7 +300,8 @@ test('Multi-day completion is stored per date without globally completing the ac
   assert.match(visibility, /isCompletedOnDate/);
   assert.match(visibility, /return !isCompletedOnDate\(item, now\)/);
   assert.match(store, /dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
-  assert.match(store, /item\.durationMinutes>24\*60/);
+  assert.match(store, /isMultiDayActivity\(item\)/);
+  assert.match(visibility, /item\.durationMinutes > 24 \* 60 && activityEnd\(item\) !== null/);
   assert.match(repository, /dailyCompletedDates: item\.dailyCompletedDates/);
   assert.match(repository, /row\.ai_metadata\?\.dailyCompletedDates/);
   assert.match(widgetData, /isCompletedOnDate\(item,now\)/);
