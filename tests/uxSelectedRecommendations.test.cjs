@@ -336,7 +336,7 @@ test('List search placeholder is concise and settings category chips wrap', () =
 test('Manage exposes Add-style advanced options and renamed postpone action', () => {
   const manage = read('components/ManageSheet.tsx');
   assert.match(manage, /t\('Opzioni avanzate'\)/);
-  assert.match(manage, /showAdvancedOptions\?\s*<>/);
+  assert.match(manage, /showAdvancedOptions\s*\?\s*<>/);
   assert.match(manage, /t\('Rimanda di 1 giorno'\)/);
   assert.match(manage, /t\('Elimina da FlowOS e Google'\)/);
 });
