@@ -642,3 +642,14 @@ test('Multi-day completion handles both scheduled events and due-date tasks with
   assert.match(store, /activityOccursOnDate\(item,now\)/);
   assert.match(store, /dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
 });
+
+test('Android notification channels explicitly disable vibration and use fresh silent channel IDs',()=>{
+  const reminders=read('lib/reminderEngine.ts');
+  const summaries=read('lib/notificationService.ts');
+  assert.match(reminders,/flowos-event-reminders-silent-v2/);
+  assert.match(reminders,/flowos-due-soon-silent-v2/);
+  assert.match(reminders,/flowos-overdue-silent-v2/);
+  assert.equal((reminders.match(/enableVibrate: false/g)||[]).length,3);
+  assert.match(summaries,/flowos-daily-summary-silent-v2/);
+  assert.match(summaries,/enableVibrate: false/);
+});
