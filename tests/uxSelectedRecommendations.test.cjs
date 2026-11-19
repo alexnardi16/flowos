@@ -654,3 +654,13 @@ test('Android notification channels explicitly disable vibration and use fresh s
   assert.match(summaries,/flowos-daily-summary-silent-v2/);
   assert.match(summaries,/enableVibrate: false/);
 });
+
+test('List renders multi-day completion independently for each date and filters each daily occurrence',()=>{
+  const source=read('app/(tabs)/plan.tsx');
+  const visibility=read('lib/commitmentVisibility.ts');
+  assert.match(source,/isCompletedForDate\(item,date\)/);
+  assert.match(source,/filters\.status==='done'&&!completedForDate/);
+  assert.match(source,/filters\.status==='open'&&completedForDate/);
+  assert.match(source,/completed=\{isCompletedForDate\(item,new Date\(`\$\{group\.key\}T12:00:00`\)\)\}/);
+  assert.match(visibility,/export function isCompletedForDate/);
+});
