@@ -97,6 +97,11 @@ export function isCompletedOnDate(item: Commitment, date = new Date()): boolean 
   return Boolean(item.dailyCompletedDates?.includes(key));
 }
 
+/** Global completion or a completion recorded for this specific calendar day. */
+export function isCompletedForDate(item: Commitment, date = new Date()): boolean {
+  return item.status === 'done' || (isMultiDayActivity(item) && isCompletedOnDate(item, date));
+}
+
 export function isVisibleInToday(item: Commitment, now = new Date()): boolean {
   if (item.status !== 'done' && !item.deletedAt) {
     if (isMultiDayActivity(item) && activityOccursOnDate(item, now)) return !isCompletedOnDate(item, now);
