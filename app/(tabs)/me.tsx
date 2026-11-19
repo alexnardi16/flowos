@@ -29,10 +29,38 @@ const WIDGET_COLOR_SWATCHES=Object.freeze([...new Set(["#F1F4FF","#172033","#665
   return brightness(b)-brightness(a)||a.localeCompare(b);
 }));
 function normalizedSwatchColor(value:string){return value.trim().toUpperCase();}
-function ColorSwatches({value,onSelect}:{value:string;onSelect:(color:string)=>void}){
+function colorDisplayName(hex:string,language:string){
+  const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+  const lightness=(max+min)/2;
+  const saturation=delta===0?0:delta/(1-Math.abs(2*lightness-1));
+  const names:Record<string,{white:string;black:string;gray:string;tones:[string,string,string];families:string[]}> = {
+    it:{white:'Bianco',black:'Nero',gray:'Grigio',tones:['chiaro','medio','scuro'],families:['rosso','arancione','giallo','verde','turchese','azzurro','blu','viola','magenta','rosa']},
+    en:{white:'White',black:'Black',gray:'Gray',tones:['light','medium','dark'],families:['red','orange','yellow','green','turquoise','cyan','blue','violet','magenta','pink']},
+    fr:{white:'Blanc',black:'Noir',gray:'Gris',tones:['clair','moyen','foncé'],families:['rouge','orange','jaune','vert','turquoise','cyan','bleu','violet','magenta','rose']},
+    es:{white:'Blanco',black:'Negro',gray:'Gris',tones:['claro','medio','oscuro'],families:['rojo','naranja','amarillo','verde','turquesa','cian','azul','violeta','magenta','rosa']}
+  };
+  const dictionary=names[language]??names.it;
+  if(saturation<0.13){if(lightness>0.91)return dictionary.white;if(lightness<0.13)return dictionary.black;return dictionary.gray;}
+  let hue=0;
+  if(delta!==0){if(max===r)hue=60*(((g-b)/delta)%6);else if(max===g)hue=60*((b-r)/delta+2);else hue=60*((r-g)/delta+4);}
+  if(hue<0)hue+=360;
+  const familyIndex=hue<12||hue>=348?0:hue<42?1:hue<68?2:hue<155?3:hue<180?4:hue<205?5:hue<255?6:hue<290?7:hue<325?8:9;
+  const toneIndex=lightness>0.78?0:lightness<0.3?2:1;
+  return `${dictionary.families[familyIndex]} ${dictionary.tones[toneIndex]}`;
+}
+function ColorSwatches({value,onSelect,language}:{value:string;onSelect:(color:string)=>void;language:string}){
   const colors=WIDGET_COLOR_SWATCHES;
   const selected=normalizedSwatchColor(value);
-  return <View style={styles.colorSwatches}>{colors.map(color=><Pressable key={color} accessibilityRole="button" accessibilityLabel={color} accessibilityState={{selected:selected===color}} onPress={()=>onSelect(color)} style={[styles.colorSwatch,{backgroundColor:color},selected===color&&styles.colorSwatchSelected]}/>)}</View>;
+  const selectedName=colorDisplayName(selected,language);
+  return <View style={styles.colorPickerPanel}>
+    <View style={styles.colorSwatches}>{colors.map(color=><Pressable key={color} accessibilityRole="button" accessibilityLabel={colorDisplayName(color,language)} accessibilityState={{selected:selected===color}} onPress={()=>onSelect(color)} style={styles.colorSwatchTouch}><View style={[styles.colorSwatch,{backgroundColor:color},selected===color&&styles.colorSwatchSelected]}/></Pressable>)}</View>
+    <View style={styles.colorSelectionPreview}>
+      <View style={[styles.colorSelectionDot,{backgroundColor:selected}]}/>
+      <Text style={styles.colorSelectionName}>{selectedName}</Text>
+      <View style={[styles.colorSelectionSample,{backgroundColor:selected}]}/>
+    </View>
+  </View>;
 }
 function OpacityField({label,value,onChange}:{label:string;value:number;onChange:(value:string)=>void}){return <View style={styles.opacityField}><Text style={styles.meta}>{label}</Text><TextInput value={String(value)} onChangeText={onChange} keyboardType="numeric" maxLength={3} style={styles.colorInput}/></View>;}
 function timeLabel(hour:number,minute:number){return `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;}
@@ -373,7 +401,7 @@ export default function Me(){
       <View style={styles.notificationRow}><View style={{flex:1}}><Text style={styles.item}>{t('Spazio inutilizzato trasparente nel widget Oggi')}</Text><Text style={styles.meta}>{t('Rende trasparente lo spazio sotto l’ultima attività, mantenendo lo scorrimento verticale. Disattiva per mantenere lo sfondo del widget anche nello spazio vuoto.')}</Text></View><Switch value={widgetAppearance.todayTransparentUnusedSpace} onValueChange={value=>{const next={...widgetAppearance,todayTransparentUnusedSpace:value};setWidgetAppearance(next);void (async()=>{try{await saveWidgetAppearance(next);await syncTodayWidget(commitments);}catch(e){setWidgetAppearance(current=>({...current,todayTransparentUnusedSpace:!value}));showAlert('Widget',e instanceof Error?e.message:'Salvataggio non riuscito.');}})();}}/></View>
       {(['today','calendar'] as const).map(section=><View key={section} style={styles.widgetAppearanceSection}>
         <View style={styles.widgetSectionHeader}><Text style={styles.item}>{section==='today'?t('Widget Oggi'):t('Widget Calendario')}</Text><Pressable accessibilityRole="button" onPress={()=>{void resetWidgetCategory(section);}}><Text style={styles.link}>{t('Ripristina categoria')}</Text></Pressable></View>
-        <Text style={styles.meta}>{t('Colore dello sfondo')}</Text><ColorSwatches value={widgetAppearance[section].backgroundColor} onSelect={value=>updateWidgetSection(section,'backgroundColor',value)}/>
+        <Text style={styles.meta}>{t('Colore dello sfondo')}</Text><ColorSwatches language={language} value={widgetAppearance[section].backgroundColor} onSelect={value=>updateWidgetSection(section,'backgroundColor',value)}/>
         <OpacityField label={t('Opacità del colore dello sfondo (%)')} value={widgetAppearance[section].backgroundOpacity} onChange={value=>updateWidgetSection(section,'backgroundOpacity',value)}/>
         <Text style={styles.meta}>{t('Colore del testo')}</Text><ColorSwatches value={widgetAppearance[section].textColor} onSelect={value=>updateWidgetSection(section,'textColor',value)}/>
         <OpacityField label={t('Opacità del colore del testo (%)')} value={widgetAppearance[section].textOpacity} onChange={value=>updateWidgetSection(section,'textOpacity',value)}/>
@@ -436,7 +464,7 @@ const styles=StyleSheet.create({languageGrid:{flexDirection:'row',flexWrap:'wrap
   label:{fontSize:17,fontWeight:'700',color:palette.ink,marginBottom:6},
   syncStatusRow:{flexDirection:'row',alignItems:'center',gap:8,marginTop:4},syncStatusDot:{width:9,height:9,borderRadius:5},
   settingsSearchCard:{padding:12,gap:10},settingsSearchInput:{backgroundColor:palette.card,borderWidth:1,borderColor:palette.border,borderRadius:12,paddingHorizontal:13,paddingVertical:11,fontSize:14,color:palette.ink},settingsCategoryRow:{flexDirection:'row',alignItems:'center',gap:7,flexWrap:'wrap'},settingsCategoryChip:{paddingHorizontal:11,paddingVertical:8,borderRadius:99,backgroundColor:palette.soft,borderWidth:1,borderColor:palette.border},settingsCategoryChipActive:{backgroundColor:palette.soft,borderColor:palette.primary},settingsCategoryText:{fontSize:11,fontWeight:'600',color:palette.muted},settingsCategoryTextActive:{color:palette.primary,fontWeight:'700'},
-  widgetAppearanceSection:{marginTop:12,paddingTop:10,borderTopWidth:1,borderTopColor:palette.border,gap:7},widgetSectionHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},presetRow:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:6,marginBottom:8},presetChip:{paddingHorizontal:10,paddingVertical:8,borderRadius:11,backgroundColor:palette.soft,borderWidth:1,borderColor:palette.border},presetChipActive:{backgroundColor:palette.soft,borderColor:palette.primary},presetChipText:{fontSize:11,fontWeight:'600',color:palette.ink},presetChipTextActive:{color:palette.primary,fontWeight:'700'},widgetPreview:{borderRadius:14,padding:12,gap:8,borderWidth:1,minHeight:92},calendarPreviewDays:{flexDirection:'row',justifyContent:'space-between',gap:3},calendarPreviewDayColumn:{flex:1,alignItems:'center',gap:4},calendarPreviewDay:{width:27,height:27,borderRadius:14,alignItems:'center',justifyContent:'center'},calendarPreviewEvent:{alignSelf:'flex-start',paddingHorizontal:9,paddingVertical:6,borderRadius:8},previewButton:{alignSelf:'flex-start',paddingHorizontal:12,paddingVertical:7,borderRadius:9},contrastWarning:{color:palette.danger,fontWeight:'700'},colorFields:{flexDirection:'row',gap:7,alignItems:'flex-end'},colorSwatches:{flexDirection:'row',flexWrap:'wrap',gap:7,paddingVertical:5},colorSwatch:{width:25,height:25,borderRadius:13,borderWidth:1,borderColor:'#AAB1C0'},colorSwatchSelected:{borderWidth:3,borderColor:palette.primary,width:27,height:27},colorField:{flex:1,minWidth:0},opacityField:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},colorInput:{width:76,borderWidth:1,borderColor:palette.border,borderRadius:9,paddingHorizontal:9,paddingVertical:8,fontSize:12,color:palette.ink,marginTop:3},sourceAppearanceRow:{paddingTop:8,marginTop:5,borderTopWidth:1,borderTopColor:palette.border,gap:5},
+  widgetAppearanceSection:{marginTop:12,paddingTop:10,borderTopWidth:1,borderTopColor:palette.border,gap:7},widgetSectionHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},presetRow:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:6,marginBottom:8},presetChip:{paddingHorizontal:10,paddingVertical:8,borderRadius:11,backgroundColor:palette.soft,borderWidth:1,borderColor:palette.border},presetChipActive:{backgroundColor:palette.soft,borderColor:palette.primary},presetChipText:{fontSize:11,fontWeight:'600',color:palette.ink},presetChipTextActive:{color:palette.primary,fontWeight:'700'},widgetPreview:{borderRadius:14,padding:12,gap:8,borderWidth:1,minHeight:92},calendarPreviewDays:{flexDirection:'row',justifyContent:'space-between',gap:3},calendarPreviewDayColumn:{flex:1,alignItems:'center',gap:4},calendarPreviewDay:{width:27,height:27,borderRadius:14,alignItems:'center',justifyContent:'center'},calendarPreviewEvent:{alignSelf:'flex-start',paddingHorizontal:9,paddingVertical:6,borderRadius:8},previewButton:{alignSelf:'flex-start',paddingHorizontal:12,paddingVertical:7,borderRadius:9},contrastWarning:{color:palette.danger,fontWeight:'700'},colorFields:{flexDirection:'row',gap:7,alignItems:'flex-end'},colorPickerPanel:{borderWidth:1,borderColor:palette.border,borderRadius:18,padding:9,backgroundColor:palette.card,gap:9},colorSwatches:{flexDirection:'row',flexWrap:'wrap',rowGap:4},colorSwatchTouch:{width:'12.5%',height:28,alignItems:'center',justifyContent:'center'},colorSwatch:{width:18,height:18,borderRadius:9,borderWidth:1,borderColor:'#AAB1C0'},colorSwatchSelected:{borderWidth:3,borderColor:palette.primary,width:21,height:21,borderRadius:11},colorSelectionPreview:{flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,borderTopColor:palette.border,paddingTop:8},colorSelectionDot:{width:18,height:18,borderRadius:9,borderWidth:1,borderColor:'#AAB1C0'},colorSelectionName:{flex:1,fontSize:12,fontWeight:'700',color:palette.ink},colorSelectionSample:{width:54,height:22,borderRadius:7,borderWidth:1,borderColor:'#AAB1C0'},colorField:{flex:1,minWidth:0},opacityField:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},colorInput:{width:76,borderWidth:1,borderColor:palette.border,borderRadius:9,paddingHorizontal:9,paddingVertical:8,fontSize:12,color:palette.ink,marginTop:3},sourceAppearanceRow:{paddingTop:8,marginTop:5,borderTopWidth:1,borderTopColor:palette.border,gap:5},
   meta:{fontSize:12,lineHeight:17,color:palette.muted},
   item:{fontSize:14,fontWeight:'700',color:palette.ink},
   inline:{flexDirection:'row',alignItems:'center',gap:6,marginTop:8},
