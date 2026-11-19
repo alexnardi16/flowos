@@ -14,7 +14,7 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
-import { activityDayDates, isMultiDayActivity, isCompletedMultiDayEvent, isOverdueTask } from '@/lib/commitmentVisibility';
+import { activityDayDates, isMultiDayActivity, isCompletedMultiDayEvent, isOverdueTask, isCompletedForDate } from '@/lib/commitmentVisibility';
 
 
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -59,8 +59,6 @@ export default function Plan(){
     const filtered=searchIndex.filter(({item,text})=>{
       if(normalized&&!text.includes(normalized))return false;
       if(filters.kind!=='all'&&item.kind!==filters.kind)return false;
-      if(filters.status==='done'&&item.status!=='done')return false;
-      if(filters.status==='open'&&item.status==='done')return false;
       if(filters.period!=='all'){
         const key=localDateKey(item);
         if(!key)return false;
@@ -87,6 +85,9 @@ export default function Plan(){
       const value=overdueTask?new Date(now).toISOString():itemDate(item);
       const dayDates=dates.length?dates:value?[new Date(value)]:[];
       for(const date of dayDates){
+        const completedForDate=isCompletedForDate(item,date);
+        if(filters.status==='done'&&!completedForDate)continue;
+        if(filters.status==='open'&&completedForDate)continue;
         const key=item.allDay
           ? `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`
           : `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -121,7 +122,7 @@ export default function Plan(){
         return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${t('Gestisci')}: ${item.title}`} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
           <Card style={[styles.itemCard,cardSourceStyle(item,sourceColors)]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
-              <ActivityKindTag kind={item.kind} completed={item.status==='done'}/>
+              <ActivityKindTag kind={item.kind} completed={isCompletedForDate(item,new Date(`${group.key}T12:00:00`))}/>
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
