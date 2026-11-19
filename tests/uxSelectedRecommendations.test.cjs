@@ -80,6 +80,18 @@ test('Location and primary widget actions use consistent non-emoji labels or vec
   assert.match(androidToday+androidCalendar, /accessibilityLabel=\{labels\.sync\}/);
 });
 
+test('Widget color selection uses one compact palette with localized color names and a live color preview', () => {
+  const source = read('app/(tabs)/me.tsx');
+  assert.match(source, /function ColorSwatches\(\{value,onSelect,language\}/);
+  assert.match(source, /colorPickerPanel/);
+  assert.match(source, /colorSwatchTouch:\{width:'12\.5%'/);
+  assert.match(source, /colorDisplayName/);
+  assert.match(source, /colorSelectionName/);
+  assert.match(source, /colorSelectionSample/);
+  assert.doesNotMatch(source, /accessibilityLabel=\{color\}/);
+  assert.equal((source.match(/<ColorSwatches language=\{language\}/g) ?? []).length, 6);
+});
+
 test('Widget editor previews both Today and Calendar with live theme, color and opacity values', () => {
   const source = read('app/(tabs)/me.tsx');
   assert.match(source, /widgetAppearance\.today\.backgroundColor/);
