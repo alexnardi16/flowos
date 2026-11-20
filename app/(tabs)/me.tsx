@@ -50,7 +50,6 @@ function colorDisplayName(hex:string,language:string){
   return `${dictionary.families[familyIndex]} ${dictionary.tones[toneIndex]}`;
 }
 function ColorSwatches({value,onSelect,language}:{value:string;onSelect:(color:string)=>void;language:string}){
-  const colors=WIDGET_COLOR_SWATCHES;
   const selected=normalizedSwatchColor(value);
   const selectedName=colorDisplayName(selected,language);
   return <View style={styles.colorPickerPanel}>
