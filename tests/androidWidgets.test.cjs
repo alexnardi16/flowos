@@ -417,8 +417,8 @@ test('multi-day completion offers today-only and full-duration choices and persi
 test('Android Today widget accounts for multiline titles, time and explicit duration while reducing vertical padding',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.match(source,/function itemHeight\(item:AndroidWidgetItem,density:/);
-  assert.match(source,/item\.duration\?\(compact\?12:14\):0/);
-  assert.match(source,/paddingVertical:density==='compact'\?2:density==='comfortable'\?6:4/);
+  assert.match(source,/const durationHeight=item\.duration\?10:0/);
+  assert.match(source,/paddingVertical:4/);
   assert.match(source,/marginVertical:0/);
   assert.match(source,/text=\{item\.duration\}/);
 });
@@ -499,7 +499,8 @@ test('Widget color swatches use one consistent light-to-dark palette including a
   const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
   assert.match(settings,/const WIDGET_COLOR_SWATCHES=Object\.freeze\(\[\.\.\.new Set\(/);
   assert.match(settings,/const WIDGET_COLOR_GRID=Object\.freeze\(Array\.from\(\{length:8\}/);
-  assert.match(settings,/sort\(\(a,b\)=>swatchHue\(a\)-swatchHue\(b\)\|\|swatchLightness\(b\)-swatchLightness\(a\)/);
+  assert.match(settings,/Math\.floor\(hueA\/45\)/);
+  assert.match(settings,/\.slice\(0,64\)/);
   assert.match(settings,/colorSwatchRows:\{aspectRatio:1/);
   assert.doesNotMatch(settings,/\[\.\.\.WIDGET_COLOR_SWATCHES,normalizedSwatchColor\(value\)\]/);
   for(const color of ['#F1F4FF','#172033','#6658D3','#FFFFFF','#F3F4F7','#F3F4F7']) assert.ok(settings.includes(color));
