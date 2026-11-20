@@ -398,7 +398,8 @@ test('Android Today widget gives the complete title its own full-width wrapping 
   assert.match(source,/<TextWidget text=\{item\.title\} style=\{\{ fontSize:/);
   assert.match(source,/flexDirection:'row', alignItems:'center'/);
   assert.doesNotMatch(source,/lines\.map\(\(line,index\)/);
-  assert.match(source,/titleLines\(item\.title,item\.priority\?36:42\)/);
+  assert.match(source,/titleLines\(item\.title,item\.priority\?19:22\)/);
+  assert.doesNotMatch(source,/text=\{item\.title\} style=\{\{ flex:/);
 });
 test('multi-day completion offers today-only and full-duration choices and persists every completed date',()=>{
   const prompt=fs.readFileSync('lib/completePrompt.ts','utf8');
