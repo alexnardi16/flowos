@@ -591,3 +591,22 @@ test('multi-day completion from the Android widget is occurrence-scoped and does
   assert.doesNotMatch(complete.slice(0,complete.indexOf("const updated={...item,status:'done'")),/status:'done'/);
   assert.match(complete,/await pushPendingToGoogle\(\)/);
 });
+
+
+test('Today widget uses fixed vertical card padding and only title wrapping changes card height',()=>{
+  const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  assert.match(source,/paddingVertical:4/);
+  assert.match(source,/titleLines\(item\.title,item\.priority\?19:22\)\.length/);
+  assert.match(source,/const timeHeight=item\.time\?10:0/);
+  assert.match(source,/const durationHeight=item\.duration\?10:0/);
+  assert.doesNotMatch(source,/paddingVertical:density===/);
+  assert.doesNotMatch(source,/item\.duration\?\(compact\?/);
+});
+
+test('Widget color palette is a fixed 8 by 8 grid ordered by hue family and shade',()=>{
+  const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
+  assert.match(settings,/const WIDGET_COLOR_SORTED=Object\.freeze\(\[\.\.\.WIDGET_COLOR_SWATCHES,[\s\S]*?Math\.floor\(hueA\/45\)/);
+  assert.match(settings,/\.slice\(0,64\)/);
+  assert.match(settings,/Array\.from\(\{length:8\},\(_,row\)=>WIDGET_COLOR_SORTED\.slice\(row\*8,row\*8\+8\)\)/);
+  assert.match(settings,/colorSwatchRows:\{aspectRatio:1/);
+});
