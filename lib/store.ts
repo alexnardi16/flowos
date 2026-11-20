@@ -18,7 +18,7 @@ import { normalizeTaskPriorities, reorderTaskPriorities } from './taskPriority';
 import { isSupabaseConfigured } from './supabase';
 import { createUuid, isValidUuid } from './uuid';
 import { t } from './i18n';
-import { activityOccursOnDate, isMultiDayActivity } from './commitmentVisibility';
+import { activityDayDates, activityOccursOnDate, isMultiDayActivity } from './commitmentVisibility';
 
 function refreshWidget(commitments:Commitment[]){void syncTodayWidget(commitments).catch(()=>undefined);}
 function refreshNotifications(commitments:Commitment[]){if(Platform.OS==='web')return;void import('./reminderEngine').then(({runReminderEngine})=>runReminderEngine(commitments)).catch(()=>undefined);}
@@ -74,6 +74,14 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
     const current=get().commitments;
     const item=current.find(c=>c.id===id);
     if(!item||item.status==='done')return;
+    if(scope==='duration'&&isMultiDayActivity(item)){
+      const completedDates=activityDayDates(item).map(date=>String(date.getFullYear())+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0'));
+      const updated={...item,dailyCompletedDates:Array.from(new Set([...(item.dailyCompletedDates??[]),...completedDates]))};
+      const values=current.map(candidate=>candidate.id===id?updated:candidate);
+      set({commitments:values});refreshWidget(values);await saveCommitment(updated);
+      showSnackbar(t('Attività completata'),t('Annulla'),()=>{void(async()=>{const latest=get().commitments.find(candidate=>candidate.id===id);if(!latest)return;const restored={...latest,dailyCompletedDates:(latest.dailyCompletedDates??[]).filter(value=>!completedDates.includes(value))};const nextValues=get().commitments.map(candidate=>candidate.id===id?restored:candidate);set({commitments:nextValues});await saveCommitment(restored);refreshWidget(nextValues);refreshNotifications(nextValues);})();});
+      return;
+    }
     if(scope==='occurrence'&&isMultiDayActivity(item)){
       const now=new Date();
       const dayKey=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
