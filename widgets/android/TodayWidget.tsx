@@ -26,12 +26,14 @@ function titleLines(text:string,maxChars=32){
   return lines;
 }
 function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'compact'='balanced'){
-  const lineHeight=density==='compact'?15:density==='comfortable'?19:17;
-  const titleLinesCount=titleLines(item.title,item.priority?19:22).length;
-  const timeHeight=item.time?10:0;
-  const durationHeight=item.duration?10:0;
-  // Only title wrapping changes the content height. Top/bottom padding is fixed.
-  return 8+titleLinesCount*lineHeight+timeHeight+durationHeight+4;
+  const compact=density==='compact',comfortable=density==='comfortable';
+  const titleLineHeight=compact?15:comfortable?19:17;
+  const verticalPadding=compact?2:comfortable?4:3;
+  const titleLineCount=titleLines(item.title,item.priority?19:22).length;
+  const textHeight=titleLineCount*titleLineHeight+(item.time?10:0)+(item.duration?10:0);
+  // Only wrapped title lines change the content height. Top/bottom padding
+  // stays identical for every card at the selected density.
+  return Math.max(28,textHeight)+verticalPadding*2+2;
 }
 export function TodayWidget({ items, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', transparentUnusedSpace=true, density='balanced', borderColor=BORDER, surfaceColor='#F3F4F7' }: AndroidTodayWidgetProps) {
   const labels=widgetStrings(language);
