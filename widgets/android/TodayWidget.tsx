@@ -27,7 +27,6 @@ function titleLines(text:string,maxChars=32){
 }
 function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'compact'='balanced'){
   const lineHeight=density==='compact'?15:density==='comfortable'?19:17;
-  const titleFontSize=density==='compact'?11:density==='comfortable'?13:12;
   const titleLinesCount=titleLines(item.title,item.priority?19:22).length;
   const timeHeight=item.time?10:0;
   const durationHeight=item.duration?10:0;
