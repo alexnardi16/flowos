@@ -27,7 +27,7 @@ function titleLines(text:string,maxChars=32){
 }
 function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'compact'='balanced'){
   const compact=density==='compact',comfortable=density==='comfortable';
-  const lines=titleLines(item.title,item.priority?36:42).length;
+  const lines=titleLines(item.title,item.priority?19:22).length;
   const base=compact?39:comfortable?52:44;
   return Math.max(base,(compact?6:comfortable?12:8)+lines*(compact?15:comfortable?19:17)+(item.time?(compact?14:16):0)+(item.duration?(compact?12:14):0)+9);
 }
