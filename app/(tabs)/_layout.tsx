@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppChrome } from '@/components/AppChrome';
 import { palette } from '@/components/ui';
 import { recordDiagnostic } from '@/lib/diagnostics';
-import { useFlowStore } from '@/lib/store';
 import { useAuth } from '@/providers/AuthProvider';
 import { t, useLanguage } from '@/lib/i18n';
 
