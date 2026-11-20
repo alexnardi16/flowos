@@ -189,12 +189,10 @@ test('All macrosection headers remain outside the scrollable content',()=>{
   assert.match(fs.readFileSync('app/(tabs)/plan.tsx','utf8'),/headerActions=\{<View style=\{styles\.searchRow\}/);
 });
 
-test('Today tab badge uses the same visibility policy as the Today screen',()=>{
+test('Today tab does not display an activity-count badge',()=>{
   const layout=fs.readFileSync('app/(tabs)/_layout.tsx','utf8');
-  const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
-  assert.match(layout,/commitments\.filter\(item=>isVisibleInToday\(item\)\)\.length/);
-  assert.match(today,/commitments\.filter\(item=>isVisibleInToday\(item\)\)/);
-  assert.doesNotMatch(layout,/function isTodayItem/);
+  assert.doesNotMatch(layout,/tabBarBadge/);
+  assert.match(layout,/<Tabs\.Screen name="today"/);
 });
 test('Calendar app and widget use the same shared timeline range',()=>{
   const app=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
@@ -632,7 +630,7 @@ test('Today tab does not display a red activity-count badge',()=>{
 
 test('Widget opacity inputs stay within the settings card beside wrapping labels',()=>{
   const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
-  assert.match(settings,/styles=\[styles\.meta,styles\.opacityLabel\]/);
+  assert.match(settings,/style=\[styles\.meta,styles\.opacityLabel\]/);
   assert.match(settings,/opacityField:\{width:'100%',minWidth:0,flexDirection:'row',alignItems:'center',gap:8\}/);
   assert.match(settings,/opacityLabel:\{flex:1,minWidth:0,flexShrink:1\}/);
   assert.match(settings,/opacityInput:\{width:64,minWidth:64,maxWidth:64,flexShrink:0,textAlign:'center\}/);
