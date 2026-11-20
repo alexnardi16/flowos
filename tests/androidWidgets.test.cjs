@@ -11,11 +11,11 @@ test('Android Today widget always sizes root and list to the real launcher bound
   assert.doesNotMatch(handler,/TodayWidget[^>]*heightDp=/);
 });
 
-test('Android Today widget completion stays in the widget handler without opening FlowOS',()=>{
+test('Android Today widget completion opens Today to ask for the completion scope',()=>{
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
-  assert.match(widget,/clickAction="COMPLETE" clickActionData=\{\{ id:item\.id \}\}/);
-  assert.doesNotMatch(widget,/uri\('complete',item\.id\)/);
+  assert.match(widget,/clickAction="OPEN_URI" clickActionData=\{\{ uri:uri\('complete',item\.id\) \}\}/);
+  assert.match(handler,/props\.clickAction==='COMPLETE'/);
   assert.match(handler,/props\.clickAction==='COMPLETE'/);
   assert.match(handler,/runWidgetComplete\(id\)/);
 });
@@ -220,10 +220,11 @@ test('Today widget shows only start/end times and titles, never type or overdue 
   assert.doesNotMatch(ios, /labels\.event|labels\.task/);
 });
 
-test('Today widget title uses more of the first line before wrapping',()=>{
+test('Today widget title uses full width and wraps naturally without forced line breaks',()=>{
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(widget, /item\.priority\?36:42/);
-  assert.match(widget, /item\.priority\?36:42/);
+  assert.match(widget,/titleLines\(item\.title,25\)/);
+  assert.match(widget,/<TextWidget text=\{item\.title\}/);
+  assert.doesNotMatch(widget,/lines\.map\(\(line,index\)/);
 });
 
 
