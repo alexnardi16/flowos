@@ -81,4 +81,4 @@ The public legal site is hosted on Netlify; **GitHub Pages is not currently enab
 
 ## Privacy and support
 
-For privacy questions or account-deletion requests, contact [alex16nardi@gmail.com](mailto:alex16nardi@gmail.com). Never send passwords or OAuth tokens by email.
+For privacy questions or account-deletion requests, contact [support.flowos@gmail.com](mailto:support.flowos@gmail.com). Never send passwords or OAuth tokens by email.
