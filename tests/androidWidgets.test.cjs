@@ -222,7 +222,7 @@ test('Today widget shows only start/end times and titles, never type or overdue 
 
 test('Today widget title uses full width and wraps naturally without forced line breaks',()=>{
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(widget,/titleLines\(item\.title,25\)/);
+  assert.match(widget,/titleLines\(item\.title,item\.priority\?19:22\)/);
   assert.match(widget,/<TextWidget text=\{item\.title\}/);
   assert.doesNotMatch(widget,/lines\.map\(\(line,index\)/);
 });
