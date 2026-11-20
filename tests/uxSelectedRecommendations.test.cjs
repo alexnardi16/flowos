@@ -706,3 +706,12 @@ test('A multi-day occurrence completed today is excluded from both Today surface
   assert.match(widgetData,/if\(isMultiDayActivity\(item\)&&isCompletedOnDate\(item,now\)\)continue/);
   assert.match(widgetData,/isVisibleInToday\(item,now\)/);
 });
+
+
+test('Daily completion is checked before special multi-day visibility rules',()=>{
+  const source=read('lib/commitmentVisibility.ts');
+  const today=source.slice(source.indexOf('export function isVisibleInToday'),source.indexOf('export function isVisibleCompletedMultiDayForDate'));
+  assert.ok(today.indexOf('if (isCompletedOnDate(item, now)) return false') < today.indexOf('if (item.status !== \'done\''));
+  const completed=source.slice(source.indexOf('export function isVisibleCompletedMultiDayForDate'));
+  assert.ok(completed.indexOf('if (isCompletedOnDate(item, date)) return false') < completed.indexOf("item.kind !== 'event'"));
+});
