@@ -23,7 +23,7 @@ test('public landing and legal pages exist and expose the required FlowOS identi
 
   assert.match(privacy, /<title>FlowOS Privacy Policy<\/title>/i);
   assert.match(privacy, /Last updated:/i);
-  assert.match(privacy, /alex16nardi@gmail\.com/i);
+  assert.match(privacy, /support.flowos@gmail\.com/i);
   assert.match(privacy, /Delete account/i);
 
   assert.match(deletion, /<title>Delete your FlowOS account<\/title>/i);
