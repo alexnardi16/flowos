@@ -334,7 +334,9 @@ test('Multi-day completion is stored per date without globally completing the ac
   assert.match(visibility, /item\.durationMinutes > 24 \* 60 && activityEnd\(item\) !== null/);
   assert.match(repository, /dailyCompletedDates: item\.dailyCompletedDates/);
   assert.match(repository, /row\.ai_metadata\?\.dailyCompletedDates/);
-  assert.match(widgetData, /isCompletedOnDate\(item,now\)/);
+  assert.match(widgetData, /isVisibleInToday, isVisibleCompletedMultiDayForDate/);
+  assert.match(widgetData, /isVisibleInToday\(item,now\)/);
+  assert.match(widgetData, /isVisibleCompletedMultiDayForDate\(item,now\)/);
 });
 
 test('Per-day completion metadata is persisted without marking Google items pending', () => {
