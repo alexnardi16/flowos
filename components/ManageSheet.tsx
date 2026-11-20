@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@expo/ui/community/datetime-picker';
 import { Button, Card, SectionTitle, palette, showAlert, showConfirm, getTypeScale, useAppDensity } from '@/components/ui';
 import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleCalendar, type GoogleTaskList } from '@/lib/googleWorkspace';
@@ -38,7 +39,7 @@ function combine(dateStr: string, timeStr: string, allDay: boolean): string | un
   return new Date(y, m - 1, d, hh || 0, mm || 0).toISOString();
 }
 
-export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () => void }) { const { language } = useLanguage(); const {appFontSize}=useAppDensity(); const textScale=getTypeScale(appFontSize);
+export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () => void }) { const insets=useSafeAreaInsets(); const { language } = useLanguage(); const {appFontSize}=useAppDensity(); const textScale=getTypeScale(appFontSize);
   const updateCommitment = useFlowStore((state) => state.updateCommitment);
   const addCommitment = useFlowStore((state) => state.addCommitment);
   const commitments = useFlowStore((state) => state.commitments);
@@ -270,7 +271,7 @@ export function ManageSheet({ item, onClose }: { item: Commitment; onClose: () =
         {item.googleRecurringEventId ? <Pressable disabled={busy} onPress={() => void removeSeries()} style={styles.googleDelete}><Text style={styles.googleDeleteText}>{t('Elimina tutta la serie')}</Text></Pressable> : null}
       </View>
       {datePickerTarget ? <DateTimePicker value={new Date(`${datePickerTarget === 'start' ? dateStr : datePickerTarget === 'end' ? endDate : repeatUntil || dateStr}T12:00:00`)} mode="date" presentation="dialog" locale={localeForLanguage(language)} onValueChange={(_, selectedDate) => handleDatePicked(selectedDate)} onDismiss={() => setDatePickerTarget(null)}/> : null}
-    </ScrollView><View style={styles.stickyFooter}><Button secondary label={t('Annulla')} onPress={()=>void requestClose()} disabled={busy}/><Button label={t('Salva modifiche')} onPress={() => void save()} loading={busy} disabled={busy}/></View></View>
+    </ScrollView><View style={[styles.stickyFooter,{paddingBottom:Math.max(insets.bottom,16)+12}]}><Button secondary label={t('Annulla')} onPress={()=>void requestClose()} disabled={busy}/><Button label={t('Salva modifiche')} onPress={() => void save()} loading={busy} disabled={busy}/></View></View>
   </Modal>}
 function Choice({label, active, onPress}:{label:string;active:boolean;onPress:()=>void}) { return <Pressable onPress={onPress} style={[styles.choice, active && styles.choiceActive]}><Text style={[styles.choiceText, active && styles.choiceTextActive]}>{label}</Text></Pressable>; }
 type FieldProps = {label:string; value:string; onChangeText:(value:string)=>void; required?:boolean; multiline?:boolean; autoGrow?:boolean; placeholder?:string; keyboardType?:'default'|'number-pad'|'url'; autoCapitalize?:'none'|'sentences'; fixedLabel?:boolean; singleLineLabel?:boolean};
@@ -278,8 +279,8 @@ function Field({label,value,onChangeText,required,multiline,autoGrow,placeholder
 
 const styles = StyleSheet.create({
   modalRoot:{flex:1,backgroundColor:palette.bg},
-  wrap:{padding:20,paddingTop:50,paddingBottom:64,gap:8,backgroundColor:palette.bg},
-  stickyFooter:{flexDirection:'row',gap:8,paddingHorizontal:20,paddingTop:10,paddingBottom:12,borderTopWidth:1,borderTopColor:palette.border,backgroundColor:palette.bg},
+  wrap:{padding:20,paddingTop:50,paddingBottom:24,gap:8,backgroundColor:palette.bg},
+  stickyFooter:{flexDirection:'row',gap:8,paddingHorizontal:20,paddingTop:12,paddingBottom:12,borderTopWidth:1,borderTopColor:palette.border,backgroundColor:palette.bg},
   preview:{gap:8,backgroundColor:palette.card,marginTop:12},
   previewRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
   previewTitle:{fontSize:16,fontWeight:'700',color:palette.ink,flexShrink:1},
