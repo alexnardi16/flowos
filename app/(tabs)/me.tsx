@@ -94,7 +94,6 @@ export default function Me(){
   const [widgetAppearance,setWidgetAppearance]=useState<WidgetAppearance>(DEFAULT_WIDGET_APPEARANCE);
   const [widgetAppearanceBusy,setWidgetAppearanceBusy]=useState(false);
   const [settingsQuery,setSettingsQuery]=useState('');
-  const [settingsCategory,setSettingsCategory]=useState<SettingsCategory>('all');
   const [widgetPersonalizationOpen,setWidgetPersonalizationOpen]=useState(false);
 
   const commitments=useFlowStore(state=>state.commitments);
@@ -325,7 +324,7 @@ export default function Me(){
   const connected=Boolean(google?.connection&&google.connection.last_sync_status!=='disconnected'&&!authMissing);
   const normalizedSettingsQuery=settingsQuery.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const showSettingsSection=(_category:string,keywords:string)=>!normalizedSettingsQuery||keywords.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(normalizedSettingsQuery);
-  const hasSettingsMatch=[['appearance','lingua language aspetto dimensione caratteri font size testo'],['widgets','widget personalizzazione temi densità colori anteprima'],['google','google sincronizzazione calendari tasks'],['notifications','notifiche reminder riepilogo permessi android sistema activity reminders'],['diagnostics','diagnostica log errori avvisi'],['account','account privacy dati logout']].some(([category,keywords])=>showSettingsSection(category as SettingsCategory,keywords));
+  const hasSettingsMatch=[['appearance','lingua language aspetto dimensione caratteri font size testo'],['widgets','widget personalizzazione temi densità colori anteprima'],['google','google sincronizzazione calendari tasks'],['notifications','notifiche reminder riepilogo permessi android sistema activity reminders'],['diagnostics','diagnostica log errori avvisi'],['account','account privacy dati logout']].some(([category,keywords])=>showSettingsSection(category,keywords));
   const syncStatusColor=google?.connection?.last_sync_status==='ok'?palette.success:google?.connection?.last_sync_status==='error'?palette.danger:google?.connection?.last_sync_status==='syncing'?palette.info:palette.muted;
   const diagnosticErrors=logs.filter(entry=>entry.level==='error').length;
   const diagnosticWarnings=logs.filter(entry=>entry.level==='warn').length;
