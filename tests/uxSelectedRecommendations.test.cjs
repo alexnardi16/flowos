@@ -369,6 +369,7 @@ test('List search placeholder is concise and settings search has no category chi
   assert.match(plan, /placeholder=\{t\('Cerca'\)\}/);
   assert.doesNotMatch(settings, /settingsCategoryRow|settingsCategoryChip|settingsCategory/);
   assert.match(settings, /Cerca impostazioni/);
+});
 
 test('Manage exposes Add-style advanced options and renamed postpone action', () => {
   const manage = read('components/ManageSheet.tsx');
