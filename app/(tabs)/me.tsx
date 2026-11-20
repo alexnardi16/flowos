@@ -27,7 +27,11 @@ function notificationLogLine(entry:NotificationLogEntry){const time=new Date(ent
 const WIDGET_COLOR_SWATCHES=Object.freeze([...new Set(["#F1F4FF","#172033","#6658D3","#FFFFFF","#F3F4F7","#171A26","#F7F7FC","#7669E8","#9278C8","#302B3A","#F6F7FB","#FFF8F0",...ACTIVITY_SOURCE_COLORS,"#F5F5F5","#D9D9D9","#A6A6A6","#737373","#404040","#000000","#FCE4D6","#F4B183","#ED7D31","#C65911","#843C0C","#FFF2CC","#FFE699","#FFD966","#BF9000","#7F6000","#E2F0D9","#A9D18E","#70AD47","#548235","#375623","#DDEBF7","#9DC3E6","#5B9BD5","#2F75B5","#1F4E78","#D9EAD3","#A2D39B","#00A86B","#008080","#006666","#E4DFEC","#B4A7D6","#8064A2","#5F497A","#F4CCCC","#EA9999","#E06666","#CC0000","#990000","#CFE2F3","#6FA8DC","#3C78D8","#1155CC","#073763","#D0E0E3","#76A5AF","#45818E","#134F5C"])]);
 function swatchHue(hex:string){const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;if(delta<0.015)return -1;let hue=0;if(max===r)hue=60*(((g-b)/delta)%6);else if(max===g)hue=60*((b-r)/delta+2);else hue=60*((r-g)/delta+4);return hue<0?hue+360:hue;}
 function swatchLightness(hex:string){const v=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(x=>x<=0.04045?x/12.92:((x+0.055)/1.055)**2.4);return 0.2126*v[0]+0.7152*v[1]+0.0722*v[2];}
-const WIDGET_COLOR_SORTED=Object.freeze([...WIDGET_COLOR_SWATCHES,"#FFB3BA","#BAFFC9","#BAE1FF"].sort((a,b)=>swatchHue(a)-swatchHue(b)||swatchLightness(b)-swatchLightness(a)||a.localeCompare(b)));
+const WIDGET_COLOR_SORTED=Object.freeze([...WIDGET_COLOR_SWATCHES,"#FFB3BA","#BAFFC9","#BAE1FF"].sort((a,b)=>{
+  const hueA=swatchHue(a),hueB=swatchHue(b);
+  const familyA=hueA<0?-1:Math.floor(hueA/45),familyB=hueB<0?-1:Math.floor(hueB/45);
+  return familyA-familyB||swatchLightness(b)-swatchLightness(a)||a.localeCompare(b);
+}).slice(0,64));
 const WIDGET_COLOR_GRID=Object.freeze(Array.from({length:8},(_,row)=>WIDGET_COLOR_SORTED.slice(row*8,row*8+8)));
 function normalizedSwatchColor(value:string){return value.trim().toUpperCase();}
 function colorDisplayName(hex:string,language:string){
