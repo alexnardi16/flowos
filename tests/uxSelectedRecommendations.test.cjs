@@ -80,6 +80,22 @@ test('Location and primary widget actions use consistent non-emoji labels or vec
   assert.match(androidToday+androidCalendar, /accessibilityLabel=\{labels\.sync\}/);
 });
 
+test('Settings search has no category filter chips', () => {
+  const source = read('app/(tabs)/me.tsx');
+  assert.match(source, /Cerca impostazioni/);
+  assert.doesNotMatch(source, /settingsCategory|settingsCategoryRow|settingsCategoryChip/);
+  assert.match(source, /const showSettingsSection=\(_category:string,keywords:string\)=>!normalizedSettingsQuery/);
+});
+
+test('Manage sheet footer respects Android bottom safe area and remains separated from navigation bar', () => {
+  const source = read('components/ManageSheet.tsx');
+  assert.match(source, /useSafeAreaInsets/);
+  assert.match(source, /paddingBottom:Math\.max\(insets\.bottom,16\)\+12/);
+  assert.match(source, /stickyFooter/);
+  assert.match(source, /label=\{t\('Annulla'\)\}/);
+  assert.match(source, /label=\{t\('Salva modifiche'\)\}/);
+});
+
 test('Widget color selection uses one compact palette with localized color names and a live color preview', () => {
   const source = read('app/(tabs)/me.tsx');
   assert.match(source, /function ColorSwatches\(\{value,onSelect,language\}/);
