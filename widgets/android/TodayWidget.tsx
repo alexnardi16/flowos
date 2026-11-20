@@ -28,9 +28,13 @@ function titleLines(text:string,maxChars=32){
 function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'compact'='balanced'){
   const compact=density==='compact',comfortable=density==='comfortable';
   const titleLineHeight=compact?15:comfortable?19:17;
-  const verticalPadding=compact?2:comfortable?4:3;
+  // Keep identical top and bottom spacing for every card; only title wrapping
+  // changes the content height. This matches the rendered paddingVertical below.
+  const verticalPadding=4;
   const titleLineCount=titleLines(item.title,item.priority?19:22).length;
-  const textHeight=titleLineCount*titleLineHeight+(item.time?10:0)+(item.duration?10:0);
+  const timeHeight=item.time?10:0;
+  const durationHeight=item.duration?10:0;
+  const textHeight=titleLineCount*titleLineHeight+timeHeight+durationHeight;
   // Only wrapped title lines change the content height. Top/bottom padding
   // stays identical for every card at the selected density.
   return Math.max(28,textHeight)+verticalPadding*2+2;
