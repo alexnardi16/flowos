@@ -697,3 +697,12 @@ test('List renders multi-day completion independently for each date and filters 
   assert.ok(source.includes('T12:00:00`))}'));
   assert.match(visibility,/export function isCompletedForDate/);
 });
+
+
+test('A multi-day occurrence completed today is excluded from both Today surfaces',()=>{
+  const visibility=read('lib/commitmentVisibility.ts');
+  const widgetData=read('lib/widgetData.ts');
+  assert.match(visibility,/if \(isMultiDayActivity\(item\) && isCompletedOnDate\(item, now\)\) return false/);
+  assert.match(widgetData,/if\(isMultiDayActivity\(item\)&&isCompletedOnDate\(item,now\)\)continue/);
+  assert.match(widgetData,/isVisibleInToday\(item,now\)/);
+});
