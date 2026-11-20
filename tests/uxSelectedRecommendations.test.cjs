@@ -153,11 +153,11 @@ test('Diagnostics distinguish errors, warnings and informational entries', () =>
   assert.match(source, /logInfo:\{color:palette\.muted\}/);
 });
 
-test('Settings are searchable and grouped by category, with readable sync and diagnostics status', () => {
+test('Settings remain searchable with readable sync and diagnostics status, without category filters', () => {
   const source = read('app/(tabs)/me.tsx');
   assert.match(source, /settingsQuery/);
-  assert.match(source, /settingsCategory/);
-  assert.match(source, /syncStatusDot/);
+  assert.match(source, /settingsQuery/);
+  assert.doesNotMatch(source, /settingsCategory|settingsCategoryRow|settingsCategoryChip/);
   assert.match(source, /diagnosticErrors/);
 });
 
@@ -363,13 +363,12 @@ test('Widget header actions use icons and Today widget completion uses a checkma
   assert.match(calendar, /text=\{labels\.today\}/);
 });
 
-test('List search placeholder is concise and settings category chips wrap', () => {
+test('List search placeholder is concise and settings search has no category chips', () => {
   const plan = read('app/(tabs)/plan.tsx');
   const settings = read('app/(tabs)/me.tsx');
   assert.match(plan, /placeholder=\{t\('Cerca'\)\}/);
-  assert.match(settings, /settingsCategoryRow:\{[^}]*flexWrap:'wrap'/);
-  assert.doesNotMatch(settings, /settingsCategoryRow\}>.*ScrollView/);
-});
+  assert.doesNotMatch(settings, /settingsCategoryRow|settingsCategoryChip|settingsCategory/);
+  assert.match(settings, /Cerca impostazioni/);
 
 test('Manage exposes Add-style advanced options and renamed postpone action', () => {
   const manage = read('components/ManageSheet.tsx');
