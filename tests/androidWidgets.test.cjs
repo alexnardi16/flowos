@@ -339,6 +339,8 @@ test('multi-day activities are expanded into every intersected day across all ap
   const todayWidgetData=fs.readFileSync('lib/widgetData.ts','utf8');
   const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
   assert.match(visibility,/export function activityDayDates/);
+  assert.match(visibility,/if \(isMultiDayActivity\(item\)\) return activityOccursOnDate\(item, now\) && !isCompletedOnDate\(item, now\)/);
+  assert.match(todayWidgetData,/isVisibleInToday\(item,now\)/);
   assert.match(visibility,/start\.getTime\(\) < dayEnd\.getTime\(\) && end\.getTime\(\) > dayStart\.getTime\(\)/);
   assert.match(today,/isVisibleInToday\(item\)/);
   assert.match(list,/activityDayDates\(item\)/);
@@ -394,9 +396,9 @@ test('widget payload caching verifies storage and restores the current calendar 
 test('Android Today widget gives the complete title its own full-width wrapping row',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.match(source,/<TextWidget text=\{item\.title\} style=\{\{ fontSize:/);
-  assert.match(source,/flexDirection:'column'/);
+  assert.match(source,/flexDirection:'row', alignItems:'center'/);
   assert.doesNotMatch(source,/lines\.map\(\(line,index\)/);
-  assert.match(source,/titleLines\(item\.title,25\)/);
+  assert.match(source,/titleLines\(item\.title,item\.priority\?36:42\)/);
 });
 test('multi-day completion offers today-only and full-duration choices and persists every completed date',()=>{
   const prompt=fs.readFileSync('lib/completePrompt.ts','utf8');
@@ -495,9 +497,9 @@ test('Manage exposes the same one-day postpone action as the Today widget in all
 test('Widget color swatches use one consistent light-to-dark palette including all defaults',()=>{
   const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
   assert.match(settings,/const WIDGET_COLOR_SWATCHES=Object\.freeze\(\[\.\.\.new Set\(/);
-  assert.match(settings,/const WIDGET_COLOR_ROWS=Object\.freeze\(Array\.from\(\{length:9\}/);
-  assert.match(settings,/sort\(\(a,b\)=>swatchLightness\(b\)-swatchLightness\(a\)/);
-  assert.match(settings,/colorSwatchRow:\{flexDirection:'row'/);
+  assert.match(settings,/const WIDGET_COLOR_GRID=Object\.freeze\(Array\.from\(\{length:8\}/);
+  assert.match(settings,/sort\(\(a,b\)=>swatchHue\(a\)-swatchHue\(b\)\|\|swatchLightness\(b\)-swatchLightness\(a\)/);
+  assert.match(settings,/colorSwatchRows:\{aspectRatio:1/);
   assert.doesNotMatch(settings,/\[\.\.\.WIDGET_COLOR_SWATCHES,normalizedSwatchColor\(value\)\]/);
   for(const color of ['#F1F4FF','#172033','#6658D3','#FFFFFF','#F3F4F7','#F3F4F7']) assert.ok(settings.includes(color));
 });
