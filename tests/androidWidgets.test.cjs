@@ -611,3 +611,14 @@ test('Widget color palette is a fixed 8 by 8 grid ordered by hue family and shad
   assert.match(settings,/Array\.from\(\{length:8\},\(_,row\)=>WIDGET_COLOR_SORTED\.slice\(row\*8,row\*8\+8\)\)/);
   assert.match(settings,/colorSwatchRows:\{aspectRatio:1/);
 });
+
+
+test('A daily completion hides that multi-day occurrence from both Today surfaces',()=>{
+  const visibility=fs.readFileSync('lib/commitmentVisibility.ts','utf8');
+  const widgetData=fs.readFileSync('lib/widgetData.ts','utf8');
+  const today=fs.readFileSync('app/(tabs)/today.tsx','utf8');
+  assert.match(visibility,/if \(isCompletedOnDate\(item, now\)\) return false/);
+  assert.match(visibility,/if \(isCompletedOnDate\(item, date\)\) return false/);
+  assert.match(widgetData,/isVisibleInToday\(item,now\)/);
+  assert.match(today,/commitments\.filter\(item=>isVisibleInToday\(item\)\)/);
+});
