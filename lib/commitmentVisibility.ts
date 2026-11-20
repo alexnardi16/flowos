@@ -104,7 +104,7 @@ export function isCompletedForDate(item: Commitment, date = new Date()): boolean
 
 export function isVisibleInToday(item: Commitment, now = new Date()): boolean {
   if (item.status !== 'done' && !item.deletedAt) {
-    if (isMultiDayActivity(item) && activityOccursOnDate(item, now)) return !isCompletedOnDate(item, now);
+    if (isMultiDayActivity(item)) return activityOccursOnDate(item, now) && !isCompletedOnDate(item, now);
     if (isOverdueTask(item, now)) return true;
     if (item.kind === 'event') return eventOccursOnDate(item, now);
     const value = item.scheduledAt ?? item.dueAt;
