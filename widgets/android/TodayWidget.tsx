@@ -48,7 +48,7 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
           <TextWidget text={item.kind.toUpperCase()} style={{ width:34, fontSize:6, lineHeight:9, fontWeight:'bold', color:textColor as any }}/>
           {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
           <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }}>
-            <TextWidget text={item.title} style={{ flex:1, fontSize:density==='compact'?11:density==='comfortable'?13:12, lineHeight:density==='compact'?15:density==='comfortable'?19:17, fontWeight:'bold', color:textColor as any }}/></FlexWidget>
+            <TextWidget text={item.title} style={{ fontSize:density==='compact'?11:density==='comfortable'?13:12, lineHeight:density==='compact'?15:density==='comfortable'?19:17, fontWeight:'bold', color:textColor as any }}/></FlexWidget>
         </FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="POSTPONE" clickActionData={{ id:item.id }}><TextWidget text={language==='it'?'+1g':language==='fr'?'+1j':'+1d'} style={{ fontSize:9, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
         <FlexWidget style={{ width:30, height:28, marginLeft:4, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('complete',item.id) }}><TextWidget text="✓" style={{ fontSize:17, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
