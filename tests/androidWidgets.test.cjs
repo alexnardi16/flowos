@@ -630,7 +630,7 @@ test('Today tab does not display a red activity-count badge',()=>{
 
 test('Widget opacity inputs stay within the settings card beside wrapping labels',()=>{
   const settings=fs.readFileSync('app/(tabs)/me.tsx','utf8');
-  assert.match(settings,/style=\[styles\.meta,styles\.opacityLabel\]/);
+  assert.match(settings,/style=\{\[styles\.meta,styles\.opacityLabel\]\}/);
   assert.match(settings,/opacityField:\{width:'100%',minWidth:0,flexDirection:'row',alignItems:'center',gap:8\}/);
   assert.match(settings,/opacityLabel:\{flex:1,minWidth:0,flexShrink:1\}/);
   assert.match(settings,/opacityInput:\{width:64,minWidth:64,maxWidth:64,flexShrink:0,textAlign:'center'\}/);
