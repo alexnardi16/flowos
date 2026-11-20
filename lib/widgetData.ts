@@ -4,7 +4,7 @@ import { formatDurationLabel, isExpired } from './itemTiming';
 import { toDateKey } from './dailySummary';
 import { sortCommitments } from './activityOrdering';
 import { activitySourceColor, buildActivitySourceColors } from './activityColors';
-import { isVisibleInToday, isVisibleCompletedMultiDayForDate, isOverdueTask, eventOccursOnDate, activityOccursOnDate, isMultiDayActivity } from './commitmentVisibility';
+import { isVisibleInToday, isVisibleCompletedMultiDayForDate, isCompletedOnDate, isOverdueTask, eventOccursOnDate, activityOccursOnDate, isMultiDayActivity } from './commitmentVisibility';
 import { type Language } from './i18n';
 
 export type WidgetItem = { id: string; title: string; time: string; duration?: string; kind: Commitment['kind']; priority?: number; sourceColor?: string };
@@ -21,6 +21,9 @@ export function buildTodayGlance(commitments: Commitment[], now: Date = new Date
   let overdueCount=0;
 
   for(const item of commitments){
+    // Do not let the globally-completed multi-day-event exception re-add a
+    // specific occurrence that was already completed for this calendar day.
+    if(isMultiDayActivity(item)&&isCompletedOnDate(item,now))continue;
     const visibleInToday=isVisibleInToday(item,now);
     const completedMultiDayVisible=isVisibleCompletedMultiDayForDate(item,now);
     if(!visibleInToday&&!completedMultiDayVisible)continue;
