@@ -29,7 +29,7 @@ test('public landing and legal pages exist and expose the required FlowOS identi
   assert.match(deletion, /<title>Delete your FlowOS account<\/title>/i);
   assert.match(deletion, /FlowOS/i);
   assert.match(deletion, /request deletion/i);
-  assert.match(deletion, /mailto:alex16nardi@gmail\.com/i);
+  assert.match(deletion, /mailto:support.flowos@gmail\.com/i);
   assert.match(deletion, /without.*app/i);
   assert.match(deletion, /Expo push tokens registered for your devices/i);
 
