@@ -300,7 +300,7 @@ test('Widget customization uses selectable color swatches and includes button co
   const calendar=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
   const sync=fs.readFileSync('lib/widgetSync.ts','utf8');
   assert.match(settings,/WIDGET_COLOR_SWATCHES/);
-  assert.match(settings,/<ColorSwatches value=\{widgetAppearance\[section\]\.backgroundColor\}/);
+  assert.match(settings,/<ColorSwatches\\b(?=[^>]*\\bvalue=\\{widgetAppearance\\[section\\]\\.backgroundColor\\})[^>]*>/);
   assert.doesNotMatch(settings,/TextInput value=\{widgetAppearance\[section\]\.(backgroundColor|textColor)/);
   assert.match(appearance,/buttonBackgroundColor/);
   assert.match(appearance,/buttonTextColor/);
