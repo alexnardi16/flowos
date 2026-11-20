@@ -62,7 +62,7 @@ test('Dark widget appearance adapts source cards, day surfaces and borders witho
   assert.match(today, /borderColor=BORDER/);
   assert.match(today, /borderColor:borderColor as any/);
   assert.match(calendar, /borderColor=BORDER/);
-  assert.match(today, /item\.kind\.toUpperCase\(\)/);
+  assert.doesNotMatch(today, /item\.kind\.toUpperCase\(\)/);
   assert.match(calendar, /todaySurfaceColor/);
   assert.match(calendar, /item\.kind\.toUpperCase\(\)/);
   assert.match(data, /kind:item\.kind==='event'\?strings\.event:strings\.task/);
@@ -328,7 +328,7 @@ test('Multi-day completion is stored per date without globally completing the ac
   const repository = read('lib/commitmentsRepository.ts');
   const widgetData = read('lib/widgetData.ts');
   assert.match(visibility, /isCompletedOnDate/);
-  assert.match(visibility, /return !isCompletedOnDate\(item, now\)/);
+  assert.match(visibility, /activityOccursOnDate\(item, now\) && !isCompletedOnDate\(item, now\)/);
   assert.match(store, /dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
   assert.match(store, /isMultiDayActivity\(item\)/);
   assert.match(visibility, /item\.durationMinutes > 24 \* 60 && activityEnd\(item\) !== null/);
