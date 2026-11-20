@@ -121,6 +121,7 @@ export function isVisibleInToday(item: Commitment, now = new Date()): boolean {
 }
 
 export function isVisibleCompletedMultiDayForDate(item: Commitment, date: Date): boolean {
+  if (isCompletedOnDate(item, date)) return false;
   if (item.kind !== 'event' || item.status !== 'done' || !item.completedAt) return false;
   const end = eventEnd(item);
   if (!end || item.durationMinutes <= 24 * 60) return false;
