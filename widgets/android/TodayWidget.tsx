@@ -26,10 +26,13 @@ function titleLines(text:string,maxChars=32){
   return lines;
 }
 function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'compact'='balanced'){
-  const compact=density==='compact',comfortable=density==='comfortable';
-  const lines=titleLines(item.title,item.priority?19:22).length;
-  const base=compact?39:comfortable?52:44;
-  return Math.max(base,(compact?6:comfortable?12:8)+lines*(compact?15:comfortable?19:17)+(item.time?(compact?14:16):0)+(item.duration?(compact?12:14):0)+9);
+  const lineHeight=density==='compact'?15:density==='comfortable'?19:17;
+  const titleFontSize=density==='compact'?11:density==='comfortable'?13:12;
+  const titleLinesCount=titleLines(item.title,item.priority?19:22).length;
+  const timeHeight=item.time?10:0;
+  const durationHeight=item.duration?10:0;
+  // Only title wrapping changes the content height. Top/bottom padding is fixed.
+  return 8+titleLinesCount*lineHeight+timeHeight+durationHeight+4;
 }
 export function TodayWidget({ items, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', transparentUnusedSpace=true, density='balanced', borderColor=BORDER, surfaceColor='#F3F4F7' }: AndroidTodayWidgetProps) {
   const labels=widgetStrings(language);
@@ -43,7 +46,7 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
       </FlexWidget>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:transparentUnusedSpace?'rgba(0, 0, 0, 0)':backgroundColor as any }}>
-      {items.map((item)=>{return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item,density), marginVertical:0, paddingHorizontal:8, paddingVertical:density==='compact'?2:density==='comfortable'?6:4, borderRadius:11, borderWidth:1, borderColor:borderColor as any, backgroundColor:(item.sourceColor??surfaceColor) as any, flexDirection:'row', alignItems:'center' }}>
+      {items.map((item)=>{return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item,density), marginVertical:0, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:borderColor as any, backgroundColor:(item.sourceColor??surfaceColor) as any, flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
           <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }}>
