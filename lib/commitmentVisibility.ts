@@ -103,7 +103,11 @@ export function isCompletedForDate(item: Commitment, date = new Date()): boolean
 }
 
 export function isVisibleInToday(item: Commitment, now = new Date()): boolean {
-  if (item.status !== 'done' && !item.deletedAt) {
+  // A day-level completion always hides this multi-day occurrence from Today,
+  // regardless of status or the special visibility rule for globally completed events.
+  if (isMultiDayActivity(item) && isCompletedOnDate(item, now)) return false;
+  if (item.deletedAt) return false;
+  if (item.status !== 'done') {
     if (isMultiDayActivity(item)) return activityOccursOnDate(item, now) && !isCompletedOnDate(item, now);
     if (isOverdueTask(item, now)) return true;
     if (item.kind === 'event') return eventOccursOnDate(item, now);
