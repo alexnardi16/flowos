@@ -101,8 +101,8 @@ test('Widget color selection uses one compact palette with localized color names
   assert.match(source, /function ColorSwatches\(\{value,onSelect,language\}/);
   assert.match(source, /colorPickerPanel/);
   assert.match(source, /colorSwatchRows/);
-  assert.match(source, /colorSwatchRow:\{flexDirection:'row'/);
-  assert.match(source, /colorSwatchTouch:\{flex:1,minWidth:0/);
+  assert.match(source, /colorSwatchRows:\{aspectRatio:1/);
+  assert.match(source, /colorSwatchTouch:\{width:'12.5%'/);
   assert.match(source, /colorDisplayName/);
   assert.match(source, /colorSelectionName/);
   assert.match(source, /colorSelectionSample/);
