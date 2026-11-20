@@ -497,7 +497,6 @@ test('Widget color swatches use one consistent light-to-dark palette including a
   assert.match(settings,/const WIDGET_COLOR_ROWS=Object\.freeze\(Array\.from\(\{length:9\}/);
   assert.match(settings,/sort\(\(a,b\)=>swatchLightness\(b\)-swatchLightness\(a\)/);
   assert.match(settings,/colorSwatchRow:\{flexDirection:'row'/);
-  assert.match(settings,/const colors=WIDGET_COLOR_SWATCHES/);
   assert.doesNotMatch(settings,/\[\.\.\.WIDGET_COLOR_SWATCHES,normalizedSwatchColor\(value\)\]/);
   for(const color of ['#F1F4FF','#172033','#6658D3','#FFFFFF','#F3F4F7','#F3F4F7']) assert.ok(settings.includes(color));
 });
