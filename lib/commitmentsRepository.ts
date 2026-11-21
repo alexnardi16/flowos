@@ -272,23 +272,24 @@ export async function flushOfflineQueue() {
 }
 
 /** Forces an immediate push of one specific local change when an id is supplied, or all pending changes otherwise. */
-export async function pushPendingToGoogle(commitmentId?: string) {
+export async function pushPendingToGoogle(commitmentId?:string) {
   const startedAt=Date.now();
-  await logNotificationEvent('google-push-stage-client-start',{commitmentId:commitmentId??null,supabaseConfigured:isSupabaseConfigured});
-  if (!isSupabaseConfigured) {
-    await logNotificationEvent('google-push-stage-client-aborted',{commitmentId:commitmentId??null,reason:'supabase-not-configured'},'error');
+  if(!isSupabaseConfigured){
+    void logNotificationEvent('google-push-stage-client-aborted',{commitmentId:commitmentId??null,reason:'supabase-not-configured'},'error');
     throw new Error('Supabase non è configurato: impossibile sincronizzare con Google.');
   }
-  const body = commitmentId ? { action: 'sync-push', commitmentId } : { action: 'sync-push' };
-  await logNotificationEvent('google-push-stage-function-invoke',{commitmentId:commitmentId??null,action:body.action});
-  const { data, error } = await supabase.functions.invoke('google-workspace', { body });
-  if (error) {
-    await logNotificationEvent('google-push-stage-function-error',{commitmentId:commitmentId??null,elapsedMs:Date.now()-startedAt,error:{name:error.name,message:error.message,context:(error as any).context??null}},'error');
+  const body=commitmentId?{action:'sync-push',commitmentId}:{action:'sync-push'};
+  // Diagnostic persistence must not sit in front of the actual Google request.
+  void logNotificationEvent('google-push-stage-client-start',{commitmentId:commitmentId??null,supabaseConfigured:isSupabaseConfigured});
+  void logNotificationEvent('google-push-stage-function-invoke',{commitmentId:commitmentId??null,action:body.action});
+  const {data,error}=await supabase.functions.invoke('google-workspace',{body});
+  if(error){
+    void logNotificationEvent('google-push-stage-function-error',{commitmentId:commitmentId??null,elapsedMs:Date.now()-startedAt,error:{name:error.name,message:error.message,context:(error as any).context??null}},'error');
     throw error;
   }
-  await logNotificationEvent('google-push-stage-function-response',{commitmentId:commitmentId??null,elapsedMs:Date.now()-startedAt,responseOk:data?.ok??null,pushed:data?.pushed??null,responseCommitmentId:data?.commitmentId??null,responseError:data?.error??null},data?.ok===false?'error':'info');
-  if (data?.error) throw new Error(String(data.error));
-  await logAnyPushErrors();
+  void logNotificationEvent('google-push-stage-function-response',{commitmentId:commitmentId??null,elapsedMs:Date.now()-startedAt,responseOk:data?.ok??null,pushed:data?.pushed??null,responseCommitmentId:data?.commitmentId??null,responseError:data?.error??null},data?.ok===false?'error':'info');
+  if(data?.error)throw new Error(String(data.error));
+  void logAnyPushErrors().catch(error=>recordDiagnostic('google-push-error-audit-failed',error,'warn'));
   return data;
 }
 
