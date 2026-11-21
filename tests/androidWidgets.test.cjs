@@ -594,9 +594,9 @@ test('multi-day completion from the Android widget is occurrence-scoped and does
   const start=handler.indexOf('async function runWidgetComplete');
   const end=handler.indexOf('async function runWidgetPostpone',start);
   const complete=handler.slice(start,end);
-  assert.match(complete,/if\(isMultiDayActivity\(item\)\)/);
-  assert.match(complete,/activityOccursOnDate\(item,now\)/);
-  assert.match(complete,/dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
+  assert.match(complete,/if\(isMultiDayActivity\(remoteItem\)\)/);
+  assert.match(complete,/activityOccursOnDate\(remoteItem,now\)/);
+  assert.match(complete,/dailyCompletedDates:\[\.\.\.\(remoteItem\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
   assert.match(complete,/await saveCommitment\(updated\)/);
   assert.doesNotMatch(complete.slice(0,complete.indexOf("const updated={...remoteItem,status:'done'")),/status:'done'/);
   assert.match(complete,/await pushPendingToGoogle\(\)/);
