@@ -71,14 +71,18 @@ async function runWidgetComplete(id:string):Promise<{sync:Promise<void>|null}>{
   const changed=[updated,...(nextOccurrence?[nextOccurrence]:[])];
   const nextItems=normalizeTaskPriorities(items.map(candidate=>changed.find(value=>value.id===candidate.id)??candidate));
   if(nextOccurrence&&!nextItems.some(candidate=>candidate.id===nextOccurrence.id))nextItems.unshift(nextOccurrence);
-  await Promise.all(changed.map(saveCommitment));
+  const toSave=nextItems.filter(candidate=>{
+    const previous=items.find(item=>item.id===candidate.id);
+    return changed.some(item=>item.id===candidate.id)||!previous||previous.priority!==candidate.priority;
+  });
+  await Promise.all(toSave.map(saveCommitment));
   await writeCommitments(nextItems);
 
   const sync=(async()=>{
     await flushOfflineQueue();
     await pushPendingToGoogle();
     const latest=readCommitments(await AsyncStorage.getItem(STORAGE_KEY)) as Commitment[];
-    const refreshed=await Promise.all(changed.map(candidate=>loadCommitmentById(candidate.id)));
+    const refreshed=await Promise.all(toSave.map(candidate=>loadCommitmentById(candidate.id)));
     const remoteById=new Map(refreshed.filter((value):value is Commitment=>Boolean(value)).map(value=>[value.id,value]));
     await writeCommitments(latest.map(candidate=>remoteById.get(candidate.id)??candidate));
   })();
