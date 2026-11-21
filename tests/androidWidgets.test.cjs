@@ -220,7 +220,8 @@ test('Today widget shows only start/end times and titles, never type or overdue 
 
 test('Today widget title uses full width and wraps naturally without forced line breaks',()=>{
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(widget,/titleLines\(item\.title,item\.priority\?19:22\)/);
+  assert.match(widget,/const maxTitleChars=compact\?/);
+  assert.match(widget,/titleLines\(item\.title,maxTitleChars\)\.length/);
   assert.match(widget,/<TextWidget text=\{item\.title\}/);
   assert.doesNotMatch(widget,/lines\.map\(\(line,index\)/);
 });
@@ -396,7 +397,8 @@ test('Android Today widget gives the complete title its own full-width wrapping 
   assert.match(source,/<TextWidget text=\{item\.title\} style=\{\{ fontSize:/);
   assert.match(source,/flexDirection:'row', alignItems:'center'/);
   assert.doesNotMatch(source,/lines\.map\(\(line,index\)/);
-  assert.match(source,/titleLines\(item\.title,item\.priority\?19:22\)/);
+  assert.match(source,/const maxTitleChars=compact\?/);
+  assert.match(source,/titleLines\(item\.title,maxTitleChars\)\.length/);
   assert.doesNotMatch(source,/text=\{item\.title\} style=\{\{ flex:/);
 });
 test('multi-day completion offers today-only and full-duration choices and persists every completed date',()=>{
@@ -410,7 +412,11 @@ test('multi-day completion offers today-only and full-duration choices and persi
   assert.match(store,/activityDayDates\(item\)/);
   assert.match(store,/dailyCompletedDates:Array\.from\(new Set/);
   assert.match(today,/requestComplete\(item,complete\)/);
-  assert.match(widget,/uri\('complete',item\.id\)/);
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(widget,/clickAction="COMPLETE" clickActionData=\{\{ id:item\.id \}\}/);
+  assert.match(handler,/props\.clickAction==='COMPLETE'/);
+  assert.match(handler,/runWidgetComplete\(id\)/);
+  assert.match(handler,/dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
 });
 test('Android Today widget accounts for multiline titles, time and explicit duration while reducing vertical padding',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
@@ -649,6 +655,7 @@ test('Today macrosection has no Add action in the header or empty state',()=>{
 
 test('Android Today widget does not overestimate the line count of a medium-length task title',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/titleLines\(item\.title,item\.priority\?25:28\)\.length/);
+  assert.match(source,/const maxTitleChars=compact\? \(item\.priority\?30:33\) : comfortable\? \(item\.priority\?23:26\) : \(item\.priority\?25:28\)/);
+  assert.match(source,/titleLines\(item\.title,maxTitleChars\)\.length/);
   assert.match(source,/paddingVertical:4/);
 });
