@@ -5,7 +5,7 @@ import { CalendarWidget, type AndroidCalendarWidgetProps } from './widgets/andro
 import { buildCalendarWidgetData } from './lib/calendarWidgetData';
 import { CALENDAR_WIDGET_PAGE_OVERLAP, CALENDAR_WIDGET_PAGE_SIZE, getCalendarWidgetPage } from './lib/calendarWidgetPaging';
 import { getGoogleWorkspaceStatus, syncGoogleWorkspace } from './lib/googleWorkspace';
-import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment, deleteCommitmentAlsoFromGoogle, removeCommitmentOnlyFromFlowOS } from './lib/commitmentsRepository';
+import { flushOfflineQueue, loadCommitmentById, loadCommitments, pushPendingToGoogle, saveCommitment, deleteCommitmentAlsoFromGoogle, removeCommitmentOnlyFromFlowOS } from './lib/commitmentsRepository';
 import { findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
 import type { Commitment } from './types';
 import { recordDiagnostic } from './lib/diagnostics';
@@ -50,47 +50,69 @@ async function refreshFromGoogle(){
   await writeCommitments(remote);
   return remote;
 }
-async function runWidgetComplete(id:string){
-  const items=await loadCommitments();
-  const item=items.find(candidate=>candidate.id===id);
-  if(!item||item.status==='done')return;
+async function runWidgetComplete(id:string):Promise<{sync:Promise<void>|null}>{
+  const [raw,remoteItem]=await Promise.all([AsyncStorage.getItem(STORAGE_KEY),loadCommitmentById(id)]);
+  if(!remoteItem||remoteItem.status==='done')return{sync:null};
+  const stored=readCommitments(raw) as Commitment[];
+  const items=stored.length?stored.map(candidate=>candidate.id===id?remoteItem:candidate):[remoteItem];
   const now=new Date();
-  if(isMultiDayActivity(item)){
-    if(!activityOccursOnDate(item,now)||isCompletedOnDate(item,now))return;
+  if(isMultiDayActivity(remoteItem)){
+    if(!activityOccursOnDate(remoteItem,now)||isCompletedOnDate(remoteItem,now))return{sync:null};
     const dayKey=dateKey(now);
-    const updated={...item,dailyCompletedDates:[...(item.dailyCompletedDates??[]),dayKey]};
+    const updated={...remoteItem,dailyCompletedDates:[...(remoteItem.dailyCompletedDates??[]),dayKey]};
+    const next=items.map(candidate=>candidate.id===id?updated:candidate);
     await saveCommitment(updated);
-    const refreshed=await loadCommitments();
-    await writeCommitments(normalizeTaskPriorities(refreshed));
-    return;
+    await writeCommitments(next);
+    return{sync:null};
   }
-  const updated={...item,status:'done' as const,completedAt:new Date().toISOString(),syncStatus:item.externalId&&item.kind==='task'?'pending':item.syncStatus};
-  const next=materializeNextOccurrence(updated,items);
-  await saveCommitment(updated);
-  if(next)await saveCommitment(next);
-  await flushOfflineQueue();
-  await pushPendingToGoogle();
-  const refreshed=await loadCommitments();
-  await writeCommitments(normalizeTaskPriorities(refreshed));
+
+  const updated={...remoteItem,status:'done' as const,completedAt:new Date().toISOString(),syncStatus:remoteItem.externalId&&remoteItem.kind==='task'?'pending':remoteItem.syncStatus};
+  const nextOccurrence=materializeNextOccurrence(updated,items);
+  const changed=[updated,...(nextOccurrence?[nextOccurrence]:[])];
+  const nextItems=normalizeTaskPriorities(items.map(candidate=>changed.find(value=>value.id===candidate.id)??candidate));
+  if(nextOccurrence&&!nextItems.some(candidate=>candidate.id===nextOccurrence.id))nextItems.unshift(nextOccurrence);
+  await Promise.all(changed.map(saveCommitment));
+  await writeCommitments(nextItems);
+
+  const sync=(async()=>{
+    await flushOfflineQueue();
+    await pushPendingToGoogle();
+    const latest=readCommitments(await AsyncStorage.getItem(STORAGE_KEY)) as Commitment[];
+    const refreshed=await Promise.all(changed.map(candidate=>loadCommitmentById(candidate.id)));
+    const remoteById=new Map(refreshed.filter((value):value is Commitment=>Boolean(value)).map(value=>[value.id,value]));
+    await writeCommitments(latest.map(candidate=>remoteById.get(candidate.id)??candidate));
+  })();
+  return{sync};
 }
-async function runWidgetPostpone(id:string){
-  const items=await loadCommitments();
-  const item=items.find(candidate=>candidate.id===id);
-  if(!item)return;
-  const base=item.scheduledAt??item.dueAt;
-  if(!base)return;
+
+async function runWidgetPostpone(id:string):Promise<{sync:Promise<void>|null}>{
+  const [raw,remoteItem]=await Promise.all([AsyncStorage.getItem(STORAGE_KEY),loadCommitmentById(id)]);
+  if(!remoteItem)return{sync:null};
+  const base=remoteItem.scheduledAt??remoteItem.dueAt;
+  if(!base)return{sync:null};
+  const stored=readCommitments(raw) as Commitment[];
+  const items=stored.length?stored.map(candidate=>candidate.id===id?remoteItem:candidate):[remoteItem];
   const nextDay=new Date(new Date(base).getTime()+86400000).toISOString();
-  const updated={...item,status:item.kind==='event'?'scheduled':item.status,scheduledAt:item.scheduledAt?nextDay:undefined,dueAt:item.dueAt?nextDay:undefined} as Commitment;
+  const updated={...remoteItem,status:remoteItem.kind==='event'?'scheduled':remoteItem.status,scheduledAt:remoteItem.scheduledAt?nextDay:undefined,dueAt:remoteItem.dueAt?nextDay:undefined} as Commitment;
   const normalized=normalizeTaskPriorities(items.map(candidate=>candidate.id===id?updated:candidate));
-  for(const changed of normalized){
-    const previous=items.find(candidate=>candidate.id===changed.id);
-    if(!previous||previous.priority!==changed.priority||changed.id===id)await saveCommitment(changed);
-  }
-  await flushOfflineQueue();
-  await pushPendingToGoogle();
-  const refreshed=await loadCommitments();
-  await writeCommitments(normalizeTaskPriorities(refreshed));
+  const toSave=normalized.filter(candidate=>{
+    const previous=items.find(item=>item.id===candidate.id);
+    return !previous||previous.priority!==candidate.priority||candidate.id===id;
+  });
+  await Promise.all(toSave.map(saveCommitment));
+  await writeCommitments(normalized);
+
+  const sync=(async()=>{
+    await flushOfflineQueue();
+    await pushPendingToGoogle(id);
+    const refreshed=await loadCommitmentById(id);
+    if(!refreshed)return;
+    const latest=readCommitments(await AsyncStorage.getItem(STORAGE_KEY)) as Commitment[];
+    await writeCommitments(latest.map(candidate=>candidate.id===id?refreshed:candidate));
+  })();
+  return{sync};
 }
+
 function findVoiceItem(items:Commitment[],query:string){return findBestVoiceMatch(items,query);}
 function localWhen(value?:string){return value?new Date(value):undefined;}
 async function executeVoice(command:VoiceCommand,items:Commitment[]){
@@ -119,14 +141,15 @@ async function runWidgetSync(){
   catch(error){recordDiagnostic('widget-google-sync-failed',error,'error');}
 }
 export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
+  let pendingGoogleSync:Promise<void>|null=null;
   if(props.widgetAction==='WIDGET_CLICK'){
     if(props.clickAction==='SYNC_GOOGLE'){await runWidgetSync();return;}
     else if(props.clickAction==='COMPLETE'){
       const id=String((props.clickActionData as Record<string,unknown>|undefined)?.id??'');
-      if(id)try{await runWidgetComplete(id);recordDiagnostic('widget-complete-completed',{id});}catch(error){recordDiagnostic('widget-complete-failed',error,'warn');}
+      if(id)try{const result=await runWidgetComplete(id);pendingGoogleSync=result.sync;recordDiagnostic('widget-complete-local-update-ready',{id,googleSyncPending:Boolean(pendingGoogleSync)});}catch(error){recordDiagnostic('widget-complete-failed',error,'warn');}
     }else if(props.clickAction==='POSTPONE'){
       const id=String((props.clickActionData as Record<string,unknown>|undefined)?.id??'');
-      if(id)try{await runWidgetPostpone(id);recordDiagnostic('widget-postpone-completed',{id});}catch(error){recordDiagnostic('widget-postpone-failed',error,'warn');}
+      if(id)try{const result=await runWidgetPostpone(id);pendingGoogleSync=result.sync;recordDiagnostic('widget-postpone-local-update-ready',{id,googleSyncPending:Boolean(pendingGoogleSync)});}catch(error){recordDiagnostic('widget-postpone-failed',error,'warn');}
     }
   }
   const raw=await AsyncStorage.getItem(STORAGE_KEY);
@@ -192,4 +215,5 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       }catch(error){recordDiagnostic('widget-calendar-background-refresh-failed',error,'warn');}
     }
   }
+  if(pendingGoogleSync)await pendingGoogleSync.catch(error=>recordDiagnostic('widget-action-google-push-failed',error,'warn'));
 }
