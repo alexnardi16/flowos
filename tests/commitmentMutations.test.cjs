@@ -17,7 +17,7 @@ test('Manage offers undo completion for every completed task and event',()=>{
   assert.match(undo,/status:item\.kind==='event'\?'scheduled':'active'/);
   assert.match(undo,/completedAt:undefined/);
   assert.match(undo,/syncStatus:item\.externalId&&item\.kind==='task'\?'pending':item\.syncStatus/);
-  assert.match(undo,/await pushGoogleAndRefresh\(\)/);
+  assert.match(undo,/scheduleGooglePush\(id\)/);
   assert.match(undo,/refreshNotifications\(get\(\)\.commitments\)/);
 });
 test('deletes an event',()=>{const event=item('event-1','event');const task=item('task-1','task');assert.deepEqual(removeCommitmentState([event,task],event.id),[task]);});
@@ -67,20 +67,19 @@ test('manual sync from Manage is targeted to the exact commitment',()=>{
 });
 
 
-test('creating an activity immediately persists it and starts a targeted Google push',()=>{
+test('creating an activity persists it and immediately schedules a targeted Google push without waiting for the network round trip',()=>{
   const add=storeSource.slice(storeSource.indexOf('addCommitment:async'),storeSource.indexOf('rolloverTodayTasks:async'));
-  assert.ok(add.indexOf('await saveCommitment(changed)')>=0);
-  assert.ok(add.indexOf('await pushGoogleAndRefresh(commitment.id)')>add.indexOf('await saveCommitment(changed)'));
-  assert.match(add,/store-add-commitment-google-push-start/);
-  assert.match(add,/store-add-commitment-google-push-success/);
-  assert.match(add,/store-add-commitment-google-push-failed/);
+  assert.match(add,/await Promise\.all\(toSave\.map\(saveCommitment\)\)/);
+  assert.match(add,/scheduleGooglePush\(normalized\.id\)/);
+  assert.ok(add.indexOf('scheduleGooglePush(normalized.id)')>add.indexOf('await Promise.all(toSave.map(saveCommitment))'));
 });
-test('editing an activity immediately persists the edit and triggers Google push',()=>{
+test('editing an activity persists changes and immediately schedules a targeted Google push',()=>{
   const start=storeSource.indexOf('updateCommitment:async');
   const end=storeSource.indexOf('removeOnlyFromFlowOS:async',start);
   const edit=storeSource.slice(start,end);
-  assert.ok(edit.indexOf('await saveCommitment(changed)')>=0);
-  assert.ok(edit.indexOf('await pushGoogleAndRefresh()')>edit.indexOf('await saveCommitment(changed)'));
+  assert.match(edit,/await Promise\.all\(toSave\.map\(saveCommitment\)\)/);
+  assert.match(edit,/scheduleGooglePush\(updated\.id\)/);
+  assert.ok(edit.indexOf('scheduleGooglePush(updated.id)')>edit.indexOf('await Promise.all(toSave.map(saveCommitment))'));
 });
 test('deleting an activity from both FlowOS and Google invokes the Google deletion repository',()=>{
   const start=storeSource.indexOf('removeAlsoFromGoogle:async');
@@ -158,4 +157,12 @@ test('Manage can stop a local recurrence series instead of silently retaining it
   const stop=storeSource.slice(start,end);
   assert.match(stop,/recurrenceRule:undefined,recurrenceSeriesId:undefined,recurrenceSeriesEndAt:undefined/);
   assert.match(stop,/await pushGoogleAndRefresh\(\)/);
+});
+
+
+test('targeted Google push refreshes only the changed commitment instead of downloading the full list',()=>{
+  assert.match(storeSource,/loadCommitmentById\(protectedId\)/);
+  const repo=repoSource;
+  assert.match(repo,/export async function loadCommitmentById\(id:string\)/);
+  assert.match(storeSource,/backgroundGooglePush/);
 });

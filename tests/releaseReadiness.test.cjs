@@ -25,19 +25,21 @@ test('release validation runs every critical regression suite in CI', () => {
   assert.match(workflow, /expo export --platform web/);
 });
 
-test('create and edit persist locally before attempting an immediate Google push', () => {
+test('create and edit persist changes before immediately scheduling Google synchronization in the background', () => {
   const store = read('lib/store.ts');
   const addStart = store.indexOf('addCommitment:async');
   const addEnd = store.indexOf('rolloverTodayTasks:async', addStart);
   const add = store.slice(addStart, addEnd);
-  assert.ok(add.indexOf('await saveCommitment(changed)') >= 0);
-  assert.ok(add.indexOf('await pushGoogleAndRefresh(commitment.id)') > add.indexOf('await saveCommitment(changed)'));
+  assert.match(add,/await Promise\.all\(toSave\.map\(saveCommitment\)\)/);
+  assert.match(add,/scheduleGooglePush\(normalized\.id\)/);
+  assert.ok(add.indexOf('scheduleGooglePush(normalized.id)') > add.indexOf('await Promise.all(toSave.map(saveCommitment))'));
 
   const editStart = store.indexOf('updateCommitment:async');
   const editEnd = store.indexOf('removeOnlyFromFlowOS:async', editStart);
   const edit = store.slice(editStart, editEnd);
-  assert.ok(edit.indexOf('await saveCommitment(changed)') >= 0);
-  assert.ok(edit.indexOf('await pushGoogleAndRefresh()') > edit.indexOf('await saveCommitment(changed)'));
+  assert.match(edit,/await Promise\.all\(toSave\.map\(saveCommitment\)\)/);
+  assert.match(edit,/scheduleGooglePush\(updated\.id\)/);
+  assert.ok(edit.indexOf('scheduleGooglePush(updated.id)') > edit.indexOf('await Promise.all(toSave.map(saveCommitment))'));
 });
 
 test('Google deletion and FlowOS-only tombstones are separate, explicit operations', () => {
@@ -100,4 +102,21 @@ test('release checklist explicitly separates automated checks from physical-devi
   assert.match(checklist, /Offline recovery/);
   assert.match(checklist, /Timezone and daylight-saving transition/);
   assert.match(checklist, /Notifications and widgets/);
+});
+
+
+test('initial cloud hydration is not blocked by Google connection discovery or synchronization',()=>{
+  const auth=read('providers/AuthProvider.tsx');
+  assert.ok(auth.indexOf("initial-cloud-hydration-failed")<auth.indexOf("google-auto-sync-started"));
+  assert.match(auth,/void hydrateFromCloud\(\)/);
+  assert.match(auth,/syncGoogleWorkspace\(/);
+});
+
+test('commitment persistence avoids serial notification-log writes on the critical save path',()=>{
+  const repository=read('lib/commitmentsRepository.ts');
+  const start=repository.indexOf('export async function saveCommitment');
+  const end=repository.indexOf('export async function loadCommitmentById',start);
+  const save=repository.slice(start,end);
+  assert.doesNotMatch(save,/await logNotificationEvent/);
+  assert.match(save,/recordDiagnostic\('commitment-save-completed'/);
 });

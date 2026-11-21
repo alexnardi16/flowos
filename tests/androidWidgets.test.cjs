@@ -292,9 +292,9 @@ test('Both Android widgets apply saved background, text and per-source card colo
   assert.match(calendar,/color: textColor/);
 });
 
-test('Macrosection navigation preloads screens to avoid first-open delays',()=>{
+test('Macrosection navigation mounts screens on demand and freezes inactive screens',()=>{
   const layout=fs.readFileSync('app/(tabs)/_layout.tsx','utf8');
-  assert.match(layout,/lazy:false/);
+  assert.match(layout,/lazy:true/);
   assert.match(layout,/freezeOnBlur:true/);
 });
 
