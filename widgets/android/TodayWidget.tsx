@@ -6,25 +6,7 @@ export type AndroidWidgetItem = { id: string; title: string; time: string; durat
 export type AndroidTodayWidgetProps = { items: AndroidWidgetItem[]; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string; transparentUnusedSpace?: boolean; density?: 'comfortable'|'balanced'|'compact'; borderColor?:string; surfaceColor?:string };
 const BG = '#F1F4FF'; const INK = '#172033'; const PRIMARY = '#6658D3'; const BORDER = '#C8CEDA';
 const uri=(action:string,id:string)=>`flowos://today?widgetAction=${action}&id=${encodeURIComponent(id)}`;
-function titleLines(text:string,maxChars=32){
-  const clean=text.trim();
-  if(!clean)return [''];
-  const words=clean.split(/\s+/);
-  const lines:string[]=[];
-  let current='';
-  for(const word of words){
-    if(word.length>maxChars){
-      if(current){lines.push(current);current='';}
-      for(let index=0;index<word.length;index+=maxChars)lines.push(word.slice(index,index+maxChars));
-      continue;
-    }
-    const candidate=current?`${current} ${word}`:word;
-    if(candidate.length<=maxChars)current=candidate;
-    else{lines.push(current);current=word;}
-  }
-  if(current)lines.push(current);
-  return lines;
-}
+import { wrapTodayWidgetTitle } from '../../lib/todayWidgetLayout';
 function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'compact'='balanced'){
   const compact=density==='compact',comfortable=density==='comfortable';
   const titleLineHeight=compact?15:comfortable?19:17;
@@ -35,7 +17,7 @@ function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'com
   // priority badge and action buttons. Avoid counting a second line when the
   // rendered title still fits on one line, which creates excess vertical space.
   const maxTitleChars=compact? (item.priority?30:33) : comfortable? (item.priority?23:26) : (item.priority?25:28);
-  const titleLineCount=titleLines(item.title,maxTitleChars).length;
+  const titleLineCount=wrapTodayWidgetTitle(item.title,maxTitleChars).length;
   const timeHeight=item.time?10:0;
   const durationHeight=item.duration?10:0;
   const textHeight=titleLineCount*titleLineHeight+timeHeight+durationHeight;
@@ -55,11 +37,11 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
       </FlexWidget>
     </FlexWidget>
     <ListWidget style={{ width:'match_parent', height:'match_parent', backgroundColor:transparentUnusedSpace?'rgba(0, 0, 0, 0)':backgroundColor as any }}>
-      {items.map((item)=>{return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item,density), marginVertical:0, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:borderColor as any, backgroundColor:(item.sourceColor??surfaceColor) as any, flexDirection:'row', alignItems:'center' }}>
+      {items.map((item)=>{const compact=density==='compact',comfortable=density==='comfortable';const maxTitleChars=compact?(item.priority?30:33):comfortable?(item.priority?23:26):(item.priority?25:28);const titleLines=wrapTodayWidgetTitle(item.title,maxTitleChars);return <FlexWidget key={item.id} style={{ width:'match_parent', height:itemHeight(item,density), marginVertical:0, paddingHorizontal:8, paddingVertical:4, borderRadius:11, borderWidth:1, borderColor:borderColor as any, backgroundColor:(item.sourceColor??surfaceColor) as any, flexDirection:'row', alignItems:'center' }}>
         <FlexWidget style={{ width:0, flex:1, flexDirection:'row', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('manage',item.id) }}>
           {item.priority ? <TextWidget text={String(item.priority)} style={{ width:18, fontSize:10, lineHeight:15, fontWeight:'bold', color:PRIMARY }} /> : null}
           <FlexWidget style={{ flex:1, flexDirection:'column', justifyContent:'center' }}>
-            <TextWidget text={item.title} style={{ fontSize:density==='compact'?11:density==='comfortable'?13:12, lineHeight:density==='compact'?15:density==='comfortable'?19:17, fontWeight:'bold', color:textColor as any }}/>
+            {titleLines.map((line,index)=><TextWidget key={`${item.id}-title-${index}`} text={line} style={{ fontSize:density==='compact'?11:density==='comfortable'?13:12, lineHeight:density==='compact'?15:density==='comfortable'?19:17, fontWeight:'bold', color:textColor as any }}/>) }
             {item.time ? <TextWidget text={item.time} style={{ fontSize:8, lineHeight:10, color:textColor as any }} /> : null}
             {item.duration ? <TextWidget text={item.duration} style={{ fontSize:8, lineHeight:10, color:textColor as any }} /> : null}
           </FlexWidget>
