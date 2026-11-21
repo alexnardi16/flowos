@@ -343,7 +343,9 @@ test('Per-day completion metadata is persisted without marking Google items pend
   const repository = read('lib/commitmentsRepository.ts');
   assert.match(repository, /onlyDailyCompletionChanged/);
   assert.match(repository, /commitment-daily-completion-saved/);
-  assert.match(repository, /ai_metadata: row\.ai_metadata/);
+  const dailySave=repository.slice(repository.indexOf('if(onlyDailyCompletionChanged)'),repository.indexOf("recordDiagnostic('commitment-daily-completion-saved'"));
+  assert.match(dailySave, /update\(\{ai_metadata:row\.ai_metadata,updated_at:new Date\(\)\.toISOString\(\)\}\)/);
+  assert.doesNotMatch(dailySave, /sync_status|pushPendingToGoogle/);
   assert.match(repository, /if \(onlyDailyCompletionChanged\)/);
 });
 
