@@ -193,7 +193,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
         const before=current.find(candidate=>candidate.id===item.id);
         return !before||before.priority!==item.priority||changedIds.has(item.id);
       });
-      await Promise.all(toSave.map(saveCommitment));
+      await runWithConcurrency(toSave,saveCommitment);
       scheduleGooglePush();
     })().finally(()=>{taskRolloverInFlight=null;});
     return taskRolloverInFlight;
@@ -261,7 +261,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
       const before=current.find(entry=>entry.id===candidate.id);
       return changedIds.has(candidate.id)||candidate.id===next?.id||before?.priority!==candidate.priority;
     });
-    await Promise.all(toSave.map(saveCommitment));
+    await runWithConcurrency(toSave,saveCommitment);
     scheduleGooglePush();
     showSnackbar(t('Attività completata'),t('Annulla'),()=>{
       void(async()=>{
@@ -289,7 +289,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
       const previous=current.find(item=>item.id===candidate.id);
       return !previous||previous.status!==candidate.status||previous.priority!==candidate.priority||candidate.id===id;
     });
-    await Promise.all(toSave.map(saveCommitment));
+    await runWithConcurrency(toSave,saveCommitment);
     scheduleGooglePush(id);
     refreshNotifications(nextCommitments);
   },
@@ -306,7 +306,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
       const previous=current.find(entry=>entry.id===candidate.id);
       return Boolean(previous&&(previous.recurrenceRule||previous.recurrenceSeriesId||previous.recurrenceSeriesEndAt)&&(candidate.id===id||candidate.id===seriesId||previous.recurrenceSeriesId===seriesId));
     });
-    await Promise.all(toSave.map(saveCommitment));
+    await runWithConcurrency(toSave,saveCommitment);
     scheduleGooglePush();
     refreshNotifications(nextCommitments);
   },
@@ -323,7 +323,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
       const before=current.find(entry=>entry.id===candidate.id);
       return !before||before.priority!==candidate.priority||candidate.id===id;
     });
-    await Promise.all(toSave.map(saveCommitment));
+    await runWithConcurrency(toSave,saveCommitment);
     scheduleGooglePush(id);
     refreshNotifications(nextCommitments);
     showSnackbar(t('Attività rimandata di 1 giorno'),t('Annulla'),()=>{
@@ -343,7 +343,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
       const before=current.find(item=>item.id===candidate.id);
       return !before||before.priority!==candidate.priority||candidate.id===updated.id;
     });
-    await Promise.all(toSave.map(saveCommitment));
+    await runWithConcurrency(toSave,saveCommitment);
     scheduleGooglePush(updated.id);
     refreshNotifications(nextCommitments);
     if(previous)showSnackbar(t('Modifiche salvate'),t('Annulla'),()=>{
