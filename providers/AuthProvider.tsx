@@ -103,38 +103,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!session?.user.id) return;
     let active = true;
+
+    // Load the last cloud snapshot as soon as authentication is ready. The
+    // first usable screen must not wait for the multi-stage Google sync.
+    void hydrateFromCloud()
+      .then(() => active ? rolloverTodayTasks() : undefined)
+      .catch(error => recordDiagnostic('initial-cloud-hydration-failed',error,'warn'));
+
+    // Start Google connection refresh and synchronization in parallel with
+    // hydration, preserving the existing immediate sync cadence.
     void (async () => {
       try {
-        recordDiagnostic('google-auto-sync-started', { userId: session.user.id, hasProviderToken: Boolean(session.provider_token) });
-        if (session.provider_token) {
-          await connectGoogleFromSession(session, true);
-          recordDiagnostic('google-workspace-connection-refreshed', { userId: session.user.id });
+        recordDiagnostic('google-auto-sync-started',{userId:session.user.id,hasProviderToken:Boolean(session.provider_token)});
+        if(session.provider_token){
+          await connectGoogleFromSession(session,true);
+          recordDiagnostic('google-workspace-connection-refreshed',{userId:session.user.id});
         }
 
-        const status = await getGoogleWorkspaceStatus();
-        const connection = status.connection;
-        recordDiagnostic('google-auto-sync-connection-status', {
-          connected: Boolean(connection),
-          lastSyncStatus: connection?.last_sync_status ?? 'none',
+        const status=await getGoogleWorkspaceStatus();
+        const connection=status.connection;
+        recordDiagnostic('google-auto-sync-connection-status',{
+          connected:Boolean(connection),
+          lastSyncStatus:connection?.last_sync_status??'none',
         });
 
-        if (!connection || connection.last_sync_status === 'disconnected') {
+        if(!connection||connection.last_sync_status==='disconnected'){
           recordDiagnostic('google-auto-sync-skipped-not-connected');
-          if (active) { await hydrateFromCloud(); await rolloverTodayTasks(); }
           return;
         }
 
-        googleSyncInProgressRef.current = true;
-        void syncGoogleWorkspace((progress) => recordDiagnostic('google-auto-sync-progress', progress)).then(async () => {
-          if (active) { await hydrateFromCloud(); await rolloverTodayTasks(); }
-          recordDiagnostic('google-auto-sync-completed', { userId: session.user.id });
-        }).catch((error) => { if (active) recordDiagnostic('google-auto-sync-failed', error, 'error'); })
-          .finally(() => { googleSyncInProgressRef.current = false; });
-      } catch (error) { if (active) recordDiagnostic('google-auto-sync-failed', error, 'error'); }
+        googleSyncInProgressRef.current=true;
+        void syncGoogleWorkspace(progress=>recordDiagnostic('google-auto-sync-progress',progress))
+          .then(async()=>{
+            if(active){
+              await hydrateFromCloud();
+              await rolloverTodayTasks();
+            }
+            recordDiagnostic('google-auto-sync-completed',{userId:session.user.id});
+          })
+          .catch(error=>{if(active)recordDiagnostic('google-auto-sync-failed',error,'error');})
+          .finally(()=>{googleSyncInProgressRef.current=false;});
+      }catch(error){
+        if(active)recordDiagnostic('google-auto-sync-failed',error,'error');
+      }
     })();
-    return () => { active = false; };
-  }, [session?.provider_token, session?.user.id, session?.access_token, hydrateFromCloud, rolloverTodayTasks]);
 
+    return()=>{active=false;};
+  },[session?.provider_token,session?.user.id,session?.access_token,hydrateFromCloud,rolloverTodayTasks]);
   useEffect(() => {
     if (!session?.user.id) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
