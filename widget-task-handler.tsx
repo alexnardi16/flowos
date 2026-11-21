@@ -15,6 +15,7 @@ import { sortCommitments } from './lib/activityOrdering';
 import { getLanguage, widgetStrings, t } from './lib/i18n';
 import { activityOccursOnDate, isCompletedOnDate, isMultiDayActivity, isVisibleInToday } from './lib/commitmentVisibility';
 import { formatDurationLabel } from './lib/itemTiming';
+import { runWithConcurrency } from './lib/asyncBatch';
 import { materializeNextOccurrence } from './lib/recurrence';
 import { activitySourceColor, activitySourceKey, buildActivitySourceColors } from './lib/activityColors';
 import { colorWithOpacity, getWidgetAppearance, sourceAppearanceColor, type WidgetAppearance } from './lib/widgetAppearance';
@@ -75,7 +76,7 @@ async function runWidgetComplete(id:string):Promise<{sync:Promise<void>|null}>{
     const previous=items.find(item=>item.id===candidate.id);
     return changed.some(item=>item.id===candidate.id)||!previous||previous.priority!==candidate.priority;
   });
-  await Promise.all(toSave.map(saveCommitment));
+  await runWithConcurrency(toSave,saveCommitment);
   await writeCommitments(nextItems);
 
   const sync=(async()=>{

@@ -19,6 +19,7 @@ import { isSupabaseConfigured } from './supabase';
 import { createUuid, isValidUuid } from './uuid';
 import { t } from './i18n';
 import { activityDayDates, activityOccursOnDate, isMultiDayActivity } from './commitmentVisibility';
+import { runWithConcurrency } from './asyncBatch';
 
 function refreshWidget(commitments:Commitment[]){void syncTodayWidget(commitments).catch(()=>undefined);}
 function refreshNotifications(commitments:Commitment[]){if(Platform.OS==='web')return;void import('./reminderEngine').then(({runReminderEngine})=>runReminderEngine(commitments)).catch(()=>undefined);}
@@ -167,7 +168,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
         const before=current.find(item=>item.id===changed.id);
         return !before||before.priority!==changed.priority||changed.id===normalized.id;
       });
-      const results=await Promise.all(toSave.map(saveCommitment));
+      const results=await runWithConcurrency(toSave,saveCommitment);
       const persisted=results.every(Boolean);
       scheduleGooglePush(normalized.id);
       if(!persisted)void logNotificationEvent('store-add-commitment-persistence-pending',{id:normalized.id},'warn');
@@ -270,7 +271,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
           return restoreIds.has(candidate.id)&&previous?previous:candidate;
         });
         set({commitments:restored});
-        await Promise.all(current.filter(candidate=>restoreIds.has(candidate.id)).map(saveCommitment));
+        await runWithConcurrency(current.filter(candidate=>restoreIds.has(candidate.id)),saveCommitment);
         if(next)await removeCommitmentOnlyFromFlowOS(next.id);
         scheduleGooglePush();
         refreshWidget(restored);refreshNotifications(restored);
@@ -366,5 +367,5 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
     refreshNotifications(result.commitments);
     scheduleGooglePush();
   },
-  autoPlan:async()=>{const planned=createAutomaticPlan(get().commitments);set({commitments:planned});await Promise.all(planned.map(item=>saveCommitment(item)));refreshWidget(planned);refreshNotifications(planned);},
+  autoPlan:async()=>{const planned=createAutomaticPlan(get().commitments);set({commitments:planned});await runWithConcurrency(planned,saveCommitment);refreshWidget(planned);refreshNotifications(planned);},
 });},{name:'flowos-store-v2',storage:createJSONStorage(()=>AsyncStorage),partialize:state=>({commitments:state.commitments})}));
