@@ -132,3 +132,16 @@ test('offline queue flushes independent mutations concurrently with a bounded wo
   assert.match(flush,/await Promise\.all\(Array\.from/);
   assert.match(flush,/reconcileFlushedQueue\(queue,failed\)/);
 });
+
+
+test('voice mutations reuse the store immediate-push path instead of starting a second full Google sync',()=>{
+  const capture=read('app/(tabs)/capture.tsx');
+  const start=capture.indexOf('async function executeVoice');
+  const end=capture.indexOf('async function startVoice',start);
+  const voice=capture.slice(start,end);
+  assert.doesNotMatch(voice,/await syncGoogleWorkspace\(\)/);
+  assert.match(voice,/await addCommitment\(/);
+  assert.match(voice,/await useFlowStore\.getState\(\)\.complete/);
+  assert.match(voice,/await postpone\(item\.id\)/);
+  assert.match(voice,/await updateCommitment\(/);
+});
