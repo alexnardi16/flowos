@@ -102,7 +102,7 @@ async function runWidgetPostpone(id:string):Promise<{sync:Promise<void>|null}>{
     const previous=items.find(item=>item.id===candidate.id);
     return !previous||previous.priority!==candidate.priority||candidate.id===id;
   });
-  await Promise.all(toSave.map(saveCommitment));
+  await runWithConcurrency(toSave,saveCommitment);
   await writeCommitments(normalized);
 
   const sync=(async()=>{
