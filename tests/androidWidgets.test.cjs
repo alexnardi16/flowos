@@ -726,8 +726,8 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   const start=source.indexOf('async function createFromText');
   const end=source.indexOf('export async function handleWidgetQuickAddResponse',start);
   const add=source.slice(start,end);
-  assert.match(add,/await writeStoredCommitments\(next\)/);
+  assert.match(add,/await writeStoredCommitments\\(next\\)/);
   assert.ok(add.indexOf('syncTodayWidget(next')<add.indexOf('await pushPendingToGoogle(item.id)'));
-  assert.match(add,/loadCommitmentById\(item.id\)/);
-  assert.doesNotMatch(add,/const refreshed=await loadCommitments/);
+  assert.match(add,/const refreshed=await loadCommitments\\(\\)\\.catch\\(\\(\\)=>null\\)/);
+  assert.ok(add.indexOf('const refreshed=await loadCommitments()')>add.indexOf('await pushPendingToGoogle(item.id)'));
 });
