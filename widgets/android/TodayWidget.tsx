@@ -31,7 +31,10 @@ function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'com
   // Keep identical top and bottom spacing for every card; only title wrapping
   // changes the content height. This matches the rendered paddingVertical below.
   const verticalPadding=4;
-  const titleLineCount=titleLines(item.title,item.priority?19:22).length;
+  // Character estimates are calibrated to the actual text column width after the
+  // priority badge and action buttons. Avoid counting a second line when the
+  // rendered title still fits on one line, which creates excess vertical space.
+  const titleLineCount=titleLines(item.title,item.priority?25:28).length;
   const timeHeight=item.time?10:0;
   const durationHeight=item.duration?10:0;
   const textHeight=titleLineCount*titleLineHeight+timeHeight+durationHeight;
@@ -61,7 +64,7 @@ export function TodayWidget({ items, language='it', backgroundColor=BG, textColo
           </FlexWidget>
         </FlexWidget>
         <FlexWidget style={{ width:28, height:28, marginLeft:5, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="POSTPONE" clickActionData={{ id:item.id }}><TextWidget text={language==='it'?'+1g':language==='fr'?'+1j':'+1d'} style={{ fontSize:9, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
-        <FlexWidget style={{ width:30, height:28, marginLeft:4, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="OPEN_URI" clickActionData={{ uri:uri('complete',item.id) }}><TextWidget text="✓" style={{ fontSize:17, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
+        <FlexWidget style={{ width:30, height:28, marginLeft:4, borderRadius:9, backgroundColor:buttonBackgroundColor as any, justifyContent:'center', alignItems:'center' }} clickAction="COMPLETE" clickActionData={{ id:item.id }}><TextWidget text="✓" style={{ fontSize:17, fontWeight:'bold', color:buttonTextColor as any }}/></FlexWidget>
       </FlexWidget>})}
       <FlexWidget style={{ width:'match_parent',height:20 }}/>
     </ListWidget>

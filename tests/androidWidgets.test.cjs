@@ -11,11 +11,11 @@ test('Android Today widget always sizes root and list to the real launcher bound
   assert.doesNotMatch(handler,/TodayWidget[^>]*heightDp=/);
 });
 
-test('Android Today widget completion opens Today to ask for the completion scope',()=>{
+test('Android Today widget completes an activity directly without opening the app',()=>{
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
-  assert.match(widget,/clickAction="OPEN_URI" clickActionData=\{\{ uri:uri\('complete',item\.id\) \}\}/);
-  assert.match(handler,/props\.clickAction==='COMPLETE'/);
+  assert.match(widget,/clickAction="COMPLETE" clickActionData=\{\{ id:item\.id \}\}/);
+  assert.doesNotMatch(widget,/uri\('complete',item\.id\)/);
   assert.match(handler,/props\.clickAction==='COMPLETE'/);
   assert.match(handler,/runWidgetComplete\(id\)/);
 });
@@ -595,7 +595,7 @@ test('multi-day completion from the Android widget is occurrence-scoped and does
 test('Today widget uses fixed vertical card padding and only title wrapping changes card height',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.match(source,/paddingVertical:4/);
-  assert.match(source,/titleLines\(item\.title,item\.priority\?19:22\)\.length/);
+  assert.match(source,/titleLines\(item\.title,item\.priority\?25:28\)\.length/);
   assert.match(source,/const timeHeight=item\.time\?10:0/);
   assert.match(source,/const durationHeight=item\.duration\?10:0/);
   assert.doesNotMatch(source,/paddingVertical:density===/);
@@ -635,4 +635,19 @@ test('Widget opacity inputs stay within the settings card beside wrapping labels
   assert.match(settings,/opacityLabel:\{flex:1,minWidth:0,flexShrink:1\}/);
   assert.match(settings,/opacityInput:\{width:64,minWidth:64,maxWidth:64,flexShrink:0,textAlign:'center'\}/);
   assert.match(settings,/Opacità del testo e dei simboli dei pulsanti/);
+});
+
+
+test('Today macrosection has no Add action in the header or empty state',()=>{
+  const source=fs.readFileSync('app/(tabs)/today.tsx','utf8');
+  assert.doesNotMatch(source,/QuickAddMenu|headerActions=/);
+  assert.match(source,/<EmptyState title=\{t\('Nessuna attività per oggi'\)\} message=\{t\('Aggiungi un task, un reminder o un evento per iniziare\.'\)\}\\/>/);
+  assert.doesNotMatch(source,/actionLabel=\{t\('Aggiungi'\)\}|onAction=\{\(\)=>router\.push\('\/capture'\)\}/);
+});
+
+
+test('Android Today widget does not overestimate the line count of a medium-length task title',()=>{
+  const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
+  assert.match(source,/titleLines\(item\.title,item\.priority\?25:28\)\.length/);
+  assert.match(source,/paddingVertical:4/);
 });
