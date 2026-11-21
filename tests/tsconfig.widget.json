@@ -21,6 +21,7 @@
     "../lib/activityOrdering.ts",
     "../lib/activityColors.ts",
     "../lib/i18n.ts",
-    "../lib/durationPreview.ts",\n    "../lib/todayWidgetLayout.ts"
+    "../lib/durationPreview.ts",
+    "../lib/todayWidgetLayout.ts"
   ]
 }

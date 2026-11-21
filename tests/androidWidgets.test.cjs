@@ -222,7 +222,9 @@ test('Today widget title uses full width and wraps naturally without forced line
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.match(widget,/const maxTitleChars=compact\?/);
   assert.match(widget,/titleLines\(item\.title,maxTitleChars\)\.length/);
-  assert.match(widget,/const titleLines=wrapTodayWidgetTitle\(item\.title,maxTitleChars\)/);\n  assert.match(widget,/titleLines\.map\(\(line,index\)/);\n  assert.doesNotMatch(widget,/<TextWidget text=\{item\.title\}/);
+  assert.match(widget,/const titleLines=wrapTodayWidgetTitle\(item\.title,maxTitleChars\)/);
+  assert.match(widget,/titleLines\.map\(\(line,index\)/);
+  assert.doesNotMatch(widget,/<TextWidget text=\{item\.title\}/);
 
 });
 
@@ -663,11 +665,11 @@ test('Android Today widget does not overestimate the line count of a medium-leng
 test('Android Today widget renders exactly the title lines used by its height calculation',()=>{
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   const helper=fs.readFileSync('lib/todayWidgetLayout.ts','utf8');
-  assert.match(widget,/const titleLineCount=wrapTodayWidgetTitle\\(item\\.title,maxTitleChars\\)\\.length/);
-  assert.match(widget,/const titleLines=wrapTodayWidgetTitle\\(item\\.title,maxTitleChars\\)/);
-  assert.match(widget,/titleLines\\.map\\(\\(line,index\\)/);
+  assert.match(widget,/const titleLineCount=wrapTodayWidgetTitle\(item\\.title,maxTitleChars\\)\\.length/);
+  assert.match(widget,/const titleLines=wrapTodayWidgetTitle\(item\\.title,maxTitleChars\\)/);
+  assert.match(widget,/titleLines\.map\(\\(line,index\)/);
   assert.match(widget,/paddingVertical:4/);
-  assert.match(helper,/index \\+= maxChars/);
+  assert.match(helper,/index \+= maxChars/);
 });
 
 test('Android Today widget title wrapping handles Jules Labège and very long titles without phantom blank height',()=>{
@@ -679,7 +681,7 @@ test('Android Today widget title wrapping handles Jules Labège and very long ti
   assert.ok(lines.every(line=>line.length<=28));
   const veryLong='Jules Labège '+('Développement'.repeat(12));
   const longLines=wrapTodayWidgetTitle(veryLong,25);
-  assert.equal(longLines.join(''),veryLong.replace(/\\s+/g,''));
+  assert.equal(longLines.join(''),veryLong.replace(/\s+/g,''));
   assert.ok(longLines.every(line=>line.length<=25));
   assert.equal(wrapTodayWidgetTitle('   ',28).length,1);
 });
