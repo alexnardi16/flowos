@@ -700,3 +700,34 @@ test('Calendar widget timeline rebuilds only when a field used by its rendered d
   }
   assert.doesNotMatch(signature,/item\.(description|notes|location|reminders|energy|confidence)/);
 });
+
+
+test('widget completion and postponement persist and render local state before awaiting Google synchronization',()=>{
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  const completeStart=handler.indexOf('async function runWidgetComplete');
+  const postponeStart=handler.indexOf('async function runWidgetPostpone',completeStart);
+  const voiceStart=handler.indexOf('function findVoiceItem',postponeStart);
+  const complete=handler.slice(completeStart,postponeStart);
+  const postpone=handler.slice(postponeStart,voiceStart);
+  assert.match(complete,/loadCommitmentById\(id\)/);
+  assert.match(complete,/await writeCommitments\(nextItems\)/);
+  assert.match(complete,/const sync=\(async\(\)=>/);
+  assert.match(postpone,/loadCommitmentById\(id\)/);
+  assert.match(postpone,/await writeCommitments\(normalized\)/);
+  assert.match(postpone,/await pushPendingToGoogle\(id\)/);
+  const handlerStart=handler.indexOf('export async function widgetTaskHandler');
+  const render=handler.indexOf('props.renderWidget(<TodayWidget',handlerStart);
+  const wait=handler.indexOf('if(pendingGoogleSync)await',handlerStart);
+  assert.ok(render>=0&&wait>render,'the widget must render before the background Google request is awaited');
+});
+
+test('widget quick-add refreshes Today before waiting for the targeted Google push',()=>{
+  const source=fs.readFileSync('lib/widgetQuickAdd.ts','utf8');
+  const start=source.indexOf('async function createFromText');
+  const end=source.indexOf('export async function handleWidgetQuickAddResponse',start);
+  const add=source.slice(start,end);
+  assert.match(add,/await writeStoredCommitments\(next\)/);
+  assert.ok(add.indexOf('syncTodayWidget(next')<add.indexOf('await pushPendingToGoogle(item.id)'));
+  assert.match(add,/loadCommitmentById\(item.id\)/);
+  assert.doesNotMatch(add,/const refreshed=await loadCommitments/);
+});
