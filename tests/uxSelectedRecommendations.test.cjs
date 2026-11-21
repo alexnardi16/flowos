@@ -194,7 +194,7 @@ test('Quick create is available from Today, List and Calendar with the relevant 
   const today = read('app/(tabs)/today.tsx');
   const plan = read('app/(tabs)/plan.tsx');
   const calendar = read('app/(tabs)/calendar.tsx');
-  assert.match(today, /QuickAddMenu date=\{quickAddDate\}/);
+  assert.doesNotMatch(today, /QuickAddMenu/);
   assert.match(plan, /QuickAddMenu date=\{todayKey\}/);
   assert.match(calendar, /QuickAddMenu date=\{selectedDateKey\}/);
 });
