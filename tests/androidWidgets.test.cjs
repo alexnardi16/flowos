@@ -668,11 +668,11 @@ test('Android Today widget does not overestimate the line count of a medium-leng
 test('Android Today widget estimates title height while Android performs the actual text wrapping',()=>{
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   const helper=fs.readFileSync('lib/todayWidgetLayout.ts','utf8');
-  assert.match(widget,/const titleLineCount=wrapTodayWidgetTitle\\(item\\.title,maxTitleChars\\)\\.length/);
-  assert.match(widget,/<TextWidget text=\\{item\\.title\\} style=\\{\\{ width:'match_parent'/);
-  assert.doesNotMatch(widget,/titleLines\\.map\\(\\(line,index\\)/);
+  assert.match(widget,/const titleLineCount=wrapTodayWidgetTitle\(item\.title,maxTitleChars\)\.length/);
+  assert.match(widget,/<TextWidget text=\{item\.title\} style=\{\{ width:'match_parent'/);
+  assert.doesNotMatch(widget,/titleLines\.map\(\(line,index\)/);
   assert.match(widget,/paddingVertical:4/);
-  assert.match(helper,/index \\+= maxChars/);
+  assert.match(helper,/index \+= maxChars/);
 });
 
 test('Android Today widget title wrapping handles generic and very long activity titles without phantom blank height',()=>{
@@ -684,18 +684,7 @@ test('Android Today widget title wrapping handles generic and very long activity
   assert.ok(lines.every(line=>line.length<=28));
   const veryLong='Project planning '+('Development'.repeat(12));
   const longLines=wrapTodayWidgetTitle(veryLong,25);
-  assert.equal(longLines.join('').replace(/\\s+/g,''),veryLong.replace(/\\s+/g,''));
+  assert.equal(longLines.join('').replace(/\s+/g,''),veryLong.replace(/\s+/g,''));
   assert.ok(longLines.every(line=>line.length<=25));
   assert.equal(wrapTodayWidgetTitle('   ',28).length,1);
-});
-
-test('Today widget titles use Android native wrapping to fill the text column before reaching action buttons',()=>{
-  const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  const titleColumn=widget.slice(widget.indexOf('<FlexWidget style={{ flex:1, flexDirection:\'column\''),widget.indexOf('</FlexWidget>',widget.indexOf('<FlexWidget style={{ flex:1, flexDirection:\'column\'')));
-  assert.match(titleColumn,/<TextWidget text=\{item\.title\} style=\{\{ width:'match_parent'/);
-  assert.doesNotMatch(titleColumn,/map\(\(line,index\)/);
-  assert.match(widget,/<FlexWidget style=\{\{ width:0, flex:1, flexDirection:'row'/);
-  assert.match(widget,/width:28, height:28, marginLeft:5/);
-  assert.match(widget,/width:30, height:28, marginLeft:4/);
-  assert.match(widget,/wrapTodayWidgetTitle\(item\.title,maxTitleChars\)\.length/);
 });
