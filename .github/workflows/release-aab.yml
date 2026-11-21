@@ -1,4 +1,5 @@
 name: Production Android AAB
+# A push to this workflow file also starts a fresh production AAB build.
 
 on:
   push:
