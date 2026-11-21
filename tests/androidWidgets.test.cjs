@@ -688,3 +688,15 @@ test('Android Today widget title wrapping handles generic and very long activity
   assert.ok(longLines.every(line=>line.length<=25));
   assert.equal(wrapTodayWidgetTitle('   ',28).length,1);
 });
+
+
+test('Calendar widget timeline rebuilds only when a field used by its rendered data changes',()=>{
+  const source=fs.readFileSync('lib/widgetSync.ts','utf8');
+  const start=source.indexOf('const calendarCommitmentSignature=');
+  const end=source.indexOf('if(calendarInputSignature!==lastCalendarInputSignature',start);
+  const signature=source.slice(start,end);
+  for(const field of ['item.id','item.title','item.kind','item.status','item.scheduledAt','item.dueAt','item.durationMinutes','item.allDay','item.priority','item.googleCalendarId','item.googleTaskListId','item.deletedAt','item.dailyCompletedDates']){
+    assert.ok(signature.includes(field),`Calendar widget signature must include ${field}`);
+  }
+  assert.doesNotMatch(signature,/item\.(description|notes|location|reminders|energy|confidence)/);
+});
