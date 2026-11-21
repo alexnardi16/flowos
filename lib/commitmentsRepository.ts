@@ -116,122 +116,94 @@ export async function loadCommitments(): Promise<Commitment[]> {
 
 export async function saveCommitment(item: Commitment): Promise<boolean> {
   const startedAt=Date.now();
-  await logNotificationEvent('commitment-save-stage-start',{id:item.id,kind:item.kind,title:item.title,status:item.status,hasExternalId:Boolean(item.externalId),supabaseConfigured:isSupabaseConfigured});
-  if (!isSupabaseConfigured) {
-    await logNotificationEvent('commitment-save-stage-aborted',{id:item.id,stage:'configuration',reason:'supabase-not-configured'},'error');
+  if(!isSupabaseConfigured){
+    recordDiagnostic('commitment-save-skipped',{id:item.id,reason:'supabase-not-configured'},'error');
     return false;
   }
+
   let userId:string|undefined;
-  try {
-    const { data: auth } = await supabase.auth.getSession();
-    userId = auth.session?.user?.id;
-  } catch (error) {
-    await logNotificationEvent('commitment-auth-read-failed', {
-      id:item.id,title:item.title,
-      error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack??null}:error
-    }, 'warn');
+  try{
+    const {data:auth,error:authError}=await supabase.auth.getSession();
+    if(authError)throw authError;
+    userId=auth.session?.user?.id;
+  }catch(error){
+    recordDiagnostic('commitment-auth-read-failed',{id:item.id,error},'warn');
     return false;
   }
-  if (!userId) {
-    await logNotificationEvent('commitment-save-skipped-no-session', {id:item.id,title:item.title}, 'warn');
+  if(!userId){
+    recordDiagnostic('commitment-save-skipped-no-session',{id:item.id},'warn');
     return false;
   }
-  await logNotificationEvent('commitment-save-stage-authenticated',{id:item.id,userIdPresent:Boolean(userId)});
-  const row = toRow(item, userId);
-  await logNotificationEvent('commitment-save-stage-row-built',{id:item.id,kind:row.kind,status:row.status,startsAt:row.starts_at,deadlineAt:row.deadline_at,syncStatus:row.sync_status,externalIdPresent:Boolean(row.external_id),titleLength:String(row.title??'').length});
-  try {
-    await logNotificationEvent('commitment-save-stage-existing-read-start',{id:item.id});
-    const { data: existing, error: existingError } = await supabase.from('commitments').select('*').eq('id', item.id).eq('user_id', userId).maybeSingle();
-    if (existingError) {
-      await logNotificationEvent('commitment-existing-read-failed', {
-        id:item.id,title:item.title,
-        error:{message:existingError.message,code:existingError.code??null,details:existingError.details??null,hint:existingError.hint??null}
-      }, 'warn');
-    } else if (existing) {
-      // Compare user-editable commitment data, not synchronization bookkeeping.
-      // Otherwise every save compares an existing "synced" row with the newly
-      // constructed "pending" row and re-queues an unchanged Google item.
-      const syncMetadataKeys = new Set([
-        'updated_at', 'sync_status', 'sync_error', 'last_sync_origin',
-        'external_provider', 'external_resource_type', 'external_id',
-        'external_etag', 'external_updated_at', 'google_calendar_id',
-        'google_task_list_id',
-      ]);
-      const comparableKeys = Object.keys(row).filter(key => !syncMetadataKeys.has(key) && key !== 'ai_metadata');
-      const unchanged = comparableKeys.every(key => JSON.stringify(existing[key]) === JSON.stringify((row as Record<string, unknown>)[key]));
-      const existingMetadata = { ...(existing.ai_metadata ?? {}) };
-      const nextMetadata = { ...(((row as Record<string, unknown>).ai_metadata as Record<string, unknown>) ?? {}) };
-      const previousDailyDates = existingMetadata.dailyCompletedDates;
-      const nextDailyDates = nextMetadata.dailyCompletedDates;
+
+  const row=toRow(item,userId);
+  try{
+    const {data:existing,error:existingError}=await supabase.from('commitments').select('*').eq('id',item.id).eq('user_id',userId).maybeSingle();
+    if(existingError)recordDiagnostic('commitment-existing-read-failed',{id:item.id,error:existingError},'warn');
+    else if(existing){
+      const syncMetadataKeys=new Set(['updated_at','sync_status','sync_error','last_sync_origin','external_provider','external_resource_type','external_id','external_etag','external_updated_at','google_calendar_id','google_task_list_id']);
+      const comparableKeys=Object.keys(row).filter(key=>!syncMetadataKeys.has(key)&&key!=='ai_metadata');
+      const unchanged=comparableKeys.every(key=>JSON.stringify(existing[key])===JSON.stringify((row as Record<string,unknown>)[key]));
+      const existingMetadata={...(existing.ai_metadata??{})};
+      const nextMetadata={...(((row as Record<string,unknown>).ai_metadata as Record<string,unknown>)??{})};
+      const previousDailyDates=existingMetadata.dailyCompletedDates;
+      const nextDailyDates=nextMetadata.dailyCompletedDates;
       delete existingMetadata.dailyCompletedDates;
       delete nextMetadata.dailyCompletedDates;
-      const onlyDailyCompletionChanged = unchanged
-        && JSON.stringify(existingMetadata) === JSON.stringify(nextMetadata)
-        && JSON.stringify(previousDailyDates ?? []) !== JSON.stringify(nextDailyDates ?? []);
-      if (onlyDailyCompletionChanged) {
-        const { error: dailyMarkerError } = await supabase.from('commitments').update({
-          ai_metadata: row.ai_metadata,
-          updated_at: new Date().toISOString(),
-        }).eq('id', item.id).eq('user_id', userId);
-        if (dailyMarkerError) throw dailyMarkerError;
-        await logNotificationEvent('commitment-daily-completion-saved',{id:item.id,dailyCompletedDates:nextDailyDates});
+      const onlyDailyCompletionChanged=unchanged
+        &&JSON.stringify(existingMetadata)===JSON.stringify(nextMetadata)
+        &&JSON.stringify(previousDailyDates??[])!==JSON.stringify(nextDailyDates??[]);
+      if(onlyDailyCompletionChanged){
+        const {error}=await supabase.from('commitments').update({ai_metadata:row.ai_metadata,updated_at:new Date().toISOString()}).eq('id',item.id).eq('user_id',userId);
+        if(error)throw error;
+        recordDiagnostic('commitment-daily-completion-saved',{id:item.id,elapsedMs:Date.now()-startedAt});
         return true;
       }
-      if (unchanged && JSON.stringify(existing.ai_metadata ?? {}) === JSON.stringify((row as Record<string, unknown>).ai_metadata ?? {})) {
-        await logNotificationEvent('commitment-save-stage-no-change',{id:item.id,elapsedMs:Date.now()-startedAt});
+      if(unchanged&&JSON.stringify(existing.ai_metadata??{})===JSON.stringify((row as Record<string,unknown>).ai_metadata??{})){
+        recordDiagnostic('commitment-save-no-change',{id:item.id,elapsedMs:Date.now()-startedAt});
         return true;
       }
 
-      // Keep the freshest server-side Google identity and ETag when this device
-      // edits an item from a potentially stale local cache. The actual content
-      // change still sets sync_status=pending below so it is pushed to Google.
-      const mutableRow = row as Record<string, unknown>;
-      for (const key of [
-        'external_provider', 'external_resource_type', 'external_id',
-        'external_etag', 'external_updated_at', 'google_calendar_id',
-        'google_task_list_id',
-      ]) {
-        if (existing[key] !== null && existing[key] !== undefined) mutableRow[key] = existing[key];
+      const mutableRow=row as Record<string,unknown>;
+      for(const key of ['external_provider','external_resource_type','external_id','external_etag','external_updated_at','google_calendar_id','google_task_list_id']){
+        if(existing[key]!==null&&existing[key]!==undefined)mutableRow[key]=existing[key];
       }
-      mutableRow.sync_status = 'pending';
-      mutableRow.sync_error = null;
-      mutableRow.last_sync_origin = 'flowos';
-      mutableRow.updated_at = new Date().toISOString();
+      mutableRow.sync_status='pending';
+      mutableRow.sync_error=null;
+      mutableRow.last_sync_origin='flowos';
+      mutableRow.updated_at=new Date().toISOString();
     }
-    await logNotificationEvent('commitment-save-stage-upsert-start',{id:item.id,existingRow:Boolean(existing),existingReadFailed:Boolean(existingError)});
-    const { data: persistedRows, error } = await supabase.from('commitments').upsert(row, { onConflict: 'id' }).select('id,kind,status,sync_status,external_id,updated_at').limit(1);
-    if (!error) {
+
+    const {data:persistedRows,error}=await supabase.from('commitments').upsert(row,{onConflict:'id'}).select('id,kind,status,sync_status,external_id,updated_at').limit(1);
+    if(!error){
       const persisted=persistedRows?.[0];
-      await logNotificationEvent('commitment-save-stage-upsert-result',{id:item.id,success:true,returnedRow:Boolean(persisted),returnedIdMatches:persisted?.id===item.id,persistedKind:persisted?.kind??null,persistedStatus:persisted?.status??null,persistedSyncStatus:persisted?.sync_status??null,externalIdPresent:Boolean(persisted?.external_id),elapsedMs:Date.now()-startedAt},persisted?'info':'warn');
-      if (!persisted||persisted.id!==item.id) {
-        await logNotificationEvent('commitment-save-stage-readback-missing',{id:item.id,returnedRows:persistedRows?.length??0},'error');
-        return false;
+      if(persisted?.id===item.id){
+        recordDiagnostic('commitment-save-completed',{id:item.id,elapsedMs:Date.now()-startedAt});
+        return true;
       }
-      return true;
+      recordDiagnostic('commitment-save-readback-missing',{id:item.id,elapsedMs:Date.now()-startedAt},'error');
+      return false;
     }
-    await logNotificationEvent('commitment-save-stage-upsert-result',{id:item.id,success:false,elapsedMs:Date.now()-startedAt,error:{message:error.message,code:error.code??null,details:error.details??null,hint:error.hint??null}},'error');
-    await logNotificationEvent('commitment-persist-failed', { id:item.id,title:item.title,error:error.message,code:error.code??null,details:error.details??null,hint:error.hint??null }, 'error');
+
     await enqueueMutation({id:`${Date.now()}-${item.id}`,table:'commitments',action:'upsert',payload:row,createdAt:new Date().toISOString(),lastError:error.message});
-    await logNotificationEvent('commitment-persist-queued', {id:item.id,error:error.message}, 'warn');
+    recordDiagnostic('commitment-save-queued',{id:item.id,elapsedMs:Date.now()-startedAt,error:error.message},'warn');
     return false;
-  } catch (error) {
+  }catch(error){
     const message=error instanceof Error?error.message:'Persistenza non riuscita.';
-    await logNotificationEvent('commitment-save-stage-exception',{id:item.id,elapsedMs:Date.now()-startedAt,error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack??null}:error},'error');
-    await logNotificationEvent('commitment-persist-exception', {
-      id:item.id,title:item.title,
-      error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack??null}:error
-    }, 'error');
-    try {
+    try{
       await enqueueMutation({id:`${Date.now()}-${item.id}`,table:'commitments',action:'upsert',payload:row,createdAt:new Date().toISOString(),lastError:message});
-      await logNotificationEvent('commitment-persist-queued', {id:item.id,error:message}, 'warn');
-    } catch (queueError) {
-      await logNotificationEvent('commitment-persist-queue-failed', {
-        id:item.id,title:item.title,
-        error:queueError instanceof Error?{name:queueError.name,message:queueError.message,stack:queueError.stack??null}:queueError
-      }, 'error');
+    }catch(queueError){
+      recordDiagnostic('commitment-save-queue-failed',{id:item.id,error:queueError},'error');
     }
+    recordDiagnostic('commitment-save-failed',{id:item.id,elapsedMs:Date.now()-startedAt,error},'warn');
     return false;
   }
+}
+
+export async function loadCommitmentById(id:string):Promise<Commitment|null>{
+  if(!isSupabaseConfigured)return null;
+  const {data,error}=await supabase.from('commitments').select('*').eq('id',id).is('deleted_at',null).maybeSingle();
+  if(error)throw error;
+  return data?fromRow(data):null;
 }
 
 export async function removeCommitmentOnlyFromFlowOS(id: string) {
