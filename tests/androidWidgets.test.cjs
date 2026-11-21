@@ -399,11 +399,11 @@ test('widget payload caching verifies storage and restores the current calendar 
 
 test('Android Today widget gives the complete title the available text-column width',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/<TextWidget text=\\{item\\.title\\} style=\\{\\{ width:'match_parent'/);
-  assert.doesNotMatch(source,/titleLines\\.map\\(\\(line,index\\)/);
-  assert.match(source,/flex:1, flexDirection:'column'/);
-  assert.match(source,/const maxTitleChars=compact\\?/);
-  assert.match(source,/wrapTodayWidgetTitle\\(item\\.title,maxTitleChars\\)\\.length/);
+  assert.ok(source.includes("<TextWidget text={item.title} style={{ width:'match_parent'"));
+  assert.ok(!source.includes('titleLines.map((line,index)'));
+  assert.ok(source.includes("flex:1, flexDirection:'column'"));
+  assert.ok(source.includes('const maxTitleChars=compact?'));
+  assert.ok(source.includes('wrapTodayWidgetTitle(item.title,maxTitleChars).length'));
 });
 
 test('multi-day completion offers today-only and full-duration choices and persists every completed date',()=>{
