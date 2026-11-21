@@ -145,3 +145,14 @@ test('voice mutations reuse the store immediate-push path instead of starting a 
   assert.match(voice,/await postpone\(item\.id\)/);
   assert.match(voice,/await updateCommitment\(/);
 });
+
+
+test('multi-item persistence uses a bounded worker pool instead of an unbounded request burst',()=>{
+  const helper=read('lib/asyncBatch.ts');
+  const store=read('lib/store.ts');
+  const widget=read('widget-task-handler.tsx');
+  assert.match(helper,/Math\.min\(items\.length,Math\.max\(1,Math\.floor\(concurrency\)\|\|1\)\)/);
+  assert.match(helper,/await Promise\.all\(Array\.from/);
+  assert.match(store,/runWithConcurrency\(toSave,saveCommitment\)/);
+  assert.match(widget,/runWithConcurrency\(toSave,saveCommitment\)/);
+});
