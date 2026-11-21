@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@expo/ui/community/datetime-picker';
 import { ActivityKindTag, Button, Card, ScreenShell, SectionTitle, palette, showAlert, showConfirm } from '@/components/ui';
 import { ProgressiveHint } from '@/components/ProgressiveHint';
-import { friendlyCalendarName, getGoogleWorkspaceStatus, syncGoogleWorkspace, type GoogleCalendar, type GoogleTaskList } from '@/lib/googleWorkspace';
+import { friendlyCalendarName, getGoogleWorkspaceStatus, type GoogleCalendar, type GoogleTaskList } from '@/lib/googleWorkspace';
 import { useFlowStore } from '@/lib/store';
 import { createUuid } from '@/lib/uuid';
 import { formatReminderOffsetLabel } from '@/lib/customReminders';
