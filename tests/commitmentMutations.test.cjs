@@ -18,7 +18,7 @@ test('Manage offers undo completion for every completed task and event',()=>{
   assert.match(undo,/completedAt:undefined/);
   assert.match(undo,/syncStatus:item\.externalId&&item\.kind==='task'\?'pending':item\.syncStatus/);
   assert.match(undo,/scheduleGooglePush\(id\)/);
-  assert.match(undo,/refreshNotifications\(get\(\)\.commitments\)/);
+  assert.match(undo,/refreshNotifications\(nextCommitments\)/);
 });
 test('deletes an event',()=>{const event=item('event-1','event');const task=item('task-1','task');assert.deepEqual(removeCommitmentState([event,task],event.id),[task]);});
 test('deletes a task',()=>{const event=item('event-1','event');const task=item('task-1','task');assert.deepEqual(removeCommitmentState([event,task],task.id),[event]);});
@@ -165,4 +165,13 @@ test('targeted Google push refreshes only the changed commitment instead of down
   const repo=repoSource;
   assert.match(repo,/export async function loadCommitmentById\(id:string\)/);
   assert.match(storeSource,/backgroundGooglePush/);
+});
+
+
+test('background mutation pushes wait for an active full Google sync to finish before sending another push',()=>{
+  const store=storeSource;
+  const google=fs.readFileSync(path.join(__dirname,'..','lib','googleWorkspace.ts'),'utf8');
+  assert.match(google,/export async function waitForGoogleSyncIdle\(\)/);
+  assert.match(store,/await waitForGoogleSyncIdle\(\)/);
+  assert.match(store,/scheduleGooglePush\(updated\.id\)/);
 });

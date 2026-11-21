@@ -120,3 +120,15 @@ test('commitment persistence avoids serial notification-log writes on the critic
   assert.doesNotMatch(save,/await logNotificationEvent/);
   assert.match(save,/recordDiagnostic\('commitment-save-completed'/);
 });
+
+
+test('offline queue flushes independent mutations concurrently with a bounded worker pool',()=>{
+  const repository=read('lib/commitmentsRepository.ts');
+  const start=repository.indexOf('export async function flushOfflineQueue');
+  const end=repository.indexOf('export async function pushPendingToGoogle',start);
+  const flush=repository.slice(start,end);
+  assert.match(flush,/const worker=async\(\)=>/);
+  assert.match(flush,/Math\.min\(5,queue\.length\)/);
+  assert.match(flush,/await Promise\.all\(Array\.from/);
+  assert.match(flush,/reconcileFlushedQueue\(queue,failed\)/);
+});
