@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { parseVoiceCommand } from './voiceParser';
 import { getGoogleWorkspaceStatus } from './googleWorkspace';
-import { flushOfflineQueue, loadCommitmentById, loadCommitments, pushPendingToGoogle, saveCommitment } from './commitmentsRepository';
+import { flushOfflineQueue, loadCommitments, pushPendingToGoogle, saveCommitment } from './commitmentsRepository';
 import { syncTodayWidget } from './widgetSync';
 import type { Commitment } from '../types';
 import { recordDiagnostic } from './diagnostics';
@@ -88,12 +88,10 @@ async function createFromText(text:string){
   void syncTodayWidget(next,new Date()).catch(()=>undefined);
   await flushOfflineQueue();
   await pushPendingToGoogle(item.id);
-  const remote=await loadCommitmentById(item.id).catch(()=>null);
-  if(remote){
-    const latest=await readStoredCommitments();
-    const merged=latest.map(candidate=>candidate.id===item.id?remote:candidate);
-    await writeStoredCommitments(merged);
-    void syncTodayWidget(merged,new Date()).catch(()=>undefined);
+  const refreshed=await loadCommitments().catch(()=>null);
+  if(refreshed){
+    await writeStoredCommitments(refreshed);
+    void syncTodayWidget(refreshed,new Date()).catch(()=>undefined);
   }
   return item;
 }
