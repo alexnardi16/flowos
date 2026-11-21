@@ -73,8 +73,16 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
         recordDiagnostic('today-widget-render-skipped-unchanged',{dateKey:glance.dateKey,count:items.length});
       }
 
+      // Only fields consumed by CalendarWidget data generation belong in
+      // this signature. Editing notes, reminders or other non-rendered metadata
+      // must not rebuild the entire multi-year widget timeline.
+      const calendarCommitmentSignature=commitments.map(item=>[
+        item.id,item.title,item.kind,item.status,item.scheduledAt??null,item.dueAt??null,
+        item.durationMinutes,item.allDay,item.priority??null,item.googleCalendarId??null,
+        item.googleTaskListId??null,item.deletedAt??null,item.dailyCompletedDates??null
+      ]);
       const calendarInputSignature=JSON.stringify({
-        commitments,
+        commitments:calendarCommitmentSignature,
         syncEndDate:syncEndDate.toISOString(),
         dateKey:glance.dateKey,
         language,
