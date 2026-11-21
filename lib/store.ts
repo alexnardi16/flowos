@@ -11,7 +11,7 @@ import { materializeNextOccurrence } from './recurrence';
 import { createAutomaticPlan } from './scheduler';
 import { showSnackbar } from './snackbar';
 import { syncTodayWidget } from './widgetSync';
-import { syncGoogleWorkspace } from './googleWorkspace';
+import { syncGoogleWorkspace, waitForGoogleSyncIdle } from './googleWorkspace';
 import { autoCompleteExpiredEvents } from './autoCompleteEvents';
 import { rolloverIncompleteTasks } from './taskRollover';
 import { normalizeTaskPriorities, reorderTaskPriorities } from './taskPriority';
@@ -84,6 +84,7 @@ export const useFlowStore=create<State>()(persist((set,get)=>{
         backgroundGooglePushAll=false;
         backgroundGooglePushIds.clear();
         const key=pushAll||ids.length!==1?'*':ids[0];
+        await waitForGoogleSyncIdle();
         const succeeded=await pushGoogleAndRefresh(pushAll||ids.length!==1?undefined:ids[0]);
         if(succeeded){
           backgroundGoogleRetryAttempts.delete(key);

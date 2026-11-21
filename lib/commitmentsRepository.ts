@@ -247,14 +247,27 @@ export async function deleteAllFlowOSOnlyData() {
 }
 
 export async function flushOfflineQueue() {
-  if (!isSupabaseConfigured) return [];
-  const queue = await readQueue();
-  const failed: typeof queue = [];
-  for (const mutation of queue) {
-    const result = mutation.action === 'upsert' ? await supabase.from(mutation.table).upsert(mutation.payload) : await supabase.from(mutation.table).delete().eq('id', mutation.payload.id);
-    if (result.error) failed.push(mutation);
-  }
-  await reconcileFlushedQueue(queue, failed);
+  if(!isSupabaseConfigured)return [];
+  const queue=await readQueue();
+  if(!queue.length)return [];
+  const failed:typeof queue=[];
+  let cursor=0;
+  const worker=async()=>{
+    while(cursor<queue.length){
+      const index=cursor++;
+      const mutation=queue[index];
+      try{
+        const result=mutation.action==='upsert'
+          ?await supabase.from(mutation.table).upsert(mutation.payload)
+          :await supabase.from(mutation.table).delete().eq('id',mutation.payload.id);
+        if(result.error)failed.push(mutation);
+      }catch{
+        failed.push(mutation);
+      }
+    }
+  };
+  await Promise.all(Array.from({length:Math.min(5,queue.length)},()=>worker()));
+  await reconcileFlushedQueue(queue,failed);
   return failed;
 }
 
