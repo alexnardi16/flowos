@@ -598,7 +598,7 @@ test('multi-day completion from the Android widget is occurrence-scoped and does
   assert.match(complete,/activityOccursOnDate\(item,now\)/);
   assert.match(complete,/dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
   assert.match(complete,/await saveCommitment\(updated\)/);
-  assert.doesNotMatch(complete.slice(0,complete.indexOf("const updated={...item,status:'done'")),/status:'done'/);
+  assert.doesNotMatch(complete.slice(0,complete.indexOf("const updated={...remoteItem,status:'done'")),/status:'done'/);
   assert.match(complete,/await pushPendingToGoogle\(\)/);
 });
 
