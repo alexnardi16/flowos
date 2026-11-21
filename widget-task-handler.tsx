@@ -81,10 +81,8 @@ async function runWidgetComplete(id:string):Promise<{sync:Promise<void>|null}>{
   const sync=(async()=>{
     await flushOfflineQueue();
     await pushPendingToGoogle();
-    const latest=readCommitments(await AsyncStorage.getItem(STORAGE_KEY)) as Commitment[];
-    const refreshed=await Promise.all(toSave.map(candidate=>loadCommitmentById(candidate.id)));
-    const remoteById=new Map(refreshed.filter((value):value is Commitment=>Boolean(value)).map(value=>[value.id,value]));
-    await writeCommitments(latest.map(candidate=>remoteById.get(candidate.id)??candidate));
+    const refreshed=await loadCommitments();
+    await writeCommitments(normalizeTaskPriorities(refreshed));
   })();
   return{sync};
 }
@@ -109,10 +107,8 @@ async function runWidgetPostpone(id:string):Promise<{sync:Promise<void>|null}>{
   const sync=(async()=>{
     await flushOfflineQueue();
     await pushPendingToGoogle(id);
-    const refreshed=await loadCommitmentById(id);
-    if(!refreshed)return;
-    const latest=readCommitments(await AsyncStorage.getItem(STORAGE_KEY)) as Commitment[];
-    await writeCommitments(latest.map(candidate=>candidate.id===id?refreshed:candidate));
+    const refreshed=await loadCommitments();
+    await writeCommitments(normalizeTaskPriorities(refreshed));
   })();
   return{sync};
 }
