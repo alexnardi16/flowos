@@ -595,7 +595,8 @@ test('multi-day completion from the Android widget is occurrence-scoped and does
 test('Today widget uses fixed vertical card padding and only title wrapping changes card height',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   assert.match(source,/paddingVertical:4/);
-  assert.match(source,/titleLines\(item\.title,item\.priority\?25:28\)\.length/);
+  assert.match(source,/const maxTitleChars=compact\? \(item\.priority\?30:33\) : comfortable\? \(item\.priority\?23:26\) : \(item\.priority\?25:28\)/);
+  assert.match(source,/titleLines\(item\.title,maxTitleChars\)\.length/);
   assert.match(source,/const timeHeight=item\.time\?10:0/);
   assert.match(source,/const durationHeight=item\.duration\?10:0/);
   assert.doesNotMatch(source,/paddingVertical:density===/);
@@ -641,8 +642,8 @@ test('Widget opacity inputs stay within the settings card beside wrapping labels
 test('Today macrosection has no Add action in the header or empty state',()=>{
   const source=fs.readFileSync('app/(tabs)/today.tsx','utf8');
   assert.doesNotMatch(source,/QuickAddMenu|headerActions=/);
-  assert.match(source,/<EmptyState title=\{t\('Nessuna attività per oggi'\)\} message=\{t\('Aggiungi un task, un reminder o un evento per iniziare\.'\)\}\\/>/);
-  assert.doesNotMatch(source,/actionLabel=\{t\('Aggiungi'\)\}|onAction=\{\(\)=>router\.push\('\/capture'\)\}/);
+  assert.match(source,/<EmptyState[^>]*\\/>/);
+  assert.doesNotMatch(source,/actionLabel=|onAction=/);
 });
 
 

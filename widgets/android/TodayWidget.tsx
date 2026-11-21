@@ -34,7 +34,8 @@ function itemHeight(item:AndroidWidgetItem,density:'comfortable'|'balanced'|'com
   // Character estimates are calibrated to the actual text column width after the
   // priority badge and action buttons. Avoid counting a second line when the
   // rendered title still fits on one line, which creates excess vertical space.
-  const titleLineCount=titleLines(item.title,item.priority?25:28).length;
+  const maxTitleChars=compact? (item.priority?30:33) : comfortable? (item.priority?23:26) : (item.priority?25:28);
+  const titleLineCount=titleLines(item.title,maxTitleChars).length;
   const timeHeight=item.time?10:0;
   const durationHeight=item.duration?10:0;
   const textHeight=titleLineCount*titleLineHeight+timeHeight+durationHeight;
