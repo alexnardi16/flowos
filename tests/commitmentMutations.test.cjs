@@ -156,7 +156,7 @@ test('Manage can stop a local recurrence series instead of silently retaining it
   const end=storeSource.indexOf('  postpone:async',start);
   const stop=storeSource.slice(start,end);
   assert.match(stop,/recurrenceRule:undefined,recurrenceSeriesId:undefined,recurrenceSeriesEndAt:undefined/);
-  assert.match(stop,/await pushGoogleAndRefresh\(\)/);
+  assert.match(stop,/scheduleGooglePush\(\)/);
 });
 
 
