@@ -421,7 +421,7 @@ test('multi-day completion offers today-only and full-duration choices and persi
   assert.match(widget,/clickAction="COMPLETE" clickActionData=\{\{ id:item\.id \}\}/);
   assert.match(handler,/props\.clickAction==='COMPLETE'/);
   assert.match(handler,/runWidgetComplete\(id\)/);
-  assert.match(handler,/dailyCompletedDates:\[\.\.\.\(item\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
+  assert.match(handler,/dailyCompletedDates:\[\.\.\.\(remoteItem\.dailyCompletedDates\?\?\[\]\),dayKey\]/);
 });
 test('Android Today widget accounts for multiline titles, time and explicit duration while reducing vertical padding',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
@@ -726,8 +726,8 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   const start=source.indexOf('async function createFromText');
   const end=source.indexOf('export async function handleWidgetQuickAddResponse',start);
   const add=source.slice(start,end);
-  assert.match(add,/await writeStoredCommitments\\(next\\)/);
+  assert.match(add,/await writeStoredCommitments\(next\)/);
   assert.ok(add.indexOf('syncTodayWidget(next')<add.indexOf('await pushPendingToGoogle(item.id)'));
-  assert.match(add,/const refreshed=await loadCommitments\\(\\)\\.catch\\(\\(\\)=>null\\)/);
+  assert.match(add,/const refreshed=await loadCommitments\(\)\.catch\(\(\)=>null\)/);
   assert.ok(add.indexOf('const refreshed=await loadCommitments()')>add.indexOf('await pushPendingToGoogle(item.id)'));
 });
