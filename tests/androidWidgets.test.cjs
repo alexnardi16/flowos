@@ -642,7 +642,7 @@ test('Widget opacity inputs stay within the settings card beside wrapping labels
 test('Today macrosection has no Add action in the header or empty state',()=>{
   const source=fs.readFileSync('app/(tabs)/today.tsx','utf8');
   assert.doesNotMatch(source,/QuickAddMenu|headerActions=/);
-  assert.match(source,/<EmptyState[^>]*\\/>/);
+  assert.match(source,/<EmptyState[^>]*\/>/);
   assert.doesNotMatch(source,/actionLabel=|onAction=/);
 });
 
