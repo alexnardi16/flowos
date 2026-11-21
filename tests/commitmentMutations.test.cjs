@@ -69,17 +69,17 @@ test('manual sync from Manage is targeted to the exact commitment',()=>{
 
 test('creating an activity persists it and immediately schedules a targeted Google push without waiting for the network round trip',()=>{
   const add=storeSource.slice(storeSource.indexOf('addCommitment:async'),storeSource.indexOf('rolloverTodayTasks:async'));
-  assert.match(add,/await Promise\.all\(toSave\.map\(saveCommitment\)\)/);
+  assert.match(add,/await runWithConcurrency\(toSave,saveCommitment\)/);
   assert.match(add,/scheduleGooglePush\(normalized\.id\)/);
-  assert.ok(add.indexOf('scheduleGooglePush(normalized.id)')>add.indexOf('await Promise.all(toSave.map(saveCommitment))'));
+  assert.ok(add.indexOf('scheduleGooglePush(normalized.id)')>add.indexOf('await runWithConcurrency(toSave,saveCommitment)'));
 });
 test('editing an activity persists changes and immediately schedules a targeted Google push',()=>{
   const start=storeSource.indexOf('updateCommitment:async');
   const end=storeSource.indexOf('removeOnlyFromFlowOS:async',start);
   const edit=storeSource.slice(start,end);
-  assert.match(edit,/await Promise\.all\(toSave\.map\(saveCommitment\)\)/);
+  assert.match(edit,/await runWithConcurrency\(toSave,saveCommitment\)/);
   assert.match(edit,/scheduleGooglePush\(updated\.id\)/);
-  assert.ok(edit.indexOf('scheduleGooglePush(updated.id)')>edit.indexOf('await Promise.all(toSave.map(saveCommitment))'));
+  assert.ok(edit.indexOf('scheduleGooglePush(updated.id)')>edit.indexOf('await runWithConcurrency(toSave,saveCommitment)'));
 });
 test('deleting an activity from both FlowOS and Google invokes the Google deletion repository',()=>{
   const start=storeSource.indexOf('removeAlsoFromGoogle:async');

@@ -30,16 +30,16 @@ test('create and edit persist changes before immediately scheduling Google synch
   const addStart = store.indexOf('addCommitment:async');
   const addEnd = store.indexOf('rolloverTodayTasks:async', addStart);
   const add = store.slice(addStart, addEnd);
-  assert.match(add,/await Promise\.all\(toSave\.map\(saveCommitment\)\)/);
+  assert.match(add,/await runWithConcurrency\(toSave,saveCommitment\)/);
   assert.match(add,/scheduleGooglePush\(normalized\.id\)/);
-  assert.ok(add.indexOf('scheduleGooglePush(normalized.id)') > add.indexOf('await Promise.all(toSave.map(saveCommitment))'));
+  assert.ok(add.indexOf('scheduleGooglePush(normalized.id)') > add.indexOf('await runWithConcurrency(toSave,saveCommitment)'));
 
   const editStart = store.indexOf('updateCommitment:async');
   const editEnd = store.indexOf('removeOnlyFromFlowOS:async', editStart);
   const edit = store.slice(editStart, editEnd);
-  assert.match(edit,/await Promise\.all\(toSave\.map\(saveCommitment\)\)/);
+  assert.match(edit,/await runWithConcurrency\(toSave,saveCommitment\)/);
   assert.match(edit,/scheduleGooglePush\(updated\.id\)/);
-  assert.ok(edit.indexOf('scheduleGooglePush(updated.id)') > edit.indexOf('await Promise.all(toSave.map(saveCommitment))'));
+  assert.ok(edit.indexOf('scheduleGooglePush(updated.id)') > edit.indexOf('await runWithConcurrency(toSave,saveCommitment)'));
 });
 
 test('Google deletion and FlowOS-only tombstones are separate, explicit operations', () => {
