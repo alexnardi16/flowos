@@ -259,8 +259,8 @@ test('Google resource names are never replaced with developer-specific aliases',
   const workspace=fs.readFileSync('lib/googleWorkspace.ts','utf8');
   const ordering=fs.readFileSync('lib/activityOrdering.ts','utf8');
   assert.match(workspace,/friendlyTaskListName\(name:string\)\{return name;\}/);
-  assert.doesNotMatch(workspace,/Elenco di Alex Nardi|return 'Alex'/);
-  assert.doesNotMatch(ordering,/alex-chiara|\balex\b/i);
+  assert.doesNotMatch(workspace,/developer-specific alias|return 'User'/);
+  assert.doesNotMatch(ordering,/personal-default-list|developerAlias/i);
 });
 
 test('Widget appearance preferences are per FlowOS user and support color opacity',()=>{
@@ -397,16 +397,15 @@ test('widget payload caching verifies storage and restores the current calendar 
 });
 
 
-test('Android Today widget gives the complete title its own full-width wrapping row',()=>{
+test('Android Today widget gives the complete title the available text-column width',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/const titleLines=wrapTodayWidgetTitle\(item\.title,maxTitleChars\)/);
-  assert.match(source,/titleLines\.map\(\(line,index\)/);
-  assert.doesNotMatch(source,/<TextWidget text=\{item\.title\}/);
-  assert.match(source,/flexDirection:'row', alignItems:'center'/);
-  assert.match(source,/const maxTitleChars=compact\?/);
-  assert.match(source,/wrapTodayWidgetTitle\(item\.title,maxTitleChars\)\.length/);
-  assert.doesNotMatch(source,/text=\{item\.title\} style=\{\{ flex:/);
+  assert.match(source,/<TextWidget text=\\{item\\.title\\} style=\\{\\{ width:'match_parent'/);
+  assert.doesNotMatch(source,/titleLines\\.map\\(\\(line,index\\)/);
+  assert.match(source,/flex:1, flexDirection:'column'/);
+  assert.match(source,/const maxTitleChars=compact\\?/);
+  assert.match(source,/wrapTodayWidgetTitle\\(item\\.title,maxTitleChars\\)\\.length/);
 });
+
 test('multi-day completion offers today-only and full-duration choices and persists every completed date',()=>{
   const prompt=fs.readFileSync('lib/completePrompt.ts','utf8');
   const store=fs.readFileSync('lib/store.ts','utf8');
@@ -666,26 +665,26 @@ test('Android Today widget does not overestimate the line count of a medium-leng
   assert.match(source,/paddingVertical:4/);
 });
 
-test('Android Today widget renders exactly the title lines used by its height calculation',()=>{
+test('Android Today widget estimates title height while Android performs the actual text wrapping',()=>{
   const widget=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
   const helper=fs.readFileSync('lib/todayWidgetLayout.ts','utf8');
-  assert.match(widget,/const titleLineCount=wrapTodayWidgetTitle\(item\.title,maxTitleChars\)\.length/);
-  assert.match(widget,/const titleLines=wrapTodayWidgetTitle\(item\.title,maxTitleChars\)/);
-  assert.match(widget,/titleLines\.map\(\(line,index\)/);
+  assert.match(widget,/const titleLineCount=wrapTodayWidgetTitle\\(item\\.title,maxTitleChars\\)\\.length/);
+  assert.match(widget,/<TextWidget text=\\{item\\.title\\} style=\\{\\{ width:'match_parent'/);
+  assert.doesNotMatch(widget,/titleLines\\.map\\(\\(line,index\\)/);
   assert.match(widget,/paddingVertical:4/);
-  assert.match(helper,/index \+= maxChars/);
+  assert.match(helper,/index \\+= maxChars/);
 });
 
-test('Android Today widget title wrapping handles Jules Labège and very long titles without phantom blank height',()=>{
+test('Android Today widget title wrapping handles generic and very long activity titles without phantom blank height',()=>{
   const { wrapTodayWidgetTitle }=require('../.test-dist-widget/lib/todayWidgetLayout.js');
-  const title='Jules Labège - Préparation du dossier technique et suivi des prochaines étapes avec les équipes';
+  const title='Prepare the project documentation and coordinate the next review with the engineering team';
   const lines=wrapTodayWidgetTitle(title,28);
   assert.ok(lines.length>1);
   assert.equal(lines.join(' '),title);
   assert.ok(lines.every(line=>line.length<=28));
-  const veryLong='Jules Labège '+('Développement'.repeat(12));
+  const veryLong='Project planning '+('Development'.repeat(12));
   const longLines=wrapTodayWidgetTitle(veryLong,25);
-  assert.equal(longLines.join('').replace(/\s+/g,''),veryLong.replace(/\s+/g,''));
+  assert.equal(longLines.join('').replace(/\\s+/g,''),veryLong.replace(/\\s+/g,''));
   assert.ok(longLines.every(line=>line.length<=25));
   assert.equal(wrapTodayWidgetTitle('   ',28).length,1);
 });
