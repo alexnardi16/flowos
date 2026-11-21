@@ -396,9 +396,10 @@ test('widget payload caching verifies storage and restores the current calendar 
 
 test('Android Today widget gives the complete title its own full-width wrapping row',()=>{
   const source=fs.readFileSync('widgets/android/TodayWidget.tsx','utf8');
-  assert.match(source,/<TextWidget text=\{item\.title\} style=\{\{ fontSize:/);
+  assert.match(source,/const titleLines=wrapTodayWidgetTitle\(item\.title,maxTitleChars\)/);
+  assert.match(source,/titleLines\.map\(\(line,index\)/);
+  assert.doesNotMatch(source,/<TextWidget text=\{item\.title\}/);
   assert.match(source,/flexDirection:'row', alignItems:'center'/);
-  assert.doesNotMatch(source,/lines\.map\(\(line,index\)/);
   assert.match(source,/const maxTitleChars=compact\?/);
   assert.match(source,/wrapTodayWidgetTitle\(item\.title,maxTitleChars\)\.length/);
   assert.doesNotMatch(source,/text=\{item\.title\} style=\{\{ flex:/);
