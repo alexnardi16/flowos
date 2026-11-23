@@ -160,7 +160,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
           );
         })}
         {hasNewerWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_NEWER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:buttonBackgroundColor as any, borderRadius:8, marginVertical:2 }}><TextWidget text={`${labels.newerWeeks} →`} style={{ fontSize:10, fontWeight:'bold', color:buttonTextColor as any }} /></FlexWidget> : null}
-        <FlexWidget style={{ width: 'match_parent', height: 96 }} />
+        <FlexWidget style={{ width: 'match_parent', height: 12 }} />
       </ListWidget>
     </FlexWidget>
   );

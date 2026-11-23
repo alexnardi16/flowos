@@ -47,7 +47,7 @@ test('Android Calendar widget always sizes root and list to the real launcher bo
   assert.match(source,/weekContainerHeight = height \+ \(week.title \? 14 : 0\) \+ 4 \+ WEEK_BOTTOM_PADDING/);
   assert.match(source,/width: 'match_parent', height: 'match_parent', padding: 8/);
   assert.match(source,/<ListWidget style=\{\{ width: 'match_parent', height: 'match_parent'/);
-  assert.match(source,/height: 96/);
+  assert.match(source,/height: 12/);
   assert.doesNotMatch(source,/listHeight\(/);
   assert.doesNotMatch(source,/heightDp/);
   assert.doesNotMatch(handler,/CalendarWidget[^>]*heightDp=/);
@@ -147,12 +147,13 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.match(source,/flex: Math\.max\(1, loadingProgress\)/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/CALENDAR_WIDGET_PAGE_SIZE = 8/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/CALENDAR_WIDGET_PAGE_OVERLAP = 0/);
-  assert.match(handler,/loadingProgress=\{15\}/);
-  assert.match(handler,/loadingProgress=\{55\}/);
-  assert.match(handler,/loadingProgress=\{90\}/);
+  assert.match(handler,/renderCachedCalendarNavigation/);
+  assert.match(handler,/CALENDAR_WIDGET_PAGE_CACHE_META_KEY/);
+  assert.doesNotMatch(handler,/setTimeout\(resolve,90\)/);
+  assert.doesNotMatch(handler,/setTimeout\(resolve,70\)/);
   assert.match(handler,/CALENDAR_PAGE_TODAY/);
-  assert.match(handler,/isLoading loadingProgress=\{15\} language=\{language\}/);
-  assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/const defaultStart = Math\.max\(0, currentIndex < 0 \? 0 : currentIndex\)/);
+  assert.match(handler,/getCalendarWidgetPageCacheKey\(requestedStart\)/);
+  assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/Math\.floor\(Math\.max\(0,currentIndex<0\?0:currentIndex\)\/CALENDAR_WIDGET_PAGE_SIZE\)/);
 });
 
 test('List has persistent chronological, type, period and completion filters while Today stays unfiltered',()=>{
@@ -387,6 +388,18 @@ test('Calendar memoizes sorted day buckets instead of sorting every day during r
   assert.doesNotMatch(source,/sortCommitments\(byDay\.get/);
 });
 
+
+test('calendar widget navigation prebuilds independent pages and retrieves only the requested page',()=>{
+  const source=fs.readFileSync('lib/widgetSync.ts','utf8');
+  const paging=fs.readFileSync('lib/calendarWidgetPaging.ts','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(source,/buildCalendarWidgetPageCache\(allWeeks,language,now\)/);
+  assert.match(source,/AsyncStorage\.multiSet\(pageCache\.entries\)/);
+  assert.match(paging,/getCalendarWidgetPageCacheKey/);
+  assert.match(handler,/AsyncStorage\.getItem\(getCalendarWidgetPageCacheKey\(requestedStart\)\)/);
+  assert.match(handler,/calendar-widget-navigation-cache-hit/);
+  assert.doesNotMatch(handler,/setTimeout\(resolve,90\)|setTimeout\(resolve,70\)/);
+});
 
 test('widget payload caching verifies storage and restores the current calendar page after refresh',()=>{
   const source=fs.readFileSync('lib/widgetSync.ts','utf8');

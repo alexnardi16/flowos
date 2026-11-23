@@ -8,7 +8,7 @@ import { recordDiagnostic } from './diagnostics';
 import type { Commitment } from '../types';
 import type { AndroidCalendarWeek } from '../widgets/android/CalendarWidget';
 import { buildCalendarWidgetData } from './calendarWidgetData';
-import { getCalendarWidgetPage } from './calendarWidgetPaging';
+import { buildCalendarWidgetPageCache, CALENDAR_WIDGET_PAGE_CACHE_META_KEY, getCalendarWidgetPage } from './calendarWidgetPaging';
 import { getLanguage, widgetStrings } from './i18n';
 import { activitySourceKey } from './activityColors';
 import { colorWithOpacity, getWidgetAppearance, sourceAppearanceColor } from './widgetAppearance';
@@ -109,6 +109,8 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
         await AsyncStorage.setItem('flowos-calendar-widget-v2',payload);
       }
       const page=getCalendarWidgetPage(allWeeks);
+      const pageCache=buildCalendarWidgetPageCache(allWeeks,language,now);
+      try{await AsyncStorage.multiSet(pageCache.entries);await AsyncStorage.setItem(CALENDAR_WIDGET_PAGE_CACHE_META_KEY,pageCache.metadata);}catch(error){recordDiagnostic('calendar-widget-page-cache-write-failed',error,'warn');}
       // Always restore the canonical current-week page on a data refresh.
       // The widget handler can change this key independently while browsing.
       await AsyncStorage.setItem('flowos-calendar-widget-page-v1',String(page.startIndex));

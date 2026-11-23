@@ -3,7 +3,7 @@ import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { TodayWidget, type AndroidTodayWidgetProps } from './widgets/android/TodayWidget';
 import { CalendarWidget, type AndroidCalendarWidgetProps } from './widgets/android/CalendarWidget';
 import { buildCalendarWidgetData } from './lib/calendarWidgetData';
-import { CALENDAR_WIDGET_PAGE_OVERLAP, CALENDAR_WIDGET_PAGE_SIZE, getCalendarWidgetPage } from './lib/calendarWidgetPaging';
+import { CALENDAR_WIDGET_PAGE_SIZE, CALENDAR_WIDGET_PAGE_CACHE_META_KEY, buildCalendarWidgetPageCache, getCalendarWidgetPage, getCalendarWidgetPageCacheKey } from './lib/calendarWidgetPaging';
 import { getGoogleWorkspaceStatus, syncGoogleWorkspace } from './lib/googleWorkspace';
 import { flushOfflineQueue, loadCommitmentById, loadCommitments, pushPendingToGoogle, saveCommitment, deleteCommitmentAlsoFromGoogle, removeCommitmentOnlyFromFlowOS } from './lib/commitmentsRepository';
 import { findBestVoiceMatch, type VoiceCommand } from './lib/voiceCommands';
@@ -43,6 +43,10 @@ function todayData(raw:string|null,language='it' as import('./lib/i18n').Languag
 }
 async function loadCalendarCache(language:string){try{const raw=await AsyncStorage.getItem(CALENDAR_CACHE_KEY);if(!raw)return null;const parsed=JSON.parse(raw);return parsed?.dateKey===dateKey(new Date())&&parsed?.language===language&&Array.isArray(parsed?.weeks)?{weeks:parsed.weeks as AndroidCalendarWidgetProps['weeks']}:null;}catch{return null;}}
 async function saveCalendarCache(data:AndroidCalendarWidgetProps,language:string){try{await AsyncStorage.setItem(CALENDAR_CACHE_KEY,JSON.stringify({dateKey:dateKey(new Date()),language,...data}));}catch{}}
+async function saveCalendarPageCache(data:AndroidCalendarWidgetProps,language:string,now:Date=new Date()){
+  const cache=buildCalendarWidgetPageCache(data.weeks,language,now);
+  try{await AsyncStorage.multiSet(cache.entries);await AsyncStorage.setItem(CALENDAR_WIDGET_PAGE_CACHE_META_KEY,cache.metadata);}catch(error){recordDiagnostic('calendar-widget-page-cache-write-failed',error,'warn');}
+}
 
 async function refreshFromGoogle(){
   await flushOfflineQueue();
@@ -114,6 +118,38 @@ async function runWidgetPostpone(id:string):Promise<{sync:Promise<void>|null}>{
   return{sync};
 }
 
+async function renderCachedCalendarNavigation(props:WidgetTaskHandlerProps):Promise<boolean>{
+  const [language,appearance,metadataRaw,savedStartRaw]=await Promise.all([getLanguage(),getWidgetAppearance(),AsyncStorage.getItem(CALENDAR_WIDGET_PAGE_CACHE_META_KEY),AsyncStorage.getItem(CALENDAR_PAGE_KEY)]);
+  if(!metadataRaw)return false;
+  let metadata:any;try{metadata=JSON.parse(metadataRaw);}catch{return false;}
+  const now=new Date(),todayKey=dateKey(now);
+  if(metadata?.dateKey!==todayKey||metadata?.language!==language||!Number.isFinite(metadata?.totalWeeks))return false;
+  const savedStart=savedStartRaw!==null&&Number.isFinite(Number(savedStartRaw))?Number(savedStartRaw):Number(metadata.defaultStartIndex)||0;
+  const currentStart=Math.floor(savedStart/CALENDAR_WIDGET_PAGE_SIZE)*CALENDAR_WIDGET_PAGE_SIZE;
+  const maxStart=Math.floor(Math.max(0,Number(metadata.totalWeeks)-1)/CALENDAR_WIDGET_PAGE_SIZE)*CALENDAR_WIDGET_PAGE_SIZE;
+  let requestedStart=currentStart;
+  if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,currentStart-CALENDAR_WIDGET_PAGE_SIZE);
+  else if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=Math.min(maxStart,currentStart+CALENDAR_WIDGET_PAGE_SIZE);
+  else if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=Number(metadata.defaultStartIndex)||0;
+  const pageRaw=await AsyncStorage.getItem(getCalendarWidgetPageCacheKey(requestedStart));
+  if(!pageRaw)return false;
+  let cached:any;try{cached=JSON.parse(pageRaw);}catch{return false;}
+  if(cached?.dateKey!==todayKey||cached?.language!==language||!Array.isArray(cached?.weeks))return false;
+  const calendarBackgroundColor=colorWithOpacity(appearance.calendar.backgroundColor,appearance.calendar.backgroundOpacity);
+  const calendarTextColor=colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity);
+  const calendarButtonBackgroundColor=colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity);
+  const calendarButtonTextColor=colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity);
+  const widgetBorderColor=appearance.theme==='flowos-dark'?'#454B61':'#C8CEDA';
+  const widgetSurfaceColor=appearance.theme==='flowos-dark'?'#242838':'#FFFFFF';
+  const widgetTodaySurfaceColor=appearance.theme==='flowos-dark'?'#302D4F':'#E8ECFF';
+  await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(cached.startIndex));
+  props.renderWidget(<CalendarWidget weeks={cached.weeks} hasOlderWeeks={cached.hasOlderWeeks} hasNewerWeeks={cached.hasNewerWeeks} language={language}
+    backgroundColor={calendarBackgroundColor} textColor={calendarTextColor} buttonBackgroundColor={calendarButtonBackgroundColor} buttonTextColor={calendarButtonTextColor}
+    density={appearance.density} borderColor={widgetBorderColor} surfaceColor={widgetSurfaceColor} todaySurfaceColor={widgetTodaySurfaceColor}/>);
+  recordDiagnostic('calendar-widget-navigation-cache-hit',{startIndex:cached.startIndex,weeks:cached.weeks.length});
+  return true;
+}
+
 function findVoiceItem(items:Commitment[],query:string){return findBestVoiceMatch(items,query);}
 function localWhen(value?:string){return value?new Date(value):undefined;}
 async function executeVoice(command:VoiceCommand,items:Commitment[]){
@@ -142,6 +178,9 @@ async function runWidgetSync(){
   catch(error){recordDiagnostic('widget-google-sync-failed',error,'error');}
 }
 export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
+  if(props.widgetInfo.widgetName==='CalendarAndroidWidget'&&props.widgetAction==='WIDGET_CLICK'&&['CALENDAR_PAGE_OLDER','CALENDAR_PAGE_NEWER','CALENDAR_PAGE_TODAY'].includes(String(props.clickAction))){
+    try{if(await renderCachedCalendarNavigation(props))return;}catch(error){recordDiagnostic('calendar-widget-navigation-cache-failed',error,'warn');}
+  }
   let pendingGoogleSync:Promise<void>|null=null;
   if(props.widgetAction==='WIDGET_CLICK'){
     if(props.clickAction==='SYNC_GOOGLE'){await runWidgetSync();return;}
@@ -176,23 +215,17 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     const commitmentById=new Map(widgetCommitments.map(item=>[item.id,item]));
     const sourceColors=buildActivitySourceColors(widgetCommitments);
     data={weeks:data.weeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=commitmentById.get(item.id);return source?{...item,sourceColor:sourceAppearanceColor(activitySourceKey(source),activitySourceColor(source,sourceColors),appearance)}:item;})}))}))};
+    await saveCalendarPageCache(data,language);
     let requestedStart:number|undefined;
     try { const saved=await AsyncStorage.getItem(CALENDAR_PAGE_KEY); if(saved!==null&&Number.isFinite(Number(saved)))requestedStart=Number(saved); } catch {}
-    const pageShift=CALENDAR_WIDGET_PAGE_SIZE-CALENDAR_WIDGET_PAGE_OVERLAP;
+    const pageShift=CALENDAR_WIDGET_PAGE_SIZE;
     const isCalendarNavigation=props.widgetAction==='WIDGET_CLICK'&&['CALENDAR_PAGE_OLDER','CALENDAR_PAGE_NEWER','CALENDAR_PAGE_TODAY'].includes(String(props.clickAction));
     let page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
     if(isCalendarNavigation) {
-      // Show staged progress while the launcher prepares the new bounded page.
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={15} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);
-      await new Promise<void>(resolve=>setTimeout(resolve,90));
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={55} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);
       if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,page.startIndex-pageShift);
       if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=page.startIndex+pageShift;
       if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=undefined;
       page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
-      await new Promise<void>(resolve=>setTimeout(resolve,90));
-      props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} isLoading loadingProgress={90} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);
-      await new Promise<void>(resolve=>setTimeout(resolve,70));
     }
     try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
     switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);break;default:break;}
@@ -210,6 +243,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         const refreshedSourceColors=buildActivitySourceColors(remote);
         const refreshed={weeks:refreshedRaw.weeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=remote.find(candidate=>candidate.id===item.id);return source?{...item,sourceColor:sourceAppearanceColor(activitySourceKey(source),activitySourceColor(source,refreshedSourceColors),appearance)}:item;})}))}))};
         await saveCalendarCache(refreshed,language);
+        await saveCalendarPageCache(refreshed,language);
         page=getCalendarWidgetPage(refreshed.weeks,page.startIndex,new Date());
         try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
         props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);
