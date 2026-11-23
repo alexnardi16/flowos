@@ -245,7 +245,9 @@ test('List and Calendar provide a direct Today navigation shortcut',()=>{
   assert.ok(plan.includes('headerActions={<View style={styles.searchRow}'));
   assert.ok(plan.includes('pendingTodayScroll.current=true'));
   assert.ok(plan.includes("if(query.trim())setQuery('')"));
-  assert.ok(plan.includes('pendingTodayScroll.current&&group.key===todayGroupKey'));
+  assert.ok(plan.includes('<SectionList'));
+  assert.ok(plan.includes('scrollToLocation'));
+  assert.ok(plan.includes('scrollable={false}'));
 });
 test('Manage page and Today macrosection use the shared recurring completion prompt',()=>{
   const manage=fs.readFileSync('components/ManageSheet.tsx','utf8');
@@ -575,9 +577,10 @@ test('Focus feature is completely removed from app routing, store and public cop
 
 test('List initializes on Today once and preserves filters and scroll context on later focus',()=>{
   const source=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
-  assert.match(source,/if\(!hasPlanFocused\.current\)\{hasPlanFocused\.current=true;didInitialScroll\.current=false;scrollToToday\(\);\}/);
+  assert.match(source,/if\(!hasPlanFocused\.current\)\{[\s\S]*pendingTodayScroll\.current=true/);
   assert.match(source,/pendingTodayScroll\.current=true/);
-  assert.match(source,/if\(filters\.period!=='all'\)setFilter\('period','all'\)/);
+  assert.match(source,/if\(filters\.period!=='all'\)setFilters\(current=>\(\{\.\.\.current,period:'all'\}\)\)/);
+  assert.match(source,/<SectionList/);
 });
 
 test('Calendar initializes on Today once and preserves the selected day on later focus',()=>{
