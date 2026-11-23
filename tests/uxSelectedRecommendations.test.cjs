@@ -170,8 +170,10 @@ test('Create focuses the title for immediate entry', () => {
 
 test('List search includes Google calendar and task-list source names', () => {
   const source = read('app/(tabs)/plan.tsx');
-  assert.match(source, /google\?\.calendars\.find/);
-  assert.match(source, /google\?\.taskLists\.find/);
+  assert.match(source, /calendarNameById=useMemo/);
+  assert.match(source, /taskListNameById=useMemo/);
+  assert.match(source, /calendarNameById\.get/);
+  assert.match(source, /taskListNameById\.get/);
   assert.match(source, /searchable\(item,sourceName/);
 });
 
