@@ -18,6 +18,7 @@ let lastCalendarInputSignature:string|null=null;
 let cachedCalendarWeeks:AndroidCalendarWeek[]|null=null;
 let cachedCalendarPayload:string|null=null;
 let lastCalendarRenderedSignature:string|null=null;
+let lastCalendarPageCacheSignature:string|null=null;
 
 
 async function performWidgetSync(commitments: Commitment[], now: Date = new Date()) {
@@ -109,8 +110,10 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
         await AsyncStorage.setItem('flowos-calendar-widget-v2',payload);
       }
       const page=getCalendarWidgetPage(allWeeks);
-      const pageCache=buildCalendarWidgetPageCache(allWeeks,language,now);
-      try{await AsyncStorage.multiSet(pageCache.entries);await AsyncStorage.setItem(CALENDAR_WIDGET_PAGE_CACHE_META_KEY,pageCache.metadata);}catch(error){recordDiagnostic('calendar-widget-page-cache-write-failed',error,'warn');}
+      if(lastCalendarPageCacheSignature!==calendarInputSignature){
+        const pageCache=buildCalendarWidgetPageCache(allWeeks,language,now);
+        try{await AsyncStorage.multiSet(pageCache.entries);await AsyncStorage.setItem(CALENDAR_WIDGET_PAGE_CACHE_META_KEY,pageCache.metadata);lastCalendarPageCacheSignature=calendarInputSignature;}catch(error){recordDiagnostic('calendar-widget-page-cache-write-failed',error,'warn');}
+      }
       // Always restore the canonical current-week page on a data refresh.
       // The widget handler can change this key independently while browsing.
       await AsyncStorage.setItem('flowos-calendar-widget-page-v1',String(page.startIndex));

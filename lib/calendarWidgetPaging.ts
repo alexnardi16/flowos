@@ -8,6 +8,7 @@ export function getCalendarWidgetPageCacheKey(startIndex:number) { return `${CAL
 
 /** Bounded, stable page boundaries allow navigation to load exactly one cached page. */
 export function getCalendarWidgetPage(allWeeks:AndroidCalendarWeek[],requestedStartIndex?:number|null,now:Date=new Date()){
+  void now;
   const currentIndex=allWeeks.findIndex(week=>week.days.some(day=>day.isToday));
   const defaultStart=Math.floor(Math.max(0,currentIndex<0?0:currentIndex)/CALENDAR_WIDGET_PAGE_SIZE)*CALENDAR_WIDGET_PAGE_SIZE;
   const maxStart=Math.max(0,Math.floor(Math.max(0,allWeeks.length-1)/CALENDAR_WIDGET_PAGE_SIZE)*CALENDAR_WIDGET_PAGE_SIZE);
