@@ -1,7 +1,8 @@
+import { FeedbackPressable as Pressable } from '@/components/FeedbackPressable';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, View } from 'react-native';
+import { LayoutAnimation, Platform, ScrollView, StyleSheet, Text, UIManager, View } from 'react-native';
 import { ActivityKindTag, Card, EmptyState, ScreenShell, palette } from '@/components/ui';
 import { ProgressiveHint } from '@/components/ProgressiveHint';
 import { CommitmentSourceTag } from '@/components/CommitmentSourceTag';

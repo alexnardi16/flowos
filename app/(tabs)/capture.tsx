@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from '@/components/FeedbackPressable';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@expo/ui/community/datetime-picker';
 import { ActivityKindTag, Button, Card, ScreenShell, SectionTitle, palette, showAlert, showConfirm } from '@/components/ui';

@@ -1,5 +1,6 @@
+import { FeedbackPressable as Pressable } from '@/components/FeedbackPressable';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { palette } from '@/components/ui';
 import { t } from '@/lib/i18n';

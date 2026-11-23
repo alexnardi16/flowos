@@ -1,8 +1,9 @@
+import { FeedbackPressable as Pressable } from '@/components/FeedbackPressable';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Modal, ScrollView, type GestureResponderEvent } from 'react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Card, ScreenShell, palette } from '@/components/ui';
 import { QuickAddMenu } from '@/components/QuickAddMenu';
 import { ProgressiveHint } from '@/components/ProgressiveHint';

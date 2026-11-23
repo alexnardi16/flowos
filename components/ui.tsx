@@ -1,5 +1,6 @@
+import { FeedbackPressable as Pressable } from './FeedbackPressable';
 import { PropsWithChildren, RefObject, ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Appearance, DynamicColorIOS, Image, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
+import { ActivityIndicator, Alert, Appearance, DynamicColorIOS, Image, Platform, ScrollView, ScrollViewProps, StyleSheet, StyleProp, Text, View, ViewProps, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BuildInfo } from './BuildInfo';

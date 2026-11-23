@@ -39,7 +39,10 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
   };
 
   // Keep the same full navigable range as the in-app Calendar.
-  const timelineWeeks=buildCalendarTimeline(commitments,syncEndDate,now).weeks;
+  const minimumEndDate=new Date(now.getTime()+55*24*60*60*1000);
+  const requestedEndTime=Number.isFinite(syncEndDate.getTime())?syncEndDate.getTime():now.getTime();
+  const effectiveEndDate=new Date(Math.max(requestedEndTime,minimumEndDate.getTime()));
+  const timelineWeeks=buildCalendarTimeline(commitments,effectiveEndDate,now).weeks;
 
   // Tasks are always visible. The setting only controls completed events.
   for(const item of commitments){

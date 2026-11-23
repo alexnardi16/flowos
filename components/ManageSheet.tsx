@@ -1,5 +1,6 @@
+import { FeedbackPressable as Pressable } from '@/components/FeedbackPressable';
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@expo/ui/community/datetime-picker';
 import { Button, Card, SectionTitle, palette, showAlert, showConfirm, getTypeScale, useAppDensity } from '@/components/ui';

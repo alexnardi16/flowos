@@ -116,7 +116,7 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
       }
       // Always restore the canonical current-week page on a data refresh.
       // The widget handler can change this key independently while browsing.
-      await AsyncStorage.setItem('flowos-calendar-widget-page-v1',String(page.startIndex));
+      await AsyncStorage.setItem('flowos-calendar-widget-page-v2',String(page.startIndex));
       const calendarTextColor=colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity);
       const calendarButtonBackgroundColor=colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity);
       const calendarButtonTextColor=colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity);

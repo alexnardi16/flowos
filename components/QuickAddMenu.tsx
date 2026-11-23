@@ -1,5 +1,6 @@
+import { FeedbackPressable as Pressable } from '@/components/FeedbackPressable';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '@/components/ui';

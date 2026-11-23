@@ -153,7 +153,7 @@ test('Android Calendar widget renders bounded pages without truncating the full 
   assert.doesNotMatch(handler,/setTimeout\(resolve,70\)/);
   assert.match(handler,/CALENDAR_PAGE_TODAY/);
   assert.match(handler,/getCalendarWidgetPageCacheKey\(requestedStart\)/);
-  assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/Math\.floor\(Math\.max\(0,currentIndex<0\?0:currentIndex\)\/CALENDAR_WIDGET_PAGE_SIZE\)/);
+  assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/const defaultStart=Math\.min\(Math\.max\(0,currentIndex<0\?0:currentIndex\),maxStart\)/);
 });
 
 test('List has persistent chronological, type, period and completion filters while Today stays unfiltered',()=>{
@@ -746,4 +746,36 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   assert.ok(add.indexOf('syncTodayWidget(next')<add.indexOf('await pushPendingToGoogle(item.id)'));
   assert.match(add,/const refreshed=await loadCommitments\(\)\.catch\(\(\)=>null\)/);
   assert.ok(add.indexOf('const refreshed=await loadCommitments()')>add.indexOf('await pushPendingToGoogle(item.id)'));
+});
+
+\ntest('All app buttons provide consistent visible press feedback on every macrosection and shared sheet',()=>{
+  const paths=['app/(tabs)/today.tsx','app/(tabs)/plan.tsx','app/(tabs)/capture.tsx','app/(tabs)/calendar.tsx','app/(tabs)/me.tsx','components/ui.tsx','components/ManageSheet.tsx','components/QuickAddMenu.tsx','components/ProgressiveHint.tsx','components/SnackbarHost.tsx'];
+  for(const path of paths)assert.match(fs.readFileSync(path,'utf8'),/FeedbackPressable as Pressable/,path);
+  const feedback=fs.readFileSync('components/FeedbackPressable.tsx','utf8');
+  assert.match(feedback,/android_ripple=\{android_ripple \?\? \{ color:/);
+  assert.match(feedback,/state\.pressed && styles\.pressed/);
+  assert.match(feedback,/opacity: 0\.68/);
+  assert.match(feedback,/scale: 0\.985/);
+});
+\ntest('Calendar widget always has a full eight-week forward horizon from the current week',()=>{
+  const source=fs.readFileSync('lib/calendarWidgetData.ts','utf8');
+  assert.match(source,/now\.getTime\(\)\+55\*24\*60\*60\*1000/);
+  const paging=fs.readFileSync('lib/calendarWidgetPaging.ts','utf8');
+  assert.match(paging,/currentIndex<0\?0:currentIndex/);
+  assert.match(paging,/const weeks=allWeeks\.slice\(startIndex,startIndex\+CALENDAR_WIDGET_PAGE_SIZE\)/);
+});
+\ntest('List Oggi shortcut always targets the actual current date, even without activities today',()=>{
+  const source=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
+  assert.match(source,/if\(filters\.period==='all'&&!query\.trim\(\)&&!groups\.has\(todayKey\)\)/);
+  assert.match(source,/groups\.set\(todayKey,\{label:todayLabel,items:\[\]\}\)/);
+  assert.match(source,/const todayGroupKey=todayKey/);
+  assert.doesNotMatch(source,/let future:string\\|undefined,past:string\\|undefined/);
+  assert.match(source,/scrollToIndex\(\{index:rowIndex,viewPosition:0,animated:true\}\)/);
+});
+\ntest('Calendar widget cached navigation uses exact current-week page boundaries',()=>{
+  const source=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(source,/const currentStart=Math\.max\(0,Math\.min\(Math\.floor\(savedStart\),maxStart\)\)/);
+  assert.match(source,/flowos-calendar-widget-page-v2/);
+  assert.match(fs.readFileSync('lib/widgetSync.ts','utf8'),/flowos-calendar-widget-page-v2/);
+  assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/page-cache-v2/);
 });

@@ -1,4 +1,5 @@
 const test=require('node:test');const assert=require('node:assert/strict');const {buildCalendarWidgetData}=require('../.test-dist-widget/lib/calendarWidgetData.js');
+const {getCalendarWidgetPage}=require('../.test-dist-widget/lib/calendarWidgetPaging.js');
 const {isVisibleInToday,isCompletedOnDate,isCompletedForDate}=require('../.test-dist-widget/lib/commitmentVisibility.js');const {buildActivitySourceColors,activitySourceColor}=require('../.test-dist-widget/lib/activityColors.js');
 
 test('calendar widget always shows tasks and incomplete events; only completed events follow the visibility setting',()=>{
@@ -163,4 +164,16 @@ test('List completion status is evaluated independently for each day of a multi-
   assert.equal(isCompletedForDate(item,new Date(2026,10,18,12,0)),true,'the completed date must appear completed in List');
   assert.equal(isCompletedForDate(item,new Date(2026,10,19,12,0)),false,'the next date must remain open in List');
   assert.equal(isCompletedForDate(item,new Date(2026,10,20,12,0)),false,'later dates must remain open in List');
+});
+
+\ntest('default calendar widget page contains the current week and the following seven weeks even with a short sync range',()=>{
+  const now=new Date('2026-11-23T10:00:00');
+  const data=buildCalendarWidgetData([],now,now);
+  const page=getCalendarWidgetPage(data.weeks,undefined,now);
+  assert.equal(page.weeks.length,8);
+  assert.equal(page.weeks[0].days.some(day=>day.isToday),true);
+  const firstMonday=page.weeks[0].days[0].dateKey;
+  const lastSunday=page.weeks[7].days[6].dateKey;
+  assert.equal(firstMonday,'2026-11-23');
+  assert.equal(lastSunday,'2027-01-17');
 });

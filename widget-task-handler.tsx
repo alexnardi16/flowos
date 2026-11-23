@@ -22,7 +22,7 @@ import { colorWithOpacity, getWidgetAppearance, sourceAppearanceColor, type Widg
 
 const STORAGE_KEY='flowos-store-v2';
 const CALENDAR_CACHE_KEY='flowos-calendar-widget-v2';
-const CALENDAR_PAGE_KEY='flowos-calendar-widget-page-v1';
+const CALENDAR_PAGE_KEY='flowos-calendar-widget-page-v2';
 
 function dateKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function kindLabel(kind:string,language='it' as import('./lib/i18n').Language){const labels=widgetStrings(language);return kind==='event'?labels.event:labels.task;}
@@ -125,7 +125,7 @@ async function renderCachedCalendarNavigation(props:WidgetTaskHandlerProps):Prom
   const now=new Date(),todayKey=dateKey(now);
   if(metadata?.dateKey!==todayKey||metadata?.language!==language||!Number.isFinite(metadata?.totalWeeks))return false;
   const savedStart=savedStartRaw!==null&&Number.isFinite(Number(savedStartRaw))?Number(savedStartRaw):Number(metadata.defaultStartIndex)||0;
-  const currentStart=Math.floor(savedStart/CALENDAR_WIDGET_PAGE_SIZE)*CALENDAR_WIDGET_PAGE_SIZE;
+  const currentStart=Math.max(0,Math.min(Math.floor(savedStart),maxStart));
   const maxStart=Math.floor(Math.max(0,Number(metadata.totalWeeks)-1)/CALENDAR_WIDGET_PAGE_SIZE)*CALENDAR_WIDGET_PAGE_SIZE;
   let requestedStart=currentStart;
   if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,currentStart-CALENDAR_WIDGET_PAGE_SIZE);

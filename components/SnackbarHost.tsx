@@ -1,5 +1,6 @@
+import { FeedbackPressable as Pressable } from '@/components/FeedbackPressable';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { dismissSnackbar, subscribeSnackbar, type SnackbarState } from '@/lib/snackbar';
 import { palette } from '@/components/ui';
 

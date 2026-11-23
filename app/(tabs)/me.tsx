@@ -1,5 +1,6 @@
+import { FeedbackPressable as Pressable } from '@/components/FeedbackPressable';
 import { useEffect, useState } from 'react';
-import { AppState, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { AppState, Linking, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';

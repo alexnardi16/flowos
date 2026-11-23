@@ -1,7 +1,8 @@
+import { FeedbackPressable as Pressable } from '@/components/FeedbackPressable';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActivityKindTag, Card, EmptyState, ScreenShell, SectionTitle, palette } from '@/components/ui';
 import { QuickAddMenu } from '@/components/QuickAddMenu';
 import { ProgressiveHint } from '@/components/ProgressiveHint';
@@ -101,34 +102,34 @@ export default function Plan(){
         groups.set(key,group);
       }
     }
+    if(filters.period==='all'&&!query.trim()&&!groups.has(todayKey)){
+      const todayDate=new Date(`${todayKey}T12:00:00`);
+      const todayLabel=todayDate.toLocaleDateString(localeForLanguage(language),{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+      groups.set(todayKey,{label:todayLabel,items:[]});
+    }
     return Array.from(groups.entries()).sort(([a],[b])=>filters.order==='asc'?a.localeCompare(b):b.localeCompare(a)).map(([key,group])=>({key,...group,items:group.items.sort((a,b)=>{const av=itemDate(a)?new Date(itemDate(a)!).getTime():Number.POSITIVE_INFINITY;const bv=itemDate(b)?new Date(itemDate(b)!).getTime():Number.POSITIVE_INFINITY;const byTime=filters.order==='asc'?av-bv:bv-av;return byTime || (sortCommitments([a,b],calendarNames)[0].id===a.id?-1:1);
         })
       }));
 
-  },[items,calendarNames,nowDate,filters.order]);
+  },[items,calendarNames,nowDate,filters.order,filters.period,query]);
   const listRows=useMemo<ListRow[]>(()=>groupedItems.flatMap(group=>[
     {type:'header' as const,key:`header:${group.key}`,sectionKey:group.key,label:group.label},
     ...group.items.map(item=>({type:'item' as const,key:`item:${group.key}:${item.id}`,sectionKey:group.key,item}))
   ]),[groupedItems]);
-  const todayGroupKey=useMemo(()=>{
-    if(groupedItems.some(group=>group.key===todayKey))return todayKey;
-    let future:string|undefined,past:string|undefined;
-    for(const group of groupedItems){
-      if(group.key>=todayKey&&(!future||group.key<future))future=group.key;
-      if(group.key<todayKey&&(!past||group.key>past))past=group.key;
-    }
-    return future??past;
-  },[groupedItems,todayKey]);
+  const todayGroupKey=todayKey;
   const scrollToToday=useCallback(()=>{
     pendingTodayScroll.current=true;
+    const needsListRebuild=Boolean(query.trim())||filters.period!=='all';
     if(query.trim())setQuery('');
     if(filters.period!=='all')setFilters(current=>({...current,period:'all'}));
-    if(!query.trim()&&filters.period==='all'&&todayGroupKey){
-      const rowIndex=listRows.findIndex(row=>row.type==='header'&&row.sectionKey===todayGroupKey);
-      if(rowIndex>=0)requestAnimationFrame(()=>scrollRef.current?.scrollToIndex({index:rowIndex,viewPosition:0,animated:false}));
-      pendingTodayScroll.current=false;
+    if(!needsListRebuild){
+      requestAnimationFrame(()=>{
+        const rowIndex=listRows.findIndex(row=>row.type==='header'&&row.sectionKey===todayKey);
+        if(rowIndex>=0)scrollRef.current?.scrollToIndex({index:rowIndex,viewPosition:0,animated:true});
+        pendingTodayScroll.current=false;
+      });
     }
-  },[query,filters.period,todayGroupKey,listRows]);
+  },[query,filters.period,todayKey,listRows]);
   useEffect(()=>{
     if(!pendingTodayScroll.current||!todayGroupKey)return;
     const rowIndex=listRows.findIndex(row=>row.type==='header'&&row.sectionKey===todayGroupKey);
