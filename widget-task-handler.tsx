@@ -125,8 +125,8 @@ async function renderCachedCalendarNavigation(props:WidgetTaskHandlerProps):Prom
   const now=new Date(),todayKey=dateKey(now);
   if(metadata?.dateKey!==todayKey||metadata?.language!==language||!Number.isFinite(metadata?.totalWeeks))return false;
   const savedStart=savedStartRaw!==null&&Number.isFinite(Number(savedStartRaw))?Number(savedStartRaw):Number(metadata.defaultStartIndex)||0;
+  const maxStart=Math.max(0,Number(metadata.totalWeeks)-CALENDAR_WIDGET_PAGE_SIZE);
   const currentStart=Math.max(0,Math.min(Math.floor(savedStart),maxStart));
-  const maxStart=Math.floor(Math.max(0,Number(metadata.totalWeeks)-1)/CALENDAR_WIDGET_PAGE_SIZE)*CALENDAR_WIDGET_PAGE_SIZE;
   const pageStarts=Array.isArray(metadata.pageStarts)?metadata.pageStarts.map(Number).filter(Number.isFinite):[];
   const currentPageIndex=pageStarts.indexOf(currentStart);
   let requestedStart=currentStart;

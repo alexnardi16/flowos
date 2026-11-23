@@ -789,3 +789,10 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   assert.match(handler,/pageStarts\[currentPageIndex\+1\]/);
   assert.match(handler,/pageStarts\[currentPageIndex-1\]/);
 });
+
+\ntest('Cached Calendar navigation calculates its page bound before clamping the saved page',()=>{
+  const source=fs.readFileSync('widget-task-handler.tsx','utf8');
+  const maxStart=source.indexOf('const maxStart=Math.max(0,Number(metadata.totalWeeks)-CALENDAR_WIDGET_PAGE_SIZE);');
+  const currentStart=source.indexOf('const currentStart=Math.max(0,Math.min(Math.floor(savedStart),maxStart));');
+  assert.ok(maxStart>=0&&currentStart>maxStart,'maxStart must be initialized before currentStart uses it');
+});
