@@ -67,8 +67,8 @@ export default function Calendar(){
   const byDay=useMemo(()=>{
     const map=new Map<string,Commitment[]>();
     for(const item of commitments){
-      if(item.deletedAt||item.kind!=='event')continue;
-      if(item.status==='done'&&!showCompletedCalendarEvents)continue;
+      if(item.deletedAt)continue;
+      if(item.kind==='event'&&item.status==='done'&&!showCompletedCalendarEvents)continue;
       const value=itemDate(item);if(!value)continue;
       const start=new Date(value);if(!Number.isFinite(start.getTime()))continue;
       const dates=isMultiDayActivity(item)?activityDayDates(item):[start];

@@ -1,7 +1,7 @@
 const test=require('node:test');const assert=require('node:assert/strict');const {buildCalendarWidgetData}=require('../.test-dist-widget/lib/calendarWidgetData.js');
 const {isVisibleInToday,isCompletedOnDate,isCompletedForDate}=require('../.test-dist-widget/lib/commitmentVisibility.js');const {buildActivitySourceColors,activitySourceColor}=require('../.test-dist-widget/lib/activityColors.js');
 
-test('calendar widget shows completed past events by default, hides them when disabled, and never shows tasks',()=>{
+test('calendar widget always shows tasks and incomplete events; only completed events follow the visibility setting',()=>{
   const now=new Date('2026-11-23T10:00:00');
   const items=[
     {id:'past-done',title:'Past birthday',kind:'event',status:'done',scheduledAt:'2024-05-12T09:00:00',completedAt:'2024-05-12T10:00:00',durationMinutes:60,energy:'medium',context:'test',confidence:1},
@@ -13,11 +13,14 @@ test('calendar widget shows completed past events by default, hides them when di
   const days=visible.weeks.flatMap(week=>week.days);
   assert.equal(days.find(day=>day.dateKey==='2024-05-12').items.some(item=>item.id==='past-done'),true);
   assert.equal(days.find(day=>day.dateKey==='2026-12-25').items.some(item=>item.id==='open-event'),true);
-  assert.equal(days.some(day=>day.items.some(item=>item.id==='open-task'||item.id==='done-task')),false);
+  assert.equal(days.find(day=>day.dateKey==='2026-12-25').items.some(item=>item.id==='open-task'),true);
+  assert.equal(days.find(day=>day.dateKey==='2024-05-12').items.some(item=>item.id==='done-task'),true);
   const hidden=buildCalendarWidgetData(items,new Date('2027-12-31T23:59:59'),now,undefined,'it',false);
   const hiddenItems=hidden.weeks.flatMap(week=>week.days).flatMap(day=>day.items);
   assert.equal(hiddenItems.some(item=>item.id==='past-done'),false);
   assert.equal(hiddenItems.some(item=>item.id==='open-event'),true);
+  assert.equal(hiddenItems.some(item=>item.id==='open-task'),true);
+  assert.equal(hiddenItems.some(item=>item.id==='done-task'),true);
 });
 
 test('calendar widget data keeps active items on the correct day',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Test',kind:'event',status:'scheduled',durationMinutes:30,energy:'medium',context:'test',confidence:1,scheduledAt:'2026-09-21T15:00:00'}],new Date('2026-09-30T23:59:59'),now);const day=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21');assert.equal(day.items.length,1);assert.equal(day.items[0].title,'Test');});
@@ -111,21 +114,22 @@ test('completed multi-day events remain visible across all planned days when com
   for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(days.find(day=>day.dateKey===date).items.some(item=>item.id==='done-multi'),true,date);
 });
 
-test('Google Tasks are excluded from every calendar day regardless of duration',()=>{
+test('Tasks appear on every calendar day covered by their duration',()=>{
   const now=new Date('2026-09-19T10:00:00');
   const task={id:'multi-task',title:'Multi-day task',kind:'task',status:'active',dueAt:'2026-09-20T10:00:00',durationMinutes:72*60,energy:'medium',context:'test',confidence:1};
   const data=buildCalendarWidgetData([task],new Date('2026-09-30T23:59:59'),now);
   const days=data.weeks.flatMap(week=>week.days);
-  assert.equal(days.some(day=>day.items.some(item=>item.id==='multi-task')),false);
+  for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(days.find(day=>day.dateKey===date).items.some(item=>item.id==='multi-task'),true,date);
+  assert.equal(days.find(day=>day.dateKey==='2026-09-24').items.some(item=>item.id==='multi-task'),false);
 });
 
 
-test('Calendar widget never renders timed Google Tasks',()=>{
+test('Calendar widget renders timed Google Tasks',()=>{
   const now=new Date('2026-09-19T08:00:00');
   const task={id:'timed-task',title:'Timed task',kind:'task',status:'active',allDay:false,dueAt:'2026-09-21T10:00:00',durationMinutes:90,energy:'medium',context:'test',confidence:1};
   const data=buildCalendarWidgetData([task],new Date('2026-09-30T23:59:59'),now);
   const items=data.weeks.flatMap(week=>week.days).flatMap(day=>day.items);
-  assert.equal(items.some(item=>item.id==='timed-task'),false);
+  assert.equal(items.some(item=>item.id==='timed-task'),true);
 });
 
 

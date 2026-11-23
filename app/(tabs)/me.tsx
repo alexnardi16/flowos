@@ -378,11 +378,11 @@ export default function Me(){
 
     <Card style={{display:showSettingsSection('calendar','calendario eventi completati visibilità passato google calendar')?'flex':'none'}}>
       <Text style={styles.label}>{t('Visualizzazione Calendario')}</Text>
-      <Text style={styles.meta}>{t('Mantieni visibili gli eventi completati nel Calendario e nel widget Calendario. Le attività di Google Tasks non vengono mostrate in queste due viste.')}</Text>
+      <Text style={styles.meta}>{t('Le attività (task) sono sempre visibili nella macrosezione Calendario e nel widget Calendario, indipendentemente dal loro stato. Gli eventi non completati sono sempre visibili; solo gli eventi completati possono essere nascosti.')}</Text>
       <View style={styles.notificationRow}>
         <View style={{flex:1}}>
           <Text style={styles.item}>{t('Mostra anche gli eventi completati')}</Text>
-          <Text style={styles.meta}>{t('Attivo per impostazione predefinita. Gli eventi restano visibili nelle date in cui erano programmati, anche se completati in passato.')}</Text>
+          <Text style={styles.meta}>{t('Attivo per impostazione predefinita. Disattivalo per nascondere esclusivamente gli eventi completati.')}</Text>
         </View>
         <Switch value={widgetAppearance.showCompletedCalendarEvents} onValueChange={value=>{
           const previous=widgetAppearance.showCompletedCalendarEvents;

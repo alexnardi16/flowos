@@ -63,7 +63,7 @@ export function DensityProvider({children}:PropsWithChildren){
 }
 export function useAppDensity(){return useContext(DensityContext);}
 
-export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef, headerActions }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps; scrollRef?:RefObject<ScrollView|null>; headerActions?:ReactNode }>) {
+export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef, headerActions, scrollable=true }: PropsWithChildren<{ title:string; subtitle?:string; scrollProps?:ScrollViewProps; scrollRef?:RefObject<ScrollView|null>; headerActions?:ReactNode; scrollable?:boolean }>) {
   const insets = useSafeAreaInsets();
   const {density,appFontSize,appTheme}=useAppDensity();
   const textScale=getTypeScale(appFontSize);
@@ -84,9 +84,9 @@ export function ScreenShell({ title, subtitle, children, scrollProps, scrollRef,
       {subtitle ? <Text style={[styles.screenSubtitle,{fontSize:textScale.body,color:darkAppearance?'#AAB1C2':palette.muted}]}>{subtitle}</Text> : null}
       {headerActions}
     </View>
-    <ScrollView ref={scrollRef} {...scrollProps} style={[styles.screenScroll,{backgroundColor:screenBackground}]} showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingHorizontal:density==='compact'?16:density==='comfortable'?22:20,gap:density==='compact'?10:density==='comfortable'?18:14,paddingBottom:contentPaddingBottom,backgroundColor:screenBackground }]}>
+    {scrollable ? <ScrollView ref={scrollRef} {...scrollProps} style={[styles.screenScroll,{backgroundColor:screenBackground}]} showsVerticalScrollIndicator persistentScrollbar contentContainerStyle={[styles.screenContent, scrollProps?.contentContainerStyle, { paddingHorizontal:density==='compact'?16:density==='comfortable'?22:20,gap:density==='compact'?10:density==='comfortable'?18:14,paddingBottom:contentPaddingBottom,backgroundColor:screenBackground }]}>
       {children}
-    </ScrollView>
+    </ScrollView> : <View style={[styles.screenScroll,{backgroundColor:screenBackground,flex:1}]}>{children}</View>}
   </SafeAreaView>;
 }
 

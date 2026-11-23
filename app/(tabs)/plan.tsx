@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActivityKindTag, Card, EmptyState, ScreenShell, SectionTitle, palette } from '@/components/ui';
 import { QuickAddMenu } from '@/components/QuickAddMenu';
 import { ProgressiveHint } from '@/components/ProgressiveHint';
@@ -39,12 +39,12 @@ export default function Plan(){
   const[filtersExpanded,setFiltersExpanded]=useState(false);
   const[now,setNow]=useState(()=>Date.now());
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
-  const scrollRef=useRef<import('react-native').ScrollView|null>(null);
-  const groupOffsets=useRef(new Map<string,number>());
+  const scrollRef=useRef<SectionList<Commitment,{key:string;label:string}>|null>(null);
   const didInitialScroll=useRef(false);
   const hasPlanFocused=useRef(false);
   const pendingTodayScroll=useRef(false);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
+  const nowDate=useMemo(()=>new Date(now),[now]);
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
   useEffect(()=>{let active=true;void AsyncStorage.getItem(LIST_FILTERS_KEY).then(raw=>{if(!active||!raw)return;try{const saved=JSON.parse(raw) as Partial<ListFilters>;setFilters({...DEFAULT_LIST_FILTERS,...saved});}catch{/* Ignore invalid saved filter state. */}}).catch(()=>undefined).finally(()=>{if(active)setFiltersReady(true);});return()=>{active=false;};},[]);
@@ -52,8 +52,10 @@ export default function Plan(){
   function setFilter<K extends keyof ListFilters>(key:K,value:ListFilters[K]){setFilters(current=>({...current,[key]:value}));}
   useEffect(()=>{const i=setInterval(()=>setNow(Date.now()),60000);return()=>clearInterval(i);},[]);
 
-  const todayKey=(()=>{const d=new Date(now);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
-  const searchIndex=useMemo(()=>commitments.map(item=>{const sourceName=item.kind==='event'?google?.calendars.find(calendar=>calendar.google_calendar_id===item.googleCalendarId)?.summary:item.googleTaskListId?google?.taskLists.find(list=>list.google_task_list_id===item.googleTaskListId)?.title:'';return {item,text:searchable(item,sourceName??'')};}),[commitments,google]);
+  const todayKey=(()=>{const d=nowDate;return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+  const calendarNameById=useMemo(()=>new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,calendar.summary])),[google?.calendars]);
+  const taskListNameById=useMemo(()=>new Map((google?.taskLists??[]).map(list=>[list.google_task_list_id,list.title])),[google?.taskLists]);
+  const searchIndex=useMemo(()=>commitments.map(item=>{const sourceName=item.kind==='event'?calendarNameById.get(item.googleCalendarId??''):item.googleTaskListId?taskListNameById.get(item.googleTaskListId):'';return {item,text:searchable(item,sourceName??'')};}),[commitments,google]);
   const items=useMemo(()=>{
     const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     const filtered=searchIndex.filter(({item,text})=>{
@@ -79,7 +81,7 @@ export default function Plan(){
   const groupedItems=useMemo(()=>{
     const groups=new Map<string,{label:string;items:Commitment[]}>();
     for(const item of items){
-      const overdueTask=isOverdueTask(item,new Date(now));
+      const overdueTask=isOverdueTask(item,nowDate);
       const spansDays=!overdueTask&&isMultiDayActivity(item)&&(item.status!=='done'||(item.kind==='event'&&isCompletedMultiDayEvent(item)));
       const dates=spansDays?activityDayDates(item):[];
       const value=overdueTask?new Date(now).toISOString():itemDate(item);
@@ -103,26 +105,69 @@ export default function Plan(){
         })
       }));
 
-  },[items,calendarNames,now,filters.order]);
-  const todayGroupKey=groupedItems.find(group=>group.key===todayKey)?.key??[...groupedItems].filter(group=>group.key>=todayKey).sort((a,b)=>a.key.localeCompare(b.key))[0]?.key??[...groupedItems].filter(group=>group.key<todayKey).sort((a,b)=>b.key.localeCompare(a.key))[0]?.key;
-  const initialScrollKey=todayGroupKey;
-  const scrollToToday=useCallback(()=>{pendingTodayScroll.current=true;if(query.trim())setQuery('');if(filters.period!=='all')setFilter('period','all');const offset=todayGroupKey?groupOffsets.current.get(todayGroupKey):undefined;if(offset!==undefined){pendingTodayScroll.current=false;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,offset-8),animated:false}));}},[todayGroupKey,query,filters.period]);
-  useFocusEffect(useCallback(()=>{if(!hasPlanFocused.current){hasPlanFocused.current=true;didInitialScroll.current=false;scrollToToday();}},[scrollToToday]));
+  },[items,calendarNames,nowDate,filters.order]);
+  const todayGroupKey=useMemo(()=>{
+    if(groupedItems.some(group=>group.key===todayKey))return todayKey;
+    let future:string|undefined,past:string|undefined;
+    for(const group of groupedItems){
+      if(group.key>=todayKey&&(!future||group.key<future))future=group.key;
+      if(group.key<todayKey&&(!past||group.key>past))past=group.key;
+    }
+    return future??past;
+  },[groupedItems,todayKey]);
+  const scrollToToday=useCallback(()=>{
+    pendingTodayScroll.current=true;
+    if(query.trim())setQuery('');
+    if(filters.period!=='all')setFilters(current=>({...current,period:'all'}));
+    if(!query.trim()&&filters.period==='all'&&todayGroupKey){
+      const sectionIndex=groupedItems.findIndex(group=>group.key===todayGroupKey);
+      if(sectionIndex>=0)requestAnimationFrame(()=>scrollRef.current?.scrollToLocation({sectionIndex,itemIndex:0,viewPosition:0,animated:false}));
+      pendingTodayScroll.current=false;
+    }
+  },[query,filters.period,todayGroupKey,groupedItems]);
+  useEffect(()=>{
+    if(!pendingTodayScroll.current||!todayGroupKey)return;
+    const sectionIndex=groupedItems.findIndex(group=>group.key===todayGroupKey);
+    if(sectionIndex<0)return;
+    requestAnimationFrame(()=>{
+      scrollRef.current?.scrollToLocation({sectionIndex,itemIndex:0,viewPosition:0,animated:false});
+      pendingTodayScroll.current=false;
+      didInitialScroll.current=true;
+    });
+  },[groupedItems,todayGroupKey]);
+  useFocusEffect(useCallback(()=>{
+    if(!hasPlanFocused.current){
+      hasPlanFocused.current=true;
+      didInitialScroll.current=false;
+      pendingTodayScroll.current=true;
+      if(query.trim())setQuery('');
+      if(filters.period!=='all')setFilters(current=>({...current,period:'all'}));
+      if(!query.trim()&&filters.period==='all'&&todayGroupKey){
+        const sectionIndex=groupedItems.findIndex(group=>group.key===todayGroupKey);
+        if(sectionIndex>=0)requestAnimationFrame(()=>scrollRef.current?.scrollToLocation({sectionIndex,itemIndex:0,viewPosition:0,animated:false}));
+        pendingTodayScroll.current=false;
+      }
+    }
+  },[query,filters.period,todayGroupKey,groupedItems]));
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   function formatStartEnd(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);const options={weekday:'short' as const,day:'2-digit' as const,month:'2-digit' as const,year:'numeric' as const};if(item.allDay){const date=new Date(value);return `${date.toLocaleDateString(localeForLanguage(language),{...options,timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),options);const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} · ${time(start)} - ${date(end)===date(start)?time(end):`${date(end)} · ${time(end)}`}`;}
 
-  return <><ScreenShell title={t('Lista')} scrollRef={scrollRef} headerActions={<View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca')} placeholderTextColor={palette.muted} style={styles.search}/>{query.length>0?<Pressable accessibilityRole="button" accessibilityLabel={t('Cancella ricerca')} onPress={()=>setQuery('')} style={styles.clearSearch}><Text style={styles.clearSearchText}>×</Text></Pressable>:null}<Pressable accessibilityRole="button" accessibilityLabel={t('Filtri')} accessibilityState={{expanded:filtersExpanded}} onPress={()=>setFiltersExpanded(value=>!value)} style={styles.filterToggle}><Text style={styles.filterToggleText}>{t('Filtri')} · {Object.values(filters).filter((value,index)=>value!==(index===0?'asc':'all')).length}</Text></Pressable><Pressable accessibilityRole="button" onPress={scrollToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><QuickAddMenu date={todayKey}/></View>}>
-    
-    <ProgressiveHint id="list-filters">{t('Suggerimento Lista: usa la ricerca e i filtri per trovare rapidamente attività e calendari di provenienza.')}</ProgressiveHint>
-    <SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/>
-    {groupedItems.length?groupedItems.map(group=><View key={group.key} onLayout={event=>{groupOffsets.current.set(group.key,event.nativeEvent.layout.y);if(pendingTodayScroll.current&&group.key===todayGroupKey){pendingTodayScroll.current=false;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,event.nativeEvent.layout.y-8),animated:true}));}if(group.key===initialScrollKey&&!didInitialScroll.current){didInitialScroll.current=true;const y=event.nativeEvent.layout.y;requestAnimationFrame(()=>scrollRef.current?.scrollTo({y:Math.max(0,y-8),animated:false}));}}} style={styles.dayGroup}>
-      <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><View style={styles.dayDividerText}>{group.key===todayKey?<Text style={styles.todayGroupBadge}>{t('Oggi')}</Text>:null}<Text style={styles.groupWeekday}>{group.label.split(' ')[0]}{group.label.includes(' ')?` ${group.label.split(' ').slice(1).join(' ')}`:''}</Text></View><View style={styles.dayDividerLine}/></View>
-      {group.items.map(item=>{
-        const overdue=isOverdueTask(item);
+  return <><ScreenShell title={t('Lista')} scrollable={false} headerActions={<View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca')} placeholderTextColor={palette.muted} style={styles.search}/>{query.length>0?<Pressable accessibilityRole="button" accessibilityLabel={t('Cancella ricerca')} onPress={()=>setQuery('')} style={styles.clearSearch}><Text style={styles.clearSearchText}>×</Text></Pressable>:null}<Pressable accessibilityRole="button" accessibilityLabel={t('Filtri')} accessibilityState={{expanded:filtersExpanded}} onPress={()=>setFiltersExpanded(value=>!value)} style={styles.filterToggle}><Text style={styles.filterToggleText}>{t('Filtri')} · {Object.values(filters).filter((value,index)=>value!==(index===0?'asc':'all')).length}</Text></Pressable><Pressable accessibilityRole="button" onPress={scrollToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><QuickAddMenu date={todayKey}/></View>}>
+    <SectionList
+      ref={scrollRef}
+      style={{flex:1}}
+      contentContainerStyle={{paddingHorizontal:20,paddingTop:14,paddingBottom:140,gap:8}}
+      sections={groupedItems.map(group=>({key:group.key,label:group.label,data:group.items}))}
+      keyExtractor={item=>item.id}
+      ListHeaderComponent={<><ProgressiveHint id="list-filters">{t('Suggerimento Lista: usa la ricerca e i filtri per trovare rapidamente attività e calendari di provenienza.')}</ProgressiveHint><SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/></>}
+      ListEmptyComponent={<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento per iniziare.')}/>}
+      renderSectionHeader={({section})=><View style={styles.dayDivider}><View style={styles.dayDividerLine}/><View style={styles.dayDividerText}>{section.key===todayKey?<Text style={styles.todayGroupBadge}>{t('Oggi')}</Text>:null}<Text style={styles.groupWeekday}>{section.label}</Text></View><View style={styles.dayDividerLine}/></View>}
+      renderItem={({item,section})=>{
+        const overdue=isOverdueTask(item,nowDate);
         return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${t('Gestisci')}: ${item.title}`} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
           <Card style={[styles.itemCard,cardSourceStyle(item,sourceColors)]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
-              <ActivityKindTag kind={item.kind} completed={isCompletedForDate(item,new Date(`${group.key}T12:00:00`))}/>
+              <ActivityKindTag kind={item.kind} completed={isCompletedForDate(item,new Date(`${section.key}T12:00:00`))}/>
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
@@ -132,8 +177,13 @@ export default function Plan(){
             {item.location?<Text style={styles.meta}>{t('Luogo')}: {item.location}</Text>:null}
           </Card>
         </Pressable>;
-      })}
-    </View>):<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento.':'Aggiungi un nuovo elemento per iniziare.')}/>}
+      }}
+      onScrollToIndexFailed={({averageItemLength,index})=>scrollRef.current?.scrollToOffset({offset:averageItemLength*index,animated:false})}
+      initialNumToRender={12}
+      maxToRenderPerBatch={12}
+      windowSize={7}
+      removeClippedSubviews
+    />
     {manageItem?<ManageSheet item={manageItem} onClose={()=>setManageId(null)}/>:null}
   </ScreenShell>
     <Modal visible={filtersExpanded} transparent animationType="slide" onRequestClose={()=>setFiltersExpanded(false)}>

@@ -13,7 +13,7 @@ const MONTHS=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','
 function dateKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function monthTitle(month:number,year:number,language?:Language){const name=(language?widgetStrings(language).months:MONTHS)[month]??'';return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${year}`;}
 function multiDaySegment(item:Commitment,day:Date):'start'|'middle'|'end'|undefined{
-  if(item.kind!=='event'||!isMultiDayActivity(item))return undefined;
+  if(!isMultiDayActivity(item))return undefined;
   const keyFor=(value:Date)=>item.allDay?`${value.getUTCFullYear()}-${String(value.getUTCMonth()+1).padStart(2,'0')}-${String(value.getUTCDate()).padStart(2,'0')}`:dateKey(value);
   const dates=activityDayDates(item);const current=keyFor(day);const first=keyFor(dates[0]);const last=keyFor(dates[dates.length-1]);
   return current===first?'start':current===last?'end':'middle';
@@ -41,12 +41,11 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
   // Keep the same full navigable range as the in-app Calendar.
   const timelineWeeks=buildCalendarTimeline(commitments,syncEndDate,now).weeks;
 
-  // Calendar is an events-only view. Tasks never appear here.
-  // Completed events remain on their original scheduled dates when enabled.
+  // Tasks are always visible. The setting only controls completed events.
   for(const item of commitments){
-    if(item.deletedAt||item.kind!=='event')continue;
-    if(item.status==='done'&&!showCompletedEvents)continue;
-    const value=item.scheduledAt;
+    if(item.deletedAt)continue;
+    if(item.kind==='event'&&item.status==='done'&&!showCompletedEvents)continue;
+    const value=item.scheduledAt??item.dueAt;
     if(!value)continue;
     const start=new Date(value);
     if(!Number.isFinite(start.getTime()))continue;

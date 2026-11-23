@@ -156,3 +156,20 @@ test('multi-item persistence uses a bounded worker pool instead of an unbounded 
   assert.match(store,/runWithConcurrency\(toSave,saveCommitment\)/);
   assert.match(widget,/runWithConcurrency\(toSave,saveCommitment\)/);
 });
+
+
+test('Calendar visibility setting only hides completed events and never hides tasks',()=>{
+  const settings=read('app/(tabs)/me.tsx');
+  const calendar=read('app/(tabs)/calendar.tsx');
+  const widget=read('lib/calendarWidgetData.ts');
+  const timeline=read('lib/calendarTimeline.ts');
+  const list=read('app/(tabs)/plan.tsx');
+  assert.match(settings,/Le attività \\(task\\) sono sempre visibili/);
+  assert.match(calendar,/item.kind==='event'&&item.status==='done'&&!showCompletedCalendarEvents/);
+  assert.match(widget,/item.kind==='event'&&item.status==='done'&&!showCompletedEvents/);
+  assert.doesNotMatch(calendar,/item.kind!=='event'\)continue/);
+  assert.doesNotMatch(widget,/item.kind!=='event'\)continue/);
+  assert.doesNotMatch(timeline,/item.kind !== 'event'/);
+  assert.match(list,/<SectionList/);
+  assert.match(list,/scrollable=\{false\}/);
+});
