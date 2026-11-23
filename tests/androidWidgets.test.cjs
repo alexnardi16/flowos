@@ -779,3 +779,13 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   assert.match(fs.readFileSync('lib/widgetSync.ts','utf8'),/flowos-calendar-widget-page-v2/);
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/page-cache-v2/);
 });
+
+\ntest('Calendar widget paging follows cached page neighbors when the current week is not on an eight-week boundary',()=>{
+  const paging=fs.readFileSync('lib/calendarWidgetPaging.ts','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(paging,/pageStarts/);
+  assert.match(paging,/totalWeeks:allWeeks\.length,pageStarts/);
+  assert.match(handler,/metadata\.pageStarts/);
+  assert.match(handler,/pageStarts\[currentPageIndex\+1\]/);
+  assert.match(handler,/pageStarts\[currentPageIndex-1\]/);
+});

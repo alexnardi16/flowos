@@ -17,7 +17,7 @@ test('calendar widget page cache stores the current page and navigable older/new
     'flowos-calendar-widget-page-cache-v2:10',
     'flowos-calendar-widget-page-cache-v2:13'
   ]);
-  const metadata=JSON.parse(cache.metadata);assert.equal(metadata.pageVersion,2);assert.equal(metadata.defaultStartIndex,10);assert.equal(metadata.totalWeeks,21);
+  const metadata=JSON.parse(cache.metadata);assert.equal(metadata.pageVersion,2);assert.equal(metadata.defaultStartIndex,10);assert.equal(metadata.totalWeeks,21);assert.deepEqual(metadata.pageStarts,[0,2,10,13]);
   const current=JSON.parse(cache.entries.find(([key])=>key.endsWith(':10'))[1]);
   assert.equal(current.weeks[0].days[0].isToday,true);assert.equal(current.weeks.length,8);
   const last=JSON.parse(cache.entries.find(([key])=>key.endsWith(':13'))[1]);

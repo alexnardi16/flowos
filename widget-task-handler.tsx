@@ -127,9 +127,11 @@ async function renderCachedCalendarNavigation(props:WidgetTaskHandlerProps):Prom
   const savedStart=savedStartRaw!==null&&Number.isFinite(Number(savedStartRaw))?Number(savedStartRaw):Number(metadata.defaultStartIndex)||0;
   const currentStart=Math.max(0,Math.min(Math.floor(savedStart),maxStart));
   const maxStart=Math.floor(Math.max(0,Number(metadata.totalWeeks)-1)/CALENDAR_WIDGET_PAGE_SIZE)*CALENDAR_WIDGET_PAGE_SIZE;
+  const pageStarts=Array.isArray(metadata.pageStarts)?metadata.pageStarts.map(Number).filter(Number.isFinite):[];
+  const currentPageIndex=pageStarts.indexOf(currentStart);
   let requestedStart=currentStart;
-  if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,currentStart-CALENDAR_WIDGET_PAGE_SIZE);
-  else if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=Math.min(maxStart,currentStart+CALENDAR_WIDGET_PAGE_SIZE);
+  if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=currentPageIndex>0?pageStarts[currentPageIndex-1]:Math.max(0,currentStart-CALENDAR_WIDGET_PAGE_SIZE);
+  else if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=currentPageIndex>=0&&currentPageIndex<pageStarts.length-1?pageStarts[currentPageIndex+1]:Math.min(maxStart,currentStart+CALENDAR_WIDGET_PAGE_SIZE);
   else if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=Number(metadata.defaultStartIndex)||0;
   const pageRaw=await AsyncStorage.getItem(getCalendarWidgetPageCacheKey(requestedStart));
   if(!pageRaw)return false;
@@ -218,12 +220,14 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
     await saveCalendarPageCache(data,language);
     let requestedStart:number|undefined;
     try { const saved=await AsyncStorage.getItem(CALENDAR_PAGE_KEY); if(saved!==null&&Number.isFinite(Number(saved)))requestedStart=Number(saved); } catch {}
-    const pageShift=CALENDAR_WIDGET_PAGE_SIZE;
     const isCalendarNavigation=props.widgetAction==='WIDGET_CLICK'&&['CALENDAR_PAGE_OLDER','CALENDAR_PAGE_NEWER','CALENDAR_PAGE_TODAY'].includes(String(props.clickAction));
     let page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
     if(isCalendarNavigation) {
-      if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=Math.max(0,page.startIndex-pageShift);
-      if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=page.startIndex+pageShift;
+      let pageStarts:number[]=[];
+      try{const metadata=JSON.parse((await AsyncStorage.getItem(CALENDAR_WIDGET_PAGE_CACHE_META_KEY))??'{}');if(Array.isArray(metadata.pageStarts))pageStarts=metadata.pageStarts.map(Number).filter(Number.isFinite);}catch{}
+      const currentPageIndex=pageStarts.indexOf(page.startIndex);
+      if(props.clickAction==='CALENDAR_PAGE_OLDER')requestedStart=currentPageIndex>0?pageStarts[currentPageIndex-1]:Math.max(0,page.startIndex-CALENDAR_WIDGET_PAGE_SIZE);
+      if(props.clickAction==='CALENDAR_PAGE_NEWER')requestedStart=currentPageIndex>=0&&currentPageIndex<pageStarts.length-1?pageStarts[currentPageIndex+1]:page.startIndex+CALENDAR_WIDGET_PAGE_SIZE;
       if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=undefined;
       page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
     }

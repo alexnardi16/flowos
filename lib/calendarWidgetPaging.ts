@@ -26,10 +26,11 @@ export function buildCalendarWidgetPageCache(allWeeks:AndroidCalendarWeek[],lang
   while(cursor>0){cursor=Math.max(0,cursor-CALENDAR_WIDGET_PAGE_SIZE);starts.add(cursor);}
   cursor=defaultPage.startIndex;
   while(cursor<maxStart){cursor=Math.min(maxStart,cursor+CALENDAR_WIDGET_PAGE_SIZE);starts.add(cursor);}
+  const pageStarts=[...starts].sort((a,b)=>a-b);
   const entries:[string,string][]=[];
-  for(const startIndex of [...starts].sort((a,b)=>a-b)){
+  for(const startIndex of pageStarts){
     const page=getCalendarWidgetPage(allWeeks,startIndex,now);
     entries.push([getCalendarWidgetPageCacheKey(page.startIndex),JSON.stringify({dateKey,language,...page})]);
   }
-  return {entries,metadata:JSON.stringify({pageVersion:2,dateKey,language,defaultStartIndex:defaultPage.startIndex,totalWeeks:allWeeks.length}),defaultStartIndex:defaultPage.startIndex};
+  return {entries,metadata:JSON.stringify({pageVersion:2,dateKey,language,defaultStartIndex:defaultPage.startIndex,totalWeeks:allWeeks.length,pageStarts}),defaultStartIndex:defaultPage.startIndex};
 }
