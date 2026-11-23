@@ -161,7 +161,7 @@ export default function Plan(){
       keyExtractor={item=>item.id}
       stickySectionHeadersEnabled={false}
       ListHeaderComponent={<View><ProgressiveHint id="list-filters">{t('Suggerimento Lista: usa la ricerca e i filtri per trovare rapidamente attività e calendari di provenienza.')}</ProgressiveHint><SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/></View>}
-      ListEmptyComponent={<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento per iniziare.')}/>}
+      ListEmptyComponent={<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento.':'Aggiungi un nuovo elemento per iniziare.')}/>}
       renderSectionHeader={({section})=><View style={styles.dayDivider}><View style={styles.dayDividerLine}/><View style={styles.dayDividerText}>{section.key===todayKey?<Text style={styles.todayGroupBadge}>{t('Oggi')}</Text>:null}<Text style={styles.groupWeekday}>{section.label}</Text></View><View style={styles.dayDividerLine}/></View>}
       renderItem={({item,section})=>{
         const overdue=isOverdueTask(item,nowDate);
