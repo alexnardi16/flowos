@@ -14,6 +14,7 @@
   },
   "include": [
     "../lib/calendarWidgetData.ts",
+    "../lib/calendarWidgetPaging.ts",
     "../widgets/android/CalendarWidget.tsx",
     "../types/index.ts",
     "../lib/calendarTimeline.ts",

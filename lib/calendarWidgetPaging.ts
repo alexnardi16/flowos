@@ -8,6 +8,7 @@ export function getCalendarWidgetPageCacheKey(startIndex:number) { return `${CAL
 
 /** The default page starts on the current week, followed by the next seven weeks. */
 export function getCalendarWidgetPage(allWeeks:AndroidCalendarWeek[],requestedStartIndex?:number|null,now:Date=new Date()){
+  void now;
   const currentIndex=allWeeks.findIndex(week=>week.days.some(day=>day.isToday));
   const maxStart=Math.max(0,allWeeks.length-CALENDAR_WIDGET_PAGE_SIZE);
   const defaultStart=Math.min(Math.max(0,currentIndex<0?0:currentIndex),maxStart);
