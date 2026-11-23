@@ -164,7 +164,7 @@ test('Calendar visibility setting only hides completed events and never hides ta
   const widget=read('lib/calendarWidgetData.ts');
   const timeline=read('lib/calendarTimeline.ts');
   const list=read('app/(tabs)/plan.tsx');
-  assert.match(settings,/Le attività \\(task\\) sono sempre visibili/);
+  assert.match(settings,/Le attività \(task\) sono sempre visibili/);
   assert.match(calendar,/item.kind==='event'&&item.status==='done'&&!showCompletedCalendarEvents/);
   assert.match(widget,/item.kind==='event'&&item.status==='done'&&!showCompletedEvents/);
   assert.doesNotMatch(calendar,/item.kind!=='event'\)continue/);
