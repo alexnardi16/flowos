@@ -245,8 +245,8 @@ test('List and Calendar provide a direct Today navigation shortcut',()=>{
   assert.ok(plan.includes('headerActions={<View style={styles.searchRow}'));
   assert.ok(plan.includes('pendingTodayScroll.current=true'));
   assert.ok(plan.includes("if(query.trim())setQuery('')"));
-  assert.ok(plan.includes('<SectionList'));
-  assert.ok(plan.includes('scrollToLocation'));
+  assert.ok(plan.includes('<FlatList'));
+  assert.ok(plan.includes('scrollToIndex'));
   assert.ok(plan.includes('scrollable={false}'));
 });
 test('Manage page and Today macrosection use the shared recurring completion prompt',()=>{
@@ -580,7 +580,7 @@ test('List initializes on Today once and preserves filters and scroll context on
   assert.match(source,/if\(!hasPlanFocused\.current\)\{[\s\S]*pendingTodayScroll\.current=true/);
   assert.match(source,/pendingTodayScroll\.current=true/);
   assert.match(source,/if\(filters\.period!=='all'\)setFilters\(current=>\(\{\.\.\.current,period:'all'\}\)\)/);
-  assert.match(source,/<SectionList/);
+  assert.match(source,/<FlatList/);
 });
 
 test('Calendar initializes on Today once and preserves the selected day on later focus',()=>{

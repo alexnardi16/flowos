@@ -170,6 +170,6 @@ test('Calendar visibility setting only hides completed events and never hides ta
   assert.doesNotMatch(calendar,/item.kind!=='event'\)continue/);
   assert.doesNotMatch(widget,/item.kind!=='event'\)continue/);
   assert.doesNotMatch(timeline,/item.kind !== 'event'/);
-  assert.match(list,/<SectionList/);
+  assert.match(list,/<FlatList/);
   assert.match(list,/scrollable=\{false\}/);
 });

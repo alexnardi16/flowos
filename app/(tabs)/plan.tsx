@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Modal, Pressable, ScrollView, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActivityKindTag, Card, EmptyState, ScreenShell, SectionTitle, palette } from '@/components/ui';
 import { QuickAddMenu } from '@/components/QuickAddMenu';
 import { ProgressiveHint } from '@/components/ProgressiveHint';
@@ -21,6 +21,7 @@ function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
 function formatDateTime(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);const options={weekday:'short' as const,day:'2-digit' as const,month:'2-digit' as const,year:'numeric' as const};if(item.allDay){const d=new Date(value);return `${d.toLocaleDateString(localeForLanguage(language),{...options,timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),options);const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} · ${time(start)} - ${date(end)===date(start)?time(end):`${date(end)} · ${time(end)}`}`;}
 function cardSourceStyle(item:Commitment,sourceColors:Map<string,string>){return {backgroundColor:activitySourceColor(item,sourceColors),borderColor:item.googleCalendarId||item.googleTaskListId?'#D9DDE7':'#E0E2E8',borderWidth:1};}
 type ListFilters={order:'asc'|'desc';kind:'all'|'task'|'event';period:'all'|'past'|'future';status:'all'|'open'|'done'};
+type ListRow={type:'header';key:string;sectionKey:string;label:string}|{type:'item';key:string;sectionKey:string;item:Commitment};
 const LIST_FILTERS_KEY='flowos-list-filters-v1';
 const DEFAULT_LIST_FILTERS:ListFilters={order:'asc',kind:'all',period:'all',status:'all'};
 function localDateKey(item:Commitment){const value=itemDate(item);if(!value)return '';const d=new Date(value);const y=item.allDay?d.getUTCFullYear():d.getFullYear();const m=(item.allDay?d.getUTCMonth():d.getMonth())+1;const day=item.allDay?d.getUTCDate():d.getDate();return `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
@@ -39,7 +40,7 @@ export default function Plan(){
   const[filtersExpanded,setFiltersExpanded]=useState(false);
   const[now,setNow]=useState(()=>Date.now());
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
-  const scrollRef=useRef<SectionList<Commitment,{key:string;label:string}>|null>(null);
+  const scrollRef=useRef<FlatList<ListRow>|null>(null);
   const hasPlanFocused=useRef(false);
   const pendingTodayScroll=useRef(false);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
@@ -105,6 +106,10 @@ export default function Plan(){
       }));
 
   },[items,calendarNames,nowDate,filters.order]);
+  const listRows=useMemo<ListRow[]>(()=>groupedItems.flatMap(group=>[
+    {type:'header' as const,key:`header:${group.key}`,sectionKey:group.key,label:group.label},
+    ...group.items.map(item=>({type:'item' as const,key:`item:${group.key}:${item.id}`,sectionKey:group.key,item}))
+  ]),[groupedItems]);
   const todayGroupKey=useMemo(()=>{
     if(groupedItems.some(group=>group.key===todayKey))return todayKey;
     let future:string|undefined,past:string|undefined;
@@ -119,20 +124,20 @@ export default function Plan(){
     if(query.trim())setQuery('');
     if(filters.period!=='all')setFilters(current=>({...current,period:'all'}));
     if(!query.trim()&&filters.period==='all'&&todayGroupKey){
-      const sectionIndex=groupedItems.findIndex(group=>group.key===todayGroupKey);
-      if(sectionIndex>=0)requestAnimationFrame(()=>scrollRef.current?.scrollToLocation({sectionIndex,itemIndex:0,viewPosition:0,animated:false}));
+      const rowIndex=listRows.findIndex(row=>row.type==='header'&&row.sectionKey===todayGroupKey);
+      if(rowIndex>=0)requestAnimationFrame(()=>scrollRef.current?.scrollToIndex({index:rowIndex,viewPosition:0,animated:false}));
       pendingTodayScroll.current=false;
     }
-  },[query,filters.period,todayGroupKey,groupedItems]);
+  },[query,filters.period,todayGroupKey,listRows]);
   useEffect(()=>{
     if(!pendingTodayScroll.current||!todayGroupKey)return;
-    const sectionIndex=groupedItems.findIndex(group=>group.key===todayGroupKey);
-    if(sectionIndex<0)return;
+    const rowIndex=listRows.findIndex(row=>row.type==='header'&&row.sectionKey===todayGroupKey);
+    if(rowIndex<0)return;
     requestAnimationFrame(()=>{
-      scrollRef.current?.scrollToLocation({sectionIndex,itemIndex:0,viewPosition:0,animated:false});
+      scrollRef.current?.scrollToIndex({index:rowIndex,viewPosition:0,animated:false});
       pendingTodayScroll.current=false;
     });
-  },[groupedItems,todayGroupKey]);
+  },[listRows,todayGroupKey]);
   useFocusEffect(useCallback(()=>{
     if(!hasPlanFocused.current){
       hasPlanFocused.current=true;
@@ -140,32 +145,32 @@ export default function Plan(){
       if(query.trim())setQuery('');
       if(filters.period!=='all')setFilters(current=>({...current,period:'all'}));
       if(!query.trim()&&filters.period==='all'&&todayGroupKey){
-        const sectionIndex=groupedItems.findIndex(group=>group.key===todayGroupKey);
-        if(sectionIndex>=0)requestAnimationFrame(()=>scrollRef.current?.scrollToLocation({sectionIndex,itemIndex:0,viewPosition:0,animated:false}));
+        const rowIndex=listRows.findIndex(row=>row.type==='header'&&row.sectionKey===todayGroupKey);
+        if(rowIndex>=0)requestAnimationFrame(()=>scrollRef.current?.scrollToIndex({index:rowIndex,viewPosition:0,animated:false}));
         pendingTodayScroll.current=false;
       }
     }
-  },[query,filters.period,todayGroupKey,groupedItems]));
+  },[query,filters.period,todayGroupKey,listRows]));
   const manageItem=manageId?commitments.find(item=>item.id===manageId)??null:null;
   function formatStartEnd(item:Commitment,language:import('@/lib/i18n').Language){const value=itemDate(item);if(!value)return t('Data e ora non definite',undefined,language);const options={weekday:'short' as const,day:'2-digit' as const,month:'2-digit' as const,year:'numeric' as const};if(item.allDay){const date=new Date(value);return `${date.toLocaleDateString(localeForLanguage(language),{...options,timeZone:'UTC'})} · ${t('Tutto il giorno',undefined,language)}`;}const start=new Date(value);const end=new Date(start.getTime()+Math.max(1,item.durationMinutes||1)*60000);const date=(d:Date)=>d.toLocaleDateString(localeForLanguage(language),options);const time=(d:Date)=>d.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'});return `${date(start)} · ${time(start)} - ${date(end)===date(start)?time(end):`${date(end)} · ${time(end)}`}`;}
 
   return <><ScreenShell title={t('Lista')} scrollable={false} headerActions={<View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} placeholder={t('Cerca')} placeholderTextColor={palette.muted} style={styles.search}/>{query.length>0?<Pressable accessibilityRole="button" accessibilityLabel={t('Cancella ricerca')} onPress={()=>setQuery('')} style={styles.clearSearch}><Text style={styles.clearSearchText}>×</Text></Pressable>:null}<Pressable accessibilityRole="button" accessibilityLabel={t('Filtri')} accessibilityState={{expanded:filtersExpanded}} onPress={()=>setFiltersExpanded(value=>!value)} style={styles.filterToggle}><Text style={styles.filterToggleText}>{t('Filtri')} · {Object.values(filters).filter((value,index)=>value!==(index===0?'asc':'all')).length}</Text></Pressable><Pressable accessibilityRole="button" onPress={scrollToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><QuickAddMenu date={todayKey}/></View>}>
-    <SectionList
+    <FlatList
       ref={scrollRef}
       style={{flex:1}}
       contentContainerStyle={{paddingHorizontal:20,paddingTop:14,paddingBottom:140,gap:8}}
-      sections={groupedItems.map(group=>({key:group.key,label:group.label,data:group.items}))}
-      keyExtractor={item=>item.id}
-      stickySectionHeadersEnabled={false}
+      data={listRows}
+      keyExtractor={row=>row.key}
       ListHeaderComponent={<View><ProgressiveHint id="list-filters">{t('Suggerimento Lista: usa la ricerca e i filtri per trovare rapidamente attività e calendari di provenienza.')}</ProgressiveHint><SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/></View>}
       ListEmptyComponent={<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento.':'Aggiungi un nuovo elemento per iniziare.')}/>}
-      renderSectionHeader={({section})=><View style={styles.dayDivider}><View style={styles.dayDividerLine}/><View style={styles.dayDividerText}>{section.key===todayKey?<Text style={styles.todayGroupBadge}>{t('Oggi')}</Text>:null}<Text style={styles.groupWeekday}>{section.label}</Text></View><View style={styles.dayDividerLine}/></View>}
-      renderItem={({item,section})=>{
+      renderItem={({item:row})=>{
+        if(row.type==='header')return <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><View style={styles.dayDividerText}>{row.sectionKey===todayKey?<Text style={styles.todayGroupBadge}>{t('Oggi')}</Text>:null}<Text style={styles.groupWeekday}>{row.label}</Text></View><View style={styles.dayDividerLine}/></View>;
+        const item=row.item;
         const overdue=isOverdueTask(item,nowDate);
         return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${t('Gestisci')}: ${item.title}`} onPress={()=>setManageId(item.id)} style={({pressed})=>pressed&&styles.cardPressed}>
           <Card style={[styles.itemCard,cardSourceStyle(item,sourceColors)]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagRow}>
-              <ActivityKindTag kind={item.kind} completed={isCompletedForDate(item,new Date(`${section.key}T12:00:00`))}/>
+              <ActivityKindTag kind={item.kind} completed={isCompletedForDate(item,new Date(`${row.sectionKey}T12:00:00`))}/>
               <CommitmentSourceTag item={item} google={google}/>
             </ScrollView>
             <View style={styles.titleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.priorityBadge}>{item.priority}</Text> : null}<Text style={styles.item}>{item.title}</Text></View>
@@ -175,6 +180,10 @@ export default function Plan(){
             {item.location?<Text style={styles.meta}>{t('Luogo')}: {item.location}</Text>:null}
           </Card>
         </Pressable>;
+      }}
+      onScrollToIndexFailed={({averageItemLength,index})=>{
+        scrollRef.current?.scrollToOffset({offset:averageItemLength*index,animated:false});
+        requestAnimationFrame(()=>requestAnimationFrame(()=>scrollRef.current?.scrollToIndex({index,viewPosition:0,animated:false})));
       }}
       initialNumToRender={12}
       maxToRenderPerBatch={12}
