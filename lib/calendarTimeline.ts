@@ -24,7 +24,7 @@ export function buildCalendarTimeline(commitments: Commitment[], syncEndDate: Da
     if (start === undefined) continue;
     if (start < earliestTimestamp) earliestTimestamp = start;
     if (start > latestTimestamp) latestTimestamp = start;
-    if (item.scheduledAt && item.durationMinutes > 0) {
+    if (item.durationMinutes > 0) {
       const end = start + item.durationMinutes * 60_000;
       if (end > latestTimestamp) latestTimestamp = end;
     }

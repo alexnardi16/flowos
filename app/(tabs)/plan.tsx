@@ -55,7 +55,7 @@ export default function Plan(){
   const todayKey=(()=>{const d=nowDate;return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
   const calendarNameById=useMemo(()=>new Map((google?.calendars??[]).map(calendar=>[calendar.google_calendar_id,calendar.summary])),[google?.calendars]);
   const taskListNameById=useMemo(()=>new Map((google?.taskLists??[]).map(list=>[list.google_task_list_id,list.title])),[google?.taskLists]);
-  const searchIndex=useMemo(()=>commitments.map(item=>{const sourceName=item.kind==='event'?calendarNameById.get(item.googleCalendarId??''):item.googleTaskListId?taskListNameById.get(item.googleTaskListId):'';return {item,text:searchable(item,sourceName??'')};}),[commitments,google]);
+  const searchIndex=useMemo(()=>commitments.map(item=>{const sourceName=item.kind==='event'?calendarNameById.get(item.googleCalendarId??''):item.googleTaskListId?taskListNameById.get(item.googleTaskListId):'';return {item,text:searchable(item,sourceName??'')};}),[commitments,calendarNameById,taskListNameById]);
   const items=useMemo(()=>{
     const normalized=query.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     const filtered=searchIndex.filter(({item,text})=>{
@@ -159,6 +159,7 @@ export default function Plan(){
       contentContainerStyle={{paddingHorizontal:20,paddingTop:14,paddingBottom:140,gap:8}}
       sections={groupedItems.map(group=>({key:group.key,label:group.label,data:group.items}))}
       keyExtractor={item=>item.id}
+      stickySectionHeadersEnabled={false}
       ListHeaderComponent={<><ProgressiveHint id="list-filters">{t('Suggerimento Lista: usa la ricerca e i filtri per trovare rapidamente attività e calendari di provenienza.')}</ProgressiveHint><SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/></>}
       ListEmptyComponent={<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento per iniziare.')}/>}
       renderSectionHeader={({section})=><View style={styles.dayDivider}><View style={styles.dayDividerLine}/><View style={styles.dayDividerText}>{section.key===todayKey?<Text style={styles.todayGroupBadge}>{t('Oggi')}</Text>:null}<Text style={styles.groupWeekday}>{section.label}</Text></View><View style={styles.dayDividerLine}/></View>}
