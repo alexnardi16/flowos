@@ -12,6 +12,7 @@ export type WidgetAppearance = {
   theme: WidgetTheme;
   density: WidgetDensity;
   todayTransparentUnusedSpace: boolean;
+  showCompletedCalendarEvents: boolean;
   today: { backgroundColor: string; backgroundOpacity: number; textColor: string; textOpacity: number; buttonBackgroundColor: string; buttonBackgroundOpacity: number; buttonTextColor: string; buttonTextOpacity: number };
   calendar: { backgroundColor: string; backgroundOpacity: number; textColor: string; textOpacity: number; buttonBackgroundColor: string; buttonBackgroundOpacity: number; buttonTextColor: string; buttonTextOpacity: number };
   sources: Record<string, SourceAppearance>;
@@ -23,6 +24,7 @@ export const DEFAULT_WIDGET_APPEARANCE: WidgetAppearance = {
   theme: 'flowos-light',
   density: 'balanced',
   todayTransparentUnusedSpace: true,
+  showCompletedCalendarEvents: true,
   today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#6658D3', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
   calendar: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#6658D3', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
   sources: {},
@@ -49,6 +51,7 @@ export async function getWidgetAppearance(): Promise<WidgetAppearance> {
       theme: ['flowos-light','flowos-dark','minimal-transparent','high-contrast','soft-pastel'].includes(String(parsed.theme)) ? parsed.theme as WidgetTheme : DEFAULT_WIDGET_APPEARANCE.theme,
       density: ['comfortable','balanced','compact'].includes(String(parsed.density)) ? parsed.density as WidgetDensity : DEFAULT_WIDGET_APPEARANCE.density,
       todayTransparentUnusedSpace: parsed.todayTransparentUnusedSpace !== false,
+      showCompletedCalendarEvents: parsed.showCompletedCalendarEvents !== false,
       today: { ...DEFAULT_WIDGET_APPEARANCE.today, ...(parsed.today ?? {}) },
       calendar: { ...DEFAULT_WIDGET_APPEARANCE.calendar, ...(parsed.calendar ?? {}) },
       sources: parsed.sources && typeof parsed.sources === 'object' ? parsed.sources : {},

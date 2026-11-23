@@ -13,9 +13,10 @@ import type { Commitment } from '@/types';
 import { sortCommitments } from '@/lib/activityOrdering';
 import { localeForLanguage, t, useLanguage, widgetStrings } from '@/lib/i18n';
 import { activitySourceColor, buildActivitySourceColors } from '@/lib/activityColors';
-import { isVisibleCompletedMultiDayForDate, isOverdueTask, activityDayDates, isMultiDayActivity } from '@/lib/commitmentVisibility';
+import { activityDayDates, isMultiDayActivity } from '@/lib/commitmentVisibility';
 import { buildCalendarTimeline } from '@/lib/calendarTimeline';
 import { formatDurationLabel } from '@/lib/itemTiming';
+import { getWidgetAppearance } from '@/lib/widgetAppearance';
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -43,6 +44,7 @@ export default function Calendar(){
   const[manageId,setManageId]=useState<string|null>(null);const[showDatePicker,setShowDatePicker]=useState(false);const[pickerMonth,setPickerMonth]=useState(()=>new Date());
   const[selectedDateOverride,setSelectedDateOverride]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
+  const[showCompletedCalendarEvents,setShowCompletedCalendarEvents]=useState(true);
   const params=useLocalSearchParams<{widgetAction?:string;date?:string;id?:string}>();
   const scrollRef=useRef<import('react-native').ScrollView|null>(null);
   const weekOffsets=useRef(new Map<number,number>());
@@ -50,6 +52,7 @@ export default function Calendar(){
   const hasCalendarFocused=useRef(false);
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
+  useFocusEffect(useCallback(()=>{let active=true;void getWidgetAppearance().then(value=>{if(active)setShowCompletedCalendarEvents(value.showCompletedCalendarEvents);});return()=>{active=false;};},[]));
   useEffect(()=>{const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;const id=typeof params.id==='string'?params.id:null;if(action==='sync')void syncWithGoogle();if(action==='manage'&&id) setManageId(id);},[params.widgetAction,params.id,syncWithGoogle]);
 
   const weeks=useMemo(()=>{
@@ -63,27 +66,19 @@ export default function Calendar(){
 
   const byDay=useMemo(()=>{
     const map=new Map<string,Commitment[]>();
-    for(const item of commitments.filter(item=>!item.deletedAt&&item.status!=='done')){
-      const overdueTask=isOverdueTask(item);
-      const value=overdueTask?new Date().toISOString():itemDate(item);if(!value)continue;
-      const d=new Date(value);
-      const dates=!overdueTask&&isMultiDayActivity(item)?activityDayDates(item):[d];
+    for(const item of commitments){
+      if(item.deletedAt||item.kind!=='event')continue;
+      if(item.status==='done'&&!showCompletedCalendarEvents)continue;
+      const value=itemDate(item);if(!value)continue;
+      const start=new Date(value);if(!Number.isFinite(start.getTime()))continue;
+      const dates=isMultiDayActivity(item)?activityDayDates(item):[start];
       for(const date of dates){
-        const key=item.allDay?`${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`:dayKey(date);
-        const list=map.get(key)??[];list.push(item);map.set(key,list);
-      }
-    }
-    for(const item of commitments.filter(item=>!item.deletedAt&&item.status==='done')){
-      const end=item.scheduledAt&&item.durationMinutes?new Date(new Date(item.scheduledAt).getTime()+Math.max(1,item.durationMinutes)*60000):null;
-      if(!end||item.durationMinutes<=24*60)continue;
-      if(!isVisibleCompletedMultiDayForDate(item,end))continue;
-      for(const date of activityDayDates(item)){
-        const key=dayKey(date);
+        const key=item.allDay?`${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`:dayKey(date);
         const list=map.get(key)??[];list.push(item);map.set(key,list);
       }
     }
     return map;
-  },[commitments]);
+  },[commitments,showCompletedCalendarEvents]);
 
   const sortedByDay=useMemo(()=>{
     const result=new Map<string,Commitment[]>();
@@ -126,7 +121,6 @@ export default function Calendar(){
                   {<>
                   {formatItemTime(item,language) ? <Text style={styles.itemTime}>{formatItemTime(item,language)}</Text> : null}
                   {item.kind==='task'&&!item.allDay?<Text style={styles.itemDuration}>{t('Durata')}: {formatDurationLabel(item)}</Text>:null}
-                  {isOverdueTask(item) ? <Text style={styles.overdueTag}>{t('Scaduta')}</Text> : null}
                   <View style={styles.itemTitleRow}>{item.kind==='task'&&item.priority ? <Text style={styles.itemPriority}>{item.priority}</Text> : null}<Ionicons name={item.kind==='event'?'calendar-outline':'checkbox-outline'} size={8} color={palette.primary}/><Text style={styles.itemTitle}>{item.title}</Text></View>
                   {item.location?<View style={styles.itemTitleRow}><Ionicons name="location-outline" size={8} color={palette.muted}/><Text style={styles.itemMeta}>{item.location}</Text></View>:null}
                   </>}

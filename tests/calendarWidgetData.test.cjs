@@ -1,6 +1,26 @@
 const test=require('node:test');const assert=require('node:assert/strict');const {buildCalendarWidgetData}=require('../.test-dist-widget/lib/calendarWidgetData.js');
 const {isVisibleInToday,isCompletedOnDate,isCompletedForDate}=require('../.test-dist-widget/lib/commitmentVisibility.js');const {buildActivitySourceColors,activitySourceColor}=require('../.test-dist-widget/lib/activityColors.js');
-test('calendar widget data keeps active items on the correct day',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Test',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T15:00:00'}],new Date('2026-09-30T23:59:59'),now);const day=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21');assert.equal(day.items.length,1);assert.equal(day.items[0].title,'Test');});
+
+test('calendar widget shows completed past events by default, hides them when disabled, and never shows tasks',()=>{
+  const now=new Date('2026-11-23T10:00:00');
+  const items=[
+    {id:'past-done',title:'Past birthday',kind:'event',status:'done',scheduledAt:'2024-05-12T09:00:00',completedAt:'2024-05-12T10:00:00',durationMinutes:60,energy:'medium',context:'test',confidence:1},
+    {id:'open-event',title:'Upcoming holiday',kind:'event',status:'scheduled',scheduledAt:'2026-12-25T00:00:00',durationMinutes:1440,energy:'medium',context:'test',confidence:1},
+    {id:'open-task',title:'Open task',kind:'task',status:'active',dueAt:'2026-12-25T10:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1},
+    {id:'done-task',title:'Done task',kind:'task',status:'done',dueAt:'2024-05-12T09:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1}
+  ];
+  const visible=buildCalendarWidgetData(items,new Date('2027-12-31T23:59:59'),now);
+  const days=visible.weeks.flatMap(week=>week.days);
+  assert.equal(days.find(day=>day.dateKey==='2024-05-12').items.some(item=>item.id==='past-done'),true);
+  assert.equal(days.find(day=>day.dateKey==='2026-12-25').items.some(item=>item.id==='open-event'),true);
+  assert.equal(days.some(day=>day.items.some(item=>item.id==='open-task'||item.id==='done-task')),false);
+  const hidden=buildCalendarWidgetData(items,new Date('2027-12-31T23:59:59'),now,undefined,'it',false);
+  const hiddenItems=hidden.weeks.flatMap(week=>week.days).flatMap(day=>day.items);
+  assert.equal(hiddenItems.some(item=>item.id==='past-done'),false);
+  assert.equal(hiddenItems.some(item=>item.id==='open-event'),true);
+});
+
+test('calendar widget data keeps active items on the correct day',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Test',kind:'event',status:'scheduled',durationMinutes:30,energy:'medium',context:'test',confidence:1,scheduledAt:'2026-09-21T15:00:00'}],new Date('2026-09-30T23:59:59'),now);const day=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21');assert.equal(day.items.length,1);assert.equal(day.items[0].title,'Test');});
 test('calendar widget data excludes completed and deleted items',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Done',kind:'task',status:'done',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T15:00:00'},{id:'2',title:'Deleted',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T16:00:00',deletedAt:'2026-09-19T00:00:00'}],new Date('2026-09-30T23:59:59'),now);assert.equal(data.weeks.flatMap(w=>w.days).reduce((n,d)=>n+d.items.length,0),0);});
 test('the week that starts in September and contains October 1 is titled October',()=>{
   const now=new Date('2026-09-28T10:00:00');
@@ -13,16 +33,16 @@ test('every rendered calendar week has seven complete day slots',()=>{
   const data=buildCalendarWidgetData([],new Date('2026-12-31T23:59:59'),new Date('2026-09-28T10:00:00'));
   for(const week of data.weeks){assert.equal(week.days.length,7);}
 });
-test('calendar widget uses the same activity colors as the Today widget',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'event',title:'Event',kind:'event',status:'active',scheduledAt:'2026-09-21T15:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1,googleCalendarId:'calendar-a'},{id:'task',title:'Task',kind:'task',status:'active',dueAt:'2026-09-21T16:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1,googleTaskListId:'tasks-a'}],new Date('2026-09-30T23:59:59'),now);const items=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21').items;const colors=buildActivitySourceColors([{id:'event',title:'Event',kind:'event',status:'active',scheduledAt:'2026-09-21T15:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1,googleCalendarId:'calendar-a'},{id:'task',title:'Task',kind:'task',status:'active',dueAt:'2026-09-21T16:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1,googleTaskListId:'tasks-a'}]);assert.equal(items.find(item=>item.id==='event').sourceColor,colors.get('calendar:calendar-a'));assert.equal(items.find(item=>item.id==='task').sourceColor,colors.get('task:tasks-a'));});
+test('calendar widget uses the same activity colors as the Today widget',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'event',title:'Event',kind:'event',status:'active',scheduledAt:'2026-09-21T15:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1,googleCalendarId:'calendar-a'},{id:'task',title:'Task',kind:'task',status:'active',dueAt:'2026-09-21T16:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1,googleTaskListId:'tasks-a'}],new Date('2026-09-30T23:59:59'),now);const items=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21').items;const colors=buildActivitySourceColors([{id:'event',title:'Event',kind:'event',status:'active',scheduledAt:'2026-09-21T15:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1,googleCalendarId:'calendar-a'},{id:'task',title:'Task',kind:'task',status:'active',dueAt:'2026-09-21T16:00:00',durationMinutes:30,energy:'medium',context:'test',confidence:1,googleTaskListId:'tasks-a'}]);assert.equal(items.find(item=>item.id==='event').sourceColor,colors.get('calendar:calendar-a'));assert.equal(items.some(item=>item.id==='task'),false);});
 
-test('Calendar and Today use the same source color for the same activity source',()=>{const commitments=[{id:'event',title:'Event',kind:'event',status:'active',scheduledAt:'2026-09-21T15:00:00',durationMinutes:30,googleCalendarId:'calendar-a'},{id:'task',title:'Task',kind:'task',status:'active',dueAt:'2026-09-21T16:00:00',durationMinutes:30,googleTaskListId:'tasks-a'}];const data=buildCalendarWidgetData(commitments,new Date('2026-09-30T23:59:59'),new Date('2026-09-19T10:00:00'));const day=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21');const colors=buildActivitySourceColors(commitments);assert.equal(day.items.find(item=>item.id==='event').sourceColor,activitySourceColor(commitments[0],colors));assert.equal(day.items.find(item=>item.id==='task').sourceColor,activitySourceColor(commitments[1],colors));});
+test('Calendar and Today use the same source color for the same activity source',()=>{const commitments=[{id:'event',title:'Event',kind:'event',status:'active',scheduledAt:'2026-09-21T15:00:00',durationMinutes:30,googleCalendarId:'calendar-a'},{id:'task',title:'Task',kind:'task',status:'active',dueAt:'2026-09-21T16:00:00',durationMinutes:30,googleTaskListId:'tasks-a'}];const data=buildCalendarWidgetData(commitments,new Date('2026-09-30T23:59:59'),new Date('2026-09-19T10:00:00'));const day=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21');const colors=buildActivitySourceColors(commitments);assert.equal(day.items.find(item=>item.id==='event').sourceColor,activitySourceColor(commitments[0],colors));assert.equal(day.items.some(item=>item.id==='task'),false);});
 
-test('completed multi-day events remain visible across every duration day when completed before the final day',()=>{const start='2026-09-20T10:00:00';const early={id:'early',title:'Early done',kind:'event',status:'done',scheduledAt:start,durationMinutes:72*60,completedAt:'2026-09-21T12:00:00',energy:'medium',context:'test',confidence:1};const late={...early,id:'late',title:'Late done',completedAt:'2026-09-23T09:00:00'};const finalDay=new Date('2026-09-23T10:00:00');const beforeFinal=new Date('2026-09-22T10:00:00');const finalData=buildCalendarWidgetData([early,late],new Date('2026-09-30T23:59:59'),finalDay);const finalItems=finalData.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-23').items;assert.equal(finalItems.some(item=>item.id==='early'),true);assert.equal(finalItems.some(item=>item.id==='late'),false);const beforeData=buildCalendarWidgetData([early],new Date('2026-09-30T23:59:59'),beforeFinal);const beforeDays=beforeData.weeks.flatMap(w=>w.days);for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(beforeDays.find(d=>d.dateKey===date).items.some(item=>item.id==='early'),true,date);assert.equal(beforeDays.find(d=>d.dateKey==='2026-09-24').items.some(item=>item.id==='early'),false);});
+test('completed multi-day events remain visible across every duration day when completed before the final day',()=>{const start='2026-09-20T10:00:00';const early={id:'early',title:'Early done',kind:'event',status:'done',scheduledAt:start,durationMinutes:72*60,completedAt:'2026-09-21T12:00:00',energy:'medium',context:'test',confidence:1};const late={...early,id:'late',title:'Late done',completedAt:'2026-09-23T09:00:00'};const finalDay=new Date('2026-09-23T10:00:00');const beforeFinal=new Date('2026-09-22T10:00:00');const finalData=buildCalendarWidgetData([early,late],new Date('2026-09-30T23:59:59'),finalDay);const finalItems=finalData.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-23').items;assert.equal(finalItems.some(item=>item.id==='early'),true);assert.equal(finalItems.some(item=>item.id==='late'),true);const beforeData=buildCalendarWidgetData([early],new Date('2026-09-30T23:59:59'),beforeFinal);const beforeDays=beforeData.weeks.flatMap(w=>w.days);for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(beforeDays.find(d=>d.dateKey===date).items.some(item=>item.id==='early'),true,date);assert.equal(beforeDays.find(d=>d.dateKey==='2026-09-24').items.some(item=>item.id==='early'),false);});
 
 test('calendar widget timeline includes dated activities before the current year and beyond the sync horizon',()=>{
   const now=new Date('2026-10-20T10:00:00');
   const data=buildCalendarWidgetData([
-    {id:'past',title:'Old activity',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2023-02-10T10:00:00'},
+    {id:'past',title:'Old activity',kind:'event',status:'scheduled',durationMinutes:30,energy:'medium',context:'test',confidence:1,scheduledAt:'2023-02-10T10:00:00'},
     {id:'future',title:'Far future',kind:'event',status:'scheduled',durationMinutes:60,energy:'medium',context:'test',confidence:1,scheduledAt:'2032-07-14T10:00:00'}
   ],new Date('2027-12-31T23:59:59'),now);
   const days=data.weeks.flatMap(week=>week.days);
@@ -45,7 +65,7 @@ const { buildCalendarTimeline } = require('../.test-dist-widget/lib/calendarTime
 test('shared calendar timeline includes local activities before current year and beyond Google sync range',()=>{
   const now=new Date('2026-10-20T10:00:00');
   const items=[
-    {id:'past',title:'Past',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2023-02-10T10:00:00'},
+    {id:'past',title:'Past',kind:'event',status:'scheduled',durationMinutes:30,energy:'medium',context:'test',confidence:1,scheduledAt:'2023-02-10T10:00:00'},
     {id:'future',title:'Future',kind:'event',status:'scheduled',durationMinutes:60,energy:'medium',context:'test',confidence:1,scheduledAt:'2032-07-14T10:00:00'},
     {id:'deleted',title:'Deleted',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2020-01-01T10:00:00',deletedAt:'2025-01-01T00:00:00'}
   ];
@@ -65,13 +85,13 @@ test('shared calendar timeline always includes the current week if sync range en
 test('calendar widget renders every active occurrence in a recurring series on its own date',()=>{
   const now=new Date('2026-10-30T08:00:00');
   const series=[
-    {id:'root',title:'Recurring task',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-10-30T09:00:00',recurrenceRule:{frequency:'daily',interval:1,until:'2026-11-01T23:59:59.999Z'}},
-    {id:'next-1',title:'Recurring task',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-10-31T09:00:00',recurrenceSeriesId:'root'},
-    {id:'next-2',title:'Recurring task',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-11-01T09:00:00',recurrenceSeriesId:'root'}
+    {id:'root',title:'Recurring event',kind:'event',status:'scheduled',durationMinutes:30,energy:'medium',context:'test',confidence:1,scheduledAt:'2026-10-30T09:00:00',recurrenceRule:{frequency:'daily',interval:1,until:'2026-11-01T23:59:59.999Z'}},
+    {id:'next-1',title:'Recurring event',kind:'event',status:'scheduled',durationMinutes:30,energy:'medium',context:'test',confidence:1,scheduledAt:'2026-10-31T09:00:00',recurrenceSeriesId:'root'},
+    {id:'next-2',title:'Recurring event',kind:'event',status:'scheduled',durationMinutes:30,energy:'medium',context:'test',confidence:1,scheduledAt:'2026-11-01T09:00:00',recurrenceSeriesId:'root'}
   ];
   const data=buildCalendarWidgetData(series,new Date('2026-11-05T23:59:59'),now);
   const days=data.weeks.flatMap(week=>week.days);
-  for(const date of ['2026-10-30','2026-10-31','2026-11-01'])assert.equal(days.find(day=>day.dateKey===date).items.filter(item=>item.title==='Recurring task').length,1);
+  for(const date of ['2026-10-30','2026-10-31','2026-11-01'])assert.equal(days.find(day=>day.dateKey===date).items.filter(item=>item.title==='Recurring event').length,1);
 });
 
 test('multi-day events appear on every calendar day intersected by their duration',()=>{
@@ -91,23 +111,21 @@ test('completed multi-day events remain visible across all planned days when com
   for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(days.find(day=>day.dateKey===date).items.some(item=>item.id==='done-multi'),true,date);
 });
 
-test('multi-day tasks appear on every calendar day covered by their duration',()=>{
+test('Google Tasks are excluded from every calendar day regardless of duration',()=>{
   const now=new Date('2026-09-19T10:00:00');
   const task={id:'multi-task',title:'Multi-day task',kind:'task',status:'active',dueAt:'2026-09-20T10:00:00',durationMinutes:72*60,energy:'medium',context:'test',confidence:1};
   const data=buildCalendarWidgetData([task],new Date('2026-09-30T23:59:59'),now);
   const days=data.weeks.flatMap(week=>week.days);
-  for(const date of ['2026-09-20','2026-09-21','2026-09-22','2026-09-23'])assert.equal(days.find(day=>day.dateKey===date).items.some(item=>item.id==='multi-task'),true,date);
-  assert.equal(days.find(day=>day.dateKey==='2026-09-24').items.some(item=>item.id==='multi-task'),false);
+  assert.equal(days.some(day=>day.items.some(item=>item.id==='multi-task')),false);
 });
 
 
-test('Calendar widget shows the end time and explicit duration for timed tasks',()=>{
+test('Calendar widget never renders timed Google Tasks',()=>{
   const now=new Date('2026-09-19T08:00:00');
   const task={id:'timed-task',title:'Timed task',kind:'task',status:'active',allDay:false,dueAt:'2026-09-21T10:00:00',durationMinutes:90,energy:'medium',context:'test',confidence:1};
   const data=buildCalendarWidgetData([task],new Date('2026-09-30T23:59:59'),now);
-  const item=data.weeks.flatMap(week=>week.days).find(day=>day.dateKey==='2026-09-21').items.find(entry=>entry.id==='timed-task');
-  assert.equal(item.time,'10:00 - 11:30');
-  assert.equal(item.duration,'Durata: 1 h 30 min');
+  const items=data.weeks.flatMap(week=>week.days).flatMap(day=>day.items);
+  assert.equal(items.some(item=>item.id==='timed-task'),false);
 });
 
 

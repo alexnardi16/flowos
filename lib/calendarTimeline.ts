@@ -19,7 +19,7 @@ export function buildCalendarTimeline(commitments: Commitment[], syncEndDate: Da
   // Calculate the bounds in one pass. Avoid allocating an intermediate array
   // and spreading potentially thousands of timestamps into Math.min/Math.max.
   for (const item of commitments) {
-    if (item.deletedAt) continue;
+    if (item.deletedAt || item.kind !== 'event') continue;
     const start = validTimestamp(item.scheduledAt ?? item.dueAt);
     if (start === undefined) continue;
     if (start < earliestTimestamp) earliestTimestamp = start;

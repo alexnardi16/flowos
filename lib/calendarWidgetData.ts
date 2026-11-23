@@ -4,7 +4,7 @@ import { sortCommitments } from './activityOrdering';
 import { activitySourceColor, buildActivitySourceColors } from './activityColors';
 import type { Language } from './i18n';
 import { localeForLanguage, widgetStrings } from './i18n';
-import { isVisibleCompletedMultiDayForDate, activityDayDates, isMultiDayActivity } from './commitmentVisibility';
+import { activityDayDates, isMultiDayActivity } from './commitmentVisibility';
 import { buildCalendarTimeline } from './calendarTimeline';
 import { formatDurationLabel } from './itemTiming';
 
@@ -28,7 +28,7 @@ function formatItemTime(item:Commitment,language:Language='it'){
   const end=new Date(start.getTime()+item.durationMinutes*60000);
   return `${startText} - ${end.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'})}`;
 }
-export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Date,now:Date=new Date(),calendarNames?:Map<string,string>,language:Language='it'):CalendarWidgetData{
+export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Date,now:Date=new Date(),calendarNames?:Map<string,string>,language:Language='it',showCompletedEvents=true):CalendarWidgetData{
   const strings=widgetStrings(language);
   const sourceColors=buildActivitySourceColors(commitments);
   const byDate=new Map<string,Commitment[]>();
@@ -41,28 +41,22 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
   // Keep the same full navigable range as the in-app Calendar.
   const timelineWeeks=buildCalendarTimeline(commitments,syncEndDate,now).weeks;
 
-  // A single source pass avoids filtering the full commitments array twice.
+  // Calendar is an events-only view. Tasks never appear here.
+  // Completed events remain on their original scheduled dates when enabled.
   for(const item of commitments){
-    if(item.deletedAt)continue;
-    if(item.status!=='done'){
-      const value=item.scheduledAt??item.dueAt;
-      if(!value)continue;
-      const start=new Date(value);
-      const dates=isMultiDayActivity(item)?activityDayDates(item):[start];
-      for(const date of dates){
-        const key=item.allDay
-          ? `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`
-          : dateKey(date);
-        append(key,item);
-      }
-      continue;
+    if(item.deletedAt||item.kind!=='event')continue;
+    if(item.status==='done'&&!showCompletedEvents)continue;
+    const value=item.scheduledAt;
+    if(!value)continue;
+    const start=new Date(value);
+    if(!Number.isFinite(start.getTime()))continue;
+    const dates=isMultiDayActivity(item)?activityDayDates(item):[start];
+    for(const date of dates){
+      const key=item.allDay
+        ? `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`
+        : dateKey(date);
+      append(key,item);
     }
-
-    const end=item.scheduledAt&&item.durationMinutes
-      ? new Date(new Date(item.scheduledAt).getTime()+Math.max(1,item.durationMinutes)*60000)
-      : null;
-    if(!end||item.durationMinutes<=24*60||!isVisibleCompletedMultiDayForDate(item,end))continue;
-    for(const date of activityDayDates(item))append(dateKey(date),item);
   }
 
   for(const [key,list] of byDate){const ordered=sortCommitments(list,calendarNames);ordered.sort((a,b)=>Number(b.kind==='event'&&isMultiDayActivity(b))-Number(a.kind==='event'&&isMultiDayActivity(a)));byDate.set(key,ordered);}
