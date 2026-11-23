@@ -40,7 +40,6 @@ export default function Plan(){
   const[now,setNow]=useState(()=>Date.now());
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const scrollRef=useRef<SectionList<Commitment,{key:string;label:string}>|null>(null);
-  const didInitialScroll=useRef(false);
   const hasPlanFocused=useRef(false);
   const pendingTodayScroll=useRef(false);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
@@ -132,13 +131,11 @@ export default function Plan(){
     requestAnimationFrame(()=>{
       scrollRef.current?.scrollToLocation({sectionIndex,itemIndex:0,viewPosition:0,animated:false});
       pendingTodayScroll.current=false;
-      didInitialScroll.current=true;
     });
   },[groupedItems,todayGroupKey]);
   useFocusEffect(useCallback(()=>{
     if(!hasPlanFocused.current){
       hasPlanFocused.current=true;
-      didInitialScroll.current=false;
       pendingTodayScroll.current=true;
       if(query.trim())setQuery('');
       if(filters.period!=='all')setFilters(current=>({...current,period:'all'}));
@@ -179,7 +176,6 @@ export default function Plan(){
           </Card>
         </Pressable>;
       }}
-      onScrollToIndexFailed={({averageItemLength,index})=>scrollRef.current?.scrollToOffset({offset:averageItemLength*index,animated:false})}
       initialNumToRender={12}
       maxToRenderPerBatch={12}
       windowSize={7}
