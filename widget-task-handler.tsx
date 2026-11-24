@@ -215,7 +215,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       try { const status=await import('./lib/googleWorkspace').then(m=>m.getGoogleWorkspaceStatus()); if(status.range?.endDate)syncEnd=new Date(`${status.range.endDate}T23:59:59`); } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
       let calendarNames:Map<string,string>|undefined;
       try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,friendlyCalendarName(calendar.summary,status.connection?.google_email,language)])); } catch {}
-      data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames,language);
+      data=buildCalendarWidgetData(readCommitments(raw),syncEnd,new Date(),calendarNames,language,appearance.showCompletedCalendarEvents,appearance.showCompletedCalendarTasks);
       await saveCalendarCache(data,language);
     }
     const widgetCommitments=readCommitments(raw) as Commitment[];
@@ -259,7 +259,7 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
         } catch(error) { recordDiagnostic('widget-calendar-range-load-failed',error,'warn'); }
         let calendarNames:Map<string,string>|undefined;
         try { const status=await getGoogleWorkspaceStatus(); calendarNames=new Map(status.calendars.map(calendar=>[calendar.google_calendar_id,calendar.summary])); } catch {}
-        const refreshedRaw=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames,language);
+        const refreshedRaw=buildCalendarWidgetData(remote,syncEnd,new Date(),calendarNames,language,appearance.showCompletedCalendarEvents,appearance.showCompletedCalendarTasks);
         const refreshedSourceColors=buildActivitySourceColors(remote);
         const refreshed={weeks:refreshedRaw.weeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{const source=remote.find(candidate=>candidate.id===item.id);return source?{...item,sourceColor:sourceAppearanceColor(activitySourceKey(source),activitySourceColor(source,refreshedSourceColors),appearance)}:item;})}))}))};
         await saveCalendarCache(refreshed,language);
