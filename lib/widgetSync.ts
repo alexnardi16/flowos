@@ -91,7 +91,7 @@ async function performWidgetSync(commitments: Commitment[], now: Date = new Date
         appearance
       });
       if(calendarInputSignature!==lastCalendarInputSignature||!cachedCalendarWeeks||!cachedCalendarPayload){
-        const {weeks:rawWeeks}=buildCalendarWidgetData(commitments,syncEndDate,now,calendarNames,language,appearance.showCompletedCalendarEvents);
+        const {weeks:rawWeeks}=buildCalendarWidgetData(commitments,syncEndDate,now,calendarNames,language,appearance.showCompletedCalendarEvents,appearance.showCompletedCalendarTasks);
         cachedCalendarWeeks=rawWeeks.map(week=>({...week,days:week.days.map(day=>({...day,items:day.items.map(item=>{
           const source=commitmentById.get(item.id);
           return {...item,sourceColor:source?sourceAppearanceColor(activitySourceKey(source),String(item.sourceColor),appearance):item.sourceColor};
