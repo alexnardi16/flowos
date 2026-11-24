@@ -84,6 +84,31 @@ Object.assign(translations.en,{'La densità modifica sia la dimensione dei testi
 Object.assign(translations.fr,{'La densità modifica sia la dimensione dei testi sia la quantità di dettagli e lo spazio occupato dalle attività nei widget. Dettagliata mostra più informazioni e riquadri più alti; Compatta riduce testi e spazi per mostrare più attività.':'La densité modifie à la fois la taille du texte, le niveau de détail et l’espace occupé par les activités dans les widgets. Détaillée affiche davantage d’informations et des cartes plus hautes ; Compacte réduit le texte et les espaces pour afficher davantage d’activités.'});
 Object.assign(translations.es,{'La densità modifica sia la dimensione dei testi sia la quantità di dettagli e lo spazio occupato dalle attività nei widget. Dettagliata mostra più informazioni e riquadri più alti; Compatta riduce testi e spazi per mostrare più attività.':'La densidad modifica tanto el tamaño del texto como el nivel de detalle y el espacio que ocupan las actividades en los widgets. Detallada muestra más información y tarjetas más altas; Compacta reduce el texto y los espacios para mostrar más actividades.'});
 
+Object.assign(translations.it,{
+  'Scegli se mostrare le tasks e gli eventi già completati nel Calendario e nel widget Calendario.':'Scegli se mostrare le tasks e gli eventi già completati nel Calendario e nel widget Calendario.',
+  'Mostra anche le tasks completate':'Mostra anche le tasks completate',
+  'Disattivato per impostazione predefinita. Attivalo per mostrare anche le tasks completate.':'Disattivato per impostazione predefinita. Attivalo per mostrare anche le tasks completate.',
+  'Attivo per impostazione predefinita. Disattivalo per nascondere gli eventi completati.':'Attivo per impostazione predefinita. Disattivalo per nascondere gli eventi completati.'
+});
+Object.assign(translations.en,{
+  'Scegli se mostrare le tasks e gli eventi già completati nel Calendario e nel widget Calendario.':'Choose whether to show completed tasks and events in Calendar and the Calendar widget.',
+  'Mostra anche le tasks completate':'Also show completed tasks',
+  'Disattivato per impostazione predefinita. Attivalo per mostrare anche le tasks completate.':'Disabled by default. Turn it on to also show completed tasks.',
+  'Attivo per impostazione predefinita. Disattivalo per nascondere gli eventi completati.':'Enabled by default. Turn it off to hide completed events.'
+});
+Object.assign(translations.fr,{
+  'Scegli se mostrare le tasks e gli eventi già completati nel Calendario e nel widget Calendario.':'Choisissez d’afficher ou non les tâches et les événements terminés dans le calendrier et son widget.',
+  'Mostra anche le tasks completate':'Afficher également les tâches terminées',
+  'Disattivato per impostazione predefinita. Attivalo per mostrare anche le tasks completate.':'Désactivé par défaut. Activez cette option pour afficher également les tâches terminées.',
+  'Attivo per impostazione predefinita. Disattivalo per nascondere gli eventi completati.':'Activé par défaut. Désactivez cette option pour masquer les événements terminés.'
+});
+Object.assign(translations.es,{
+  'Scegli se mostrare le tasks e gli eventi già completati nel Calendario e nel widget Calendario.':'Elige si quieres mostrar las tareas y los eventos completados en el Calendario y en su widget.',
+  'Mostra anche le tasks completate':'Mostrar también las tareas completadas',
+  'Disattivato per impostazione predefinita. Attivalo per mostrare anche le tasks completate.':'Desactivado de forma predeterminada. Actívalo para mostrar también las tareas completadas.',
+  'Attivo per impostazione predefinita. Disattivalo per nascondere gli eventi completati.':'Activado de forma predeterminada. Desactívalo para ocultar los eventos completados.'
+});
+
 export function t(key:string,params?:Record<string,string|number>,language:Language=currentLanguage){return interpolate(translations[language][key]??key,params);}
 export function getCurrentLanguage():Language{return currentLanguage;}
 export function localeForLanguage(language:Language=currentLanguage){return language==='it'?'it-IT':language==='fr'?'fr-FR':language==='es'?'es-ES':'en-US';}
