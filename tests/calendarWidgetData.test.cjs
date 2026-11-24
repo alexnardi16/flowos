@@ -166,7 +166,8 @@ test('List completion status is evaluated independently for each day of a multi-
   assert.equal(isCompletedForDate(item,new Date(2026,10,20,12,0)),false,'later dates must remain open in List');
 });
 
-\ntest('default calendar widget page contains the current week and the following seven weeks even with a short sync range',()=>{
+
+test('default calendar widget page contains the current week and the following seven weeks even with a short sync range',()=>{
   const now=new Date('2026-11-23T10:00:00');
   const data=buildCalendarWidgetData([],now,now);
   const page=getCalendarWidgetPage(data.weeks,undefined,now);
