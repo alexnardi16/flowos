@@ -164,7 +164,10 @@ test('Calendar visibility settings independently control completed tasks and eve
   const widget=read('lib/calendarWidgetData.ts');
   const timeline=read('lib/calendarTimeline.ts');
   const list=read('app/(tabs)/plan.tsx');
-  assert.match(settings,/Le attività \(task\) sono sempre visibili/);
+  assert.match(settings,/Mostra anche le tasks completate/);
+  assert.match(settings,/showCompletedCalendarTasks/);
+  assert.match(settings,/Scegli se mostrare le tasks e gli eventi già completati/);
+  assert.doesNotMatch(settings,/Le attività \\(task\\)/);
   assert.match(calendar,/item.kind==='event'&&item.status==='done'&&!showCompletedCalendarEvents/);
   assert.match(widget,/item.kind==='event'&&item.status==='done'&&!showCompletedEvents/);
   assert.match(calendar,/item.kind==='task'&&item.status==='done'&&!showCompletedCalendarTasks/);
