@@ -815,6 +815,7 @@ test('List opens directly on Today and only adds older date groups when the user
   assert.match(source,/t\('Carica le date precedenti'\)/);
   assert.match(source,/const needsListRebuild=Boolean\(query\.trim\(\)\)\|\|filters\.period!=='all'\|\|visiblePastGroupsCount>0/);
   assert.match(source,/if\(visiblePastGroupsCount>0\)setVisiblePastGroupsCount\(0\)/);
+  assert.match(source,/userHasScrolledList\.current=false;\n    pendingTodayScroll\.current=true/);
 });
 
 test('Calendar widget gives persistent visual confirmation to the last pressed previous/next weeks button',()=>{

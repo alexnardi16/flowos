@@ -133,6 +133,7 @@ export default function Plan(){
   ]),[visibleGroups]);
   const loadPreviousGroups=useCallback(()=>{
     if(visiblePastGroupsCount>=pastGroups.length)return;
+    userHasScrolledList.current=false;
     pendingHistoryScroll.current=true;
     setVisiblePastGroupsCount(count=>Math.min(pastGroups.length,count+20));
   },[visiblePastGroupsCount,pastGroups.length]);
@@ -147,6 +148,7 @@ export default function Plan(){
   },[listRows,visiblePastGroups]);
   const todayGroupKey=todayKey;
   const scrollToToday=useCallback(()=>{
+    userHasScrolledList.current=false;
     pendingTodayScroll.current=true;
     const needsListRebuild=Boolean(query.trim())||filters.period!=='all'||visiblePastGroupsCount>0;
     if(query.trim())setQuery('');
