@@ -1,5 +1,6 @@
 name: Production Android AAB
 # A push to this workflow file also starts a fresh production AAB build.
+# Fresh production rebuild requested on 2026-11-24.
 
 on:
   push:
@@ -66,7 +67,7 @@ jobs:
 
           VERSION_STATE_FILE=".github/production-version-code"
           if [ ! -s "$VERSION_STATE_FILE" ]; then
-            printf '81\n' > "$VERSION_STATE_FILE"
+            printf '81\\n' > "$VERSION_STATE_FILE"
           fi
 
           LAST_VERSION_CODE="$(tr -d '[:space:]' < "$VERSION_STATE_FILE")"
@@ -191,6 +192,7 @@ jobs:
           chmod 600 android/flowos-production.keystore
 
       - name: Inject production signing configuration
+        shell: bash
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -321,7 +323,7 @@ jobs:
           git fetch origin main
           git checkout -B main origin/main
 
-          printf '%s\n' "${{ steps.release.outputs.version_code }}" > .github/production-version-code
+          printf '%s\\n' "${{ steps.release.outputs.version_code }}" > .github/production-version-code
 
           git add .github/production-version-code
           if git diff --cached --quiet; then
