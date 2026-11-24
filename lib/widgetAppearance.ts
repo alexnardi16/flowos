@@ -13,6 +13,7 @@ export type WidgetAppearance = {
   density: WidgetDensity;
   todayTransparentUnusedSpace: boolean;
   showCompletedCalendarEvents: boolean;
+  showCompletedCalendarTasks: boolean;
   today: { backgroundColor: string; backgroundOpacity: number; textColor: string; textOpacity: number; buttonBackgroundColor: string; buttonBackgroundOpacity: number; buttonTextColor: string; buttonTextOpacity: number };
   calendar: { backgroundColor: string; backgroundOpacity: number; textColor: string; textOpacity: number; buttonBackgroundColor: string; buttonBackgroundOpacity: number; buttonTextColor: string; buttonTextOpacity: number };
   sources: Record<string, SourceAppearance>;
@@ -25,6 +26,7 @@ export const DEFAULT_WIDGET_APPEARANCE: WidgetAppearance = {
   density: 'balanced',
   todayTransparentUnusedSpace: true,
   showCompletedCalendarEvents: true,
+  showCompletedCalendarTasks: false,
   today: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#6658D3', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
   calendar: { backgroundColor: '#F1F4FF', backgroundOpacity: 100, textColor: '#172033', textOpacity: 100, buttonBackgroundColor: '#6658D3', buttonBackgroundOpacity: 100, buttonTextColor: '#FFFFFF', buttonTextOpacity: 100 },
   sources: {},
@@ -52,6 +54,7 @@ export async function getWidgetAppearance(): Promise<WidgetAppearance> {
       density: ['comfortable','balanced','compact'].includes(String(parsed.density)) ? parsed.density as WidgetDensity : DEFAULT_WIDGET_APPEARANCE.density,
       todayTransparentUnusedSpace: parsed.todayTransparentUnusedSpace !== false,
       showCompletedCalendarEvents: parsed.showCompletedCalendarEvents !== false,
+      showCompletedCalendarTasks: parsed.showCompletedCalendarTasks === true,
       today: { ...DEFAULT_WIDGET_APPEARANCE.today, ...(parsed.today ?? {}) },
       calendar: { ...DEFAULT_WIDGET_APPEARANCE.calendar, ...(parsed.calendar ?? {}) },
       sources: parsed.sources && typeof parsed.sources === 'object' ? parsed.sources : {},
