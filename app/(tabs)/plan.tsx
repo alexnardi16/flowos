@@ -45,6 +45,7 @@ export default function Plan(){
   const hasPlanFocused=useRef(false);
   const pendingTodayScroll=useRef(false);
   const userHasScrolledList=useRef(false);
+  const pendingHistoryScroll=useRef(false);
   const [visiblePastGroupsCount,setVisiblePastGroupsCount]=useState(0);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
   const nowDate=useMemo(()=>new Date(now),[now]);
@@ -120,16 +121,30 @@ export default function Plan(){
     return [...(todayGroup?[todayGroup]:[]),...futureGroups];
   },[groupedItems,todayKey]);
   const pastGroups=useMemo(()=>groupedItems.filter(group=>group.key<todayKey),[groupedItems,todayKey]);
-  const visiblePastGroups=visiblePastGroupsCount===0?[]:filters.order==='asc'
+  const visiblePastGroups=useMemo(()=>visiblePastGroupsCount===0?[]:filters.order==='asc'
     ? pastGroups.slice(-visiblePastGroupsCount)
-    : pastGroups.slice(0,visiblePastGroupsCount);
-  const visibleGroups=filters.order==='asc'
+    : pastGroups.slice(0,visiblePastGroupsCount),[pastGroups,visiblePastGroupsCount,filters.order]);
+  const visibleGroups=useMemo(()=>filters.order==='asc'
     ? [...visiblePastGroups,...todayAndFutureGroups]
-    : [...todayAndFutureGroups,...visiblePastGroups];
+    : [...todayAndFutureGroups,...visiblePastGroups],[visiblePastGroups,todayAndFutureGroups,filters.order]);
   const listRows=useMemo<ListRow[]>(()=>visibleGroups.flatMap(group=>[
     {type:'header' as const,key:`header:${group.key}`,sectionKey:group.key,label:group.label},
     ...group.items.map(item=>({type:'item' as const,key:`item:${group.key}:${item.id}`,sectionKey:group.key,item}))
   ]),[visibleGroups]);
+  const loadPreviousGroups=useCallback(()=>{
+    if(visiblePastGroupsCount>=pastGroups.length)return;
+    pendingHistoryScroll.current=true;
+    setVisiblePastGroupsCount(count=>Math.min(pastGroups.length,count+20));
+  },[visiblePastGroupsCount,pastGroups.length]);
+  useEffect(()=>{
+    if(!pendingHistoryScroll.current)return;
+    const firstPastKey=visiblePastGroups[0]?.key;
+    const targetIndex=firstPastKey?listRows.findIndex(row=>row.type==='header'&&row.sectionKey===firstPastKey):0;
+    requestAnimationFrame(()=>{
+      if(targetIndex>=0)scrollRef.current?.scrollToIndex({index:targetIndex,viewPosition:0,animated:false});
+      pendingHistoryScroll.current=false;
+    });
+  },[listRows,visiblePastGroups]);
   const todayGroupKey=todayKey;
   const scrollToToday=useCallback(()=>{
     pendingTodayScroll.current=true;
@@ -196,6 +211,7 @@ export default function Plan(){
       onEndReachedThreshold={0.25}
       ListHeaderComponent={<View><ProgressiveHint id="list-filters">{t('Suggerimento Lista: usa la ricerca e i filtri per trovare rapidamente attività e calendari di provenienza.')}</ProgressiveHint><SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/></View>}
       ListEmptyComponent={<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento.':'Aggiungi un nuovo elemento per iniziare.')}/>}
+      ListFooterComponent={visiblePastGroupsCount<pastGroups.length?<Pressable accessibilityRole="button" onPress={loadPreviousGroups} style={styles.loadPreviousButton}><Text style={styles.loadPreviousButtonText}>{t('Carica le date precedenti')}</Text></Pressable>:null}
       renderItem={({item:row})=>{
         if(row.type==='header')return <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><View style={styles.dayDividerText}>{row.sectionKey===todayKey?<Text style={styles.todayGroupBadge}>{t('Oggi')}</Text>:null}<Text style={styles.groupWeekday}>{row.label}</Text></View><View style={styles.dayDividerLine}/></View>;
         const item=row.item;
@@ -262,5 +278,7 @@ dayGroup:{gap:4},dayDivider:{flexDirection:'row',alignItems:'center',gap:8,paddi
   date:{fontSize:13,lineHeight:17,fontWeight:'700',color:palette.primary},duration:{fontSize:12,lineHeight:15,fontWeight:'700',color:palette.muted},
   meta:{fontSize:12,lineHeight:16,color:palette.muted},
   description:{fontSize:12,lineHeight:16,color:palette.ink,marginTop:1},
-  cardPressed:{opacity:.96,transform:[{scale:.995}]}
+  cardPressed:{opacity:.96,transform:[{scale:.995}]},
+  loadPreviousButton:{minHeight:44,marginTop:12,marginBottom:20,paddingHorizontal:16,paddingVertical:12,alignItems:'center',justifyContent:'center',borderRadius:12,borderWidth:1,borderColor:palette.primary,backgroundColor:palette.soft},
+  loadPreviousButtonText:{fontSize:13,fontWeight:'700',color:palette.primary}
 });

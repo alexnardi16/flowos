@@ -811,6 +811,8 @@ test('List opens directly on Today and only adds older date groups when the user
   assert.match(source,/pastGroups\.slice\(-visiblePastGroupsCount\)/);
   assert.match(source,/setVisiblePastGroupsCount\(count=>Math\.min\(pastGroups\.length,count\+20\)\)/);
   assert.match(source,/maintainVisibleContentPosition=\{\{minIndexForVisible:1\}\}/);
+  assert.match(source,/ListFooterComponent=\{visiblePastGroupsCount<pastGroups\.length/);
+  assert.match(source,/t\('Carica le date precedenti'\)/);
   assert.match(source,/const needsListRebuild=Boolean\(query\.trim\(\)\)\|\|filters\.period!=='all'\|\|visiblePastGroupsCount>0/);
   assert.match(source,/if\(visiblePastGroupsCount>0\)setVisiblePastGroupsCount\(0\)/);
 });
