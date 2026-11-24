@@ -199,7 +199,8 @@ test('Calendar app and widget use the same shared timeline range',()=>{
   const app=fs.readFileSync('app/(tabs)/calendar.tsx','utf8');
   const widget=fs.readFileSync('lib/calendarWidgetData.ts','utf8');
   assert.match(app,/buildCalendarTimeline\(commitments,syncEnd,now\)/);
-  assert.match(widget,/buildCalendarTimeline\(commitments,syncEndDate,now\)/);
+  assert.match(widget,/buildCalendarTimeline\(commitments,effectiveEndDate,now\)/);
+  assert.match(widget,/const minimumEndDate=new Date\(now\.getTime\(\)\+55\*24\*60\*60\*1000\)/);
   assert.doesNotMatch(app,/const monday=new Date\(now\.getFullYear\(\),0,1\)/);
 });
 test('List memoizes calendar labels and empty state refers to search, not removed filters',()=>{
@@ -407,8 +408,11 @@ test('widget payload caching verifies storage and restores the current calendar 
   const source=fs.readFileSync('lib/widgetSync.ts','utf8');
   assert.match(source,/AsyncStorage\.getItem\('flowos-calendar-widget-v2'\)/);
   assert.match(source,/if\(storedCalendarPayload!==payload\)/);
-  assert.match(source,/await AsyncStorage\.setItem\('flowos-calendar-widget-page-v1',String\(page\.startIndex\)\)/);
-  assert.doesNotMatch(source,/lastCalendarPageIndex/);
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(handler,/const CALENDAR_PAGE_KEY='flowos-calendar-widget-page-v2'/);
+  assert.match(handler,/await AsyncStorage\.setItem\(CALENDAR_PAGE_KEY,String\(cached\.startIndex\)\)/);
+  assert.match(handler,/await AsyncStorage\.setItem\(CALENDAR_PAGE_KEY,String\(page\.startIndex\)\)/);
+  assert.doesNotMatch(handler,/lastCalendarPageIndex/);
 });
 
 
@@ -772,7 +776,8 @@ test('List Oggi shortcut always targets the actual current date, even without ac
   assert.match(source,/if\(filters\.period==='all'&&!query\.trim\(\)&&!groups\.has\(todayKey\)\)/);
   assert.match(source,/groups\.set\(todayKey,\{label:todayLabel,items:\[\]\}\)/);
   assert.match(source,/const todayGroupKey=todayKey/);
-  assert.doesNotMatch(source,/let future:string\\|undefined,past:string\\|undefined/);
+  assert.match(source,/const todayGroupKey=todayKey/);
+  assert.match(source,/const todayGroup=groupedItems\.find\(group=>group\.key===todayKey\)/);
   assert.match(source,/scrollToIndex\(\{index:rowIndex,viewPosition:0,animated:true\}\)/);
 });
 
@@ -811,7 +816,7 @@ test('List opens directly on Today and only adds older date groups when the user
   assert.match(source,/pastGroups\.slice\(-visiblePastGroupsCount\)/);
   assert.match(source,/setVisiblePastGroupsCount\(count=>Math\.min\(pastGroups\.length,count\+20\)\)/);
   assert.match(source,/maintainVisibleContentPosition=\{\{minIndexForVisible:1\}\}/);
-  assert.match(source,/ListFooterComponent=\{visiblePastGroupsCount<pastGroups\.length/);
+  assert.match(source,/ListFooterComponent=\{!showAllPastGroups&&visiblePastGroupsCount<pastGroups\.length/);
   assert.match(source,/t\('Carica le date precedenti'\)/);
   assert.match(source,/const showAllPastGroups=filters\.period==='past'\|\|Boolean\(query\.trim\(\)\)/);
   assert.match(source,/visiblePastGroups=useMemo\(\(\)=>showAllPastGroups\?pastGroups/);
