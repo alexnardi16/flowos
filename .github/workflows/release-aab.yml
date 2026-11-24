@@ -70,7 +70,9 @@ jobs:
             printf '81\n' > "$VERSION_STATE_FILE"
           fi
 
-          LAST_VERSION_CODE="$(tr -d '[:space:]' < "$VERSION_STATE_FILE")"
+          # Accept and repair legacy state files containing a literal escaped newline.
+          LAST_VERSION_CODE="$(tr -d '[:space:]' < "$VERSION_STATE_FILE" | sed 's/\\\\n$//')"
+          printf '%s\n' "$LAST_VERSION_CODE" > "$VERSION_STATE_FILE"
           [[ "$LAST_VERSION_CODE" =~ ^[0-9]+$ ]]
           test "$LAST_VERSION_CODE" -ge 1
 
