@@ -46,6 +46,7 @@ export default function Calendar(){
   const[selectedDateOverride,setSelectedDateOverride]=useState<string|null>(null);
   const[google,setGoogle]=useState<GoogleWorkspaceStatus|null>(null);
   const[showCompletedCalendarEvents,setShowCompletedCalendarEvents]=useState(true);
+  const[showCompletedCalendarTasks,setShowCompletedCalendarTasks]=useState(false);
   const params=useLocalSearchParams<{widgetAction?:string;date?:string;id?:string}>();
   const scrollRef=useRef<import('react-native').ScrollView|null>(null);
   const weekOffsets=useRef(new Map<number,number>());
@@ -53,7 +54,7 @@ export default function Calendar(){
   const hasCalendarFocused=useRef(false);
 
   useEffect(()=>{void getGoogleWorkspaceStatus().then(setGoogle).catch(()=>setGoogle(null));},[]);
-  useFocusEffect(useCallback(()=>{let active=true;void getWidgetAppearance().then(value=>{if(active)setShowCompletedCalendarEvents(value.showCompletedCalendarEvents);});return()=>{active=false;};},[]));
+  useFocusEffect(useCallback(()=>{let active=true;void getWidgetAppearance().then(value=>{if(active){setShowCompletedCalendarEvents(value.showCompletedCalendarEvents);setShowCompletedCalendarTasks(value.showCompletedCalendarTasks);}});return()=>{active=false;};},[]));
   useEffect(()=>{const action=typeof params.widgetAction==='string'?params.widgetAction:undefined;const id=typeof params.id==='string'?params.id:null;if(action==='sync')void syncWithGoogle();if(action==='manage'&&id) setManageId(id);},[params.widgetAction,params.id,syncWithGoogle]);
 
   const weeks=useMemo(()=>{
@@ -70,6 +71,7 @@ export default function Calendar(){
     for(const item of commitments){
       if(item.deletedAt)continue;
       if(item.kind==='event'&&item.status==='done'&&!showCompletedCalendarEvents)continue;
+      if(item.kind==='task'&&item.status==='done'&&!showCompletedCalendarTasks)continue;
       const value=itemDate(item);if(!value)continue;
       const start=new Date(value);if(!Number.isFinite(start.getTime()))continue;
       const dates=isMultiDayActivity(item)?activityDayDates(item):[start];
@@ -79,7 +81,7 @@ export default function Calendar(){
       }
     }
     return map;
-  },[commitments,showCompletedCalendarEvents]);
+  },[commitments,showCompletedCalendarEvents,showCompletedCalendarTasks]);
 
   const sortedByDay=useMemo(()=>{
     const result=new Map<string,Commitment[]>();
