@@ -158,7 +158,7 @@ test('multi-item persistence uses a bounded worker pool instead of an unbounded 
 });
 
 
-test('Calendar visibility setting only hides completed events and never hides tasks',()=>{
+test('Calendar visibility settings independently control completed tasks and events',()=>{
   const settings=read('app/(tabs)/me.tsx');
   const calendar=read('app/(tabs)/calendar.tsx');
   const widget=read('lib/calendarWidgetData.ts');
@@ -167,6 +167,12 @@ test('Calendar visibility setting only hides completed events and never hides ta
   assert.match(settings,/Le attività \(task\) sono sempre visibili/);
   assert.match(calendar,/item.kind==='event'&&item.status==='done'&&!showCompletedCalendarEvents/);
   assert.match(widget,/item.kind==='event'&&item.status==='done'&&!showCompletedEvents/);
+  assert.match(calendar,/item.kind==='task'&&item.status==='done'&&!showCompletedCalendarTasks/);
+  assert.match(widget,/item.kind==='task'&&item.status==='done'&&!showCompletedTasks/);
+  const appearance=read('lib/widgetAppearance.ts');
+  assert.match(appearance,/showCompletedCalendarEvents: true/);
+  assert.match(appearance,/showCompletedCalendarTasks: false/);
+  assert.match(appearance,/parsed.showCompletedCalendarTasks === true/);
   assert.doesNotMatch(calendar,/item.kind!=='event'\)continue/);
   assert.doesNotMatch(widget,/item.kind!=='event'\)continue/);
   assert.doesNotMatch(timeline,/item.kind !== 'event'/);
