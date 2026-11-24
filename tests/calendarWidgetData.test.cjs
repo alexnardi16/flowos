@@ -2,7 +2,7 @@ const test=require('node:test');const assert=require('node:assert/strict');const
 const {getCalendarWidgetPage}=require('../.test-dist-widget/lib/calendarWidgetPaging.js');
 const {isVisibleInToday,isCompletedOnDate,isCompletedForDate}=require('../.test-dist-widget/lib/commitmentVisibility.js');const {buildActivitySourceColors,activitySourceColor}=require('../.test-dist-widget/lib/activityColors.js');
 
-test('calendar widget always shows tasks and incomplete events; only completed events follow the visibility setting',()=>{
+test('calendar widget hides completed tasks by default and controls completed tasks and events independently',()=>{
   const now=new Date('2026-11-23T10:00:00');
   const items=[
     {id:'past-done',title:'Past birthday',kind:'event',status:'done',scheduledAt:'2024-05-12T09:00:00',completedAt:'2024-05-12T10:00:00',durationMinutes:60,energy:'medium',context:'test',confidence:1},
@@ -15,17 +15,21 @@ test('calendar widget always shows tasks and incomplete events; only completed e
   assert.equal(days.find(day=>day.dateKey==='2024-05-12').items.some(item=>item.id==='past-done'),true);
   assert.equal(days.find(day=>day.dateKey==='2026-12-25').items.some(item=>item.id==='open-event'),true);
   assert.equal(days.find(day=>day.dateKey==='2026-12-25').items.some(item=>item.id==='open-task'),true);
-  assert.equal(days.find(day=>day.dateKey==='2024-05-12').items.some(item=>item.id==='done-task'),true);
+  assert.equal(days.find(day=>day.dateKey==='2024-05-12').items.some(item=>item.id==='done-task'),false);
   const hidden=buildCalendarWidgetData(items,new Date('2027-12-31T23:59:59'),now,undefined,'it',false);
   const hiddenItems=hidden.weeks.flatMap(week=>week.days).flatMap(day=>day.items);
   assert.equal(hiddenItems.some(item=>item.id==='past-done'),false);
   assert.equal(hiddenItems.some(item=>item.id==='open-event'),true);
   assert.equal(hiddenItems.some(item=>item.id==='open-task'),true);
-  assert.equal(hiddenItems.some(item=>item.id==='done-task'),true);
+  assert.equal(hiddenItems.some(item=>item.id==='done-task'),false);
+  const showBoth=buildCalendarWidgetData(items,new Date('2027-12-31T23:59:59'),now,undefined,'it',true,true);
+  const showBothItems=showBoth.weeks.flatMap(week=>week.days).flatMap(day=>day.items);
+  assert.equal(showBothItems.some(item=>item.id==='past-done'),true);
+  assert.equal(showBothItems.some(item=>item.id==='done-task'),true);
 });
 
 test('calendar widget data keeps active items on the correct day',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Test',kind:'event',status:'scheduled',durationMinutes:30,energy:'medium',context:'test',confidence:1,scheduledAt:'2026-09-21T15:00:00'}],new Date('2026-09-30T23:59:59'),now);const day=data.weeks.flatMap(w=>w.days).find(d=>d.dateKey==='2026-09-21');assert.equal(day.items.length,1);assert.equal(day.items[0].title,'Test');});
-test('calendar widget data keeps completed tasks visible and excludes deleted tasks',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Done',kind:'task',status:'done',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T15:00:00'},{id:'2',title:'Deleted',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T16:00:00',deletedAt:'2026-09-19T00:00:00'}],new Date('2026-09-30T23:59:59'),now);assert.equal(data.weeks.flatMap(w=>w.days).reduce((n,d)=>n+d.items.length,0),1);});
+test('calendar widget hides completed tasks by default and excludes deleted tasks',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Done',kind:'task',status:'done',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T15:00:00'},{id:'2',title:'Deleted',kind:'task',status:'active',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T16:00:00',deletedAt:'2026-09-19T00:00:00'}],new Date('2026-09-30T23:59:59'),now);assert.equal(data.weeks.flatMap(w=>w.days).reduce((n,d)=>n+d.items.length,0),0);});
 test('the week that starts in September and contains October 1 is titled October',()=>{
   const now=new Date('2026-09-28T10:00:00');
   const data=buildCalendarWidgetData([],new Date('2026-10-31T23:59:59'),now);
@@ -178,3 +182,6 @@ test('default calendar widget page contains the current week and the following s
   assert.equal(firstMonday,'2026-11-23');
   assert.equal(lastSunday,'2027-01-17');
 });
+
+
+test('calendar widget includes completed tasks when the dedicated setting is enabled',()=>{const now=new Date('2026-09-19T10:00:00');const data=buildCalendarWidgetData([{id:'1',title:'Done',kind:'task',status:'done',durationMinutes:30,energy:'medium',context:'test',confidence:1,dueAt:'2026-09-21T15:00:00'}],new Date('2026-09-30T23:59:59'),now,undefined,'it',true,true);assert.equal(data.weeks.flatMap(w=>w.days).flatMap(d=>d.items).some(item=>item.id==='1'),true);});
