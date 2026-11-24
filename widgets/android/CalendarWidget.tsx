@@ -5,7 +5,7 @@ import { FlexWidget, ImageWidget, ListWidget, TextWidget } from 'react-native-an
 export type AndroidCalendarItem = { id: string; title: string; kind:string; time: string; duration?: string; sourceColor: any; priority?: number; multiDaySegment?: 'start'|'middle'|'end' };
 export type AndroidCalendarDay = { dateKey: string; label: string; isToday: boolean; items: AndroidCalendarItem[] };
 export type AndroidCalendarWeek = { title: string; days: AndroidCalendarDay[] };
-export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string; density?: 'comfortable'|'balanced'|'compact'; borderColor?:string; surfaceColor?:string; todaySurfaceColor?:string };
+export type AndroidCalendarWidgetProps = { weeks: AndroidCalendarWeek[]; hasOlderWeeks?: boolean; hasNewerWeeks?: boolean; isLoading?: boolean; loadingProgress?: number; language?: Language; backgroundColor?: string; textColor?: string; buttonBackgroundColor?: string; buttonTextColor?: string; density?: 'comfortable'|'balanced'|'compact'; borderColor?:string; surfaceColor?:string; todaySurfaceColor?:string; activeNavigation?:'older'|'newer'|null };
 
 const BG = '#F1F4FF';
 const INK = '#172033';
@@ -82,7 +82,7 @@ function weekHeight(week: AndroidCalendarWeek,density:'comfortable'|'balanced'|'
   return Math.max(density==='compact'?76:density==='comfortable'?112:92,...week.days.map(day=>dayHeight(day,density)));
 }
 
-export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, isLoading=false, loadingProgress=0, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', density='balanced', borderColor=BORDER, surfaceColor='#FFFFFF', todaySurfaceColor='#E8ECFF' }: AndroidCalendarWidgetProps) {
+export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false, isLoading=false, loadingProgress=0, language='it', backgroundColor=BG, textColor=INK, buttonBackgroundColor=PRIMARY, buttonTextColor='#FFFFFF', density='balanced', borderColor=BORDER, surfaceColor='#FFFFFF', todaySurfaceColor='#E8ECFF', activeNavigation=null }: AndroidCalendarWidgetProps) {
   const labels=widgetStrings(language);
   return (
     <FlexWidget
@@ -112,7 +112,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
 
       <ListWidget style={{ width: 'match_parent', height: 'match_parent', backgroundColor: backgroundColor as any }}>
         {isLoading ? <FlexWidget style={{ width: 'match_parent', height: 16, flexDirection: 'row', alignItems: 'center', marginVertical: 2 }}><FlexWidget style={{ flex: 1, height: 5, backgroundColor: '#D9DFF8', borderRadius: 3, flexDirection: 'row' }}><FlexWidget style={{ flex: Math.max(1, loadingProgress), height: 5, backgroundColor: PRIMARY, borderRadius: 3 }} /><FlexWidget style={{ flex: Math.max(1, 100 - loadingProgress), height: 5 }} /></FlexWidget><TextWidget text={`${Math.round(loadingProgress)}%`} style={{ width: 32, marginLeft: 6, fontSize: 9, fontWeight: 'bold', color: PRIMARY }} /></FlexWidget> : null}
-        {hasOlderWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:buttonBackgroundColor as any, borderRadius:8, marginVertical:2 }}><TextWidget text={`← ${labels.olderWeeks}`} style={{ fontSize:10, fontWeight:'bold', color:buttonTextColor as any }} /></FlexWidget> : null}
+        {hasOlderWeeks || activeNavigation==='older' ? <FlexWidget clickAction="CALENDAR_PAGE_OLDER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:activeNavigation==='older'?buttonTextColor as any:buttonBackgroundColor as any, borderColor:activeNavigation==='older'?buttonBackgroundColor as any:'transparent', borderWidth:activeNavigation==='older'?2:0, borderRadius:8, marginVertical:2 }}><TextWidget text={`← ${labels.olderWeeks}`} style={{ fontSize:10, fontWeight:'bold', color:activeNavigation==='older'?buttonBackgroundColor as any:buttonTextColor as any }} /></FlexWidget> : null}
         {weeks.map(week => {
           const height = weekHeight(week,density); const weekContainerHeight = height + (week.title ? 14 : 0) + 4 + WEEK_BOTTOM_PADDING;
           return (
@@ -159,7 +159,7 @@ export function CalendarWidget({ weeks, hasOlderWeeks=false, hasNewerWeeks=false
             </FlexWidget>
           );
         })}
-        {hasNewerWeeks ? <FlexWidget clickAction="CALENDAR_PAGE_NEWER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:buttonBackgroundColor as any, borderRadius:8, marginVertical:2 }}><TextWidget text={`${labels.newerWeeks} →`} style={{ fontSize:10, fontWeight:'bold', color:buttonTextColor as any }} /></FlexWidget> : null}
+        {hasNewerWeeks || activeNavigation==='newer' ? <FlexWidget clickAction="CALENDAR_PAGE_NEWER" style={{ width:'match_parent', height:28, flexDirection:'row', alignItems:'center', justifyContent:'center', backgroundColor:activeNavigation==='newer'?buttonTextColor as any:buttonBackgroundColor as any, borderColor:activeNavigation==='newer'?buttonBackgroundColor as any:'transparent', borderWidth:activeNavigation==='newer'?2:0, borderRadius:8, marginVertical:2 }}><TextWidget text={`${labels.newerWeeks} →`} style={{ fontSize:10, fontWeight:'bold', color:activeNavigation==='newer'?buttonBackgroundColor as any:buttonTextColor as any }} /></FlexWidget> : null}
         <FlexWidget style={{ width: 'match_parent', height: 12 }} />
       </ListWidget>
     </FlexWidget>

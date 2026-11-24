@@ -748,7 +748,8 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   assert.ok(add.indexOf('const refreshed=await loadCommitments()')>add.indexOf('await pushPendingToGoogle(item.id)'));
 });
 
-\ntest('All app buttons provide consistent visible press feedback on every macrosection and shared sheet',()=>{
+
+test('All app buttons provide consistent visible press feedback on every macrosection and shared sheet',()=>{
   const paths=['app/(tabs)/today.tsx','app/(tabs)/plan.tsx','app/(tabs)/capture.tsx','app/(tabs)/calendar.tsx','app/(tabs)/me.tsx','components/ui.tsx','components/ManageSheet.tsx','components/QuickAddMenu.tsx','components/ProgressiveHint.tsx','components/SnackbarHost.tsx'];
   for(const path of paths)assert.match(fs.readFileSync(path,'utf8'),/FeedbackPressable as Pressable/,path);
   const feedback=fs.readFileSync('components/FeedbackPressable.tsx','utf8');
@@ -757,14 +758,16 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   assert.match(feedback,/opacity: 0\.68/);
   assert.match(feedback,/scale: 0\.985/);
 });
-\ntest('Calendar widget always has a full eight-week forward horizon from the current week',()=>{
+
+test('Calendar widget always has a full eight-week forward horizon from the current week',()=>{
   const source=fs.readFileSync('lib/calendarWidgetData.ts','utf8');
   assert.match(source,/now\.getTime\(\)\+55\*24\*60\*60\*1000/);
   const paging=fs.readFileSync('lib/calendarWidgetPaging.ts','utf8');
   assert.match(paging,/currentIndex<0\?0:currentIndex/);
   assert.match(paging,/const weeks=allWeeks\.slice\(startIndex,startIndex\+CALENDAR_WIDGET_PAGE_SIZE\)/);
 });
-\ntest('List Oggi shortcut always targets the actual current date, even without activities today',()=>{
+
+test('List Oggi shortcut always targets the actual current date, even without activities today',()=>{
   const source=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
   assert.match(source,/if\(filters\.period==='all'&&!query\.trim\(\)&&!groups\.has\(todayKey\)\)/);
   assert.match(source,/groups\.set\(todayKey,\{label:todayLabel,items:\[\]\}\)/);
@@ -772,7 +775,8 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   assert.doesNotMatch(source,/let future:string\\|undefined,past:string\\|undefined/);
   assert.match(source,/scrollToIndex\(\{index:rowIndex,viewPosition:0,animated:true\}\)/);
 });
-\ntest('Calendar widget cached navigation uses exact current-week page boundaries',()=>{
+
+test('Calendar widget cached navigation uses exact current-week page boundaries',()=>{
   const source=fs.readFileSync('widget-task-handler.tsx','utf8');
   assert.match(source,/const currentStart=Math\.max\(0,Math\.min\(Math\.floor\(savedStart\),maxStart\)\)/);
   assert.match(source,/flowos-calendar-widget-page-v2/);
@@ -780,7 +784,8 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   assert.match(fs.readFileSync('lib/calendarWidgetPaging.ts','utf8'),/page-cache-v2/);
 });
 
-\ntest('Calendar widget paging follows cached page neighbors when the current week is not on an eight-week boundary',()=>{
+
+test('Calendar widget paging follows cached page neighbors when the current week is not on an eight-week boundary',()=>{
   const paging=fs.readFileSync('lib/calendarWidgetPaging.ts','utf8');
   const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
   assert.match(paging,/pageStarts/);
@@ -790,9 +795,36 @@ test('widget quick-add refreshes Today before waiting for the targeted Google pu
   assert.match(handler,/pageStarts\[currentPageIndex-1\]/);
 });
 
-\ntest('Cached Calendar navigation calculates its page bound before clamping the saved page',()=>{
+
+test('Cached Calendar navigation calculates its page bound before clamping the saved page',()=>{
   const source=fs.readFileSync('widget-task-handler.tsx','utf8');
   const maxStart=source.indexOf('const maxStart=Math.max(0,Number(metadata.totalWeeks)-CALENDAR_WIDGET_PAGE_SIZE);');
   const currentStart=source.indexOf('const currentStart=Math.max(0,Math.min(Math.floor(savedStart),maxStart));');
   assert.ok(maxStart>=0&&currentStart>maxStart,'maxStart must be initialized before currentStart uses it');
+});
+
+
+test('List opens directly on Today and only adds older date groups when the user scrolls to the history boundary',()=>{
+  const source=fs.readFileSync('app/(tabs)/plan.tsx','utf8');
+  assert.match(source,/const todayAndFutureGroups=useMemo/);
+  assert.match(source,/const pastGroups=useMemo\(\(\)=>groupedItems\.filter\(group=>group\.key<todayKey\)/);
+  assert.match(source,/pastGroups\.slice\(-visiblePastGroupsCount\)/);
+  assert.match(source,/setVisiblePastGroupsCount\(count=>Math\.min\(pastGroups\.length,count\+20\)\)/);
+  assert.match(source,/maintainVisibleContentPosition=\{\{minIndexForVisible:1\}\}/);
+  assert.match(source,/const needsListRebuild=Boolean\(query\.trim\(\)\)\|\|filters\.period!=='all'\|\|visiblePastGroupsCount>0/);
+  assert.match(source,/if\(visiblePastGroupsCount>0\)setVisiblePastGroupsCount\(0\)/);
+});
+
+test('Calendar widget gives persistent visual confirmation to the last pressed previous/next weeks button',()=>{
+  const widget=fs.readFileSync('widgets/android/CalendarWidget.tsx','utf8');
+  const handler=fs.readFileSync('widget-task-handler.tsx','utf8');
+  assert.match(widget,/activeNavigation\?:'older'\|'newer'\|null/);
+  assert.match(widget,/activeNavigation==='older'\?buttonTextColor/);
+  assert.match(widget,/activeNavigation==='newer'\?buttonTextColor/);
+  assert.match(widget,/hasOlderWeeks \|\| activeNavigation==='older'/);
+  assert.match(widget,/hasNewerWeeks \|\| activeNavigation==='newer'/);
+  assert.match(widget,/borderWidth:activeNavigation==='older'\?2:0/);
+  assert.match(widget,/borderWidth:activeNavigation==='newer'\?2:0/);
+  assert.match(handler,/CALENDAR_WIDGET_LAST_NAVIGATION_KEY/);
+  assert.match(handler,/props\.clickAction==='CALENDAR_PAGE_OLDER'\?'older':props\.clickAction==='CALENDAR_PAGE_NEWER'\?'newer':null/);
 });

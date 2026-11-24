@@ -20,6 +20,8 @@ import { materializeNextOccurrence } from './lib/recurrence';
 import { activitySourceColor, activitySourceKey, buildActivitySourceColors } from './lib/activityColors';
 import { colorWithOpacity, getWidgetAppearance, sourceAppearanceColor, type WidgetAppearance } from './lib/widgetAppearance';
 
+const CALENDAR_WIDGET_LAST_NAVIGATION_KEY='flowos-calendar-widget-last-navigation-v1';
+
 const STORAGE_KEY='flowos-store-v2';
 const CALENDAR_CACHE_KEY='flowos-calendar-widget-v2';
 const CALENDAR_PAGE_KEY='flowos-calendar-widget-page-v2';
@@ -144,8 +146,11 @@ async function renderCachedCalendarNavigation(props:WidgetTaskHandlerProps):Prom
   const widgetBorderColor=appearance.theme==='flowos-dark'?'#454B61':'#C8CEDA';
   const widgetSurfaceColor=appearance.theme==='flowos-dark'?'#242838':'#FFFFFF';
   const widgetTodaySurfaceColor=appearance.theme==='flowos-dark'?'#302D4F':'#E8ECFF';
+  const activeNavigation=props.clickAction==='CALENDAR_PAGE_OLDER'?'older':props.clickAction==='CALENDAR_PAGE_NEWER'?'newer':null;
+  if(activeNavigation)await AsyncStorage.setItem(CALENDAR_WIDGET_LAST_NAVIGATION_KEY,activeNavigation);
+  else await AsyncStorage.removeItem(CALENDAR_WIDGET_LAST_NAVIGATION_KEY);
   await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(cached.startIndex));
-  props.renderWidget(<CalendarWidget weeks={cached.weeks} hasOlderWeeks={cached.hasOlderWeeks} hasNewerWeeks={cached.hasNewerWeeks} language={language}
+  props.renderWidget(<CalendarWidget weeks={cached.weeks} hasOlderWeeks={cached.hasOlderWeeks} hasNewerWeeks={cached.hasNewerWeeks} activeNavigation={activeNavigation} language={language}
     backgroundColor={calendarBackgroundColor} textColor={calendarTextColor} buttonBackgroundColor={calendarButtonBackgroundColor} buttonTextColor={calendarButtonTextColor}
     density={appearance.density} borderColor={widgetBorderColor} surfaceColor={widgetSurfaceColor} todaySurfaceColor={widgetTodaySurfaceColor}/>);
   recordDiagnostic('calendar-widget-navigation-cache-hit',{startIndex:cached.startIndex,weeks:cached.weeks.length});
@@ -231,8 +236,19 @@ export async function widgetTaskHandler(props:WidgetTaskHandlerProps){
       if(props.clickAction==='CALENDAR_PAGE_TODAY')requestedStart=undefined;
       page=getCalendarWidgetPage(data.weeks,requestedStart,new Date());
     }
-    try { await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex)); } catch {}
-    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);break;default:break;}
+    let activeNavigation:'older'|'newer'|null=null;
+    try{
+      if(isCalendarNavigation){
+        activeNavigation=props.clickAction==='CALENDAR_PAGE_OLDER'?'older':props.clickAction==='CALENDAR_PAGE_NEWER'?'newer':null;
+        if(activeNavigation)await AsyncStorage.setItem(CALENDAR_WIDGET_LAST_NAVIGATION_KEY,activeNavigation);
+        else await AsyncStorage.removeItem(CALENDAR_WIDGET_LAST_NAVIGATION_KEY);
+      }else{
+        const savedNavigation=await AsyncStorage.getItem(CALENDAR_WIDGET_LAST_NAVIGATION_KEY);
+        activeNavigation=savedNavigation==='older'||savedNavigation==='newer'?savedNavigation:null;
+      }
+      await AsyncStorage.setItem(CALENDAR_PAGE_KEY,String(page.startIndex));
+    }catch{}
+    switch(props.widgetAction){case 'WIDGET_ADDED':case 'WIDGET_UPDATE':case 'WIDGET_RESIZED':case 'WIDGET_CLICK':props.renderWidget(<CalendarWidget weeks={page.weeks} hasOlderWeeks={page.hasOlderWeeks} hasNewerWeeks={page.hasNewerWeeks} activeNavigation={activeNavigation} language={language} backgroundColor={calendarBackgroundColor} textColor={colorWithOpacity(appearance.calendar.textColor,appearance.calendar.textOpacity)} buttonBackgroundColor={colorWithOpacity(appearance.calendar.buttonBackgroundColor,appearance.calendar.buttonBackgroundOpacity)} buttonTextColor={colorWithOpacity(appearance.calendar.buttonTextColor,appearance.calendar.buttonTextOpacity)}/>);break;default:break;}
     if(props.widgetAction==='WIDGET_UPDATE'){
       try{
         const remote=await refreshFromGoogle();

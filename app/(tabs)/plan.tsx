@@ -44,6 +44,8 @@ export default function Plan(){
   const scrollRef=useRef<FlatList<ListRow>|null>(null);
   const hasPlanFocused=useRef(false);
   const pendingTodayScroll=useRef(false);
+  const userHasScrolledList=useRef(false);
+  const [visiblePastGroupsCount,setVisiblePastGroupsCount]=useState(0);
   const sourceColors=useMemo(()=>buildActivitySourceColors(commitments),[commitments]);
   const nowDate=useMemo(()=>new Date(now),[now]);
 
@@ -112,16 +114,29 @@ export default function Plan(){
       }));
 
   },[items,calendarNames,nowDate,filters.order,filters.period,query]);
-  const listRows=useMemo<ListRow[]>(()=>groupedItems.flatMap(group=>[
+  const todayAndFutureGroups=useMemo(()=>{
+    const todayGroup=groupedItems.find(group=>group.key===todayKey);
+    const futureGroups=groupedItems.filter(group=>group.key>todayKey);
+    return [...(todayGroup?[todayGroup]:[]),...futureGroups];
+  },[groupedItems,todayKey]);
+  const pastGroups=useMemo(()=>groupedItems.filter(group=>group.key<todayKey),[groupedItems,todayKey]);
+  const visiblePastGroups=visiblePastGroupsCount===0?[]:filters.order==='asc'
+    ? pastGroups.slice(-visiblePastGroupsCount)
+    : pastGroups.slice(0,visiblePastGroupsCount);
+  const visibleGroups=filters.order==='asc'
+    ? [...visiblePastGroups,...todayAndFutureGroups]
+    : [...todayAndFutureGroups,...visiblePastGroups];
+  const listRows=useMemo<ListRow[]>(()=>visibleGroups.flatMap(group=>[
     {type:'header' as const,key:`header:${group.key}`,sectionKey:group.key,label:group.label},
     ...group.items.map(item=>({type:'item' as const,key:`item:${group.key}:${item.id}`,sectionKey:group.key,item}))
-  ]),[groupedItems]);
+  ]),[visibleGroups]);
   const todayGroupKey=todayKey;
   const scrollToToday=useCallback(()=>{
     pendingTodayScroll.current=true;
-    const needsListRebuild=Boolean(query.trim())||filters.period!=='all';
+    const needsListRebuild=Boolean(query.trim())||filters.period!=='all'||visiblePastGroupsCount>0;
     if(query.trim())setQuery('');
     if(filters.period!=='all')setFilters(current=>({...current,period:'all'}));
+    if(visiblePastGroupsCount>0)setVisiblePastGroupsCount(0);
     if(!needsListRebuild){
       requestAnimationFrame(()=>{
         const rowIndex=listRows.findIndex(row=>row.type==='header'&&row.sectionKey===todayKey);
@@ -129,7 +144,7 @@ export default function Plan(){
         pendingTodayScroll.current=false;
       });
     }
-  },[query,filters.period,todayKey,listRows]);
+  },[query,filters.period,todayKey,listRows,visiblePastGroupsCount]);
   useEffect(()=>{
     if(!pendingTodayScroll.current||!todayGroupKey)return;
     const rowIndex=listRows.findIndex(row=>row.type==='header'&&row.sectionKey===todayGroupKey);
@@ -162,6 +177,23 @@ export default function Plan(){
       contentContainerStyle={{paddingHorizontal:20,paddingTop:14,paddingBottom:140,gap:8}}
       data={listRows}
       keyExtractor={row=>row.key}
+      maintainVisibleContentPosition={{minIndexForVisible:1}}
+      onScrollBeginDrag={()=>{userHasScrolledList.current=true;}}
+      onScroll={({nativeEvent})=>{
+        if(!userHasScrolledList.current||visiblePastGroupsCount>=pastGroups.length)return;
+        const {contentOffset,contentSize,layoutMeasurement}=nativeEvent;
+        const atBoundary=filters.order==='asc'
+          ? contentOffset.y<=24
+          : contentOffset.y+layoutMeasurement.height>=contentSize.height-24;
+        if(atBoundary)setVisiblePastGroupsCount(count=>Math.min(pastGroups.length,count+20));
+      }}
+      scrollEventThrottle={16}
+      onEndReached={()=>{
+        if(userHasScrolledList.current&&filters.order==='desc'&&visiblePastGroupsCount<pastGroups.length){
+          setVisiblePastGroupsCount(count=>Math.min(pastGroups.length,count+20));
+        }
+      }}
+      onEndReachedThreshold={0.25}
       ListHeaderComponent={<View><ProgressiveHint id="list-filters">{t('Suggerimento Lista: usa la ricerca e i filtri per trovare rapidamente attività e calendari di provenienza.')}</ProgressiveHint><SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/></View>}
       ListEmptyComponent={<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento.':'Aggiungi un nuovo elemento per iniziare.')}/>}
       renderItem={({item:row})=>{
