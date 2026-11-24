@@ -28,7 +28,7 @@ function formatItemTime(item:Commitment,language:Language='it'){
   const end=new Date(start.getTime()+item.durationMinutes*60000);
   return `${startText} - ${end.toLocaleTimeString(localeForLanguage(language),{hour:'2-digit',minute:'2-digit'})}`;
 }
-export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Date,now:Date=new Date(),calendarNames?:Map<string,string>,language:Language='it',showCompletedEvents=true):CalendarWidgetData{
+export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Date,now:Date=new Date(),calendarNames?:Map<string,string>,language:Language='it',showCompletedEvents=true,showCompletedTasks=false):CalendarWidgetData{
   const strings=widgetStrings(language);
   const sourceColors=buildActivitySourceColors(commitments);
   const byDate=new Map<string,Commitment[]>();
@@ -44,10 +44,11 @@ export function buildCalendarWidgetData(commitments:Commitment[],syncEndDate:Dat
   const effectiveEndDate=new Date(Math.max(requestedEndTime,minimumEndDate.getTime()));
   const timelineWeeks=buildCalendarTimeline(commitments,effectiveEndDate,now).weeks;
 
-  // Tasks are always visible. The setting only controls completed events.
+  // Completed events and tasks have independent visibility settings.
   for(const item of commitments){
     if(item.deletedAt)continue;
     if(item.kind==='event'&&item.status==='done'&&!showCompletedEvents)continue;
+    if(item.kind==='task'&&item.status==='done'&&!showCompletedTasks)continue;
     const value=item.scheduledAt??item.dueAt;
     if(!value)continue;
     const start=new Date(value);
