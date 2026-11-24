@@ -121,9 +121,10 @@ export default function Plan(){
     return [...(todayGroup?[todayGroup]:[]),...futureGroups];
   },[groupedItems,todayKey]);
   const pastGroups=useMemo(()=>groupedItems.filter(group=>group.key<todayKey),[groupedItems,todayKey]);
-  const visiblePastGroups=useMemo(()=>visiblePastGroupsCount===0?[]:filters.order==='asc'
+  const showAllPastGroups=filters.period==='past'||Boolean(query.trim());
+  const visiblePastGroups=useMemo(()=>showAllPastGroups?pastGroups:visiblePastGroupsCount===0?[]:filters.order==='asc'
     ? pastGroups.slice(-visiblePastGroupsCount)
-    : pastGroups.slice(0,visiblePastGroupsCount),[pastGroups,visiblePastGroupsCount,filters.order]);
+    : pastGroups.slice(0,visiblePastGroupsCount),[pastGroups,visiblePastGroupsCount,filters.order,showAllPastGroups]);
   const visibleGroups=useMemo(()=>filters.order==='asc'
     ? [...visiblePastGroups,...todayAndFutureGroups]
     : [...todayAndFutureGroups,...visiblePastGroups],[visiblePastGroups,todayAndFutureGroups,filters.order]);
@@ -132,11 +133,11 @@ export default function Plan(){
     ...group.items.map(item=>({type:'item' as const,key:`item:${group.key}:${item.id}`,sectionKey:group.key,item}))
   ]),[visibleGroups]);
   const loadPreviousGroups=useCallback(()=>{
-    if(visiblePastGroupsCount>=pastGroups.length)return;
+    if(showAllPastGroups||visiblePastGroupsCount>=pastGroups.length)return;
     userHasScrolledList.current=false;
     pendingHistoryScroll.current=true;
     setVisiblePastGroupsCount(count=>Math.min(pastGroups.length,count+20));
-  },[visiblePastGroupsCount,pastGroups.length]);
+  },[visiblePastGroupsCount,pastGroups.length,showAllPastGroups]);
   useEffect(()=>{
     if(!pendingHistoryScroll.current)return;
     const firstPastKey=visiblePastGroups[0]?.key;
@@ -197,7 +198,7 @@ export default function Plan(){
       maintainVisibleContentPosition={{minIndexForVisible:1}}
       onScrollBeginDrag={()=>{userHasScrolledList.current=true;}}
       onScroll={({nativeEvent})=>{
-        if(!userHasScrolledList.current||visiblePastGroupsCount>=pastGroups.length)return;
+        if(!userHasScrolledList.current||showAllPastGroups||visiblePastGroupsCount>=pastGroups.length)return;
         const {contentOffset,contentSize,layoutMeasurement}=nativeEvent;
         const atBoundary=filters.order==='asc'
           ? contentOffset.y<=24
@@ -206,14 +207,14 @@ export default function Plan(){
       }}
       scrollEventThrottle={16}
       onEndReached={()=>{
-        if(userHasScrolledList.current&&filters.order==='desc'&&visiblePastGroupsCount<pastGroups.length){
+        if(userHasScrolledList.current&&!showAllPastGroups&&filters.order==='desc'&&visiblePastGroupsCount<pastGroups.length){
           setVisiblePastGroupsCount(count=>Math.min(pastGroups.length,count+20));
         }
       }}
       onEndReachedThreshold={0.25}
       ListHeaderComponent={<View><ProgressiveHint id="list-filters">{t('Suggerimento Lista: usa la ricerca e i filtri per trovare rapidamente attività e calendari di provenienza.')}</ProgressiveHint><SectionTitle title={t('Elementi')} subtitle={t('Tocca una scheda per aprirla.')}/></View>}
       ListEmptyComponent={<EmptyState title={t('Nessun risultato')} message={t(query.trim()?'Prova con un’altra ricerca oppure aggiungi un nuovo elemento.':'Aggiungi un nuovo elemento per iniziare.')}/>}
-      ListFooterComponent={visiblePastGroupsCount<pastGroups.length?<Pressable accessibilityRole="button" onPress={loadPreviousGroups} style={styles.loadPreviousButton}><Text style={styles.loadPreviousButtonText}>{t('Carica le date precedenti')}</Text></Pressable>:null}
+      ListFooterComponent={!showAllPastGroups&&visiblePastGroupsCount<pastGroups.length?<Pressable accessibilityRole="button" onPress={loadPreviousGroups} style={styles.loadPreviousButton}><Text style={styles.loadPreviousButtonText}>{t('Carica le date precedenti')}</Text></Pressable>:null}
       renderItem={({item:row})=>{
         if(row.type==='header')return <View style={styles.dayDivider}><View style={styles.dayDividerLine}/><View style={styles.dayDividerText}>{row.sectionKey===todayKey?<Text style={styles.todayGroupBadge}>{t('Oggi')}</Text>:null}<Text style={styles.groupWeekday}>{row.label}</Text></View><View style={styles.dayDividerLine}/></View>;
         const item=row.item;

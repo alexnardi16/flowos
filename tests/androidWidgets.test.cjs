@@ -813,6 +813,8 @@ test('List opens directly on Today and only adds older date groups when the user
   assert.match(source,/maintainVisibleContentPosition=\{\{minIndexForVisible:1\}\}/);
   assert.match(source,/ListFooterComponent=\{visiblePastGroupsCount<pastGroups\.length/);
   assert.match(source,/t\('Carica le date precedenti'\)/);
+  assert.match(source,/const showAllPastGroups=filters\.period==='past'\|\|Boolean\(query\.trim\(\)\)/);
+  assert.match(source,/visiblePastGroups=useMemo\(\(\)=>showAllPastGroups\?pastGroups/);
   assert.match(source,/const needsListRebuild=Boolean\(query\.trim\(\)\)\|\|filters\.period!=='all'\|\|visiblePastGroupsCount>0/);
   assert.match(source,/if\(visiblePastGroupsCount>0\)setVisiblePastGroupsCount\(0\)/);
   assert.match(source,/userHasScrolledList\.current=false;\n    pendingTodayScroll\.current=true/);
