@@ -81,7 +81,7 @@ test('privacy policy discloses the data categories used by the app', () => {
   assert.match(privacy, /Expo push token/i);
   assert.match(privacy, /Supabase/i);
   assert.match(privacy, /Netlify/i);
-  assert.match(privacy, /system or browser speech-recognition service/i);
+  assert.match(privacy, /system\/browser speech-recognition service/i);
 
   const retiredTranslation = fs.readFileSync(path.join(root, 'supabase', 'functions', 'translate-activities', 'index.ts'), 'utf8');
   assert.match(retiredTranslation, /ENDPOINT_RETIRED/);
