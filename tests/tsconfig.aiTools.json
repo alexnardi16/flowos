@@ -1,1 +1,1 @@
-{"extends":"../tsconfig.json","compilerOptions":{"outDir":"../.test-dist-ai-tools","rootDir":"../","noEmit":false,"declaration":false,"sourceMap":false,"jsx":"react-jsx"},"include":["../lib/aiTools.ts","../lib/flowosAIConfig.ts"]}
+{"extends":"../tsconfig.json","compilerOptions":{"outDir":"../.test-dist-ai-tools","rootDir":"../lib","noEmit":false,"declaration":false,"sourceMap":false,"jsx":"react-jsx"},"include":["../lib/aiTools.ts","../lib/flowosAIConfig.ts"]}
