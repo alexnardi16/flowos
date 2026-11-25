@@ -19,7 +19,8 @@ test('public landing and legal pages exist and expose the required FlowOS identi
   const privacyStatic = readPublic('privacy-policy-static.html');
   assert.equal(privacyStatic, privacy, 'The static fallback policy must match the canonical privacy page');
   const deletion = readPublic(path.join('delete-account', 'index.html'));
-  const terms = readPublic(path.join('terms', 'index.html'));\n  const italianPrivacy = readPublic(path.join('it', 'privacy-policy', 'index.html'));
+  const terms = readPublic(path.join('terms', 'index.html'));
+  const italianPrivacy = readPublic(path.join('it', 'privacy-policy', 'index.html'));
 
   assert.match(privacy, /<title>FlowOS Privacy Policy<\/title>/i);
   assert.match(privacy, /Last updated:/i);
@@ -35,7 +36,12 @@ test('public landing and legal pages exist and expose the required FlowOS identi
 
   assert.match(terms, /<title>FlowOS Terms of Service<\/title>/i);
   assert.match(terms, /FlowOS/i);
-  assert.match(terms, /Privacy Policy/i);\n  assert.match(terms, /Optional AI features/i);\n  assert.match(terms, /own API key/i);\n  const aboutAI = readPublic(path.join('about', 'index.html'));\n  assert.match(aboutAI, /Optional AI tools/i);\n  assert.match(aboutAI, /each operation requires confirmation/i);
+  assert.match(terms, /Privacy Policy/i);
+  assert.match(terms, /Optional AI features/i);
+  assert.match(terms, /own API key/i);
+  const aboutAI = readPublic(path.join('about', 'index.html'));
+  assert.match(aboutAI, /Optional AI tools/i);
+  assert.match(aboutAI, /each operation requires confirmation/i);
 });
 
 test('privacy policy discloses the data categories used by the app', () => {
