@@ -182,3 +182,26 @@ test('Calendar visibility settings independently control completed tasks and eve
   assert.match(list,/<FlatList/);
   assert.match(list,/scrollable=\{false\}/);
 });
+
+
+test('FlowOS AI release disclosures remain opt-in, provider-direct and documented', () => {
+  const settings = read('app/(tabs)/me.tsx');
+  const ai = read('lib/flowosAI.ts');
+  const privacy = read('public/privacy-policy/index.html');
+  const privacyIt = read('public/it/privacy-policy/index.html');
+  const safety = read('docs/google-play/DATA_SAFETY.md');
+  const store = read('docs/google-play/STORE_METADATA.md');
+  assert.match(settings, /enabled\?'ON':'OFF'/);
+  assert.match(settings, /Informativa sulla privacy/);
+  assert.match(settings, /Prima di ogni operazione AI viene richiesta una conferma/);
+  assert.match(ai, /SecureStore\.setItemAsync/);
+  assert.match(ai, /SecureStore\.getItemAsync/);
+  assert.match(ai, /fetch\(r\.url/);
+  assert.match(ai, /requireEnabled\(s\)/);
+  assert.match(privacy, /FlowOS AI is optional and is OFF by default/);
+  assert.match(privacy, /selected AI provider/);
+  assert.match(privacyIt, /FlowOS AI è facoltativa ed è disattivata per impostazione predefinita/);
+  assert.match(safety, /FlowOS AI \(added November 25, 2026\)/);
+  assert.match(safety, /Other user-generated content/);
+  assert.match(store, /FlowOS AI is optional, off by default/);
+});
