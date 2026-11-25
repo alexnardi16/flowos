@@ -12,7 +12,7 @@
 - Review today's activities in a dedicated **Today** view.
 - Manage commitments in **Calendar** and **List** views.
 - Create tasks, events and reminders with dates, times, durations, priorities and recurrence.
-- Use voice commands to add, edit, move, complete or delete activities.
+- Use voice commands to add, edit, move, complete or delete activities.\n- Optionally enable FlowOS AI with your own provider API key for voice interpretation, personal-occasion messages, web research, product comparisons and professional message drafts. AI is off by default; each operation requires confirmation.
 - Set local notifications, custom reminders and a daily summary.
 - Synchronize supported Google Calendar events and Google Tasks when you connect Google.
 - Use Android home-screen widgets for Today and Calendar.
@@ -20,7 +20,7 @@
 - Manage sync conflicts and recover from transient network/server failures.
 - Delete your FlowOS account and associated data through the in-app flow or public deletion page.
 
-The core planning and suggestion features described here use application rules and heuristics; the product listing does not claim that they are AI-generated.
+FlowOS AI is an optional BYOK feature. Requests are sent directly from the device to the selected AI provider after confirmation; FlowOS does not proxy prompts through its backend or pay provider usage charges. Review the provider's privacy and data-use terms before sending any content. Privacy policy: English https://getflowos.netlify.app/privacy-policy/ and Italian https://getflowos.netlify.app/it/privacy-policy/.
 
 ## Project status
 
