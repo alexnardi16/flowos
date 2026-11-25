@@ -388,6 +388,7 @@ export default function Me(){
       <View style={styles.actions}><Button style={styles.actionButton} label={t('Salva API key')} onPress={()=>{void saveFlowosAIKey();}} disabled={!flowosAIApiKey.trim()||flowosAIBusy} loading={flowosAIBusy}/><Button style={styles.actionButton} secondary label={t('Elimina API key')} onPress={()=>{void removeFlowosAIKey();}} disabled={!flowosAIKeySaved||flowosAIBusy}/></View>
       <Text style={styles.meta}>{flowosAIKeySaved?t('API key salvata in modo protetto su questo dispositivo. Non viene sincronizzata con FlowOS o Google.'):t('Stato API key')+': '+t('Non configurata')}</Text>
       <Button secondary label={t('Verifica connessione')} onPress={()=>{void testFlowosAI();}} disabled={!flowosAIKeySaved||flowosAIBusy}/>
+      <Button secondary label={t('Apri strumenti AI')} onPress={()=>router.push('/ai-tools' as never)} disabled={!flowosAISettings.enabled||!flowosAIKeySaved}/>
       {flowosAIStatus?<Text style={styles.meta}>{flowosAIStatus}</Text>:null}
       <Text style={styles.meta}>{t('Le richieste AI vengono inviate direttamente al provider selezionato e possono includere i dati che scegli di condividere con l’AI. Controlla le condizioni privacy del provider.')}</Text>
       <Text style={styles.meta}>{t('FlowOS non paga le richieste AI: il provider addebita direttamente l’utilizzo alla persona proprietaria della API key.')}</Text>
