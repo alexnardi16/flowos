@@ -44,3 +44,8 @@ test('AI cannot target an activity that is not in the active candidate list',()=
  assert.equal(safe.length,1);
  assert.equal(safe[0].query,'Comprare il latte');
 });
+
+test('rejects an add command with an invalid date instead of silently dropping its date',()=>{
+ const commands=parseInterpretedVoiceCommands(JSON.stringify({commands:[{type:'add',title:'Visita',kind:'event',when:'not-a-date',confidence:1}]}));
+ assert.equal(commands.length,0);
+});

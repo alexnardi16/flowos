@@ -38,7 +38,8 @@ export function parseInterpretedVoiceCommands(value:string):InterpretedVoiceComm
     const title=typeof row.title==='string'?row.title.trim().slice(0,160):'';
     if(type==='add'){
       if(!title||!['task','event'].includes(String(row.kind)))continue;
-      const when=typeof row.when==='string'&&Number.isFinite(Date.parse(row.when))?new Date(row.when).toISOString():undefined;
+      if(row.when!==null&&row.when!==undefined&&(typeof row.when!=='string'||!Number.isFinite(Date.parse(row.when))))continue;
+      const when=typeof row.when==='string'?new Date(row.when).toISOString():undefined;
       result.push({type,title,kind:row.kind as 'task'|'event',when,confidence,needsConfirmation,reason});
     }else if(type==='delete'||type==='complete'||type==='postpone'){
       if(!query)continue;
