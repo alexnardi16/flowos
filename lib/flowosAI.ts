@@ -1,0 +1,15 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import {Platform} from 'react-native';
+import {FLOWOS_AI_DEFAULT_SETTINGS,FLOWOS_AI_SETTINGS_KEY,buildFlowOSAIRequest,extractFlowOSAIText,isValidFlowOSAIKey,normalizeFlowOSAISettings,type FlowOSAIProviderId,type FlowOSAISettings} from '@/lib/flowosAIConfig';
+const PREFIX='flowos-ai-provider-key-v1-';function keyName(id:FlowOSAIProviderId){return PREFIX+id;}
+function secureOnly(){if(Platform.OS==='web')throw new Error('Per proteggere la tua API key, la configurazione AI è disponibile nell’app mobile FlowOS e non nel browser.');}
+export async function loadFlowOSAISettings():Promise<FlowOSAISettings>{try{const raw=await AsyncStorage.getItem(FLOWOS_AI_SETTINGS_KEY);return raw?normalizeFlowOSAISettings(JSON.parse(raw)):{...FLOWOS_AI_DEFAULT_SETTINGS};}catch{return {...FLOWOS_AI_DEFAULT_SETTINGS};}}
+export async function saveFlowOSAISettings(s:FlowOSAISettings){await AsyncStorage.setItem(FLOWOS_AI_SETTINGS_KEY,JSON.stringify(normalizeFlowOSAISettings(s)));}
+export async function saveFlowOSAIAPIKey(id:FlowOSAIProviderId,value:string){secureOnly();const key=value.trim();if(!isValidFlowOSAIKey(key))throw new Error('Inserisci una API key valida.');await SecureStore.setItemAsync(keyName(id),key);}
+export async function getFlowOSAIAPIKey(id:FlowOSAIProviderId){secureOnly();return SecureStore.getItemAsync(keyName(id));}
+export async function hasFlowOSAIAPIKey(id:FlowOSAIProviderId){try{return Boolean(await getFlowOSAIAPIKey(id));}catch{return false;}}
+export async function deleteFlowOSAIAPIKey(id:FlowOSAIProviderId){secureOnly();await SecureStore.deleteItemAsync(keyName(id));}
+async function request(s:FlowOSAISettings,key:string,prompt:string){const r=buildFlowOSAIRequest(s.provider,s.model,key,prompt,s.customBaseUrl),response=await fetch(r.url,{method:'POST',headers:r.headers,body:r.body});let data:unknown;try{data=await response.json();}catch{throw new Error('Risposta non valida dal provider AI (HTTP '+response.status+').');}if(!response.ok){const root=data&&typeof data==='object'?data as Record<string,unknown>:{},err=root.error&&typeof root.error==='object'?root.error as Record<string,unknown>:{},message=typeof err.message==='string'?err.message:'Errore del provider AI (HTTP '+response.status+').';throw new Error(message.slice(0,500));}return extractFlowOSAIText(s.provider,data);}
+export async function testFlowOSAIConnection(s:FlowOSAISettings){const key=await getFlowOSAIAPIKey(s.provider);if(!key)throw new Error('Salva prima la API key del provider selezionato.');return request(s,key,'Reply with exactly this text and nothing else: FlowOS AI connection successful.');}
+export async function generateFlowOSAIText(prompt:string){const s=await loadFlowOSAISettings();if(!s.enabled)throw new Error('FlowOS AI è disattivata nelle Impostazioni.');const key=await getFlowOSAIAPIKey(s.provider);if(!key)throw new Error('Manca la API key del provider AI selezionato.');return request(s,key,prompt);}

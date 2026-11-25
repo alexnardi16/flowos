@@ -40,6 +40,7 @@ module.exports = {
     // of shell-only EXPO_PUBLIC_* environment variables.
     supabaseUrl: 'https://inifmdkbefwynupqspfr.supabase.co',
     supabasePublishableKey: 'sb_publishable_NVhKrBvwGti3noXCXUP6SQ_8ulIzVhf',
+    flowosOwnerUserId: process.env.EXPO_PUBLIC_FLOWOS_OWNER_USER_ID ?? '',
   },
   plugins: [
     'expo-router',
