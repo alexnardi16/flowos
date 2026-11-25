@@ -28,9 +28,9 @@ Capture commitments quickly, review your day at a glance, and keep your schedule
 - Use voice commands to add, edit, move, complete or delete activities.
 - Review and manage your commitments in Today, Calendar and List views.
 - Disconnect Google from settings when you no longer want to sync.
-- Request deletion of your FlowOS account and associated data from within the app or through the public deletion page.
+- Request deletion of your FlowOS account and associated data from within the app or through the public deletion page.\n- Optionally enable FlowOS AI with your own API key to interpret voice commands, prepare birthday and anniversary messages, research topics, compare products and draft professional communications. Each AI operation requires confirmation; messages are never sent automatically.
 
-FlowOS helps you organize your commitments; it does not make changes to your schedule without your action. Google synchronization requires you to connect and authorize your Google account. Features that depend on notifications require the relevant device permissions.
+FlowOS helps you organize your commitments; it does not make changes to your schedule without your action. Google synchronization requires you to connect and authorize your Google account. Features that depend on notifications require the relevant device permissions. FlowOS AI is optional, off by default and requires your own provider API key. AI requests are sent directly to your selected provider after confirmation; provider usage charges are billed by that provider to the API key owner.
 
 ## Category
 Productivity
@@ -89,7 +89,7 @@ Registra rapidamente i tuoi impegni, controlla la giornata a colpo d’occhio e 
 - Scollega Google dalle impostazioni quando non desideri più sincronizzare.
 - Richiedi l’eliminazione del tuo account FlowOS e dei relativi dati direttamente dall’app o tramite la pagina pubblica dedicata.
 
-FlowOS ti aiuta a organizzare i tuoi impegni, ma non modifica la tua agenda senza una tua azione. La sincronizzazione Google richiede il collegamento e l’autorizzazione del tuo account Google. Le funzioni che dipendono dalle notifiche richiedono i relativi permessi del dispositivo.
+FlowOS ti aiuta a organizzare i tuoi impegni, ma non modifica la tua agenda senza una tua azione. La sincronizzazione Google richiede il collegamento e l’autorizzazione del tuo account Google. Le funzioni che dipendono dalle notifiche richiedono i relativi permessi del dispositivo. FlowOS AI è facoltativa, disattivata per impostazione predefinita e richiede una tua API key. Le richieste sono inviate direttamente al provider selezionato dopo la tua conferma; eventuali costi sono addebitati dal provider al titolare della chiave.
 
 ### French
 
@@ -115,7 +115,7 @@ Ajoutez rapidement vos engagements, consultez votre journée en un coup d’œil
 - Déconnectez Google dans les paramètres lorsque vous ne souhaitez plus synchroniser.
 - Demandez la suppression de votre compte FlowOS et des données associées depuis l’application ou via la page publique dédiée.
 
-FlowOS vous aide à organiser vos engagements, mais ne modifie pas votre planning sans votre action. La synchronisation Google nécessite de connecter et d’autoriser votre compte Google. Les fonctionnalités qui utilisent les notifications nécessitent les autorisations correspondantes sur votre appareil.
+FlowOS vous aide à organiser vos engagements, mais ne modifie pas votre planning sans votre action. La synchronisation Google nécessite de connecter et d’autoriser votre compte Google. Les fonctionnalités qui utilisent les notifications nécessitent les autorisations correspondantes sur votre appareil. FlowOS AI est facultative, désactivée par défaut et nécessite votre propre clé API. Les requêtes sont envoyées directement au fournisseur sélectionné après confirmation ; les éventuels frais sont facturés par ce fournisseur au titulaire de la clé.
 
 ### Spanish
 
@@ -141,4 +141,4 @@ Añade tus compromisos rápidamente, consulta tu día de un vistazo y organiza t
 - Desconecta Google desde los ajustes cuando ya no quieras sincronizar.
 - Solicita la eliminación de tu cuenta de FlowOS y de los datos asociados desde la aplicación o mediante la página pública de eliminación.
 
-FlowOS te ayuda a organizar tus compromisos, pero no modifica tu agenda sin que tú lo decidas. La sincronización con Google requiere conectar y autorizar tu cuenta de Google. Las funciones que dependen de las notificaciones necesitan los permisos correspondientes del dispositivo.
+FlowOS te ayuda a organizar tus compromisos, pero no modifica tu agenda sin que tú lo decidas. La sincronización con Google requiere conectar y autorizar tu cuenta de Google. Las funciones que dependen de las notificaciones necesitan los permisos correspondientes del dispositivo. FlowOS AI es opcional, está desactivado por defecto y requiere tu propia clave API. Las solicitudes se envían directamente al proveedor seleccionado después de tu confirmación; el proveedor cobra cualquier uso al titular de la clave.
