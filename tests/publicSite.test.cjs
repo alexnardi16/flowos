@@ -62,8 +62,8 @@ test('privacy policy discloses the data categories used by the app', () => {
     assert.match(privacy, new RegExp(phrase, 'i'), `Privacy Policy should mention ${phrase}`);
   }
 
-  assert.match(privacy, /does not send task, calendar or other user-entered content to OpenAI/i);
-  assert.doesNotMatch(privacy, /(?:sent|transmitted) to OpenAI|AI-powered FlowOS feature/i);
+  assert.match(privacy, /optional FlowOS AI features and data sent to AI providers/i);\n  assert.match(privacy, /voice transcript and titles of active FlowOS activities/i);\n  assert.match(privacy, /professional messages/i);\n  assert.match(privacy, /provider API key is stored in the operating system's secure storage/i);\n  assert.match(privacy, /directly from your device to the provider/i);\n  assert.match(privacy, /does not retain AI prompts or generated responses on its backend/i);\n  assert.match(italianPrivacy, /Funzioni AI facoltative e dati inviati ai provider AI/i);\n  assert.match(italianPrivacy, /API key del provider AI è conservata nell'archivio sicuro/i);
+
   assert.match(privacy, /Expo push token/i);
   assert.match(privacy, /Supabase/i);
   assert.match(privacy, /Netlify/i);
