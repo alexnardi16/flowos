@@ -1,4 +1,3 @@
-import {generateFlowOSAIText} from './flowosAI';
 import type {Commitment} from '../types';
 import {normalizeVoiceText,type VoiceCommand} from './voiceParser';
 
@@ -65,6 +64,7 @@ export function restrictVoiceCommandsToCandidates(commands:InterpretedVoiceComma
 }
 
 export async function interpretVoiceCommandsWithAI(transcript:string,items:Commitment[],language='it'){
+  const {generateFlowOSAIText}=await import('./flowosAI');
   const parsed=parseInterpretedVoiceCommands(await generateFlowOSAIText(buildVoiceInterpretationPrompt(transcript,items,language)));
   return restrictVoiceCommandsToCandidates(parsed,items);
 }
