@@ -105,6 +105,7 @@ export default function LoginScreen() { useLanguage();
         <Text style={styles.status}>{t('STATO:')} {oauthStatus}</Text>
         <Text style={styles.permissions}>Dopo la prima autorizzazione, Google normalmente non richiede di nuovo il consenso finché non cambiano i permessi o non revochi l’accesso.</Text>
         {message ? <Text selectable style={styles.error}>{message}</Text> : null}
+        <Pressable onPress={() => router.push('/privacy-policy')} style={{paddingVertical:16,alignItems:'center'}}><Text style={styles.permissions}>{t('Informativa sulla privacy')}</Text></Pressable>
 
       </View>
     </ScrollView>
