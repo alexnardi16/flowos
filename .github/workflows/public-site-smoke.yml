@@ -7,6 +7,7 @@ on:
       - 'public/about/**'
       - 'public/privacy-policy/**'
       - 'public/privacy-policy-static.html'
+      - 'public/it/privacy-policy/**'
       - 'public/delete-account/**'
       - 'public/terms/**'
       - 'public/_redirects'
@@ -29,7 +30,7 @@ jobs:
           base='https://getflowos.netlify.app'
           cache_bust="smoke=$(date +%s)"
 
-          for route in /about/ /privacy-policy/ /delete-account/ /terms/; do
+          for route in /about/ /privacy-policy/ /it/privacy-policy/ /delete-account/ /terms/; do
             echo "Checking ${base}${route}"
             body="/tmp/page-${route//\//_}.html"
             status='000'
@@ -43,6 +44,9 @@ jobs:
             done
             test "$status" = '200'
             grep -qi 'FlowOS' "$body"
+            if [ "$route" = '/it/privacy-policy/' ]; then
+              grep -qi 'Informativa sulla privacy' "$body"
+            fi
           done
 
           echo 'Public website and legal pages are reachable and served by FlowOS.'
