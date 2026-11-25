@@ -1,6 +1,6 @@
 import {generateFlowOSAIText} from './flowosAI';
 import type {Commitment} from '../types';
-import type {VoiceCommand} from './voiceParser';
+import {normalizeVoiceText,type VoiceCommand} from './voiceParser';
 
 export type InterpretedVoiceCommand=VoiceCommand&{confidence:number;needsConfirmation:boolean;reason?:string};
 function record(value:unknown):Record<string,unknown>{return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};}
@@ -59,6 +59,12 @@ export function parseInterpretedVoiceCommands(value:string):InterpretedVoiceComm
   return result;
 }
 
+export function restrictVoiceCommandsToCandidates(commands:InterpretedVoiceCommand[],items:Commitment[]){
+  const titles=new Set(items.filter(item=>item.status!=='done'&&!item.deletedAt).map(item=>normalizeVoiceText(item.title)));
+  return commands.filter(command=>!('query' in command)||titles.has(normalizeVoiceText(command.query)));
+}
+
 export async function interpretVoiceCommandsWithAI(transcript:string,items:Commitment[],language='it'){
-  return parseInterpretedVoiceCommands(await generateFlowOSAIText(buildVoiceInterpretationPrompt(transcript,items,language)));
+  const parsed=parseInterpretedVoiceCommands(await generateFlowOSAIText(buildVoiceInterpretationPrompt(transcript,items,language)));
+  return restrictVoiceCommandsToCandidates(parsed,items);
 }

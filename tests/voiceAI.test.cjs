@@ -1,7 +1,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {buildVoiceInterpretationPrompt,parseInterpretedVoiceCommands}=require('../.test-dist-voice/lib/voiceAI.js');
+const {buildVoiceInterpretationPrompt,parseInterpretedVoiceCommands,restrictVoiceCommandsToCandidates}=require('../.test-dist-voice/lib/voiceAI.js');
 
 test('prompt includes only active titles and excludes private notes and descriptions',()=>{
  const prompt=buildVoiceInterpretationPrompt('Sposta la visita a domani',[{title:'Visita pediatrica',status:'active',notes:'segreto',description:'privato'},{title:'Completata',status:'done'},{title:'Eliminata',status:'active',deletedAt:'2026-01-01'}]);
@@ -33,4 +33,14 @@ test('voice integration asks consent and falls back to local parser when AI is u
  assert.match(source,/showConfirm\('FlowOS AI'/);
  assert.match(source,/parseVoiceCommands\(transcript\)/);
  assert.match(source,/interpretVoiceCommandsWithAI/);
+});
+
+test('AI cannot target an activity that is not in the active candidate list',()=>{
+ const commands=parseInterpretedVoiceCommands(JSON.stringify({commands:[
+  {type:'delete',query:'Comprare il latte',confidence:1},
+  {type:'delete',query:'Invented activity',confidence:1}
+ ]}));
+ const safe=restrictVoiceCommandsToCandidates(commands,[{title:'Comprare il latte',status:'active'},{title:'Done item',status:'done'}]);
+ assert.equal(safe.length,1);
+ assert.equal(safe[0].query,'Comprare il latte');
 });
