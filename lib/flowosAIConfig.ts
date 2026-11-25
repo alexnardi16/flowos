@@ -2,7 +2,7 @@ export type FlowOSAIProviderId='openai'|'gemini'|'anthropic'|'mistral'|'groq'|'x
 export type FlowOSAIProvider={id:FlowOSAIProviderId;label:string;apiType:'openai-compatible'|'gemini'|'anthropic';baseUrl:string;defaultModel:string};
 export const FLOWOS_AI_PROVIDERS:readonly FlowOSAIProvider[]=[
 {id:'openai',label:'OpenAI',apiType:'openai-compatible',baseUrl:'https://api.openai.com/v1',defaultModel:''},
-{id:'gemini',label:'Google Gemini',apiType:'gemini',baseUrl:'https://generativelanguage.googleapis.com/v1beta',defaultModel:'gemini-3.8-flash'},
+{id:'gemini',label:'Google Gemini',apiType:'gemini',baseUrl:'https://generativelanguage.googleapis.com/v1beta',defaultModel:'gemini-3.6-flash'},
 {id:'anthropic',label:'Anthropic Claude',apiType:'anthropic',baseUrl:'https://api.anthropic.com/v1',defaultModel:''},
 {id:'mistral',label:'Mistral AI',apiType:'openai-compatible',baseUrl:'https://api.mistral.ai/v1',defaultModel:''},
 {id:'groq',label:'Groq',apiType:'openai-compatible',baseUrl:'https://api.groq.com/openai/v1',defaultModel:''},
@@ -11,9 +11,9 @@ export const FLOWOS_AI_PROVIDERS:readonly FlowOSAIProvider[]=[
 {id:'custom',label:'Altro endpoint compatibile OpenAI',apiType:'openai-compatible',baseUrl:'',defaultModel:''}];
 export type FlowOSAISettings={enabled:boolean;provider:FlowOSAIProviderId;model:string;customBaseUrl:string};
 export const FLOWOS_AI_SETTINGS_KEY='flowos-ai-settings-v1';
-export const FLOWOS_AI_DEFAULT_SETTINGS:FlowOSAISettings={enabled:false,provider:'gemini',model:'gemini-3.8-flash',customBaseUrl:''};
+export const FLOWOS_AI_DEFAULT_SETTINGS:FlowOSAISettings={enabled:false,provider:'gemini',model:'gemini-3.6-flash',customBaseUrl:''};
 export function getFlowOSAIProvider(id:FlowOSAIProviderId){return FLOWOS_AI_PROVIDERS.find(p=>p.id===id)??FLOWOS_AI_PROVIDERS[1];}
-export function normalizeFlowOSAISettings(v:unknown):FlowOSAISettings{if(!v||typeof v!=='object')return {...FLOWOS_AI_DEFAULT_SETTINGS};const x=v as Partial<FlowOSAISettings>,provider=FLOWOS_AI_PROVIDERS.some(p=>p.id===x.provider)?x.provider as FlowOSAIProviderId:'gemini';return {enabled:x.enabled===true,provider,model:typeof x.model==='string'?x.model.trim().slice(0,160):getFlowOSAIProvider(provider).defaultModel,customBaseUrl:typeof x.customBaseUrl==='string'?x.customBaseUrl.trim().slice(0,500):''};}
+export function normalizeFlowOSAISettings(v:unknown):FlowOSAISettings{if(!v||typeof v!=='object')return {...FLOWOS_AI_DEFAULT_SETTINGS};const x=v as Partial<FlowOSAISettings>,provider=FLOWOS_AI_PROVIDERS.some(p=>p.id===x.provider)?x.provider as FlowOSAIProviderId:'gemini';return {enabled:x.enabled===true,provider,model:typeof x.model==='string'&&x.model.trim()?((provider==='gemini'&&x.model.trim()==='gemini-3.8-flash')?'gemini-3.6-flash':x.model.trim().slice(0,160)):getFlowOSAIProvider(provider).defaultModel,customBaseUrl:typeof x.customBaseUrl==='string'?x.customBaseUrl.trim().slice(0,500):''};}
 export function isValidFlowOSAIKey(v:string){const k=v.trim();return k.length>=8&&k.length<=4096&&!/[\r\n]/.test(k);}
 export function isValidCustomAIBaseUrl(v:string){try{const u=new URL(v.trim());return u.protocol==='https:'?Boolean(u.hostname):u.protocol==='http:'&&['localhost','127.0.0.1','::1'].includes(u.hostname);}catch{return false;}}
 export function isFlowOSOwner(userId:string|null|undefined,ownerId:string|null|undefined){return Boolean(userId&&ownerId?.trim()&&userId===ownerId.trim());}
