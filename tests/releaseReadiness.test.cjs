@@ -186,7 +186,8 @@ test('Calendar visibility settings independently control completed tasks and eve
 
 test('FlowOS AI release disclosures remain opt-in, provider-direct and documented', () => {
   const settings = read('app/(tabs)/me.tsx');
-  const ai = read('lib/flowosAI.ts');\n  const aiTools = read('app/ai-tools.tsx');
+  const ai = read('lib/flowosAI.ts');
+  const aiTools = read('app/ai-tools.tsx');
   const privacy = read('public/privacy-policy/index.html');
   const privacyIt = read('public/it/privacy-policy/index.html');
   const safety = read('docs/google-play/DATA_SAFETY.md');
@@ -197,7 +198,10 @@ test('FlowOS AI release disclosures remain opt-in, provider-direct and documente
   assert.match(ai, /SecureStore\.setItemAsync/);
   assert.match(ai, /SecureStore\.getItemAsync/);
   assert.match(ai, /fetch\(r\.url/);
-  assert.match(ai, /requireEnabled\(s\)/);\n  assert.match(aiTools, /getFlowOSAIProvider\(settings\.provider\)\.label/);\n  assert.match(aiTools, /research request and supplied sources/);\n  assert.match(aiTools, /recipient, purpose and message context/);
+  assert.match(ai, /requireEnabled\(s\)/);
+  assert.match(aiTools, /getFlowOSAIProvider\(settings\.provider\)\.label/);
+  assert.match(aiTools, /research request and supplied sources/);
+  assert.match(aiTools, /recipient, purpose and message context/);
   assert.match(privacy, /FlowOS AI is optional and is OFF by default/);
   assert.match(privacy, /selected AI provider/);
   assert.match(privacyIt, /FlowOS AI è facoltativa ed è disattivata per impostazione predefinita/);
