@@ -46,6 +46,7 @@ test('public landing and legal pages exist and expose the required FlowOS identi
 
 test('privacy policy discloses the data categories used by the app', () => {
   const privacy = readPublic(path.join('privacy-policy', 'index.html'));
+  const italianPrivacy = readPublic(path.join('it', 'privacy-policy', 'index.html'));
   for (const phrase of [
     'Google Sign-In',
     'Google Calendar',
