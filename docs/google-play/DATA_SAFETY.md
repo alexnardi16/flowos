@@ -146,3 +146,8 @@ Do not mark AI prompt processing as ephemeral unless the exact provider, model, 
 - Do not claim that every provider prohibits training/retention. The user's provider, tier and account controls determine that.
 - Ensure the policy URL, in-app disclosures, Store listing and Data Safety answers remain consistent.
 - The final declaration must be completed in Play Console by the account owner. This document is preparation, not a submitted declaration.
+
+
+### User-initiated handoff to communication and search apps
+
+When a user taps Open web search, the typed query is passed to Google Search in the browser. When a user taps Open email or Open WhatsApp for a generated draft, the draft text is handed to the selected app using its mailto/deep link. For LinkedIn, the text is copied to the local clipboard and LinkedIn is opened; the user must paste and send it. These are explicit user-initiated actions, not automatic sending by FlowOS. The Privacy Policy discloses these transfers. Review the current Play Data Safety user-initiated transfer exception before final submission and do not claim that FlowOS sends messages automatically.
