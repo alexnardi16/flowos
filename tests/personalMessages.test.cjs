@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict');
-const M=require('../.test-dist-personal/personalMessages.js');
+const M=require('../.test-dist-personal/lib/personalMessages.js');
 function event(id,title,date,extra={}){return {id,title,kind:'event',status:'active',durationMinutes:0,energy:'medium',context:'',confidence:1,scheduledAt:date,...extra};}
 test('recognizes Google Contacts birthday calendar and eventType',()=>{assert.equal(M.classifyPersonalOccasion(event('1','Alex', '2027-01-02',{googleCalendarId:'addressbook#contacts@group.v.calendar.google.com'})),'birthday');assert.equal(M.classifyPersonalOccasion(event('2','Alex','2027-01-02',{googleEventType:'birthday'})),'birthday');});
 test('recognizes birthday and anniversary titles but ignores ordinary events and tasks',()=>{assert.equal(M.classifyPersonalOccasion(event('1',"Chiara's birthday",'2027-01-02')),'birthday');assert.equal(M.classifyPersonalOccasion(event('2','Wedding anniversary','2027-01-02')),'anniversary');assert.equal(M.classifyPersonalOccasion({...event('3','Meeting','2027-01-02'),kind:'task'}),null);assert.equal(M.classifyPersonalOccasion(event('4','Meeting','2027-01-02')),null);});
