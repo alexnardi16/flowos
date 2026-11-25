@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { Linking, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Button, Card, palette, showAlert } from '@/components/ui';
@@ -21,7 +22,7 @@ export function PersonalOccasionAssistant({commitments}:{commitments:Commitment[
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
   const [consent,setConsent]=useState(false);
-  useEffect(()=>{let active=true;void(async()=>{try{const settings=await loadFlowOSAISettings();const key=await hasFlowOSAIAPIKey(settings.provider);if(active){setEnabled(settings.enabled);setConfigured(key);}}catch{if(active){setEnabled(false);setConfigured(false);}}})();return()=>{active=false;};},[]);
+  useFocusEffect(useCallback(()=>{let active=true;void(async()=>{try{const settings=await loadFlowOSAISettings();const key=await hasFlowOSAIAPIKey(settings.provider);if(active){setEnabled(settings.enabled);setConfigured(key);}}catch{if(active){setEnabled(false);setConfigured(false);}}})();return()=>{active=false;};},[]));
   const occasions=useMemo(()=>getUpcomingPersonalOccasions(commitments),[commitments]);
   if(!enabled)return null;
   const dateLabel=(date:Date)=>date.toLocaleDateString(localeForLanguage(language),{day:'numeric',month:'long',year:'numeric'});
@@ -38,7 +39,7 @@ export function PersonalOccasionAssistant({commitments}:{commitments:Commitment[
     if(!message)return;
     const encoded=encodeURIComponent(message);
     const url=channel==='whatsapp'?'https://wa.me/?text='+encoded:channel==='email'?'mailto:?subject='+encodeURIComponent(selected?.type==='birthday'?'Happy birthday':'Best wishes')+'&body='+encoded:'https://www.linkedin.com/messaging/';
-    try{await Linking.openURL(url);if(channel==='linkedin')showAlert(t('LinkedIn'),t('Per LinkedIn il testo viene copiato: FlowOS apre la messaggistica, ma non può precompilare o inviare il messaggio.'));else showAlert(t('FlowOS AI'),t('Messaggio pronto: incollalo nella conversazione prima di inviarlo.'));}
+    try{if(channel==='linkedin')await Clipboard.setStringAsync(message);await Linking.openURL(url);if(channel==='linkedin')showAlert(t('LinkedIn'),t('Per LinkedIn il testo viene copiato: FlowOS apre la messaggistica, ma non può precompilare o inviare il messaggio.'));else showAlert(t('FlowOS AI'),t('Messaggio pronto: incollalo nella conversazione prima di inviarlo.'));}
     catch{showAlert(t('FlowOS AI'),t('Impossibile aprire l’app selezionata. Copia il testo e incollalo manualmente.'));}
   }
   const channels:Channel[]=['whatsapp','email','linkedin'];

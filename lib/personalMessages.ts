@@ -13,7 +13,7 @@ export function classifyPersonalOccasion(item: Commitment): PersonalOccasionType
   if (item.kind !== 'event' || item.deletedAt) return null;
   const title = item.title.trim();
   if (item.googleEventType === 'birthday' || item.googleCalendarId === GOOGLE_BIRTHDAYS_CALENDAR_ID || BIRTHDAY_RE.test(title)) return 'birthday';
-  if (ANNIVERSARY_RE.test(title)) return 'anniversary';
+  if (item.googleEventType === 'anniversary' || ANNIVERSARY_RE.test(title)) return 'anniversary';
   return null;
 }
 
