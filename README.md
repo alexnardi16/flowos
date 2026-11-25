@@ -12,7 +12,8 @@
 - Review today's activities in a dedicated **Today** view.
 - Manage commitments in **Calendar** and **List** views.
 - Create tasks, events and reminders with dates, times, durations, priorities and recurrence.
-- Use voice commands to add, edit, move, complete or delete activities.\n- Optionally enable FlowOS AI with your own provider API key for voice interpretation, personal-occasion messages, web research, product comparisons and professional message drafts. AI is off by default; each operation requires confirmation.
+- Use voice commands to add, edit, move, complete or delete activities.
+- Optionally enable FlowOS AI with your own provider API key for voice interpretation, personal-occasion messages, web research, product comparisons and professional message drafts. AI is off by default; each operation requires confirmation.
 - Set local notifications, custom reminders and a daily summary.
 - Synchronize supported Google Calendar events and Google Tasks when you connect Google.
 - Use Android home-screen widgets for Today and Calendar.
