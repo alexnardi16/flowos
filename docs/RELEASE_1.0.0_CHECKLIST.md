@@ -23,7 +23,10 @@
 
 ## Privacy / account deletion
 
-- [x] In-app privacy policy exists\n- [x] Public Privacy Policy updated in English and Italian for optional BYOK AI processing\n- [x] Google Play Store metadata updated for optional AI features in English, Italian, French and Spanish\n- [x] Data Safety preparation updated for direct AI-provider transfers
+- [x] In-app privacy policy exists
+- [x] Public Privacy Policy updated in English and Italian for optional BYOK AI processing
+- [x] Google Play Store metadata updated for optional AI features in English, Italian, French and Spanish
+- [x] Data Safety preparation updated for direct AI-provider transfers
 - [x] In-app account deletion flow exists
 - [x] Server-side account deletion function exists
 - [x] Verify public privacy-policy URL over HTTPS (Netlify deployment and live legal-site smoke test)
