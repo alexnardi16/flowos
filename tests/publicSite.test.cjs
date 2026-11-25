@@ -66,11 +66,15 @@ test('privacy policy discloses the data categories used by the app', () => {
   assert.match(privacy, /optional FlowOS AI features and data sent to AI providers/i);
   assert.match(privacy, /voice transcript and titles of active FlowOS activities/i);
   assert.match(privacy, /professional messages/i);
+  assert.match(privacy, /passes the draft text to the email or WhatsApp app/i);
+  assert.match(privacy, /Google Search with your query/i);
   assert.match(privacy, /provider API key is stored in the operating system's secure storage/i);
   assert.match(privacy, /directly from your device to the provider/i);
   assert.match(privacy, /does not retain AI prompts or generated responses on its backend/i);
   assert.match(italianPrivacy, /Funzioni AI facoltative e dati inviati ai provider AI/i);
   assert.match(italianPrivacy, /API key del provider AI è conservata nell'archivio sicuro/i);
+  assert.match(italianPrivacy, /passa il testo all'app email o WhatsApp/i);
+  assert.match(italianPrivacy, /Google Search con la tua query/i);
 
   assert.match(privacy, /Expo push token/i);
   assert.match(privacy, /Supabase/i);
