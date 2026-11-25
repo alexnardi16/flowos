@@ -23,7 +23,7 @@
 
 ## Privacy / account deletion
 
-- [x] In-app privacy policy exists
+- [x] In-app privacy policy exists\n- [x] Public Privacy Policy updated in English and Italian for optional BYOK AI processing\n- [x] Google Play Store metadata updated for optional AI features in English, Italian, French and Spanish\n- [x] Data Safety preparation updated for direct AI-provider transfers
 - [x] In-app account deletion flow exists
 - [x] Server-side account deletion function exists
 - [x] Verify public privacy-policy URL over HTTPS (Netlify deployment and live legal-site smoke test)
@@ -98,3 +98,21 @@ Run these checks on the production-like AAB, with a real Google account connecte
 - [ ] Verify Play Console pre-launch checks and release status.
 
 Do not create or move the `v1.0.0` tag just to rebuild the binary. If a new public app version is needed after `1.0.0`, update the app version and prepare a new versioned release deliberately.
+
+
+## FlowOS AI 2.0 privacy and release checks — 2026-11-25
+
+- [x] AI remains OFF by default; non-AI FlowOS behavior remains available.
+- [x] Provider API keys are stored in device secure storage, not Supabase or Google synchronization.
+- [x] Privacy policy describes the data sent for voice interpretation, personal occasions, research/product comparisons, professional messages and connection tests.
+- [x] Privacy policy explains provider-side retention/training differences, BYOK billing, custom endpoints and API-key deletion.
+- [x] Each AI operation requires affirmative user confirmation and messages are not sent automatically.
+- [x] In-app access to the privacy policy is available.
+- [x] English and Italian public privacy pages are available; Store metadata is updated in four languages.
+- [x] Data Safety preparation includes optional AI prompt/content transfers and API-key taxonomy review.
+- [ ] Verify the deployed Netlify pages return HTTP 200 and show the current policy.
+- [ ] Confirm legal developer identity and contact details match the Google Play developer account.
+- [ ] Complete the final Data Safety form in Play Console against the exact production AAB and active testing tracks.
+- [ ] Review provider terms, privacy settings and API-key handling for each supported provider before production.
+- [ ] Physical-device acceptance of each AI operation, consent prompt, AI OFF behavior and account deletion remains required.
+- [ ] Confirm whether the final AI feature scope falls under Google Play's limited-scope productivity AI treatment or requires any additional AI-content reporting controls; do not assume policy exemption without review.
