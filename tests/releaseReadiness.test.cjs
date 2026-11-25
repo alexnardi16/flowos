@@ -200,8 +200,8 @@ test('FlowOS AI release disclosures remain opt-in, provider-direct and documente
   assert.match(ai, /fetch\(r\.url/);
   assert.match(ai, /requireEnabled\(s\)/);
   assert.match(aiTools, /getFlowOSAIProvider\(settings\.provider\)\.label/);
-  assert.match(aiTools, /research request and supplied sources/);
-  assert.match(aiTools, /recipient, purpose and message context/);
+  assert.match(aiTools, /La richiesta di ricerca e le fonti inserite saranno inviate direttamente a \\{provider\\}/);
+  assert.match(aiTools, /Il destinatario, lo scopo e il contesto del messaggio saranno inviati direttamente a \\{provider\\}/);
   assert.match(privacy, /FlowOS AI is optional and is OFF by default/);
   assert.match(privacy, /selected AI provider/);
   assert.match(privacyIt, /FlowOS AI è facoltativa ed è disattivata per impostazione predefinita/);
