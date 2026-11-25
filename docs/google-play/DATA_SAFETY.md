@@ -10,7 +10,7 @@ This is the evidence-based preparation for the Play Console form. It is not a su
 - When notifications are enabled, the app registers an Expo push token. The token is stored in `public.device_push_tokens` and sent to Expo Push Service. Push payloads contain only a background-sync marker and timestamp, not task or calendar content.
 - Expo EAS Update receives technical update-check metadata such as platform and runtime/app version. No task, calendar, account profile or user-entered content is included in update checks.
 - Voice commands on Android launch the Android system speech-recognition activity through `android.speech.action.RECOGNIZE_SPEECH`. FlowOS receives the resulting text transcript and parses it locally. FlowOS does not request the Android microphone permission, upload raw audio to FlowOS servers, or store voice recordings. The system speech-recognition provider may process audio under its own terms.
-- The `ai-planner` and `interpret-commitment` backend functions currently use deterministic local rules and do not call a generative-AI provider. The legacy translation endpoint is retired. No active Edge Function references OpenAI or transmits user content to it.
+- The optional FlowOS AI feature is OFF by default and uses bring-your-own-key (BYOK). When enabled, AI requests are sent directly from the app to the provider selected by the user; prompts are not proxied through Supabase and are not stored in the FlowOS account. Depending on the feature, data sent includes voice transcripts and active activity titles; selected personal-occasion title/name and date; user-entered research/product queries and pasted source material; or message recipient/role, purpose and context. The API key is transmitted to the selected provider as an authentication credential. The key is stored locally in device secure storage and is not stored in the FlowOS backend. Providers include OpenAI, Google Gemini, Anthropic, Mistral, Groq, xAI, OpenRouter and a custom OpenAI-compatible endpoint. The app displays an affirmative confirmation before sending each operation. Provider retention/training practices vary; do not claim ephemeral processing unless the user's selected provider and account tier guarantee it. The legacy translation endpoint is retired.
 - Local reminders and diagnostic/notification logs are kept on-device. The app source contains no analytics, advertising or third-party crash-reporting SDK.
 - Device location is not requested or transmitted by the current app.
 
@@ -120,3 +120,29 @@ Other Console locations:
 6. Review the current Play Console data-type taxonomy and each optionality/sharing exception in the form.
 7. Save the form as a draft first; inspect the Store listing preview before submitting.
 8. Do not claim an independent security audit or certification. No such audit has been performed.
+
+
+## FlowOS AI (added November 25, 2026)
+
+Google Play defines data collection to include user data transmitted off-device by the app, even when the destination is a third-party server. The optional AI features therefore change the Data Safety assessment even though FlowOS does not receive or store the AI prompts itself. The current Play policy provides an exclusion from the **sharing** definition for a transfer to a third party based on a specific user action where the user reasonably expects the transfer, or following a prominent in-app disclosure and affirmative consent. See:
+- https://support.google.com/googleplay/android-developer/answer/10787469
+- https://support.google.com/googleplay/android-developer/answer/10144311
+
+### Additional data types to review in Play Console
+
+| Category | Data type | Collection | Optional | Purpose | Handling |
+|---|---|---:|---:|---|---|
+| App activity | Other user-generated content | Yes, when an AI operation is confirmed | Yes | App functionality | Prompts, pasted source excerpts, voice transcript, activity titles and message context are transmitted directly to the chosen provider. |
+| App activity | App interactions | Review whether the current Play Console taxonomy applies | Yes | App functionality | User's explicit research/message/voice requests. Avoid double-counting if Play Console treats all prompt content as other user-generated content. |
+| Personal info | Authentication info | Review taxonomy for provider API keys | Yes | App functionality | User-supplied API key is stored locally and sent in the request header to authenticate with the selected provider. It is not stored by FlowOS servers. |
+
+Do not mark AI prompt processing as ephemeral unless the exact provider, model, account tier and settings guarantee that prompts are processed only transiently and not retained or used for other purposes. Provider practices vary. The user-initiated-transfer exclusion from **sharing** should only be used if the final app build retains the clear, operation-specific disclosure and affirmative confirmation before every AI request. The transfer still needs to be considered for data collection because it leaves the device.
+
+### Data Safety checklist before submission
+- Recheck the exact production AAB and all active tracks, including whether FlowOS AI is enabled and whether each AI operation still presents the required consent.
+- Add the AI-related data types above in the form where the taxonomy applies. Mark them optional because AI is opt-in. Use App functionality as the purpose.
+- Review whether the API key must be declared under Authentication info in the current Play Console taxonomy; it is transmitted off-device to the chosen provider.
+- Do not claim that FlowOS itself stores AI prompts/responses or API keys server-side.
+- Do not claim that every provider prohibits training/retention. The user's provider, tier and account controls determine that.
+- Ensure the policy URL, in-app disclosures, Store listing and Data Safety answers remain consistent.
+- The final declaration must be completed in Play Console by the account owner. This document is preparation, not a submitted declaration.
