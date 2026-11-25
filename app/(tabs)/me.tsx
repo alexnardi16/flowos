@@ -393,7 +393,7 @@ export default function Me(){
       <Text style={styles.meta}>{t('Prima di ogni operazione AI viene richiesta una conferma. In base alla funzione, possono essere inviati al provider selezionato la trascrizione vocale e i titoli delle attività, il titolo e la data di un’occasione personale, la richiesta e le fonti inserite oppure destinatario, obiettivo e contesto del messaggio. Note e descrizioni delle attività non vengono inviate dai comandi vocali e dalle occasioni personali.')}</Text>
       <Text style={styles.meta}>{t('FlowOS non paga le richieste AI: il provider addebita direttamente l’utilizzo alla persona proprietaria della API key.')}</Text>
       <Text style={styles.meta}>{t('Il livello gratuito e i relativi limiti dipendono dal provider e possono cambiare. Alcuni provider possono utilizzare i contenuti inviati per migliorare i propri servizi. Non inviare dati riservati o sensibili e verifica le condizioni del provider.')}</Text>
-      <Text style={styles.meta}>{flowosAIOwner?t('Account proprietario riconosciuto. Puoi utilizzare una API key personale con il livello gratuito del provider, se disponibile.'):t('Modalità proprietario non configurata per questa installazione.')}</Text>
+      {flowosAIOwner?<Text style={styles.meta}>{t('Account proprietario riconosciuto. Puoi utilizzare una API key personale con il livello gratuito del provider, se disponibile.')}</Text>:null}
       {Platform.OS==='web'?<Text style={styles.error}>{t('Per proteggere la tua API key, la configurazione AI è disponibile nell’app mobile FlowOS e non nel browser.')}</Text>:null}
     </Card>
 
