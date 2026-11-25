@@ -26,7 +26,7 @@ export function buildVoiceInterpretationPrompt(transcript:string,items:Commitmen
 
 export function parseInterpretedVoiceCommands(value:string):InterpretedVoiceCommand[]{
   let parsed:unknown;
-  try{parsed=JSON.parse(value.replace(/^\\s*```(?:json)?\\s*/i,'').replace(/\\s*```\\s*$/,'').trim());}catch{return [];}
+  try{parsed=JSON.parse(value.replace(/^\s*```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim());}catch{return [];}
   const rows=record(parsed).commands;
   if(!Array.isArray(rows)||rows.length>8)return [];
   const result:InterpretedVoiceCommand[]=[];
