@@ -20,6 +20,9 @@ import * as Application from 'expo-application';
 import { LANGUAGES, localeForLanguage, t, useLanguage } from '@/lib/i18n';
 import { syncTodayWidget } from '@/lib/widgetSync';
 import { ACTIVITY_SOURCE_COLORS, defaultActivitySourceColor } from '@/lib/activityColors';
+import { FLOWOS_AI_PROVIDERS, FLOWOS_AI_DEFAULT_SETTINGS, isFlowOSOwner, type FlowOSAIProviderId, type FlowOSAISettings } from '@/lib/flowosAIConfig';
+import { deleteFlowOSAIAPIKey, hasFlowOSAIAPIKey, loadFlowOSAISettings, saveFlowOSAIAPIKey, saveFlowOSAISettings, testFlowOSAIConnection } from '@/lib/flowosAI';
+import Constants from 'expo-constants';
 import { DEFAULT_WIDGET_APPEARANCE, applyWidgetTheme, colorWithOpacity, contrastRatio, getWidgetAppearance, normalizeHexColor, resetWidgetAppearance, resetWidgetAppearanceCategory, saveWidgetAppearance, type WidgetAppearance, type WidgetTheme, type WidgetDensity } from '@/lib/widgetAppearance';
 
 function syncDate(value?:string|null,language:import('@/lib/i18n').Language='it'){return value?new Date(value).toLocaleString(localeForLanguage(language),{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):t('mai sincronizzata',undefined,language);}
@@ -100,6 +103,12 @@ export default function Me(){
   const [widgetAppearanceBusy,setWidgetAppearanceBusy]=useState(false);
   const [settingsQuery,setSettingsQuery]=useState('');
   const [widgetPersonalizationOpen,setWidgetPersonalizationOpen]=useState(false);
+  const [flowosAISettings,setFlowosAISettings]=useState<FlowOSAISettings>(FLOWOS_AI_DEFAULT_SETTINGS);
+  const [flowosAIApiKey,setFlowosAIApiKey]=useState('');
+  const [flowosAIKeySaved,setFlowosAIKeySaved]=useState(false);
+  const [flowosAIBusy,setFlowosAIBusy]=useState(false);
+  const [flowosAIStatus,setFlowosAIStatus]=useState('');
+  const [flowosAIOwner,setFlowosAIOwner]=useState(false);
 
   const commitments=useFlowStore(state=>state.commitments);
   const hydrate=useFlowStore(s=>s.hydrateFromCloud);
@@ -131,6 +140,7 @@ export default function Me(){
   }
 
   useEffect(()=>{void loadGoogle();const u=subscribeDiagnostics(e=>setLogs([...e].reverse()));return u;},[]);
+  useEffect(()=>{let active=true;void (async()=>{try{const saved=await loadFlowOSAISettings(),keyExists=await hasFlowOSAIAPIKey(saved.provider);if(!active)return;setFlowosAISettings(saved);setFlowosAIKeySaved(keyExists);const ownerId=String(Constants.expoConfig?.extra?.flowosOwnerUserId??'');setFlowosAIOwner(isFlowOSOwner(session?.user.id,ownerId));}catch(e){if(active)setFlowosAIStatus(e instanceof Error?e.message:'Impossibile caricare FlowOS AI.');}})();return()=>{active=false;};},[session?.user.id]);
   useEffect(()=>{if(google?.range){const toInput=(v:string)=>{const[d,m,y]=v.split('/');return `${d}-${m}-${y}`;};setRangeStart(toInput(google.range.labelStart));setRangeEnd(toInput(google.range.labelEnd));}},[google?.range?.labelStart,google?.range?.labelEnd]);
   useEffect(()=>{const u=subscribeToSyncProgress(p=>{setProgress(p.percent);setStage(p.stage);});return u;},[]);
   useEffect(()=>{void getWidgetAppearance().then(setWidgetAppearance);},[]);
@@ -325,11 +335,19 @@ export default function Me(){
     await Clipboard.setStringAsync(text);showAlert('Logger','Log copiato.');
   }
 
+  async function persistFlowosAISettings(next:FlowOSAISettings){setFlowosAIBusy(true);try{await saveFlowOSAISettings(next);setFlowosAISettings(next);setFlowosAIStatus('');}catch(e){showAlert(t('FlowOS AI'),e instanceof Error?e.message:'Salvataggio impostazioni AI non riuscito.');}finally{setFlowosAIBusy(false);}}
+  async function changeFlowosAIProvider(provider:FlowOSAIProviderId){const p=FLOWOS_AI_PROVIDERS.find(x=>x.id===provider),next={...flowosAISettings,provider,model:p?.defaultModel??'',enabled:false};await persistFlowosAISettings(next);setFlowosAIKeySaved(await hasFlowOSAIAPIKey(provider));}
+  async function saveFlowosAIKey(){if(flowosAIBusy)return;setFlowosAIBusy(true);try{await saveFlowOSAIAPIKey(flowosAISettings.provider,flowosAIApiKey);setFlowosAIApiKey('');setFlowosAIKeySaved(true);setFlowosAIStatus(t('API key salvata.'));}catch(e){showAlert(t('FlowOS AI'),e instanceof Error?e.message:t('Inserisci una API key valida.'));}finally{setFlowosAIBusy(false);}}
+  async function removeFlowosAIKey(){if(flowosAIBusy)return;setFlowosAIBusy(true);try{await deleteFlowOSAIAPIKey(flowosAISettings.provider);const next={...flowosAISettings,enabled:false};await saveFlowOSAISettings(next);setFlowosAISettings(next);setFlowosAIKeySaved(false);setFlowosAIStatus(t('API key eliminata.'));}catch(e){showAlert(t('FlowOS AI'),e instanceof Error?e.message:'Eliminazione API key non riuscita.');}finally{setFlowosAIBusy(false);}}
+  async function toggleFlowosAI(enabled:boolean){if(enabled&&!flowosAIKeySaved){showAlert(t('FlowOS AI'),t('La API key non è ancora configurata. Salvala prima di attivare FlowOS AI.'));return;}await persistFlowosAISettings({...flowosAISettings,enabled});}
+  async function testFlowosAI(){if(flowosAIBusy)return;setFlowosAIBusy(true);setFlowosAIStatus('');try{const result=await testFlowOSAIConnection(flowosAISettings);setFlowosAIStatus(result.trim()||t('Connessione AI verificata.'));}catch(e){showAlert(t('FlowOS AI'),e instanceof Error?e.message:'Verifica della connessione AI non riuscita.');}finally{setFlowosAIBusy(false);}}
+  async function updateFlowosAIModel(model:string){const next={...flowosAISettings,model};setFlowosAISettings(next);try{await saveFlowOSAISettings(next);}catch(e){showAlert(t('FlowOS AI'),e instanceof Error?e.message:'Salvataggio modello AI non riuscito.');}}
+
   const authMissing=missingAuth(google,error);
   const connected=Boolean(google?.connection&&google.connection.last_sync_status!=='disconnected'&&!authMissing);
   const normalizedSettingsQuery=settingsQuery.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const showSettingsSection=(_category:string,keywords:string)=>!normalizedSettingsQuery||keywords.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(normalizedSettingsQuery);
-  const hasSettingsMatch=[['appearance','lingua language aspetto dimensione caratteri font size testo'],['calendar','calendario eventi completati visibilità passato google calendar'],['widgets','widget personalizzazione temi densità colori anteprima'],['google','google sincronizzazione calendari tasks'],['notifications','notifiche reminder riepilogo permessi android sistema activity reminders'],['diagnostics','diagnostica log errori avvisi'],['account','account privacy dati logout']].some(([category,keywords])=>showSettingsSection(category,keywords));
+  const hasSettingsMatch=[['ai','flowos ai intelligenza artificiale provider api key modello gemini openai claude mistral groq xai openrouter'],['appearance','lingua language aspetto dimensione caratteri font size testo'],['calendar','calendario eventi completati visibilità passato google calendar'],['widgets','widget personalizzazione temi densità colori anteprima'],['google','google sincronizzazione calendari tasks'],['notifications','notifiche reminder riepilogo permessi android sistema activity reminders'],['diagnostics','diagnostica log errori avvisi'],['account','account privacy dati logout']].some(([category,keywords])=>showSettingsSection(category,keywords));
   const syncStatusColor=google?.connection?.last_sync_status==='ok'?palette.success:google?.connection?.last_sync_status==='error'?palette.danger:google?.connection?.last_sync_status==='syncing'?palette.info:palette.muted;
   const diagnosticErrors=logs.filter(entry=>entry.level==='error').length;
   const diagnosticWarnings=logs.filter(entry=>entry.level==='warn').length;
@@ -356,6 +374,26 @@ export default function Me(){
       <Text style={styles.meta}>{t('Dimensione caratteri attiva')}: {t(widgetAppearance.appFontSize==='small'?'Piccola':widgetAppearance.appFontSize==='large'?'Grande':'Standard')}</Text>
       <Text style={styles.item}>{t('Dimensione caratteri')}</Text><View style={styles.presetRow}>{([{id:'small',label:'Piccola'},{id:'standard',label:'Standard'},{id:'large',label:'Grande'}] as const).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:widgetAppearance.appFontSize===option.id}} onPress={()=>setWidgetAppearance(current=>({...current,appFontSize:option.id}))} style={[styles.presetChip,widgetAppearance.appFontSize===option.id&&styles.presetChipActive]}><Text style={[styles.presetChipText,widgetAppearance.appFontSize===option.id&&styles.presetChipTextActive]}>{t(option.label)}</Text></Pressable>)}</View>
       <Button label={t('Salva aspetto')} onPress={()=>void saveAppearance()} loading={widgetAppearanceBusy}/>
+    </Card>
+
+    <Card style={{display:showSettingsSection('ai','flowos ai intelligenza artificiale provider api key modello gemini openai claude mistral groq xai openrouter')?'flex':'none'}}>
+      <Text style={styles.label}>{t('FlowOS AI')}</Text>
+      <Text style={styles.meta}>{t('Attiva FlowOS AI per aggiungere funzionalità basate sull’intelligenza artificiale. Se è disattivata, FlowOS continua a funzionare esattamente come prima.')}</Text>
+      <View style={styles.resource}><View style={styles.resourceText}><Text style={styles.item}>{t('FlowOS AI')}</Text><Text style={styles.meta}>{flowosAISettings.enabled?'ON':'OFF'}</Text></View><Switch value={flowosAISettings.enabled} onValueChange={v=>{void toggleFlowosAI(v);}} disabled={flowosAIBusy}/></View>
+      <Text style={styles.meta}>{t('Le funzionalità AI saranno rese disponibili progressivamente negli aggiornamenti successivi.')}</Text>
+      <Text style={styles.item}>{t('Provider AI')}</Text><View style={styles.presetRow}>{FLOWOS_AI_PROVIDERS.map(p=><Pressable key={p.id} accessibilityRole="button" accessibilityState={{selected:flowosAISettings.provider===p.id}} onPress={()=>{void changeFlowosAIProvider(p.id);}} style={[styles.presetChip,flowosAISettings.provider===p.id&&styles.presetChipActive]}><Text style={[styles.presetChipText,flowosAISettings.provider===p.id&&styles.presetChipTextActive]}>{p.label}</Text></Pressable>)}</View>
+      <Text style={styles.item}>{t('Modello AI')}</Text><Text style={styles.meta}>{t('Inserisci il nome esatto del modello disponibile presso il provider.')}</Text><TextInput value={flowosAISettings.model} onChangeText={v=>{void updateFlowosAIModel(v);}} placeholder={flowosAISettings.provider==='gemini'?'gemini-3.8-flash':'model-id'} autoCapitalize="none" autoCorrect={false} style={styles.input}/>
+      {flowosAISettings.provider==='custom'?<><Text style={styles.item}>{t('Endpoint personalizzato (HTTPS)')}</Text><TextInput value={flowosAISettings.customBaseUrl} onChangeText={v=>{const n={...flowosAISettings,customBaseUrl:v};setFlowosAISettings(n);void saveFlowOSAISettings(n);}} placeholder="https://provider.example/v1" autoCapitalize="none" autoCorrect={false} keyboardType="url" style={styles.input}/></>:null}
+      <Text style={styles.item}>{t('API key del provider')}</Text><TextInput value={flowosAIApiKey} onChangeText={setFlowosAIApiKey} placeholder={t('Inserisci la API key per il provider selezionato.')} secureTextEntry autoCapitalize="none" autoCorrect={false} style={styles.input}/>
+      <View style={styles.actions}><Button style={styles.actionButton} label={t('Salva API key')} onPress={()=>{void saveFlowosAIKey();}} disabled={!flowosAIApiKey.trim()||flowosAIBusy} loading={flowosAIBusy}/><Button style={styles.actionButton} secondary label={t('Elimina API key')} onPress={()=>{void removeFlowosAIKey();}} disabled={!flowosAIKeySaved||flowosAIBusy}/></View>
+      <Text style={styles.meta}>{flowosAIKeySaved?t('API key salvata in modo protetto su questo dispositivo. Non viene sincronizzata con FlowOS o Google.'):t('Stato API key')+': '+t('Non configurata')}</Text>
+      <Button secondary label={t('Verifica connessione')} onPress={()=>{void testFlowosAI();}} disabled={!flowosAIKeySaved||flowosAIBusy}/>
+      {flowosAIStatus?<Text style={styles.meta}>{flowosAIStatus}</Text>:null}
+      <Text style={styles.meta}>{t('Le richieste AI vengono inviate direttamente al provider selezionato e possono includere i dati che scegli di condividere con l’AI. Controlla le condizioni privacy del provider.')}</Text>
+      <Text style={styles.meta}>{t('FlowOS non paga le richieste AI: il provider addebita direttamente l’utilizzo alla persona proprietaria della API key.')}</Text>
+      <Text style={styles.meta}>{t('Il livello gratuito e i relativi limiti dipendono dal provider e possono cambiare. Alcuni provider possono utilizzare i contenuti inviati per migliorare i propri servizi.')}</Text>
+      <Text style={styles.meta}>{flowosAIOwner?t('Account proprietario riconosciuto. Puoi utilizzare una API key personale con il livello gratuito del provider, se disponibile.'):t('Modalità proprietario non configurata per questa installazione.')}</Text>
+      {Platform.OS==='web'?<Text style={styles.error}>{t('Per proteggere la tua API key, la configurazione AI è disponibile nell’app mobile FlowOS e non nel browser.')}</Text>:null}
     </Card>
 
     <Card style={{display:showSettingsSection('google','google sincronizzazione calendario tasks intervallo')?'flex':'none'}}>
