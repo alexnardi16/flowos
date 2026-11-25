@@ -18,7 +18,7 @@
     "test:public-site": "node tests/publicSite.test.cjs",
     "test:release-readiness": "node --test tests/releaseReadiness.test.cjs",
     "test:ux-selected": "node --test tests/uxSelectedRecommendations.test.cjs",
-    "test": "npm run test:auth && npm run test:ai-config && npm run test:personal-messages && npm run test:selectors && npm run test:mutations && npm run test:voice && npm run test:widget && npm run test:sync && npm run test:notifications && npm run test:public-site && npm run test:release-readiness && npm run test:ux-selected",
+    "test": "npm run test:auth && npm run test:ai-config && npm run test:personal-messages && npm run test:ai-tools && npm run test:selectors && npm run test:mutations && npm run test:voice && npm run test:widget && npm run test:sync && npm run test:notifications && npm run test:public-site && npm run test:release-readiness && npm run test:ux-selected",
     "validate:web": "npm run typecheck && npm test && npx expo export --platform web",
     "eas:preview": "eas update --channel preview --message \"FlowOS preview\" --environment preview",
     "eas:build:preview": "npx eas-cli build --profile preview --platform android",
@@ -28,7 +28,8 @@
     "lint": "npx expo lint",
     "test:sync": "node tests/googleSync.test.cjs",
     "test:ai-config": "rm -rf .test-dist-ai && tsc -p tests/tsconfig.flowosAI.json && node --test tests/flowosAIConfig.test.cjs",
-    "test:personal-messages": "rm -rf .test-dist-personal && tsc -p tests/tsconfig.personalMessages.json && node --test tests/personalMessages.test.cjs"
+    "test:personal-messages": "rm -rf .test-dist-personal && tsc -p tests/tsconfig.personalMessages.json && node --test tests/personalMessages.test.cjs",
+    "test:ai-tools": "rm -rf .test-dist-ai-tools && tsc -p tests/tsconfig.aiTools.json && node --test tests/aiTools.test.cjs"
   },
   "dependencies": {
     "@expo/ui": "~57.0.16",
