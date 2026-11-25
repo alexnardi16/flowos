@@ -18,6 +18,7 @@ import { activityDayDates, isMultiDayActivity } from '@/lib/commitmentVisibility
 import { buildCalendarTimeline } from '@/lib/calendarTimeline';
 import { formatDurationLabel } from '@/lib/itemTiming';
 import { getWidgetAppearance } from '@/lib/widgetAppearance';
+import { PersonalOccasionAssistant } from '@/components/PersonalOccasionAssistant';
 
 function dayKey(date:Date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function itemDate(item:Commitment){return item.scheduledAt??item.dueAt;}
@@ -104,6 +105,7 @@ export default function Calendar(){
   const strings=widgetStrings(language);
 
   return <ScreenShell title={t('Calendario')} scrollRef={scrollRef} scrollProps={{onTouchStart:handleCalendarTouchStart,onTouchEnd:handleCalendarTouchEnd}} headerActions={<View style={styles.todayRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana precedente')} onPress={()=>moveSelectedDay(-7)} style={styles.navButton}><Ionicons name="chevron-back" size={19} color={palette.primary}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Seleziona mese e anno')} onPress={()=>{setPickerMonth(new Date(`${selectedDateKey}T12:00:00`));setShowDatePicker(true);}} style={styles.monthButton}><Ionicons name="calendar-outline" size={14} color={palette.primary}/><Text style={styles.monthButtonText}>{new Date(`${selectedDateKey}T12:00:00`).toLocaleDateString(localeForLanguage(language),{month:'short',year:'numeric'})}</Text></Pressable><Pressable accessibilityRole="button" onPress={goToToday} style={styles.todayButton}><Text style={styles.todayButtonText}>{t('Oggi')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Settimana successiva')} onPress={()=>moveSelectedDay(7)} style={styles.navButton}><Ionicons name="chevron-forward" size={19} color={palette.primary}/></Pressable><QuickAddMenu date={selectedDateKey} compact/></View>}>
+    <PersonalOccasionAssistant commitments={commitments} />
     <ProgressiveHint id="calendar-navigation">{t('Suggerimento Calendario: seleziona un giorno, usa le frecce per spostarti e crea un elemento già associato alla data selezionata.')}</ProgressiveHint>
     {weeks.map((week,index)=>{
       const monthTitle=monthLabelForWeek(week,index,strings.months);
