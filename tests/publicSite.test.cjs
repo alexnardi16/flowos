@@ -95,10 +95,10 @@ test('optional live-site smoke test validates all legal URLs', async (t) => {
   }
 
   const base = (process.env.FLOWOS_SITE_URL || 'https://getflowos.netlify.app').replace(/\/$/, '');
-  for (const route of ['/about/', '/privacy-policy/', '/delete-account/', '/terms/']) {
+  for (const route of ['/about/', '/privacy-policy/', '/it/privacy-policy/', '/delete-account/', '/terms/']) {
     const response = await fetch(`${base}${route}`, { redirect: 'follow' });
     assert.equal(response.status, 200, `${route} should return HTTP 200`);
     const html = await response.text();
-    assert.match(html, /FlowOS/i, `${route} should contain FlowOS`);
+    assert.match(html, /FlowOS/i, `${route} should contain FlowOS`);\n    if (route === '/it/privacy-policy/') assert.match(html, /Informativa sulla privacy di FlowOS/i);
   }
 });
