@@ -189,11 +189,16 @@ test('FlowOS AI release disclosures remain opt-in, provider-direct and documente
   const ai = read('lib/flowosAI.ts');
   const aiTools = read('app/ai-tools.tsx');
   const privacy = read('public/privacy-policy/index.html');
+  const inAppPrivacy = read('app/privacy-policy.tsx');
+  const login = read('app/login.tsx');
   const privacyIt = read('public/it/privacy-policy/index.html');
   const safety = read('docs/google-play/DATA_SAFETY.md');
   const store = read('docs/google-play/STORE_METADATA.md');
   assert.match(settings, /enabled\?'ON':'OFF'/);
   assert.match(settings, /Informativa sulla privacy/);
+  assert.match(inAppPrivacy, /Apri informativa completa/);
+  assert.match(inAppPrivacy, /FlowOS AI/);
+  assert.match(login, /router\.push\('\/privacy-policy'\)/);
   assert.match(settings, /Prima di ogni operazione AI viene richiesta una conferma/);
   assert.match(ai, /SecureStore\.setItemAsync/);
   assert.match(ai, /SecureStore\.getItemAsync/);
